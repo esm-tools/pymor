@@ -38,7 +38,6 @@ Table 2: Precision of time labels used in file names
 
 """
 
-from collections import deque
 from pathlib import Path
 
 import pandas as pd
@@ -182,7 +181,9 @@ def file_timespan_tail(rule):
     for _input in rule.inputs:
         for f in sorted(_input.files):
             ds = xr.open_dataset(str(f), **options)
-            times.append(ds.time.values[-1])
+            time_label = get_time_label(ds)
+            if time_label:
+                times.append(ds[time_label].values[-1])
     offset = get_offset(rule)
     if offset is not None:
         times = xr.CFTimeIndex(times) + offset
@@ -207,29 +208,22 @@ def split_data_timespan(ds, rule):
     list
         A list of datasets, each containing a chunk of the original dataset.
     """
-    time_cuts = deque(file_timespan_tail(rule))
+    time_cuts = file_timespan_tail(rule)
+    ncuts = len(time_cuts)
     time_label = get_time_label(ds)
     if not time_label:
         return [ds]
-    resampled_times = deque(ds[time_label].values)
+    resampled_times = ds[time_label].values
+    ref = pd.DataFrame(resampled_times, columns=["dateindex"])
+    ref["mark"] = ncuts
+    for ind, timecut in enumerate(reversed(time_cuts), start=1):
+        ref.loc[ref.dateindex < timecut, "mark"] = ncuts - ind
     result = []
-    while time_cuts:
-        cutoff = time_cuts.popleft()
-        tmp = []
-        while True:
-            try:
-                ts = resampled_times.popleft()
-            except IndexError:
-                break
-            if ts <= cutoff:
-                tmp.append(ts)
-            else:
-                resampled_times.appendleft(ts)
-                result.append(tmp)
-                break
+    for _, grp in ref.groupby("mark"):
+        result.append((grp.dateindex.iloc[0], grp.dateindex.iloc[-1]))
     data_chunks = []
     for timespan in result:
-        da = ds.sel(time=slice(timespan[0], timespan[-1]))
+        da = ds.sel({time_label: slice(timespan[0], timespan[-1])})
         data_chunks.append(da)
     if not data_chunks:
         data_chunks.append(ds)
