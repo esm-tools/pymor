@@ -1,8 +1,9 @@
-sphinxcontrib-napoleon
-sphinx_jinja
+sphinx-book-theme
+sphinx-click
 sphinx-copybutton
+sphinx-rtd-theme
 sphinx-tabs
 sphinx-toolbox
-sphinx-rtd-theme
-sphinx-click
+sphinx_jinja
+sphinxcontrib-napoleon
 watchdog[watchmedo]
