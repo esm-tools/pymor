@@ -1,5 +1,5 @@
 ===============================================
-Usage: ``pymorize`` functionality for ``fesom``
+Usage: ``pymor`` functionality for ``fesom``
 ===============================================
 
 In addition to the generic pipeline steps, we also include a few that are specific for ``FESOM``.
@@ -22,12 +22,12 @@ In your ``Rule`` specification, you need to point to the ``mesh_file`` that you 
     pipelines:
       - my_pipeline
 
-Then, in your pipeline, you can use the step ``pymorize.fesom.regrid_to_regular``:
+Then, in your pipeline, you can use the step ``pymor.fesom.regrid_to_regular``:
 
 .. code-block:: yaml
 
   pipelines:
     - name: my_pipeline
       steps:
-        - pymorize.fesom.regrid_to_regular
+        - pymor.fesom.regrid_to_regular
 

@@ -1,5 +1,5 @@
 ==================================
-``pymorize`` Using auxiliary files
+``pymor`` Using auxiliary files
 ==================================
 
 At times, your post-processing will require additional files beyond the actual data.

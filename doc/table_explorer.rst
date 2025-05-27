@@ -1,5 +1,5 @@
 ====================================
-Usage: The ``pymorize`` Table Viewer
+Usage: The ``pymor`` Table Viewer
 ====================================
 
-.. automodule:: pymorize.webapp
+.. automodule:: pymor.webapp

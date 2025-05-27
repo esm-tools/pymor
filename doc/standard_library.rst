@@ -1,2 +1,2 @@
-.. automodule:: pymorize.std_lib
+.. automodule:: pymor.std_lib
    :members:
