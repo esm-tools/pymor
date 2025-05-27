@@ -31,7 +31,7 @@ Note that the ``-e`` switch allows you to edit the source code.
 
 .. note::
 
-  ``[<extras>]`` allows you to install additional packages that might be use for some specific tasks in pymorize. The extras available are:
+  ``[<extras>]`` allows you to install additional packages that might be use for some specific tasks in pymor. The extras available are:
 
   * ``dev`` packages useful for development
   * ``fesom`` installs ``pyfesom2`` that is used by some of the steps in the rule that deal with FESOM meshes. If you are working with FESOM data

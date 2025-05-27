@@ -1,4 +1,4 @@
-.. pymorize documentation master file, created by
+.. pymor documentation master file, created by
    sphinx-quickstart on Fri Jun 14 09:55:12 2024.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
@@ -14,17 +14,17 @@ Contents
 
    quickstart
    installation
-   pymorize_building_blocks
-   pymorize_cli
+   pymor_building_blocks
+   pymor_cli
    table_explorer
-   pymorize_on_slurm
+   pymor_on_slurm
    schemas
    standard_library
    including_custom_steps
    including_subcommand_plugins
-   pymorize_configuration
-   pymorize_aux_files
-   pymorize_fesom
+   pymor_configuration
+   pymor_aux_files
+   pymor_fesom
    timeaveraging_frequencies
    cookbook
    developer_guide
