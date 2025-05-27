@@ -32,7 +32,7 @@ package in their own scripts.
 
 To get started, you can install it via ``pip``::
 
-    pip install git+https://github.com/esm-tools/pymor
+    pip install py-cmor
 
 Then you can run the main command line interface. Start out by getting some help::
 

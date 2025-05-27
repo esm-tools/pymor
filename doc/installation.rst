@@ -19,15 +19,24 @@ easily activate this in your scripts. Start off by creating a new conda environm
 
 Then, you can install the package by running::
 
-    pip install py-cmor[fesom]
+    pip install py-cmor[<extras>]
 
 Or with a clone::
 
-    git clone https://esm-tools/pymor.git
+    git clone https://github.com/esm-tools/pymor.git
     cd pymor
     pip install -e .[<extras>]
 
 Note that the ``-e`` switch allows you to edit the source code.
+
+You might also want to add the ``--isolated`` option to the pip command to
+ensure that the installation is isolated from other packages in your environment. This can be done as follows::
+
+    pip install --isolated py-cmor.[<extras>]
+
+or::
+
+    pip install --isolated -e .[<extras>]
 
 .. note::
 
@@ -40,6 +49,10 @@ Note that the ``-e`` switch allows you to edit the source code.
 An example of using both the ``dev`` and the ``fesom`` extras is::
 
     pip install -e .[dev,fesom]
+
+In some systems the extra syntax will confuse the shell, so you might need to add quotes. For example::
+
+    pip install -e ".[dev,fesom]"
 
 On an HPC System
 ----------------
@@ -76,7 +89,7 @@ From source
 
 If you want to modify the source code, you can install the package by cloning the repository and running::
 
-    git clone https://esm-tools/pymor.git
+    git clone https://github.com/esm-tools/pymor.git
     cd pymor
     python -m pip install -e .[<extras>]
 
