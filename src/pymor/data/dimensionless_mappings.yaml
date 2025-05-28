@@ -29,7 +29,7 @@ bacc:  # mole_concentration_of_bacteria_expressed_as_carbon_in_sea_water
 baccos:  # mole_concentration_of_bacteria_expressed_as_carbon_in_sea_water
   "mol m-3":
 baresoilFrac:  # area_fraction
-  "%":
+  "%": m2/dm2
 basin:  # region
   "1":
 bddtalk:  # tendency_of_sea_water_alkalinity_expressed_as_mole_equivalent_due_to_biological_processes
@@ -55,19 +55,19 @@ bsi:  # mole_concentration_of_particulate_matter_expressed_as_silicon_in_sea_wat
 bsios:  # mole_concentration_of_particulate_organic_matter_expressed_as_silicon_in_sea_water
   "mol m-3":
 burntFractionAll:  # area_fraction
-  "%":
+  "%": m2/dm2
 c2h2:  # mole_fraction_of_ethyne_in_air
   "mol mol-1":
 c2h6:  # mole_fraction_of_ethane_in_air
   "mol mol-1":
 c3PftFrac:  # area_fraction
-  "%":
+  "%": m2/dm2
 c3h6:  # mole_fraction_of_propene_in_air
   "mol mol-1":
 c3h8:  # mole_fraction_of_propane_in_air
   "mol mol-1":
 c4PftFrac:  # area_fraction
-  "%":
+  "%": m2/dm2
 calc:  # mole_concentration_of_calcite_expressed_as_carbon_in_sea_water
   "mol m-3":
 calcos:  # mole_concentration_of_calcite_expressed_as_carbon_in_sea_water
@@ -89,61 +89,61 @@ ch4Clim:  # mole_fraction_of_methane_in_air
 ci:  # convection_time_fraction
   "1":
 cl:  # cloud_area_fraction_in_atmosphere_layer
-  "%":
+  "%": m2/dm2
 clayfrac:  # volume_fraction_of_clay_in_soil
   "1":
 clc:  # convective_cloud_area_fraction_in_atmosphere_layer
-  "%":
+  "%": m2/dm2
 clcalipso:  # cloud_area_fraction_in_atmosphere_layer
-  "%":
+  "%": m2/dm2
 clcalipso2:  # cloud_area_fraction_in_atmosphere_layer
-  "%":
+  "%": m2/dm2
 clcalipsoice:  # ice_cloud_area_fraction_in_atmosphere_layer
-  "%":
+  "%": m2/dm2
 clcalipsoliq:  # liquid_water_cloud_area_fraction_in_atmosphere_layer
-  "%":
+  "%": m2/dm2
 cldicemxrat27:  # cloud_ice_mixing_ratio
   "1":
 cldwatmxrat27:  # cloud_liquid_water_mixing_ratio
   "1":
 clhcalipso:  # cloud_area_fraction_in_atmosphere_layer
-  "%":
+  "%": m2/dm2
 clic:  # mass_fraction_of_convective_cloud_ice_in_air
   "1":
 climodis:  # ice_cloud_area_fraction
-  "%":
+  "%": m2/dm2
 clis:  # mass_fraction_of_stratiform_cloud_ice_in_air
   "1":
 clisccp:  # cloud_area_fraction_in_atmosphere_layer
-  "%":
+  "%": m2/dm2
 cllcalipso:  # cloud_area_fraction_in_atmosphere_layer
-  "%":
+  "%": m2/dm2
 clmcalipso:  # cloud_area_fraction_in_atmosphere_layer
-  "%":
+  "%": m2/dm2
 clmisr:  # cloud_area_fraction_in_atmosphere_layer
-  "%":
+  "%": m2/dm2
 cls:  # stratiform_cloud_area_fraction_in_atmosphere_layer
-  "%":
+  "%": m2/dm2
 clt:  # cloud_area_fraction
-  "%":
+  "%": m2/dm2
 cltc:  # convective_cloud_area_fraction
-  "%":
+  "%": m2/dm2
 cltcalipso:  # cloud_area_fraction
-  "%":
+  "%": m2/dm2
 cltisccp:  # cloud_area_fraction
-  "%":
+  "%": m2/dm2
 cltmodis:  # cloud_area_fraction
-  "%":
+  "%": m2/dm2
 clwc:  # mass_fraction_of_convective_cloud_liquid_water_in_air
   "1":
 clwmodis:  # liquid_water_cloud_area_fraction
-  "%":
+  "%": m2/dm2
 clws:  # mass_fraction_of_stratiform_cloud_liquid_water_in_air
   "1":
 cly:  # mole_fraction_of_inorganic_chlorine_in_air
   "mol mol-1":
 cnc:  # vegetation_area_fraction
-  "%":
+  "%": m2/dm2
 co:  # mole_fraction_of_carbon_monoxide_in_air
   "mol mol-1":
 co2:  # mole_fraction_of_carbon_dioxide_in_air
@@ -173,11 +173,11 @@ co3satcalcos:  # mole_concentration_of_carbonate_expressed_as_carbon_at_equilibr
 cod:  # atmosphere_optical_thickness_due_to_cloud
   "1":
 cropFrac:  # area_fraction
-  "%":
+  "%": m2/dm2
 cropFracC3:  # area_fraction
-  "%":
+  "%": m2/dm2
 cropFracC4:  # area_fraction
-  "%":
+  "%": m2/dm2
 darag:  # tendency_of_mole_concentration_of_aragonite_expressed_as_carbon_in_sea_water_due_to_dissolution
   "mol m-3 s-1":
 dcalc:  # tendency_of_mole_concentration_of_calcite_expressed_as_carbon_in_sea_water_due_to_dissolution
@@ -299,13 +299,13 @@ fgo2:  # surface_downward_mole_flux_of_molecular_oxygen
 fgsf6:  # surface_downward_mole_flux_of_sulfur_hexafluoride
   "mol m-2 s-1":
 fldcapacity:  # volume_fraction_of_condensed_water_in_soil_at_field_capacity
-  "%":
+  "%": m2/dm2
 fracInLut:  # area_fraction
-  "%":
+  "%": m2/dm2
 fracLut:  # area_fraction
-  "%":
+  "%": m2/dm2
 fracOutLut:  # area_fraction
-  "%":
+  "%": m2/dm2
 frfe:  # minus_tendency_of_ocean_mole_content_of_iron_due_to_sedimentation
   "mol m-2 s-1":
 fric:  # minus_tendency_of_ocean_mole_content_of_inorganic_carbon_due_to_sedimentation
@@ -319,11 +319,11 @@ fsfe:  # tendency_of_ocean_mole_content_of_iron_due_to_deposition_and_runoff_and
 fsn:  # tendency_of_ocean_mole_content_of_elemental_nitrogen_due_to_deposition_and_fixation_and_runoff
   "mol m-2 s-1":
 grassFrac:  # area_fraction
-  "%":
+  "%": m2/dm2
 grassFracC3:  # area_fraction
-  "%":
+  "%": m2/dm2
 grassFracC4:  # area_fraction
-  "%":
+  "%": m2/dm2
 graz:  # tendency_of_mole_concentration_of_particulate_organic_matter_expressed_as_carbon_in_sea_water_due_to_grazing_of_phytoplankton
   "mol m-3 s-1":
 grplmxrat27:  # mass_fraction_of_graupel_in_air
@@ -339,15 +339,15 @@ hno3:  # mole_fraction_of_nitric_acid_in_air
 ho2:  # mole_fraction_of_hydroperoxyl_radical_in_air
   "mol mol-1":
 hur:  # relative_humidity
-  "%":
+  "%": m2/dm2
 hurs:  # relative_humidity
-  "%":
+  "%": m2/dm2
 hursmax:  # relative_humidity
-  "%":
+  "%": m2/dm2
 hursmin:  # relative_humidity
-  "%":
+  "%": m2/dm2
 hursminCrop:  # relative_humidity
-  "%":
+  "%": m2/dm2
 hus:  # specific_humidity
   "1":
 hus27:  # specific_humidity
@@ -395,15 +395,15 @@ intpppico:  # net_primary_mole_productivity_of_biomass_expressed_as_carbon_by_pi
 isop:  # mole_fraction_of_isoprene_in_air
   "mol mol-1":
 jpdftaureicemodis:  # cloud_area_fraction_in_atmosphere_layer
-  "%":
+  "%": m2/dm2
 jpdftaureliqmodis:  # cloud_area_fraction_in_atmosphere_layer
-  "%":
+  "%": m2/dm2
 lai:  # leaf_area_index
   "1":
 laiLut:  # leaf_area_index
   "1":
 landCoverFrac:  # area_fraction
-  "%":
+  "%": m2/dm2
 limfecalc:  # iron_growth_limitation_of_calcareous_phytoplankton
   "1":
 limfediat:  # iron_growth_limitation_of_diatoms
@@ -467,7 +467,7 @@ no3os:  # mole_concentration_of_nitrate_in_sea_water
 noy:  # mole_fraction_of_noy_expressed_as_nitrogen_in_air
   "mol mol-1":
 nwdFracLut:  # area_fraction
-  "%":
+  "%": m2/dm2
 o2:  # mole_concentration_of_dissolved_molecular_oxygen_in_sea_water
   "mol m-3":
 o2min:  # mole_concentration_of_dissolved_molecular_oxygen_in_sea_water_at_shallowest_local_minimum_in_vertical_profile
@@ -539,11 +539,11 @@ parag:  # tendency_of_mole_concentration_of_aragonite_expressed_as_carbon_in_sea
 parasolRefl:  # toa_bidirectional_reflectance
   "1":
 pastureFrac:  # area_fraction
-  "%":
+  "%": m2/dm2
 pastureFracC3:  # area_fraction
-  "%":
+  "%": m2/dm2
 pastureFracC4:  # area_fraction
-  "%":
+  "%": m2/dm2
 pbfe:  # tendency_of_mole_concentration_of_iron_in_sea_water_due_to_biological_production
   "mol m-3 s-1":
 pbsi:  # tendency_of_mole_concentration_of_silicon_in_sea_water_due_to_biological_production
@@ -641,7 +641,7 @@ rainmxrat27:  # mass_fraction_of_liquid_precipitation_in_air
 remoc:  # tendency_of_mole_concentration_of_particulate_organic_matter_expressed_as_carbon_in_sea_water_due_to_remineralization
   "mol m-3 s-1":
 residualFrac:  # area_fraction
-  "%":
+  "%": m2/dm2
 sandfrac:  # volume_fraction_of_sand_in_soil
   "1":
 sci:  # shallow_convection_time_fraction
@@ -655,35 +655,35 @@ sfo3:  # mole_fraction_of_ozone_in_air
 sfo3max:  # mole_fraction_of_ozone_in_air
   "mol mol-1":
 sftflf:  # floating_ice_shelf_area_fraction
-  "%":
+  "%": m2/dm2
 sftgif:  # land_ice_area_fraction
-  "%":
+  "%": m2/dm2
 sftgrf:  # grounded_ice_sheet_area_fraction
-  "%":
+  "%": m2/dm2
 sftlf:  # land_area_fraction
-  "%":
+  "%": m2/dm2
 sftof:  # sea_area_fraction
-  "%":
+  "%": m2/dm2
 shrubFrac:  # area_fraction
-  "%":
+  "%": m2/dm2
 si:  # mole_concentration_of_dissolved_inorganic_silicon_in_sea_water
   "mol m-3":
 siconc:  # sea_ice_area_fraction
-  "%":
+  "%": m2/dm2
 siconca:  # sea_ice_area_fraction
-  "%":
+  "%": m2/dm2
 sidragbot:  # sea_ice_basal_drag_coefficient_for_momentum_in_sea_water
   "1":
 sidragtop:  # surface_drag_coefficient_for_momentum_in_air
   "1":
 siitdconc:  # sea_ice_area_fraction
-  "%":
+  "%": m2/dm2
 siitdsnconc:  # surface_snow_area_fraction
-  "%":
+  "%": m2/dm2
 siltfrac:  # volume_fraction_of_silt_in_soil
   "1":
 simpconc:  # area_fraction
-  "%":
+  "%": m2/dm2
 sios:  # mole_concentration_of_dissolved_inorganic_silicon_in_sea_water
   "mol m-3":
 sirdgconc:  # area_fraction
@@ -691,13 +691,13 @@ sirdgconc:  # area_fraction
 sisali:  # sea_ice_salinity
   "0.001": g/kg
 sisnconc:  # surface_snow_area_fraction
-  "%":
+  "%": m2/dm2
 sitimefrac:  # fraction_of_time_with_sea_ice_area_fraction_above_threshold
   "1":
 snc:  # surface_snow_area_fraction
-  "%":
+  "%": m2/dm2
 sncIs:  # surface_snow_area_fraction
-  "%":
+  "%": m2/dm2
 snowmxrat27:  # mass_fraction_of_snow_in_air
   "1":
 so:  # sea_water_salinity
@@ -727,31 +727,31 @@ talknatos:  # sea_water_alkalinity_natural_analogue_expressed_as_mole_equivalent
 talkos:  # sea_water_alkalinity_expressed_as_mole_equivalent
   "mol m-3":
 treeFrac:  # area_fraction
-  "%":
+  "%": m2/dm2
 treeFracBdlDcd:  # area_fraction
-  "%":
+  "%": m2/dm2
 treeFracBdlEvg:  # area_fraction
-  "%":
+  "%": m2/dm2
 treeFracNdlDcd:  # area_fraction
-  "%":
+  "%": m2/dm2
 treeFracNdlEvg:  # area_fraction
-  "%":
+  "%": m2/dm2
 treeFracPrimDec:  # area_fraction
-  "%":
+  "%": m2/dm2
 treeFracPrimEver:  # area_fraction
-  "%":
+  "%": m2/dm2
 treeFracSecDec:  # area_fraction
-  "%":
+  "%": m2/dm2
 treeFracSecEver:  # area_fraction
-  "%":
+  "%": m2/dm2
 vegFrac:  # area_fraction
-  "%":
+  "%": m2/dm2
 vmrox:  # mole_fraction_of_ox_in_air
   "mol mol-1":
 wetlandFrac:  # area_fraction
-  "%":
+  "%": m2/dm2
 wilt:  # volume_fraction_of_condensed_water_in_soil_at_wilting_point
-  "%":
+  "%": m2/dm2
 zmeso:  # mole_concentration_of_mesozooplankton_expressed_as_carbon_in_sea_water
   "mol m-3":
 zmesoos:  # mole_concentration_of_mesozooplankton_expressed_as_carbon_in_sea_water
