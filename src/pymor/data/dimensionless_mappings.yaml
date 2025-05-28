@@ -299,7 +299,7 @@ fgo2:  # surface_downward_mole_flux_of_molecular_oxygen
 fgsf6:  # surface_downward_mole_flux_of_sulfur_hexafluoride
   "mol m-2 s-1":
 fldcapacity:  # volume_fraction_of_condensed_water_in_soil_at_field_capacity
-  "%": m2/dm2
+  "%": 
 fracInLut:  # area_fraction
   "%": m2/dm2
 fracLut:  # area_fraction
@@ -751,7 +751,7 @@ vmrox:  # mole_fraction_of_ox_in_air
 wetlandFrac:  # area_fraction
   "%": m2/dm2
 wilt:  # volume_fraction_of_condensed_water_in_soil_at_wilting_point
-  "%": m2/dm2
+  "%": 
 zmeso:  # mole_concentration_of_mesozooplankton_expressed_as_carbon_in_sea_water
   "mol m-3":
 zmesoos:  # mole_concentration_of_mesozooplankton_expressed_as_carbon_in_sea_water
