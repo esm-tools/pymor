@@ -98,6 +98,7 @@ def _parse_bool(value):
 
 class PymorConfig:
     class Config:
+        # [FIXME] Keep the list of all options alphabetical!
         dask_cluster = Option(
             default="local",
             doc="Dask cluster to use. See: https://docs.dask.org/en/stable/deploying.html",
@@ -108,6 +109,21 @@ class PymorConfig:
                     "slurm",
                 ],
             ),
+        )
+        dask_cluster_scaling_fixed_jobs = Option(
+            default=5,
+            doc="Number of jobs to create for Jobqueue-backed Dask Cluster",
+            parser=int,
+        )
+        dask_cluster_scaling_maximum_jobs = Option(
+            default=10,
+            doc="Maximum number of jobs to create for Jobqueue-backed Dask Clusters (adaptive)",
+            parser=int,
+        )
+        dask_cluster_scaling_minimum_jobs = Option(
+            default=1,
+            doc="Minimum number of jobs to create for Jobqueue-backed Dask Clusters (adaptive)",
+            parser=int,
         )
         dask_cluster_scaling_mode = Option(
             default="adapt",
@@ -120,38 +136,35 @@ class PymorConfig:
                 ],
             ),
         )
-        dask_cluster_scaling_minimum_jobs = Option(
-            parser=int,
-            default=1,
-            doc="Minimum number of jobs to create for Jobqueue-backed Dask Clusters (adaptive)",
-        )
-        dask_cluster_scaling_maximum_jobs = Option(
-            parser=int,
-            default=10,
-            doc="Maximum number of jobs to create for Jobqueue-backed Dask Clusters (adaptive)",
-        )
-        dask_cluster_scaling_fixed_jobs = Option(
-            parser=int,
-            default=5,
-            doc="Number of jobs to create for Jobqueue-backed Dask Cluster",
-        )
         dimensionless_mapping_table = Option(
-            parser=str,
             default=DIMENSIONLESS_MAPPING_TABLE,
             doc="Where the dimensionless unit mapping table is defined.",
+            parser=str,
         )
         enable_dask = Option(
-            parser=_parse_bool,
             default="yes",
             doc="Whether to enable Dask-based processing",
+            parser=_parse_bool,
         )
         enable_flox = Option(
-            parser=_parse_bool,
             default="yes",
             doc="Whether to enable flox for group-by operation. See: https://flox.readthedocs.io/en/latest/",
+            parser=_parse_bool,
+        )
+        enable_output_subdirs = Option(
+            default="no",
+            doc="Whether to create subdirectories under output_dir when saving data-sets.",
+            parser=_parse_bool,
+        )
+        file_timespan = Option(
+            default="1YS",
+            doc="Default timespan for grouping output files together. See: https://tinyurl.com/38wxf8px",
+            parser=str,
         )
         parallel = Option(
-            parser=_parse_bool, default="yes", doc="Whether to run in parallel."
+            default="yes",
+            doc="Whether to run in parallel.",
+            parser=_parse_bool,
         )
         parallel_backend = Option(default="dask", doc="Which parallel backend to use.")
         pipeline_workflow_orchestrator = Option(
@@ -165,11 +178,6 @@ class PymorConfig:
                 ],
             ),
         )
-        enable_output_subdirs = Option(
-            parser=_parse_bool,
-            default="no",
-            doc="Whether to create subdirectories under output_dir when saving data-sets.",
-        )
         prefect_task_runner = Option(
             default="thread_pool",
             doc="Which runner to use for Prefect flows.",
@@ -182,17 +190,24 @@ class PymorConfig:
             ),
         )
         quiet = Option(
-            default=False, doc="Whether to suppress output.", parser=_parse_bool
+            default=False,
+            doc="Whether to suppress output.",
+            parser=_parse_bool,
         )
         raise_on_no_rule = Option(
-            parser=_parse_bool,
             default="no",
             doc="Whether or not to raise an error if no rule is found for every single DataRequestVariable",
+            parser=_parse_bool,
         )
         warn_on_no_rule = Option(
-            parser=_parse_bool,
             default="yes",
             doc="Whether or not to issue a warning if no rule is found for every single DataRequestVariable",
+            parser=_parse_bool,
+        )
+        xarray_default_missing_value = Option(
+            default=1.0e30,
+            doc="Which missing value to use for xarray. Default is 1e30.",
+            parser=float,
         )
         xarray_engine = Option(
             default="netcdf4",
@@ -206,15 +221,10 @@ class PymorConfig:
                 ],
             ),
         )
-        xarray_default_missing_value = Option(
-            default=1.0e30,
-            doc="Which missing value to use for xarray. Default is 1e30.",
-            parser=float,
-        )
         xarray_skip_unit_attr_from_drv = Option(
-            parser=_parse_bool,
             default="yes",
             doc="Whether to skip setting the unit attribute from the DataRequestVariable, this can be handled via Pint",
+            parser=_parse_bool,
         )
         xarray_time_dtype = Option(
             default="float64",
@@ -227,14 +237,14 @@ class PymorConfig:
                 ],
             ),
         )
-        xarray_time_unlimited = Option(
+        xarray_time_enable_set_axis = Option(
             default="yes",
-            doc="Whether the time axis is unlimited in xarray.",
+            doc="Whether to enable setting the axis for the time axis in xarray.",
             parser=_parse_bool,
         )
-        xarray_time_set_standard_name = Option(
+        xarray_time_remove_fill_value_attr = Option(
             default="yes",
-            doc="Whether to set the standard name for the time axis in xarray.",
+            doc="Whether to remove the fill_value attribute from the time axis in xarray.",
             parser=_parse_bool,
         )
         xarray_time_set_long_name = Option(
@@ -242,20 +252,20 @@ class PymorConfig:
             doc="Whether to set the long name for the time axis in xarray.",
             parser=_parse_bool,
         )
-        xarray_time_enable_set_axis = Option(
-            parser=_parse_bool,
+        xarray_time_set_standard_name = Option(
             default="yes",
-            doc="Whether to enable setting the axis for the time axis in xarray.",
+            doc="Whether to set the standard name for the time axis in xarray.",
+            parser=_parse_bool,
         )
         xarray_time_taxis_str = Option(
-            parser=str,
             default="T",
             doc="Which axis to set for the time axis in xarray.",
+            parser=str,
         )
-        xarray_time_remove_fill_value_attr = Option(
-            parser=_parse_bool,
+        xarray_time_unlimited = Option(
             default="yes",
-            doc="Whether to remove the fill_value attribute from the time axis in xarray.",
+            doc="Whether the time axis is unlimited in xarray.",
+            parser=_parse_bool,
         )
 
 
