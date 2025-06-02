@@ -16,14 +16,15 @@ Contents
    installation
    pymor_building_blocks
    pymor_cli
+   pymor_configuration
+   pymor_saving_output
+   pymor_aux_files
    table_explorer
    pymor_on_slurm
    schemas
    standard_library
    including_custom_steps
    including_subcommand_plugins
-   pymor_configuration
-   pymor_aux_files
    pymor_fesom
    timeaveraging_frequencies
    cookbook

@@ -1,6 +1,6 @@
-=============
-Saving Output
-=============
+====================
+Usage: Saving Output
+====================
 
 This section of the documentation shows what control you have over output file generation.
 
