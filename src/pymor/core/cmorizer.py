@@ -138,6 +138,13 @@ class CMORizer:
         if self._cluster is not None:
             self._cluster.close()
 
+    @staticmethod
+    def _ensure_dask_slurm_account(jobqueue_cfg):
+        slurm_jobqueue_cfg = jobqueue_cfg.get("slurm", {})
+        if slurm_jobqueue_cfg.get("account") is None:
+            slurm_jobqueue_cfg["account"] = os.environ.get("SLURM_JOB_ACCOUNT")
+        return jobqueue_cfg
+
     def _post_init_configure_dask(self):
         """
         Sets up configuration for Dask-Distributed
@@ -149,6 +156,14 @@ class CMORizer:
         # Needed to pre-populate config
         import dask.distributed  # noqa: F401
         import dask_jobqueue  # noqa: F401
+
+        jobqueue_cfg = self._dask_cfg.get("jobqueue", {})
+        jobqueue_cfg = self._ensure_dask_slurm_account(jobqueue_cfg)
+
+        self._dask_cfg = {
+            "distributed": self._dask_cfg.get("distributed", {}),
+            "jobqueue": jobqueue_cfg,
+        }
 
         logger.info("Updating Dask configuration. Changed values will be:")
         logger.info(yaml.dump(self._dask_cfg))
