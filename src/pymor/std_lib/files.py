@@ -230,6 +230,25 @@ def split_data_timespan(ds, rule):
     return data_chunks
 
 
+def _save_dataset_with_native_timespan(
+    da,
+    rule,
+    time_label,
+    time_encoding,
+    **extra_kwargs,
+):
+    paths = []
+    datasets = split_data_timespan(da, rule)
+    for group_ds in datasets:
+        paths.append(create_filepath(group_ds, rule))
+    return xr.save_mfdataset(
+        datasets,
+        paths,
+        encoding={time_label: time_encoding},
+        **extra_kwargs,
+    )
+
+
 def save_dataset(da: xr.DataArray, rule):
     """
     Save dataset to one or more files.
@@ -313,16 +332,14 @@ def save_dataset(da: xr.DataArray, rule):
             **extra_kwargs,
         )
 
-    file_timespan = getattr(rule, "file_timespan", None)
-    if file_timespan is None:
-        paths = []
-        datasets = split_data_timespan(da, rule)
-        for group_ds in datasets:
-            paths.append(create_filepath(group_ds, rule))
-        return xr.save_mfdataset(
-            datasets,
-            paths,
-            encoding={time_label: time_encoding},
+    default_file_timespan = rule._pymor_cfg("file_timespan")
+    file_timespan = getattr(rule, "file_timespan", default_file_timespan)
+    if file_timespan == "file_native":
+        return _save_dataset_with_native_timespan(
+            da,
+            rule,
+            time_label,
+            time_encoding,
             **extra_kwargs,
         )
     else:
@@ -337,14 +354,11 @@ def save_dataset(da: xr.DataArray, rule):
                 f"file_timespan {file_timespan_as_dt} is smaller than approx_interval {dt}"
                 "falling back to timespan as defined in the source file"
             )
-            paths = []
-            datasets = split_data_timespan(da, rule)
-            for group_ds in datasets:
-                paths.append(create_filepath(group_ds, rule))
-            return xr.save_mfdataset(
-                datasets,
-                paths,
-                encoding={time_label: time_encoding},
+            return _save_dataset_with_native_timespan(
+                da,
+                rule,
+                time_label,
+                time_encoding,
                 **extra_kwargs,
             )
         else:
