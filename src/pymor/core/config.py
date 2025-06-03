@@ -160,8 +160,8 @@ class PymorConfig:
             default="1YS",
             doc="""Default timespan for grouping output files together.
 
-            Use the special flag `file_native` to use the same grouping as in the input
-            files. Otherwise, use a pandas-flavoured string, see: https://tinyurl.com/38wxf8px
+            Use the special flag ``'file_native'`` to use the same grouping as in the input
+            files. Otherwise, use a ``pandas``-flavoured string, see: https://tinyurl.com/38wxf8px
             """,
             parser=str,
         )
