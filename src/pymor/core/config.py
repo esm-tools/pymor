@@ -166,7 +166,10 @@ class PymorConfig:
             doc="Whether to run in parallel.",
             parser=_parse_bool,
         )
-        parallel_backend = Option(default="dask", doc="Which parallel backend to use.")
+        parallel_backend = Option(
+            default="dask",
+            doc="Which parallel backend to use.",
+        )
         pipeline_workflow_orchestrator = Option(
             default="prefect",
             doc="Which workflow orchestrator to use for running pipelines",
