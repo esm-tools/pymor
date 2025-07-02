@@ -1,6 +1,10 @@
+.. |logo| image:: assets/Pymor1280x640.png
+
 ===============================================
 ``pymor``: A Python package to simplify CMOR
 ===============================================
+
+.. image:: assets/Pymor.png
 
   ``pymor`` is a Python package to simplify the standardization of output into the Climate Model Output Rewriter (CMOR) standard.
 
@@ -19,6 +23,7 @@
 
 ------
 
+|logo|
 
   "Makes CMOR Simple" :-)
 
