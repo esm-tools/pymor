@@ -1,3 +1,5 @@
+.. |logo| image:: assets/Pymor1280x640.png
+
 ===============================================
 ``pymor``: A Python package to simplify CMOR
 ===============================================
@@ -21,6 +23,7 @@
 
 ------
 
+|logo|
 
   "Makes CMOR Simple" :-)
 
