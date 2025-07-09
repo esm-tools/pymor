@@ -39,8 +39,8 @@ We can submit the preprint to [arxiv](https://arxiv.org/).
 - [x] You must be a major contributor to the software you are submitting, and have a GitHub account to participate in the review process.
 - [x] Your paper must not focus on new research results accomplished with the software.
 - [ ] Your paper (`paper.md` and BibTeX files, plus any figures) must be hosted in a Git-based repository together with your software.
-> [@pgierz] This is now in progress, see PR #179 for details.
-- [-] The paper may be in a short-lived branch which is never merged with the default, although if you do this, make sure this branch is _created_ from the default so that it also includes the source code of your submission.
+> [@pgierz] This is now in progress, see [PR #179](https://github.com/esm-tools/pymor/pull/179) for details.
+- [ ] ~The paper may be in a short-lived branch which is never merged with the default, although if you do this, make sure this branch is _created_ from the default so that it also includes the source code of your submission.~
 > [@pgierz] I think this is not necessary. The paper can live in the main repository along with everything else.
 
 In addition, the software associated with your submission must:
