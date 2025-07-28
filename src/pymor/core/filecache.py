@@ -94,8 +94,10 @@ given range.
 
 import atexit
 import datetime
+import glob
 import io
 import os
+import re
 import shutil
 from pathlib import Path
 from typing import List, Optional, Union
@@ -236,6 +238,24 @@ class Filecache:
         else:
             self.df = pd.concat([self.df, pd.DataFrame(records)], ignore_index=True)
 
+    def infer_freq(self, filename: str):
+        ds = xr.open_dataset(filename, use_cftime=True)
+        t = ds.time.to_pandas()
+        if t.size == 1:
+            # we have only one time step. to infer the frequency we need to look at more silimar files
+            p = Path(filename)
+            name = p.name
+            parent = p.parent
+            pattern = re.sub(r"\d\d+", "*", name)
+            files = sorted(glob.glob(os.path.join(parent, pattern)))
+            if len(files) < 3:
+                return None
+            files = files[:4]
+            ds = xr.open_mfdataset(files, use_cftime=True)
+            t = ds.time.to_pandas()
+            return t.index.freq
+        return t.index.freq
+
     def _make_record(self, filename: str) -> pd.Series:
         """
         Internal method to create a record from a file.
@@ -265,7 +285,8 @@ class Filecache:
         record["start"] = str(t.iloc[0])
         record["end"] = str(t.iloc[-1])
         record["timespan"] = str(t.iloc[-1] - t.iloc[0])
-        record["freq"] = t.index.freq
+        # record["freq"] = t.index.freq
+        record["freq"] = self.infer_freq(filename)
         record["steps"] = t.size
         record["variable"] = list(ds.data_vars.keys()).pop()
         record["units"] = [
