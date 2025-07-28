@@ -241,7 +241,7 @@ class Filecache:
     def infer_freq(self, filename: str):
         ds = xr.open_dataset(filename, use_cftime=True)
         t = ds.time.to_pandas()
-        if t.size == 1:
+        if t.size < 3:
             # we have only one time step. to infer the frequency we need to look at more silimar files
             p = Path(filename)
             name = p.name
