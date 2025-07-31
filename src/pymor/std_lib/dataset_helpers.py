@@ -1,4 +1,4 @@
-from collections import deque, namedtuple
+from collections import deque
 
 import cftime
 import numpy as np
