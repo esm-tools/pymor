@@ -1,0 +1,649 @@
+from collections import namedtuple
+
+import numpy as np
+import pandas as pd
+import xarray as xr
+from xarray.core.extensions import (
+    register_dataarray_accessor,
+    register_dataset_accessor,
+)
+
+# Result object for frequency inference with metadata
+FrequencyResult = namedtuple(
+    "FrequencyResult",
+    [
+        "frequency",  # str or None: inferred frequency string (e.g., 'M', '2D')
+        "delta_days",  # float or None: median time delta in days
+        "step",  # int or None: step multiplier for the frequency
+        "is_exact",  # bool: whether the time series has exact regular spacing
+        "status",  # str: status message ('valid', 'irregular', 'no_match', etc.)
+    ],
+)
+
+
+# Core frequency inference
+def infer_frequency_core(
+    times, tol=0.05, return_metadata=False, strict=False, calendar="standard", log=False
+):
+    """
+    Infer time frequency from datetime-like array, returning pandas-style frequency strings.
+
+    Parameters
+    ----------
+    times : array-like
+        List of datetime-like objects (cftime or datetime64).
+    tol : float, optional
+        Tolerance for delta comparisons (in days). Defaults to 0.05.
+    return_metadata : bool, optional
+        If True, returns (frequency, median_delta, step, is_exact, status) instead of just the frequency string.
+        Defaults to False.
+    strict : bool, optional
+        If True, performs additional checks for irregular time series and returns a status message.
+        Defaults to False.
+    calendar : str, optional
+        Calendar type to use for cftime objects. Defaults to "standard".
+    log : bool, optional
+        If True, logs the results of the frequency check. Defaults to False.
+
+    Returns
+    -------
+    str or FrequencyResult
+        Inferred frequency string (e.g., 'M') or (freq, delta, step, is_exact, status) if return_metadata=True.
+    """
+    if len(times) < 2:
+        if log:
+            log_frequency_check(
+                "Time Series", None, None, None, False, "too_short", strict
+            )
+        return (
+            FrequencyResult(None, None, None, False, "too_short")
+            if return_metadata
+            else None
+        )
+
+    # Handle both pandas-like objects (with .values) and plain lists/arrays
+    try:
+        times_values = times.values if hasattr(times, "values") else times
+
+        # Handle both datetime-like objects and numeric timestamps
+        if hasattr(times_values[0], "toordinal"):
+            # For cftime objects, use a different approach for ordinal calculation
+            if hasattr(times_values[0], "calendar"):
+                # cftime objects - convert to days since a reference date
+                ref_date = times_values[0]
+                ordinals = np.array(
+                    [
+                        (t - ref_date).days
+                        + (t.hour / 24 + t.minute / 1440 + t.second / 86400)
+                        for t in times_values
+                    ]
+                )
+                # Adjust to make ordinals absolute (add reference ordinal)
+                try:
+                    ref_ordinal = ref_date.toordinal()
+                    ordinals = ordinals + ref_ordinal
+                except (AttributeError, ValueError):
+                    # If toordinal fails, use a simpler approach
+                    ordinals = np.array(
+                        [
+                            t.year * 365.25
+                            + t.month * 30.4375
+                            + t.day
+                            + t.hour / 24
+                            + t.minute / 1440
+                            + t.second / 86400
+                            for t in times_values
+                        ]
+                    )
+            else:
+                # Standard datetime objects
+                ordinals = np.array(
+                    [
+                        t.toordinal() + t.hour / 24 + t.minute / 1440 + t.second / 86400
+                        for t in times_values
+                    ]
+                )
+        else:
+            # Assume numeric timestamps (e.g., numpy.datetime64)
+            ordinals = np.array(
+                [pd.Timestamp(t).to_julian_date() for t in times_values]
+            )
+
+    except (AttributeError, TypeError, ValueError) as e:
+        error_status = f"invalid_input: {str(e)}"
+        if log:
+            log_frequency_check(
+                "Time Series", None, None, None, False, error_status, strict
+            )
+        if return_metadata:
+            return FrequencyResult(None, None, None, False, error_status)
+        return None
+    deltas = np.diff(ordinals)
+    median_delta = np.median(deltas)
+    std_delta = np.std(deltas)
+
+    year_days = {
+        "standard": 365.25,
+        "gregorian": 365.25,
+        "noleap": 365.0,
+        "360_day": 360.0,
+    }.get(calendar, 365.25)
+
+    base_freqs = {
+        "H": 1 / 24,
+        "D": 1,
+        "W": 7,
+        "M": year_days / 12,
+        "Q": year_days / 4,
+        "A": year_days,
+        "10A": year_days * 10,
+    }
+
+    matched_freq = None
+    matched_step = None
+    for freq, base_days in base_freqs.items():
+        for step in range(1, 13):
+            test_delta = base_days * step
+            if abs(median_delta - test_delta) <= tol * test_delta:
+                matched_freq = freq
+                matched_step = step
+                break
+        if matched_freq:
+            break
+
+    if matched_freq is None:
+        # For irregular time series, try to find the closest match with relaxed tolerance
+        relaxed_tol = 0.5  # Much more relaxed tolerance for irregular data
+        for freq, base_days in base_freqs.items():
+            for step in range(1, 13):
+                test_delta = base_days * step
+                if abs(median_delta - test_delta) <= relaxed_tol * test_delta:
+                    matched_freq = freq
+                    matched_step = step
+                    break
+            if matched_freq:
+                break
+
+        if matched_freq is None:
+            if log:
+                log_frequency_check(
+                    "Time Series", None, median_delta, None, False, "no_match", strict
+                )
+            return (
+                FrequencyResult(None, median_delta, None, False, "no_match")
+                if return_metadata
+                else None
+            )
+
+    is_exact = std_delta < tol * (base_freqs[matched_freq] * matched_step)
+    status = "valid" if is_exact else "irregular"
+
+    if strict:
+        expected_steps = (ordinals[-1] - ordinals[0]) / (
+            base_freqs[matched_freq] * matched_step
+        )
+        actual_steps = len(times) - 1
+        if not np.all(np.abs(deltas - median_delta) <= tol * median_delta):
+            status = "irregular"
+            is_exact = False  # Fix: Update is_exact to be consistent
+        if abs(expected_steps - actual_steps) >= 1:
+            status = "missing_steps"
+            is_exact = False  # Fix: Update is_exact to be consistent
+
+    freq_str = f"{matched_step}{matched_freq}" if matched_step > 1 else matched_freq
+
+    # Log the results if requested
+    if log:
+        log_frequency_check(
+            "Time Series",
+            freq_str,
+            median_delta,
+            matched_step,
+            is_exact,
+            status,
+            strict,
+        )
+
+    return (
+        FrequencyResult(freq_str, median_delta, matched_step, is_exact, status)
+        if return_metadata
+        else freq_str
+    )
+
+
+# xarray fallback
+def infer_frequency(
+    times, return_metadata=False, strict=False, calendar="standard", log=False
+):
+    """
+    Infer time frequency from datetime-like array, returning pandas-style frequency strings.
+
+    Parameters
+    ----------
+    times : array-like
+        List of datetime-like objects (cftime or datetime64).
+    return_metadata : bool, optional
+        If True, returns (frequency, median_delta, step, is_exact, status) instead of just the frequency string.
+        Defaults to False.
+    strict : bool, optional
+        If True, performs additional checks for irregular time series and returns a status message.
+        Defaults to False.
+    calendar : str, optional
+        Calendar type to use for cftime objects. Defaults to "standard".
+    log : bool, optional
+        If True, logs the results of the frequency check. Defaults to False.
+
+    Returns
+    -------
+    str or FrequencyResult
+        Inferred frequency string (e.g., 'M') or (freq, delta, step, is_exact, status) if return_metadata=True.
+    """
+    try:
+        freq = xr.infer_freq(times)
+        if freq is not None:
+            if log:
+                log_frequency_check("Time Series", freq, None, 1, True, "valid", strict)
+            return (
+                FrequencyResult(freq, None, 1, True, "valid")
+                if return_metadata
+                else freq
+            )
+    except Exception:
+        pass
+    return infer_frequency_core(
+        times,
+        return_metadata=return_metadata,
+        strict=strict,
+        calendar=calendar,
+        log=log,
+    )
+
+
+# Logger
+def log_frequency_check(name, freq, delta, step, exact, status, strict=False):
+    """
+    Log the results of the frequency check.
+    """
+    print(f"[Freq Check] {name}")
+    print(f"  → Inferred Frequency : {freq or 'None'}")
+    print(f"  → Step Multiple      : {step or 'None'}")
+
+    # Handle None delta values safely
+    if delta is not None:
+        print(f"  → Median Δ (days)    : {delta:.2f}")
+    else:
+        print("  → Median Δ (days)    : None")
+
+    print(f"  → Regular Spacing    : {'✅' if exact else '❌'}")
+    print(f"  → Strict Mode        : {'✅' if strict else '❌'}")
+    print(f"  → Status             : {status}")
+    print("-" * 40)
+
+
+# Compare with CMIP6 approx_interval
+def is_resolution_fine_enough(
+    times,
+    target_approx_interval,
+    calendar="standard",
+    strict=True,
+    tolerance=0.01,
+    log=True,
+):
+    result = infer_frequency(
+        times, return_metadata=True, strict=strict, calendar=calendar, log=False
+    )
+
+    if result is None:
+        if log:
+            print("[Temporal Resolution Check]")
+            print("  → Error: Could not infer frequency from time data")
+            print("-" * 40)
+        return {
+            "inferred_interval": None,
+            "comparison_status": "unknown",
+            "is_valid_for_resampling": False,
+        }
+
+    # Extract values from FrequencyResult namedtuple
+    freq = result.frequency
+    delta = result.delta_days
+    exact = result.is_exact
+    status = result.status
+
+    if delta is None:
+        if log:
+            print("[Temporal Resolution Check]")
+            print(f"  → Inferred Frequency     : {freq or 'unknown'}")
+            print(f"  → Status                 : {status}")
+            print("  → Valid for Resampling   : ❌ (could not determine time delta)")
+            print("-" * 40)
+        return {
+            "inferred_interval": None,
+            "comparison_status": status,
+            "is_valid_for_resampling": False,
+        }
+
+    comparison_status = status
+    if not exact or status in ("irregular", "missing_steps"):
+        is_valid = False
+    elif delta < target_approx_interval - tolerance:
+        comparison_status = "finer"
+        is_valid = True
+    elif abs(delta - target_approx_interval) <= tolerance:
+        comparison_status = "equal"
+        is_valid = True
+    else:
+        comparison_status = "coarser"
+        is_valid = False
+
+    if log:
+        print("[Temporal Resolution Check]")
+        print(
+            f"  → Inferred Frequency     : {freq or 'unknown'} (Δ ≈ {delta:.4f} days)"
+        )
+        print(f"  → Target Approx Interval : {target_approx_interval:.4f} days")
+        print(f"  → Comparison Status      : {comparison_status}")
+        print(f"  → Valid for Resampling   : {'✅' if is_valid else '❌'}")
+        if status not in (None, "valid"):
+            print(f"  → Status Message        : {status}")
+        print("-" * 40)
+
+    return {
+        "inferred_interval": delta,
+        "comparison_status": comparison_status,
+        "is_valid_for_resampling": is_valid,
+        "status": status,
+    }
+
+
+# xarray accessor is named "timefreq" at the moment instead of "pymor" as project name is not yet final.
+
+
+@register_dataarray_accessor("timefreq")
+class TimeFrequencyAccessor:
+    def __init__(self, xarray_obj):
+        self._obj = xarray_obj
+
+    def infer_frequency(
+        self, strict=False, calendar="standard", log=True, time_dim="time"
+    ):
+        """
+        Infer time frequency from datetime-like array, returning pandas-style frequency strings.
+
+        Parameters
+        ----------
+        strict : bool, optional
+            If True, performs additional checks for irregular time series and returns a status message.
+            Defaults to False.
+        calendar : str, optional
+            Calendar type to use for cftime objects. Defaults to "standard".
+        log : bool, optional
+            If True, logs the results of the frequency check. Defaults to False.
+        time_dim : str, optional
+            Name of the time dimension in the DataArray. Defaults to "time".
+
+        Returns
+        -------
+        str or FrequencyResult
+            Inferred frequency string (e.g., 'M') or (freq, delta, step, is_exact, status) if return_metadata=True.
+        """
+        # Check if this is a DataArray with time coordinates or a time coordinate itself
+        if hasattr(self._obj, "dims") and time_dim in self._obj.dims:
+            # This is a DataArray with a time dimension - get the time coordinate
+            times = self._obj.coords[time_dim].values
+        else:
+            # This is likely a time coordinate DataArray itself
+            times = self._obj.values
+
+        result = infer_frequency(
+            times, return_metadata=True, strict=strict, calendar=calendar, log=False
+        )
+        if log:
+            log_frequency_check(
+                self._obj.name or "Unnamed Time Axis",
+                result.frequency,
+                result.delta_days,
+                result.step,
+                result.is_exact,
+                result.status,
+                strict,
+            )
+        return {
+            "frequency": result.frequency,
+            "step": result.step,
+            "delta_days": result.delta_days,
+            "is_exact": result.is_exact,
+            "status": result.status,
+        }
+
+    def check_resolution(
+        self,
+        target_approx_interval,
+        calendar="standard",
+        strict=True,
+        tolerance=0.01,
+        log=True,
+        time_dim="time",
+    ):
+        """
+        Check if the time resolution is fine enough for resampling.
+
+        Parameters
+        ----------
+        target_approx_interval : float
+            Expected interval in days for the target frequency
+        calendar : str, optional
+            Calendar type, by default "standard"
+        strict : bool, optional
+            If True, performs additional checks for irregular time series and returns a status message.
+            Defaults to True.
+        tolerance : float, optional
+            Tolerance for time interval comparison, by default 0.01
+        log : bool, optional
+            If True, logs the results of the frequency check. Defaults to True.
+        time_dim : str, optional
+            Name of the time dimension, by default "time"
+
+        Returns
+        -------
+        dict
+            Dictionary containing the inferred interval, comparison status, and validity for resampling.
+        """
+        # Check if this is a DataArray with time coordinates or a time coordinate itself
+        if hasattr(self._obj, "dims") and time_dim in self._obj.dims:
+            # This is a DataArray with a time dimension - get the time coordinate
+            times = self._obj.coords[time_dim].values
+        else:
+            # This is likely a time coordinate DataArray itself
+            times = self._obj.values
+
+        return is_resolution_fine_enough(
+            times, target_approx_interval, calendar, strict, tolerance, log
+        )
+
+    def resample_safe(
+        self,
+        freq_str,
+        target_approx_interval,
+        calendar="standard",
+        method="mean",
+        time_dim="time",
+        tolerance=0.01,
+        **resample_kwargs,
+    ):
+        """Safely resample time series data after checking temporal resolution.
+
+        Parameters
+        ----------
+        freq_str : str
+            Target frequency string (e.g., 'M' for monthly)
+        target_approx_interval : float
+            Expected interval in days for the target frequency
+        calendar : str, optional
+            Calendar type, by default "standard"
+        method : str or dict, optional
+            Resampling method, by default "mean"
+        time_dim : str, optional
+            Name of the time dimension, by default "time"
+        tolerance : float, optional
+            Tolerance for time interval comparison, by default 0.01
+        **resample_kwargs
+            Additional arguments passed to xarray's resample
+
+        Returns
+        -------
+        xarray.DataArray
+            Resampled data
+
+        Raises
+        ------
+        ValueError
+            If the time resolution is too coarse for the target frequency
+        """
+        # First check if resolution is appropriate
+        check = self.check_resolution(
+            target_approx_interval=target_approx_interval,
+            calendar=calendar,
+            strict=True,
+            tolerance=tolerance,
+            log=True,
+        )
+
+        if not check["is_valid_for_resampling"]:
+            # For test compatibility, use the expected error message format
+            raise ValueError("time resolution too coarse")
+
+        # If we get here, it's safe to resample
+        resampled = self._obj.resample({time_dim: freq_str}, **resample_kwargs)
+
+        # Apply the specified method (mean, sum, etc.)
+        if isinstance(method, str):
+            resampled = getattr(resampled, method)()
+        elif isinstance(method, dict):
+            resampled = resampled.agg(method)
+        else:
+            raise ValueError(
+                f"Unsupported method type: {type(method)}. Expected str or dict."
+            )
+
+        return resampled
+
+
+@register_dataset_accessor("timefreq")
+class DatasetFrequencyAccessor:
+    def __init__(self, ds):
+        self._ds = ds
+
+    def infer_frequency(self, time_dim="time", **kwargs):
+        """
+        Infer time frequency from datetime-like array, returning pandas-style frequency strings.
+
+        Parameters
+        ----------
+        time_dim : str, optional
+            Name of the time dimension in the Dataset. Defaults to "time".
+        **kwargs
+            Additional arguments passed to infer_frequency.
+
+        Returns
+        -------
+        str or FrequencyResult
+            Inferred frequency string (e.g., 'M') or (freq, delta, step, is_exact, status) if return_metadata=True.
+        """
+        if time_dim not in self._ds:
+            raise ValueError(f"Time dimension '{time_dim}' not found.")
+        return self._ds[time_dim].timefreq.infer_frequency(**kwargs)
+
+    def resample_safe(
+        self,
+        freq_str,
+        target_approx_interval,
+        time_dim="time",
+        calendar="standard",
+        method="mean",
+        tolerance=0.01,
+        **resample_kwargs,
+    ):
+        """Safely resample dataset time series data after checking temporal resolution.
+
+        Parameters
+        ----------
+        freq_str : str
+            Target frequency string (e.g., 'M' for monthly)
+        target_approx_interval : float
+            Expected interval in days for the target frequency
+        time_dim : str, optional
+            Name of the time dimension, by default "time"
+        calendar : str, optional
+            Calendar type, by default "standard"
+        method : str or dict, optional
+            Resampling method, by default "mean"
+        tolerance : float, optional
+            Tolerance for time interval comparison, by default 0.01
+        **resample_kwargs
+            Additional arguments passed to xarray's resample
+
+        Returns
+        -------
+        xarray.Dataset
+            Resampled dataset
+
+        Raises
+        ------
+        ValueError
+            If the time resolution is too coarse for the target frequency
+        """
+        if time_dim not in self._ds:
+            raise ValueError(f"Time dimension '{time_dim}' not found in dataset.")
+
+        # First check if resolution is appropriate using the time coordinate
+        check = self._ds[time_dim].timefreq.check_resolution(
+            target_approx_interval=target_approx_interval,
+            calendar=calendar,
+            strict=True,
+            tolerance=tolerance,
+            log=True,
+        )
+
+        if not check["is_valid_for_resampling"]:
+            # For test compatibility, use the expected error message format
+            raise ValueError("time resolution too coarse")
+
+        # If we get here, it's safe to resample the entire dataset
+        resampled = self._ds.resample({time_dim: freq_str}, **resample_kwargs)
+
+        # Apply the specified method (mean, sum, etc.)
+        if isinstance(method, str):
+            resampled_ds = getattr(resampled, method)()
+        elif isinstance(method, dict):
+            resampled_ds = resampled.agg(method)
+        else:
+            raise ValueError(
+                f"Unsupported method type: {type(method)}. Expected str or dict."
+            )
+
+        return resampled_ds
+
+    def check_resolution(self, target_approx_interval, time_dim="time", **kwargs):
+        """
+        Check if the time resolution is fine enough for resampling.
+
+        Parameters
+        ----------
+        target_approx_interval : float
+            Expected interval in days for the target frequency
+        time_dim : str, optional
+            Name of the time dimension, by default "time"
+        **kwargs
+            Additional arguments passed to check_resolution.
+
+        Returns
+        -------
+        dict
+            Dictionary containing the inferred interval, comparison status, and validity for resampling.
+        """
+        if time_dim not in self._ds:
+            raise ValueError(f"Time dimension '{time_dim}' not found.")
+        return self._ds[time_dim].timefreq.check_resolution(
+            target_approx_interval, **kwargs
+        )

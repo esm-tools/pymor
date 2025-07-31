@@ -108,7 +108,7 @@ import pandas as pd
 import xarray as xr
 from imohash import hashfile
 from tqdm.contrib.concurrent import process_map
-from pymor.std_lib.dataset_helpers import infer_frequency
+from pymor.std_lib.infer_freq import infer_frequency
 
 
 CACHE_FILE = "~/.cache/pymor_filecache.csv"
