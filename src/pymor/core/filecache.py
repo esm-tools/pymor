@@ -94,13 +94,10 @@ given range.
 
 import atexit
 import datetime
-import glob
 import io
 import os
-import re
 import shutil
 from pathlib import Path
-from termios import NCC
 from typing import List, Optional, Union
 
 import numpy as np
@@ -108,8 +105,8 @@ import pandas as pd
 import xarray as xr
 from imohash import hashfile
 from tqdm.contrib.concurrent import process_map
-from pymor.std_lib.infer_freq import infer_frequency
 
+from pymor.std_lib.infer_freq import infer_frequency
 
 CACHE_FILE = "~/.cache/pymor_filecache.csv"
 
@@ -248,7 +245,7 @@ class Filecache:
         filepath = info.filepath
         dirname = os.path.dirname(filepath)
         variable = info.variable
-        # we need variable records from this directory only. 
+        # we need variable records from this directory only.
         mask = self.df.filepath.str.startswith(dirname)
         df = self.df[mask]
         df = df[df.variable == variable]
@@ -584,10 +581,3 @@ def register_cache(ds):
     filename = ds.encoding["source"]
     fc.add_file(filename)
     return ds
-
-
-cache =Filecache.load()
-cache.get(fgco2_Omon_AWI-AWI-CM-1-1-HR_piControl_r1i1p1f1_gn_300212-300311.nc)
-#freq=None
-fgco2_Omon_AWI-AWI-CM-1-1-HR_piControl_r1i1p1f1_gn_*-*.NCC
-start
