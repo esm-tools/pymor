@@ -100,6 +100,7 @@ import os
 import re
 import shutil
 from pathlib import Path
+from termios import NCC
 from typing import List, Optional, Union
 
 import numpy as np
@@ -107,6 +108,8 @@ import pandas as pd
 import xarray as xr
 from imohash import hashfile
 from tqdm.contrib.concurrent import process_map
+from pymor.std_lib.dataset_helpers import infer_frequency
+
 
 CACHE_FILE = "~/.cache/pymor_filecache.csv"
 
@@ -239,22 +242,19 @@ class Filecache:
             self.df = pd.concat([self.df, pd.DataFrame(records)], ignore_index=True)
 
     def infer_freq(self, filename: str):
-        ds = xr.open_dataset(filename, use_cftime=True)
-        t = ds.time.to_pandas()
-        if t.size < 3:
-            # we have only one time step. to infer the frequency we need to look at more silimar files
-            p = Path(filename)
-            name = p.name
-            parent = p.parent
-            pattern = re.sub(r"\d\d+", "*", name)
-            files = sorted(glob.glob(os.path.join(parent, pattern)))
-            if len(files) < 3:
-                return None
-            files = files[:4]
-            ds = xr.open_mfdataset(files, use_cftime=True)
-            t = ds.time.to_pandas()
-            return t.index.freq
-        return t.index.freq
+        info = self.get(filename)
+        if info.freq is not None:
+            return info.freq
+        filepath = info.filepath
+        dirname = os.path.dirname(filepath)
+        variable = info.variable
+        # we need variable records from this directory only. 
+        mask = self.df.filepath.str.startswith(dirname)
+        df = self.df[mask]
+        df = df[df.variable == variable]
+        dates = df.start.sort_values().values
+        dates = [pd.Timestamp(d) for d in dates]
+        return infer_frequency(dates, log=True)
 
     def _make_record(self, filename: str) -> pd.Series:
         """
@@ -285,8 +285,7 @@ class Filecache:
         record["start"] = str(t.iloc[0])
         record["end"] = str(t.iloc[-1])
         record["timespan"] = str(t.iloc[-1] - t.iloc[0])
-        # record["freq"] = t.index.freq
-        record["freq"] = self.infer_freq(filename)
+        record["freq"] = t.index.freq
         record["steps"] = t.size
         record["variable"] = list(ds.data_vars.keys()).pop()
         record["units"] = [
@@ -585,3 +584,10 @@ def register_cache(ds):
     filename = ds.encoding["source"]
     fc.add_file(filename)
     return ds
+
+
+cache =Filecache.load()
+cache.get(fgco2_Omon_AWI-AWI-CM-1-1-HR_piControl_r1i1p1f1_gn_300212-300311.nc)
+#freq=None
+fgco2_Omon_AWI-AWI-CM-1-1-HR_piControl_r1i1p1f1_gn_*-*.NCC
+start
