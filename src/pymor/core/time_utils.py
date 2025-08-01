@@ -51,15 +51,16 @@ def get_time_label(ds):
     >>> import xarray as xr
     >>> import pandas as pd
     >>> import numpy as np
-    >>> ds = xr.Dataset({'time': ('time', pd.date_range('2000-01-01', periods=10))})
+    >>> ds = xr.Dataset({'temperature': (['time'], [20, 21, 22])},
+                        coords={'time': pd.date_range('2000-01-01', periods=3)})
     >>> get_time_label(ds)
     'time'
-    >>> ds = xr.DataArray(np.ones(10), coords={'T': ('T', pd.date_range('2000-01-01', periods=10))})
-    >>> get_time_label(ds)
+    >>> da = xr.DataArray(np.ones(3), coords={'T': ('T', pd.date_range('2000-01-01', periods=3))})
+    >>> get_time_label(da)
     'T'
-    >>> # The following does have a valid time coordinate, expected to return None
-    >>> da = xr.Dataset({'time': ('time', [1,2,3,4,5])})
-    >>> get_time_label(da) is None
+    >>> # The following does not have a valid time coordinate, expected to return None
+    >>> ds_no_time = xr.Dataset({'temperature': (['x'], [20, 21, 22])}, coords={'x': [1, 2, 3]})
+    >>> get_time_label(ds_no_time) is None
     True
     """
     # Find all datetime coordinates that have dimensions
