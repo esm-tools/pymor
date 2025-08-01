@@ -8,6 +8,8 @@ from xarray.core.extensions import (
     register_dataset_accessor,
 )
 
+from .time_utils import get_time_label
+
 # Result object for frequency inference with metadata
 FrequencyResult = namedtuple(
     "FrequencyResult",
@@ -35,11 +37,11 @@ def infer_frequency_core(
     tol : float, optional
         Tolerance for delta comparisons (in days). Defaults to 0.05.
     return_metadata : bool, optional
-        If True, returns (frequency, median_delta, step, is_exact, status) instead of just the frequency string.
-        Defaults to False.
+        If True, returns (frequency, median_delta, step, is_exact, status)
+        instead of just the frequency string. Defaults to False.
     strict : bool, optional
-        If True, performs additional checks for irregular time series and returns a status message.
-        Defaults to False.
+        If True, performs additional checks for irregular time series and
+        returns a status message. Defaults to False.
     calendar : str, optional
         Calendar type to use for cftime objects. Defaults to "standard".
     log : bool, optional
@@ -48,7 +50,8 @@ def infer_frequency_core(
     Returns
     -------
     str or FrequencyResult
-        Inferred frequency string (e.g., 'M') or (freq, delta, step, is_exact, status) if return_metadata=True.
+        Inferred frequency string (e.g., 'M') or
+        (freq, delta, step, is_exact, status) if return_metadata=True.
     """
     if len(times) < 2:
         if log:
@@ -223,11 +226,11 @@ def infer_frequency(
     times : array-like
         List of datetime-like objects (cftime or datetime64).
     return_metadata : bool, optional
-        If True, returns (frequency, median_delta, step, is_exact, status) instead of just the frequency string.
-        Defaults to False.
+        If True, returns (frequency, median_delta, step, is_exact, status)
+        instead of just the frequency string. Defaults to False.
     strict : bool, optional
-        If True, performs additional checks for irregular time series and returns a status message.
-        Defaults to False.
+        If True, performs additional checks for irregular time series and
+        returns a status message. Defaults to False.
     calendar : str, optional
         Calendar type to use for cftime objects. Defaults to "standard".
     log : bool, optional
@@ -236,7 +239,8 @@ def infer_frequency(
     Returns
     -------
     str or FrequencyResult
-        Inferred frequency string (e.g., 'M') or (freq, delta, step, is_exact, status) if return_metadata=True.
+        Inferred frequency string (e.g., 'M') or (freq, delta, step, is_exact, status)
+        if return_metadata=True.
     """
     try:
         freq = xr.infer_freq(times)
@@ -356,7 +360,8 @@ def is_resolution_fine_enough(
     }
 
 
-# xarray accessor is named "timefreq" at the moment instead of "pymor" as project name is not yet final.
+# xarray accessor is named "timefreq" at the moment instead of "pymor" as
+# project name is not yet finalized.
 
 
 @register_dataarray_accessor("timefreq")
@@ -365,28 +370,40 @@ class TimeFrequencyAccessor:
         self._obj = xarray_obj
 
     def infer_frequency(
-        self, strict=False, calendar="standard", log=True, time_dim="time"
+        self, strict=False, calendar="standard", log=True, time_dim=None
     ):
         """
-        Infer time frequency from datetime-like array, returning pandas-style frequency strings.
+        Infer time frequency from datetime-like array, returning pandas-style
+        frequency strings.
 
         Parameters
         ----------
         strict : bool, optional
-            If True, performs additional checks for irregular time series and returns a status message.
-            Defaults to False.
+            If True, performs additional checks for irregular time series and
+            returns a status message. Defaults to False.
         calendar : str, optional
             Calendar type to use for cftime objects. Defaults to "standard".
         log : bool, optional
             If True, logs the results of the frequency check. Defaults to False.
         time_dim : str, optional
-            Name of the time dimension in the DataArray. Defaults to "time".
+            Name of the time dimension in the DataArray. If None, automatically
+            detects the time dimension using `get_time_label`. Defaults to None.
 
         Returns
         -------
         str or FrequencyResult
-            Inferred frequency string (e.g., 'M') or (freq, delta, step, is_exact, status) if return_metadata=True.
+            Inferred frequency string (e.g., 'M') or
+            (freq, delta, step, is_exact, status) if return_metadata=True.
         """
+        # Auto-detect time dimension if not provided
+        if time_dim is None:
+            time_dim = get_time_label(self._obj)
+            if time_dim is None:
+                raise ValueError(
+                    "No datetime coordinate found in DataArray."
+                    " Please specify time_dim manually."
+                )
+
         # Check if this is a DataArray with time coordinates or a time coordinate itself
         if hasattr(self._obj, "dims") and time_dim in self._obj.dims:
             # This is a DataArray with a time dimension - get the time coordinate
@@ -423,7 +440,7 @@ class TimeFrequencyAccessor:
         strict=True,
         tolerance=0.01,
         log=True,
-        time_dim="time",
+        time_dim=None,
     ):
         """
         Check if the time resolution is fine enough for resampling.
@@ -435,20 +452,31 @@ class TimeFrequencyAccessor:
         calendar : str, optional
             Calendar type, by default "standard"
         strict : bool, optional
-            If True, performs additional checks for irregular time series and returns a status message.
-            Defaults to True.
+            If True, performs additional checks for irregular time series and
+            returns a status message. Defaults to True.
         tolerance : float, optional
             Tolerance for time interval comparison, by default 0.01
         log : bool, optional
             If True, logs the results of the frequency check. Defaults to True.
         time_dim : str, optional
-            Name of the time dimension, by default "time"
+            Name of the time dimension. If None, automatically detects
+            the time dimension using get_time_label. Defaults to None.
 
         Returns
         -------
         dict
-            Dictionary containing the inferred interval, comparison status, and validity for resampling.
+            Dictionary containing the inferred interval, comparison status,
+            and validity for resampling.
         """
+        # Auto-detect time dimension if not provided
+        if time_dim is None:
+            time_dim = get_time_label(self._obj)
+            if time_dim is None:
+                raise ValueError(
+                    "No datetime coordinate found in DataArray."
+                    " Please specify time_dim manually."
+                )
+
         # Check if this is a DataArray with time coordinates or a time coordinate itself
         if hasattr(self._obj, "dims") and time_dim in self._obj.dims:
             # This is a DataArray with a time dimension - get the time coordinate
@@ -467,7 +495,7 @@ class TimeFrequencyAccessor:
         target_approx_interval,
         calendar="standard",
         method="mean",
-        time_dim="time",
+        time_dim=None,
         tolerance=0.01,
         **resample_kwargs,
     ):
@@ -484,7 +512,8 @@ class TimeFrequencyAccessor:
         method : str or dict, optional
             Resampling method, by default "mean"
         time_dim : str, optional
-            Name of the time dimension, by default "time"
+            Name of the time dimension. If None, automatically detects
+            the time dimension using get_time_label. Defaults to None.
         tolerance : float, optional
             Tolerance for time interval comparison, by default 0.01
         **resample_kwargs
@@ -500,6 +529,14 @@ class TimeFrequencyAccessor:
         ValueError
             If the time resolution is too coarse for the target frequency
         """
+        # Auto-detect time dimension if not provided
+        if time_dim is None:
+            time_dim = get_time_label(self._obj)
+            if time_dim is None:
+                raise ValueError(
+                    "No datetime coordinate found in DataArray."
+                    " Please specify time_dim manually."
+                )
         # First check if resolution is appropriate
         check = self.check_resolution(
             target_approx_interval=target_approx_interval,
@@ -534,37 +571,50 @@ class DatasetFrequencyAccessor:
     def __init__(self, ds):
         self._ds = ds
 
-    def infer_frequency(self, time_dim="time", **kwargs):
+    def infer_frequency(self, time_dim=None, **kwargs):
         """
-        Infer time frequency from datetime-like array, returning pandas-style frequency strings.
+        Infer time frequency from datetime-like array, returning pandas-style
+        frequency strings.
 
         Parameters
         ----------
         time_dim : str, optional
-            Name of the time dimension in the Dataset. Defaults to "time".
+            Name of the time dimension in the Dataset. If None, automatically
+            detects the time dimension using get_time_label. Defaults to None.
         **kwargs
             Additional arguments passed to infer_frequency.
 
         Returns
         -------
         str or FrequencyResult
-            Inferred frequency string (e.g., 'M') or (freq, delta, step, is_exact, status) if return_metadata=True.
+            Inferred frequency string (e.g., 'M') or
+            (freq, delta, step, is_exact, status) if return_metadata=True.
         """
+        # Auto-detect time dimension if not provided
+        if time_dim is None:
+            time_dim = get_time_label(self._ds)
+            if time_dim is None:
+                raise ValueError(
+                    "No datetime coordinate found in Dataset."
+                    " Please specify time_dim manually."
+                )
+
         if time_dim not in self._ds:
             raise ValueError(f"Time dimension '{time_dim}' not found.")
-        return self._ds[time_dim].timefreq.infer_frequency(**kwargs)
+        return self._ds[time_dim].timefreq.infer_frequency(time_dim=time_dim, **kwargs)
 
     def resample_safe(
         self,
         freq_str,
         target_approx_interval,
-        time_dim="time",
+        time_dim=None,
         calendar="standard",
         method="mean",
         tolerance=0.01,
         **resample_kwargs,
     ):
-        """Safely resample dataset time series data after checking temporal resolution.
+        """Safely resample dataset time series data after checking temporal
+        resolution.
 
         Parameters
         ----------
@@ -573,7 +623,8 @@ class DatasetFrequencyAccessor:
         target_approx_interval : float
             Expected interval in days for the target frequency
         time_dim : str, optional
-            Name of the time dimension, by default "time"
+            Name of the time dimension. If None, automatically detects
+            the time dimension using get_time_label. Defaults to None.
         calendar : str, optional
             Calendar type, by default "standard"
         method : str or dict, optional
@@ -593,6 +644,15 @@ class DatasetFrequencyAccessor:
         ValueError
             If the time resolution is too coarse for the target frequency
         """
+        # Auto-detect time dimension if not provided
+        if time_dim is None:
+            time_dim = get_time_label(self._ds)
+            if time_dim is None:
+                raise ValueError(
+                    "No datetime coordinate found in Dataset."
+                    " Please specify time_dim manually."
+                )
+
         if time_dim not in self._ds:
             raise ValueError(f"Time dimension '{time_dim}' not found in dataset.")
 
@@ -624,7 +684,7 @@ class DatasetFrequencyAccessor:
 
         return resampled_ds
 
-    def check_resolution(self, target_approx_interval, time_dim="time", **kwargs):
+    def check_resolution(self, target_approx_interval, time_dim=None, **kwargs):
         """
         Check if the time resolution is fine enough for resampling.
 
@@ -633,15 +693,26 @@ class DatasetFrequencyAccessor:
         target_approx_interval : float
             Expected interval in days for the target frequency
         time_dim : str, optional
-            Name of the time dimension, by default "time"
+            Name of the time dimension. If None, automatically detects
+            the time dimension using get_time_label. Defaults to None.
         **kwargs
             Additional arguments passed to check_resolution.
 
         Returns
         -------
         dict
-            Dictionary containing the inferred interval, comparison status, and validity for resampling.
+            Dictionary containing the inferred interval, comparison status,
+            and validity for resampling.
         """
+        # Auto-detect time dimension if not provided
+        if time_dim is None:
+            time_dim = get_time_label(self._ds)
+            if time_dim is None:
+                raise ValueError(
+                    "No datetime coordinate found in Dataset."
+                    " Please specify time_dim manually."
+                )
+
         if time_dim not in self._ds:
             raise ValueError(f"Time dimension '{time_dim}' not found.")
         return self._ds[time_dim].timefreq.check_resolution(
