@@ -16,7 +16,7 @@ def is_cftime_type(arr: np.ndarray) -> bool:
     """Checks if array elements are cftime objects"""
     if arr.size == 0:
         return False
-    
+
     # Check if the first element is a cftime object
     try:
         first_item = arr.item(0)
