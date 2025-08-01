@@ -14,7 +14,16 @@ import xarray as xr
 
 def is_cftime_type(arr: np.ndarray) -> bool:
     """Checks if array elements are cftime objects"""
-    return isinstance(arr.item(0), tuple(cftime._cftime.DATE_TYPES.values()))
+    if arr.size == 0:
+        return False
+    
+    # Check if the first element is a cftime object
+    try:
+        first_item = arr.item(0)
+        # Check if it's an instance of cftime.datetime (base class for all cftime types)
+        return isinstance(first_item, cftime.datetime)
+    except (IndexError, ValueError):
+        return False
 
 
 def is_datetime_type(arr: np.ndarray) -> bool:

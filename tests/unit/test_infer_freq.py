@@ -350,13 +350,12 @@ def test_is_datetime_type_empty_arrays():
     # Empty regular array
     empty_int = np.array([], dtype=int)
 
-    # Note: These might raise IndexError due to arr.item(0) call in is_cftime_type
-    # Testing the expected behavior based on the current implementation
-    with pytest.raises(IndexError):
-        is_datetime_type(empty_dt)
-
-    with pytest.raises(IndexError):
-        is_datetime_type(empty_int)
+    # After fixing is_cftime_type, empty arrays should be handled gracefully
+    # Empty datetime64 array should return True (dtype is datetime64)
+    assert is_datetime_type(empty_dt)
+    
+    # Empty integer array should return False (dtype is not datetime)
+    assert not is_datetime_type(empty_int)
 
 
 def test_is_datetime_type_single_element_arrays():
