@@ -51,8 +51,10 @@ def get_time_label(ds):
     >>> import xarray as xr
     >>> import pandas as pd
     >>> import numpy as np
-    >>> ds = xr.Dataset({'temperature': (['time'], [20, 21, 22])},
-                        coords={'time': pd.date_range('2000-01-01', periods=3)})
+    >>> ds = xr.Dataset(
+    ...     {'temperature': (['time'], [20, 21, 22])},
+    ...     coords={'time': pd.date_range('2000-01-01', periods=3)}
+    ... )
     >>> get_time_label(ds)
     'time'
     >>> da = xr.DataArray(np.ones(3), coords={'T': ('T', pd.date_range('2000-01-01', periods=3))})
