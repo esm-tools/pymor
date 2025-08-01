@@ -86,3 +86,55 @@ def test_skip_grid_setting_if_no_matching_dimension_in_data_is_found(fake_grid_f
     assert "lon" not in new_da.coords
     assert "lon_bnds" not in new_da.coords
     assert "lat_bnds" not in new_da.coords
+
+
+def test_setgrid_with_grid_without_boundary_variables(tmp_path):
+    """Test setgrid behavior when grid file doesn't have lat_bnds/lon_bnds."""
+    # Create a minimal grid without boundary variables
+    ncells = 100
+    lat = np.linspace(-90, 90, ncells)
+    lon = np.linspace(-180, 180, ncells)
+
+    minimal_grid = xr.Dataset(
+        data_vars=dict(
+            # Only include some other variables, no lat_bnds/lon_bnds
+            cell_area=(["ncells"], np.ones(ncells)),
+        ),
+        coords=dict(
+            lon=("ncells", lon),
+            lat=("ncells", lat),
+        ),
+        attrs=dict(description="minimal grid without boundary variables"),
+    )
+
+    # Save to temporary file
+    grid_file = tmp_path / "minimal_grid.nc"
+    minimal_grid.to_netcdf(grid_file)
+
+    # Test setgrid with this minimal grid
+    rule = {"grid_file": str(grid_file)}
+    ntimesteps = 10
+    t = range(84600, 84600 * (ntimesteps + 1), 84600)
+    time = cftime.num2date(t, units="seconds since 2686-01-01", calendar="standard")
+    da = xr.DataArray(
+        np.random.rand(ntimesteps, ncells),
+        dims=["time", "ncells"],
+        coords={"time": time},
+        name="CO2",
+    )
+
+    result = setgrid(da, rule)
+
+    # Should have coordinates but no boundary variables
+    assert "ncells" in result.sizes
+    assert "time" in result.sizes
+    assert "lon" in result.coords
+    assert "lat" in result.coords
+    assert "CO2" in result.data_vars
+
+    # Should NOT have boundary variables since they weren't in the grid
+    assert "lat_bnds" not in result.data_vars
+    assert "lon_bnds" not in result.data_vars
+
+    # Should NOT have other grid variables like cell_area
+    assert "cell_area" not in result.data_vars
