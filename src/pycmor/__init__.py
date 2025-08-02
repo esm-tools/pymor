@@ -1,9 +1,10 @@
 """pycmor - Makes CMOR Simple"""
 
-from . import _version
-
 # Import module that registers all xarray accessors
 from . import accessors  # noqa: F401
+from . import (
+    _version,
+)
 
 __author__ = "Paul Gierz <pgierz@awi.de>"
 __all__ = []
