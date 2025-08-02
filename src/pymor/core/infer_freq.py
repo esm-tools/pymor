@@ -284,6 +284,141 @@ def log_frequency_check(name, freq, delta, step, exact, status, strict=False):
     print("-" * 40)
 
 
+def approx_interval_to_frequency_str(approx_interval, tolerance=0.1):
+    """
+    Convert an approximate interval in days to a pandas-style frequency string.
+
+    This function uses algorithmic logic to determine the most appropriate frequency
+    string based on common time patterns, rather than hardcoded mappings. It handles
+    sub-daily, daily, weekly, monthly, and yearly frequencies intelligently.
+
+    Parameters
+    ----------
+    approx_interval : float
+        Approximate interval in days
+    tolerance : float, optional
+        Relative tolerance for matching standard frequencies, by default 0.1 (10%)
+
+    Returns
+    -------
+    str or None
+        Pandas-style frequency string (e.g., 'D', 'M', '3M', 'Y') or None for
+        time-invariant data (0.0 days)
+
+    Examples
+    --------
+    >>> approx_interval_to_frequency_str(1.0)  # Daily
+    'D'
+    >>> approx_interval_to_frequency_str(30.0)  # Monthly
+    'M'
+    >>> approx_interval_to_frequency_str(91.3)  # 3-Monthly (approx)
+    '3M'
+    >>> approx_interval_to_frequency_str(365.0)  # Yearly
+    'Y'
+    >>> approx_interval_to_frequency_str(0.041667)  # Hourly
+    'H'
+    """
+    # Handle special case: time-invariant/fixed data
+    if approx_interval == 0.0:
+        return None
+
+    # Define standard reference intervals for common frequencies
+    MINUTES_PER_DAY = 24 * 60
+    HOURS_PER_DAY = 24
+    DAYS_PER_WEEK = 7
+    DAYS_PER_MONTH = 30.0  # CMIP6 standard
+    DAYS_PER_YEAR = 365.0  # CMIP6 standard
+
+    def is_close(value, target, tolerance):
+        """Check if value is within relative tolerance of target."""
+        if target == 0:
+            return value == 0
+        return abs(value - target) / target <= tolerance
+
+    # 1. Sub-daily frequencies (< 1 day)
+    if approx_interval < 1.0:
+        # Convert to hours
+        hours = approx_interval * HOURS_PER_DAY
+
+        # Check for common hourly frequencies
+        for h in [1, 2, 3, 4, 6, 8, 12]:
+            if is_close(hours, h, tolerance):
+                return f"{h}H" if h > 1 else "H"
+
+        # Check for sub-hourly (minutes)
+        minutes = approx_interval * MINUTES_PER_DAY
+
+        # Common sub-hourly intervals
+        for m in [15, 20, 25, 30, 45]:
+            if is_close(minutes, m, tolerance):
+                return f"{m}T"
+
+        # Fall back to rounded hours or minutes
+        if hours >= 1:
+            return f"{int(round(hours))}H"
+        else:
+            return f"{int(round(minutes))}T"
+
+    # 2. Daily frequencies (1-6 days)
+    elif approx_interval < DAYS_PER_WEEK:
+        days = round(approx_interval)
+        return "D" if days == 1 else f"{days}D"
+
+    # 3. Weekly frequencies (7-27 days)
+    elif approx_interval < DAYS_PER_MONTH - 3:  # ~27 days
+        weeks = approx_interval / DAYS_PER_WEEK
+
+        # Check for exact weekly matches
+        for w in [1, 2]:
+            if is_close(weeks, w, tolerance):
+                return "W" if w == 1 else f"{w}W"
+
+        # Fall back to days
+        days = int(round(approx_interval))
+        return f"{days}D"
+
+    # 4. Monthly frequencies (28-400 days)
+    elif approx_interval < 400:
+        # First check if it's close to a year (prioritize yearly over 12M)
+        years = approx_interval / DAYS_PER_YEAR
+        if is_close(years, 1, tolerance):
+            return "Y"
+
+        months = approx_interval / DAYS_PER_MONTH
+
+        # Check for common monthly frequencies (excluding 12 since we handle yearly above)
+        for m in [1, 2, 3, 4, 5, 6, 9]:
+            if is_close(months, m, tolerance):
+                return "M" if m == 1 else f"{m}M"
+
+        # Fall back to rounded months
+        months_rounded = int(round(months))
+        if months_rounded >= 1:
+            return "M" if months_rounded == 1 else f"{months_rounded}M"
+        else:
+            # Very close to monthly but not quite - use days
+            days = int(round(approx_interval))
+            return f"{days}D"
+
+    # 5. Yearly and longer frequencies (> 400 days)
+    else:
+        years = approx_interval / DAYS_PER_YEAR
+
+        # Check for common yearly frequencies
+        for y in [1, 2, 5, 10, 20, 50, 100]:
+            if is_close(years, y, tolerance):
+                return "Y" if y == 1 else f"{y}Y"
+
+        # Fall back to rounded years
+        years_rounded = int(round(years))
+        if years_rounded >= 1:
+            return "Y" if years_rounded == 1 else f"{years_rounded}Y"
+        else:
+            # Less than a year but more than 400 days - use days
+            days = int(round(approx_interval))
+            return f"{days}D"
+
+
 # Compare with CMIP6 approx_interval
 def is_resolution_fine_enough(
     times,
@@ -293,6 +428,38 @@ def is_resolution_fine_enough(
     tolerance=0.01,
     log=True,
 ):
+    """
+    Determines if the temporal resolution of a time series is sufficient for resampling.
+
+    Parameters
+    ----------
+    times : list or array-like
+        Array of datetime-like objects representing the time series.
+    target_approx_interval : float
+        Expected interval in days for the target frequency.
+    calendar : str, optional
+        Calendar type to use for cftime objects, by default "standard".
+    strict : bool, optional
+        If True, performs additional checks for irregular time series and
+        includes status messages. Defaults to True.
+    tolerance : float, optional
+        Tolerance for comparing time intervals. Defaults to 0.01.
+    log : bool, optional
+        If True, logs the results of the frequency check. Defaults to True.
+
+    Returns
+    -------
+    dict
+        Contains the inferred interval, comparison status, validity for resampling,
+        and status message.
+
+    Notes
+    -----
+    The function infers the frequency using `infer_frequency` and compares it
+    against the target interval, considering the specified tolerance. The result
+    includes a status indicating whether the time series is suitable for resampling.
+    """
+
     result = infer_frequency(
         times, return_metadata=True, strict=strict, calendar=calendar, log=False
     )
@@ -308,7 +475,6 @@ def is_resolution_fine_enough(
             "is_valid_for_resampling": False,
         }
 
-    # Extract values from FrequencyResult namedtuple
     freq = result.frequency
     delta = result.delta_days
     exact = result.is_exact
@@ -341,11 +507,16 @@ def is_resolution_fine_enough(
         is_valid = False
 
     if log:
+        target_freq_str = approx_interval_to_frequency_str(target_approx_interval)
+        target_display = f"{target_approx_interval:.4f} days"
+        if target_freq_str:
+            target_display += f" (~{target_freq_str})"
+
         print("[Temporal Resolution Check]")
         print(
             f"  → Inferred Frequency     : {freq or 'unknown'} (Δ ≈ {delta:.4f} days)"
         )
-        print(f"  → Target Approx Interval : {target_approx_interval:.4f} days")
+        print(f"  → Target Approx Interval : {target_display}")
         print(f"  → Comparison Status      : {comparison_status}")
         print(f"  → Valid for Resampling   : {'✅' if is_valid else '❌'}")
         if status not in (None, "valid"):
@@ -491,8 +662,8 @@ class TimeFrequencyAccessor:
 
     def resample_safe(
         self,
-        freq_str,
-        target_approx_interval,
+        target_approx_interval=None,
+        freq_str=None,
         calendar="standard",
         method="mean",
         time_dim=None,
@@ -501,12 +672,22 @@ class TimeFrequencyAccessor:
     ):
         """Safely resample time series data after checking temporal resolution.
 
+        Users can specify the target frequency in two ways:
+        1. Provide target_approx_interval (float in days) - will be converted to freq_str
+        2. Provide freq_str (pandas frequency string) - used directly for resampling
+
+        If both are provided, freq_str takes precedence for resampling, and
+        target_approx_interval is used for validation.
+
         Parameters
         ----------
-        freq_str : str
-            Target frequency string (e.g., 'M' for monthly)
-        target_approx_interval : float
-            Expected interval in days for the target frequency
+        target_approx_interval : float, optional
+            Expected interval in days for the target frequency. If provided without
+            freq_str, this will be converted to an appropriate frequency string.
+            If provided with freq_str, this is used for validation only.
+        freq_str : str, optional
+            Target frequency string (e.g., 'M' for monthly, '3H' for 3-hourly).
+            If provided, this takes precedence for resampling operations.
         calendar : str, optional
             Calendar type, by default "standard"
         method : str or dict, optional
@@ -527,8 +708,49 @@ class TimeFrequencyAccessor:
         Raises
         ------
         ValueError
-            If the time resolution is too coarse for the target frequency
+            If neither target_approx_interval nor freq_str is provided, or if the
+            time resolution is too coarse for the target frequency
+
+        Examples
+        --------
+        # Using approximate interval (will be converted to frequency string)
+        data.timefreq.resample_safe(target_approx_interval=30.0)  # ~monthly
+
+        # Using frequency string directly
+        data.timefreq.resample_safe(freq_str='3M')  # 3-monthly
+
+        # Using both (freq_str used for resampling, target_approx_interval for validation)
+        data.timefreq.resample_safe(target_approx_interval=90.0, freq_str='3M')
         """
+        # Validate input arguments
+        if target_approx_interval is None and freq_str is None:
+            raise ValueError(
+                "Either target_approx_interval or freq_str must be provided"
+            )
+
+        # Determine the frequency string to use for resampling
+        if freq_str is not None:
+            # Validate the provided frequency string
+            try:
+                # Test if pandas can understand the frequency string
+                pd.Timedelta(freq_str)
+            except (ValueError, TypeError):
+                # Try with a simple date range to validate frequency string
+                try:
+                    pd.date_range("2000-01-01", periods=2, freq=freq_str)
+                except (ValueError, TypeError) as e:
+                    raise ValueError(f"Invalid frequency string '{freq_str}': {e}")
+
+            resampling_freq = freq_str
+        else:
+            # Convert target_approx_interval to frequency string
+            resampling_freq = approx_interval_to_frequency_str(target_approx_interval)
+            if resampling_freq is None:
+                raise ValueError(
+                    f"Cannot convert target_approx_interval={target_approx_interval} "
+                    "to a valid frequency string (possibly time-invariant data)"
+                )
+
         # Auto-detect time dimension if not provided
         if time_dim is None:
             time_dim = get_time_label(self._obj)
@@ -537,21 +759,23 @@ class TimeFrequencyAccessor:
                     "No datetime coordinate found in DataArray."
                     " Please specify time_dim manually."
                 )
-        # First check if resolution is appropriate
-        check = self.check_resolution(
-            target_approx_interval=target_approx_interval,
-            calendar=calendar,
-            strict=True,
-            tolerance=tolerance,
-            log=True,
-        )
 
-        if not check["is_valid_for_resampling"]:
-            # For test compatibility, use the expected error message format
-            raise ValueError("time resolution too coarse")
+        # Perform resolution check if target_approx_interval is provided
+        if target_approx_interval is not None:
+            check = self.check_resolution(
+                target_approx_interval=target_approx_interval,
+                calendar=calendar,
+                strict=True,
+                tolerance=tolerance,
+                log=True,
+            )
+
+            if not check["is_valid_for_resampling"]:
+                # For test compatibility, use the expected error message format
+                raise ValueError("time resolution too coarse")
 
         # If we get here, it's safe to resample
-        resampled = self._obj.resample({time_dim: freq_str}, **resample_kwargs)
+        resampled = self._obj.resample({time_dim: resampling_freq}, **resample_kwargs)
 
         # Apply the specified method (mean, sum, etc.)
         if isinstance(method, str):
@@ -605,8 +829,8 @@ class DatasetFrequencyAccessor:
 
     def resample_safe(
         self,
-        freq_str,
-        target_approx_interval,
+        target_approx_interval=None,
+        freq_str=None,
         time_dim=None,
         calendar="standard",
         method="mean",
@@ -616,12 +840,22 @@ class DatasetFrequencyAccessor:
         """Safely resample dataset time series data after checking temporal
         resolution.
 
+        Users can specify the target frequency in two ways:
+        1. Provide target_approx_interval (float in days) - will be converted to freq_str
+        2. Provide freq_str (pandas frequency string) - used directly for resampling
+
+        If both are provided, freq_str takes precedence for resampling, and
+        target_approx_interval is used for validation.
+
         Parameters
         ----------
-        freq_str : str
-            Target frequency string (e.g., 'M' for monthly)
-        target_approx_interval : float
-            Expected interval in days for the target frequency
+        target_approx_interval : float, optional
+            Expected interval in days for the target frequency. If provided without
+            freq_str, this will be converted to an appropriate frequency string.
+            If provided with freq_str, this is used for validation only.
+        freq_str : str, optional
+            Target frequency string (e.g., 'M' for monthly, '3H' for 3-hourly).
+            If provided, this takes precedence for resampling operations.
         time_dim : str, optional
             Name of the time dimension. If None, automatically detects
             the time dimension using get_time_label. Defaults to None.
@@ -642,8 +876,49 @@ class DatasetFrequencyAccessor:
         Raises
         ------
         ValueError
-            If the time resolution is too coarse for the target frequency
+            If neither target_approx_interval nor freq_str is provided, or if the
+            time resolution is too coarse for the target frequency
+
+        Examples
+        --------
+        # Using approximate interval (will be converted to frequency string)
+        dataset.timefreq.resample_safe(target_approx_interval=30.0)  # ~monthly
+
+        # Using frequency string directly
+        dataset.timefreq.resample_safe(freq_str='3M')  # 3-monthly
+
+        # Using both (freq_str used for resampling, target_approx_interval for validation)
+        dataset.timefreq.resample_safe(target_approx_interval=90.0, freq_str='3M')
         """
+        # Validate input arguments
+        if target_approx_interval is None and freq_str is None:
+            raise ValueError(
+                "Either target_approx_interval or freq_str must be provided"
+            )
+
+        # Determine the frequency string to use for resampling
+        if freq_str is not None:
+            # Validate the provided frequency string
+            try:
+                # Test if pandas can understand the frequency string
+                pd.Timedelta(freq_str)
+            except (ValueError, TypeError):
+                # Try with a simple date range to validate frequency string
+                try:
+                    pd.date_range("2000-01-01", periods=2, freq=freq_str)
+                except (ValueError, TypeError) as e:
+                    raise ValueError(f"Invalid frequency string '{freq_str}': {e}")
+
+            resampling_freq = freq_str
+        else:
+            # Convert target_approx_interval to frequency string
+            resampling_freq = approx_interval_to_frequency_str(target_approx_interval)
+            if resampling_freq is None:
+                raise ValueError(
+                    f"Cannot convert target_approx_interval={target_approx_interval} "
+                    "to a valid frequency string (possibly time-invariant data)"
+                )
+
         # Auto-detect time dimension if not provided
         if time_dim is None:
             time_dim = get_time_label(self._ds)
@@ -656,21 +931,22 @@ class DatasetFrequencyAccessor:
         if time_dim not in self._ds:
             raise ValueError(f"Time dimension '{time_dim}' not found in dataset.")
 
-        # First check if resolution is appropriate using the time coordinate
-        check = self._ds[time_dim].timefreq.check_resolution(
-            target_approx_interval=target_approx_interval,
-            calendar=calendar,
-            strict=True,
-            tolerance=tolerance,
-            log=True,
-        )
+        # Perform resolution check if target_approx_interval is provided
+        if target_approx_interval is not None:
+            check = self._ds[time_dim].timefreq.check_resolution(
+                target_approx_interval=target_approx_interval,
+                calendar=calendar,
+                strict=True,
+                tolerance=tolerance,
+                log=True,
+            )
 
-        if not check["is_valid_for_resampling"]:
-            # For test compatibility, use the expected error message format
-            raise ValueError("time resolution too coarse")
+            if not check["is_valid_for_resampling"]:
+                # For test compatibility, use the expected error message format
+                raise ValueError("time resolution too coarse")
 
         # If we get here, it's safe to resample the entire dataset
-        resampled = self._ds.resample({time_dim: freq_str}, **resample_kwargs)
+        resampled = self._ds.resample({time_dim: resampling_freq}, **resample_kwargs)
 
         # Apply the specified method (mean, sum, etc.)
         if isinstance(method, str):
