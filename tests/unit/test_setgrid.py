@@ -123,7 +123,9 @@ def test_setgrid_with_grid_without_boundary_variables(tmp_path):
         name="CO2",
     )
 
+    assert isinstance(da, xr.DataArray)
     result = setgrid(da, rule)
+    assert isinstance(result, xr.Dataset)
 
     # Should have coordinates but no boundary variables
     assert "ncells" in result.sizes
