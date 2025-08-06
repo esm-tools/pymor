@@ -85,6 +85,8 @@ the CMIP community should work "out-of-the-box".
 
 # Overview of functionality
 
+![workflow](workflow.jpg)
+
 The functionality of `PyMOR` covers several key areas: accessing PCMDI standard
 name tables, metadata management, and data transformation. To specify this, the
 users create a specification file in YAML format, which describes the desired
