@@ -13,14 +13,13 @@ Some guiding rules to set the grid information:
 3. The matching dimension size must be one of the coordinate variables in both data
    file and grid file.
 4. If all above conditions are met, then the data file is merged with the grid file.
-5. The data variables which are prefixed with coordinate variables in the grid file
-   are kept and the rest of the data variables in grid file are dropped.
+5. The coordinate variables and boundary variables (lat_bnds, lon_bnds) from the grid file
+   are kept, while other data variables in grid file are dropped.
 6. The result of the merge is always a xarray.Dataset
 
 Note: Rule 5 is not strict and may go away if it is not desired.
 """
 
-import re
 from typing import Union
 
 import xarray as xr
@@ -47,44 +46,68 @@ def setgrid(
     xr.Dataset
         The output dataarray or dataset with the grid information.
     """
-    logger.info("Starting setgrid step")
+    logger.info("[SetGrid] Starting grid merge operation")
     gridfile = rule.get("grid_file")
-    logger.info(f"    * Using {gridfile=}")
+    logger.info(f"  → Grid File          : {gridfile}")
     if gridfile is None:
         raise ValueError("Missing grid file. Please set 'grid_file' in the rule.")
     grid = xr.open_dataset(gridfile)
     required_dims = set(sum([gc.dims for _, gc in grid.coords.items()], ()))
-    logger.info(f"    * Determined required_dims as {required_dims=}")
+    logger.info(f"  → Required Dimensions: {sorted(required_dims)}")
     to_rename = {}
     can_merge = False
     for dim in required_dims:
         dimsize = grid.sizes[dim]
-        logger.info(f"Checking if {dim=} is in {da.sizes=}")
         if dim in da.sizes:
             can_merge = True
             if da.sizes[dim] != dimsize:
                 raise ValueError(
                     f"Mismatch dimension sizes {dim} {dimsize} (grid) {da.sizes[dim]} (data)"
                 )
+            logger.info(f"  → Dimension '{dim}' : ✅ Found (size={dimsize})")
         else:
-            logger.info(f"{dim=} is not in {da.sizes=}")
-            logger.info("Need to check individual sizes...")
+            logger.info(
+                f"  → Dimension '{dim}' : ❌ Not found, checking for size matches..."
+            )
             for name, _size in da.sizes.items():
-                logger.info(f"{name=}, {_size=}")
                 if dimsize == _size:
                     can_merge = True
                     to_rename[name] = dim
-    logger.info(f"    * After inspection, {can_merge=}")
+                    logger.info(
+                        f"    • Found size match  : '{name}' ({_size}) → '{dim}' ({dimsize})"
+                    )
+    logger.info(
+        f"  → Merge Status       : {'✅ Possible' if can_merge else '❌ Not possible'}"
+    )
+
     if can_merge:
         if to_rename:
+            logger.info(f"  → Renaming Dims      : {dict(to_rename)}")
             da = da.rename(to_rename)
-        coord_names = "|".join(grid.coords.keys())
-        pattern = re.compile(f"({coord_names}).+")
-        required_vars = [name for name in grid.variables.keys() if pattern.match(name)]
+
+        # Keep coordinate variables and boundary variables (lat_bnds, lon_bnds)
+        required_vars = list(grid.coords.keys())  # Always include coordinate variables
+        logger.info(f"  → Coordinate Vars    : {sorted(required_vars)}")
+
+        # Add boundary variables if they exist
+        boundary_vars = ["lat_bnds", "lon_bnds"]
+        boundary_found = []
+        for var in boundary_vars:
+            if var in grid.variables:
+                required_vars.append(var)
+                boundary_found.append(var)
+
+        if boundary_found:
+            logger.info(f"  → Boundary Vars      : {sorted(boundary_found)}")
+        else:
+            logger.info("  → Boundary Vars      : None found")
+
         new_grid = grid[required_vars]
         da = new_grid.merge(da)
+        logger.info("  → Grid Merge         : ✅ Completed")
     else:
-        logger.warning(
-            "!!! SETGRID Step was requested by nothing to be merged! Check carefully!"
-        )
+        logger.warning("  → Warning            : ❌ No compatible dimensions found!")
+        logger.warning("    Check grid and data dimension compatibility.")
+
+    logger.info("-" * 50)
     return da
