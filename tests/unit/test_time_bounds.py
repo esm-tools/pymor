@@ -93,10 +93,7 @@ def test_dataarray_instead_of_dataset():
     # Create a test DataArray with a time dimension
     times = pd.date_range("2000-01-01", periods=3, freq="D")
     da = xr.DataArray(
-        np.random.rand(3),
-        dims=["time"],
-        coords={"time": times},
-        name="temperature"
+        np.random.rand(3), dims=["time"], coords={"time": times}, name="temperature"
     )
 
     class MockRule:
@@ -131,16 +128,19 @@ def test_monthly_frequency():
 
     # Check the bounds values
     bounds = result.coords["time_bnds"].values
-    
+
     # For all but the last month, the end bound should be the start of the next month
     for i in range(len(times) - 1):
         assert bounds[i, 0] == times[i].to_numpy()
         assert bounds[i, 1] == times[i + 1].to_numpy()
-    
+
     # For the last month, the end bound should be the start of the next month
     assert bounds[-1, 0] == times[-1].to_numpy()
-    assert bounds[-1, 1] == (times[-1] + pd.offsets.MonthEnd(1) + pd.offsets.Day(1)).to_numpy()
-    
+    assert (
+        bounds[-1, 1]
+        == (times[-1] + pd.offsets.MonthEnd(1) + pd.offsets.Day(1)).to_numpy()
+    )
+
     # Check the time variable's bounds attribute
     assert "bounds" in result["time"].attrs
     assert result["time"].attrs["bounds"] == "time_bnds"
