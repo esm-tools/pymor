@@ -130,7 +130,7 @@ class Pipeline:
         logger.debug("Dynamically creating workflow with DaskTaskRunner...")
         cmor_name = rule_spec.get("cmor_name")
         rule_name = rule_spec.get("name", cmor_name)
-        if self._cluster is None:
+        if not hasattr(self, "_cluster") or self._cluster is None:
             logger.warning(
                 "No cluster assigned to this pipeline. Using local Dask cluster."
             )
