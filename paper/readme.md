@@ -28,6 +28,8 @@ More hints about [citation syntax](https://pandoc.org/MANUAL.html#extension-cita
 
 We can submit the preprint to [arxiv](https://arxiv.org/).
 
+How to [locally build and typeset the paper](https://joss.readthedocs.io/en/latest/paper.html#checking-that-your-paper-compiles)
+
 ## [Submission Guidelines](https://joss.readthedocs.io/en/latest/submitting.html#submitting-a-paper-to-joss)
 
 ### Submission requirements
