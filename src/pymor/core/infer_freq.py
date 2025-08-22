@@ -596,13 +596,7 @@ class TimeFrequencyAccessor:
                 result.status,
                 strict,
             )
-        return {
-            "frequency": result.frequency,
-            "step": result.step,
-            "delta_days": result.delta_days,
-            "is_exact": result.is_exact,
-            "status": result.status,
-        }
+        return result
 
     def check_resolution(
         self,

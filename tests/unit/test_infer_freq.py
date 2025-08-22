@@ -81,15 +81,15 @@ def test_resolution_check_too_sparse():
 
 def test_accessor_on_dataarray(regular_monthly_time):
     da = xr.DataArray([1, 2, 3, 4], coords={"time": regular_monthly_time}, dims="time")
-    info = da.timefreq.infer_frequency(log=False)
-    assert info["frequency"] == "M"
+    result = da.timefreq.infer_frequency(log=False)
+    assert result.frequency == "M"
 
 
 def test_accessor_on_dataset(regular_monthly_time):
     da = xr.DataArray([1, 2, 3, 4], coords={"time": regular_monthly_time}, dims="time")
     ds = xr.Dataset({"tas": da})
-    info = ds.timefreq.infer_frequency(log=False)
-    assert info["frequency"] == "M"
+    result = ds.timefreq.infer_frequency(log=False)
+    assert result.frequency == "M"
 
 
 def test_strict_mode_detection():
@@ -444,7 +444,7 @@ def test_accessor_invalid_manual_time_dim():
 
     # When time_dim doesn't exist, it should return a result with no_match status
     result = da.timefreq.infer_frequency(time_dim="nonexistent")
-    assert result["status"] == "no_match"
+    assert result.status == "no_match"
 
 
 def test_dataset_accessor_no_datetime_coord_error():

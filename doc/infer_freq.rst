@@ -31,9 +31,9 @@ Quick Start
    times = [cftime.Datetime360Day(2000, 1, 1 + i * 15) for i in range(4)]
    da = xr.DataArray([1, 2, 3, 4], coords={"time": times}, dims="time")
 
-   # Simple frequency inference (returns string)
-   freq = da.timefreq.infer_frequency(log=False)
-   print(f"Frequency: {freq['frequency']}")  # Output: "M"
+   # Simple frequency inference (returns FrequencyResult object)
+   result = da.timefreq.infer_frequency(log=False)
+   print(f"Frequency: {result.frequency}")  # Output: "M"
 
    # Detailed frequency inference with metadata (returns FrequencyResult)
    result = infer_frequency(times, return_metadata=True, calendar="360_day")
@@ -49,11 +49,11 @@ Quick Start
 
 .. code-block:: python
 
-   # Infer frequency with metadata dictionary
-   info = da.timefreq.infer_frequency(strict=True, calendar="360_day", log=False)
-   print(info['frequency'])    # 'M'
-   print(info['is_exact'])     # True
-   print(info['status'])       # 'valid'
+   # Infer frequency with metadata (returns FrequencyResult object)
+   result = da.timefreq.infer_frequency(strict=True, calendar="360_day", log=False)
+   print(result.frequency)     # 'M'
+   print(result.is_exact)      # True
+   print(result.status)        # 'valid'
    
    # Check if resolution is fine enough for resampling
    check = da.timefreq.check_resolution(target_approx_interval=30.4375)
