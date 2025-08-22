@@ -28,12 +28,11 @@ def _convert_cftime_to_ordinals(times_values):
     ref_date = times_values[0]
     ordinals = np.array(
         [
-            (t - ref_date).days
-            + (t.hour / 24 + t.minute / 1440 + t.second / 86400)
+            (t - ref_date).days + (t.hour / 24 + t.minute / 1440 + t.second / 86400)
             for t in times_values
         ]
     )
-    
+
     # Adjust to make ordinals absolute (add reference ordinal)
     try:
         ref_ordinal = ref_date.toordinal()
@@ -66,25 +65,23 @@ def _convert_standard_datetime_to_ordinals(times_values):
 
 def _convert_numeric_timestamps_to_ordinals(times_values):
     """Convert numeric timestamps (e.g., numpy.datetime64) to ordinal values."""
-    return np.array(
-        [pd.Timestamp(t).to_julian_date() for t in times_values]
-    )
+    return np.array([pd.Timestamp(t).to_julian_date() for t in times_values])
 
 
 def _convert_times_to_ordinals(times_values):
     """
     Convert various datetime types to ordinal values for frequency analysis.
-    
+
     This function handles three main datetime types:
     1. cftime objects (with calendar attribute)
     2. Standard datetime objects (with toordinal method)
     3. Numeric timestamps (numpy.datetime64, etc.)
-    
+
     Parameters
     ----------
     times_values : array-like
         Array of datetime-like objects
-        
+
     Returns
     -------
     np.ndarray
