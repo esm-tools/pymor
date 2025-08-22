@@ -23,6 +23,85 @@ FrequencyResult = namedtuple(
 )
 
 
+def _convert_cftime_to_ordinals(times_values):
+    """Convert cftime objects to ordinal values."""
+    ref_date = times_values[0]
+    ordinals = np.array(
+        [
+            (t - ref_date).days
+            + (t.hour / 24 + t.minute / 1440 + t.second / 86400)
+            for t in times_values
+        ]
+    )
+    
+    # Adjust to make ordinals absolute (add reference ordinal)
+    try:
+        ref_ordinal = ref_date.toordinal()
+        ordinals = ordinals + ref_ordinal
+    except (AttributeError, ValueError):
+        # If toordinal fails, use a simpler approach
+        ordinals = np.array(
+            [
+                t.year * 365.25
+                + t.month * 30.4375
+                + t.day
+                + t.hour / 24
+                + t.minute / 1440
+                + t.second / 86400
+                for t in times_values
+            ]
+        )
+    return ordinals
+
+
+def _convert_standard_datetime_to_ordinals(times_values):
+    """Convert standard datetime objects to ordinal values."""
+    return np.array(
+        [
+            t.toordinal() + t.hour / 24 + t.minute / 1440 + t.second / 86400
+            for t in times_values
+        ]
+    )
+
+
+def _convert_numeric_timestamps_to_ordinals(times_values):
+    """Convert numeric timestamps (e.g., numpy.datetime64) to ordinal values."""
+    return np.array(
+        [pd.Timestamp(t).to_julian_date() for t in times_values]
+    )
+
+
+def _convert_times_to_ordinals(times_values):
+    """
+    Convert various datetime types to ordinal values for frequency analysis.
+    
+    This function handles three main datetime types:
+    1. cftime objects (with calendar attribute)
+    2. Standard datetime objects (with toordinal method)
+    3. Numeric timestamps (numpy.datetime64, etc.)
+    
+    Parameters
+    ----------
+    times_values : array-like
+        Array of datetime-like objects
+        
+    Returns
+    -------
+    np.ndarray
+        Array of ordinal values representing the datetime objects
+    """
+    if hasattr(times_values[0], "toordinal"):
+        if hasattr(times_values[0], "calendar"):
+            # cftime objects - convert to days since a reference date
+            return _convert_cftime_to_ordinals(times_values)
+        else:
+            # Standard datetime objects
+            return _convert_standard_datetime_to_ordinals(times_values)
+    else:
+        # Assume numeric timestamps (e.g., numpy.datetime64)
+        return _convert_numeric_timestamps_to_ordinals(times_values)
+
+
 # Core frequency inference
 def infer_frequency_core(
     times, tol=0.05, return_metadata=False, strict=False, calendar="standard", log=False
@@ -67,50 +146,7 @@ def infer_frequency_core(
     # Handle both pandas-like objects (with .values) and plain lists/arrays
     try:
         times_values = times.values if hasattr(times, "values") else times
-
-        # Handle both datetime-like objects and numeric timestamps
-        if hasattr(times_values[0], "toordinal"):
-            # For cftime objects, use a different approach for ordinal calculation
-            if hasattr(times_values[0], "calendar"):
-                # cftime objects - convert to days since a reference date
-                ref_date = times_values[0]
-                ordinals = np.array(
-                    [
-                        (t - ref_date).days
-                        + (t.hour / 24 + t.minute / 1440 + t.second / 86400)
-                        for t in times_values
-                    ]
-                )
-                # Adjust to make ordinals absolute (add reference ordinal)
-                try:
-                    ref_ordinal = ref_date.toordinal()
-                    ordinals = ordinals + ref_ordinal
-                except (AttributeError, ValueError):
-                    # If toordinal fails, use a simpler approach
-                    ordinals = np.array(
-                        [
-                            t.year * 365.25
-                            + t.month * 30.4375
-                            + t.day
-                            + t.hour / 24
-                            + t.minute / 1440
-                            + t.second / 86400
-                            for t in times_values
-                        ]
-                    )
-            else:
-                # Standard datetime objects
-                ordinals = np.array(
-                    [
-                        t.toordinal() + t.hour / 24 + t.minute / 1440 + t.second / 86400
-                        for t in times_values
-                    ]
-                )
-        else:
-            # Assume numeric timestamps (e.g., numpy.datetime64)
-            ordinals = np.array(
-                [pd.Timestamp(t).to_julian_date() for t in times_values]
-            )
+        ordinals = _convert_times_to_ordinals(times_values)
 
     except (AttributeError, TypeError, ValueError) as e:
         error_status = f"invalid_input: {str(e)}"
@@ -136,10 +172,10 @@ def infer_frequency_core(
         "H": 1 / 24,
         "D": 1,
         "W": 7,
-        "M": year_days / 12,
-        "Q": year_days / 4,
-        "A": year_days,
-        "10A": year_days * 10,
+        "M": days_in_calendar_year / 12,
+        "Q": days_in_calendar_year / 4,
+        "A": days_in_calendar_year,
+        "10A": days_in_calendar_year * 10,
     }
 
     matched_freq = None
