@@ -189,6 +189,17 @@ Accessor Methods
 
 The following methods are available via xarray accessors:
 
+**DataArray Accessor (``da.timefreq``):**
+
+.. automethod:: pymor.core.infer_freq.TimeFrequencyAccessor.infer_frequency
+.. automethod:: pymor.core.infer_freq.TimeFrequencyAccessor.check_resolution
+.. automethod:: pymor.core.infer_freq.TimeFrequencyAccessor.resample_safe
+
+**Dataset Accessor (``ds.timefreq``):**
+
+.. automethod:: pymor.core.infer_freq.DatasetFrequencyAccessor.infer_frequency
+.. automethod:: pymor.core.infer_freq.DatasetFrequencyAccessor.resample_safe
+
 Calendar Support
 ----------------
 
