@@ -100,7 +100,7 @@ def _convert_times_to_ordinals(times_values):
 
 
 # Core frequency inference
-def infer_frequency_core(
+def _infer_frequency_core(
     times, tol=0.05, return_metadata=False, strict=False, calendar="standard", log=False
 ):
     """
@@ -287,7 +287,7 @@ def infer_frequency(
             )
     except Exception:
         pass
-    return infer_frequency_core(
+    return _infer_frequency_core(
         times,
         return_metadata=return_metadata,
         strict=strict,
