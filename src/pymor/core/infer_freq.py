@@ -125,7 +125,7 @@ def infer_frequency_core(
     median_delta = np.median(deltas)
     std_delta = np.std(deltas)
 
-    year_days = {
+    days_in_calendar_year = {
         "standard": 365.25,
         "gregorian": 365.25,
         "noleap": 365.0,
