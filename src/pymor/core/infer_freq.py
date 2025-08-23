@@ -275,8 +275,14 @@ def infer_frequency(
         Inferred frequency string (e.g., 'M') or (freq, delta, step, is_exact, status)
         if return_metadata=True.
     """
+    # Extract values from xarray objects if needed
+    if hasattr(times, 'values'):
+        times_values = times.values
+    else:
+        times_values = times
+    
     try:
-        freq = xr.infer_freq(times)
+        freq = xr.infer_freq(times_values)
         if freq is not None:
             if log:
                 log_frequency_check("Time Series", freq, None, 1, True, "valid", strict)
@@ -288,7 +294,7 @@ def infer_frequency(
     except Exception:
         pass
     return _infer_frequency_core(
-        times,
+        times_values,
         return_metadata=return_metadata,
         strict=strict,
         calendar=calendar,
@@ -574,7 +580,12 @@ class TimeFrequencyAccessor:
         self._obj = xarray_obj
 
     def infer_frequency(
-        self, strict=False, calendar="standard", log=True, time_dim=None
+        self,
+        strict=False,
+        calendar="standard",
+        log=True,
+        time_dim=None,
+        return_metadata=True,
     ):
         """
         Infer time frequency from datetime-like array, returning pandas-style
@@ -592,7 +603,9 @@ class TimeFrequencyAccessor:
         time_dim : str, optional
             Name of the time dimension in the DataArray. If None, automatically
             detects the time dimension using `get_time_label`. Defaults to None.
-
+        return_metadata : bool, optional
+            If True, returns (freq, delta, step, is_exact, status)
+            instead of just the frequency string. Defaults to True.
         Returns
         -------
         str or FrequencyResult
@@ -617,7 +630,11 @@ class TimeFrequencyAccessor:
             times = self._obj.values
 
         result = infer_frequency(
-            times, return_metadata=True, strict=strict, calendar=calendar, log=False
+            times,
+            return_metadata=True,
+            strict=strict,
+            calendar=calendar,
+            log=False,
         )
         if log:
             log_frequency_check(
@@ -629,7 +646,10 @@ class TimeFrequencyAccessor:
                 result.status,
                 strict,
             )
-        return result
+        if return_metadata:
+            return result
+        else:
+            return result.frequency
 
     def check_resolution(
         self,
