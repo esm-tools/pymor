@@ -25,10 +25,10 @@ Quick Start
 
    import xarray as xr
    import cftime
-   from toypymor.infer_freq import infer_frequency
+   from pymor.core.infer_freq import infer_frequency
 
    # Create a DataArray with 360_day calendar
-   times = [cftime.Datetime360Day(2000, 1, 1 + i * 15) for i in range(4)]
+   times = [cftime.Datetime360Day(2000, m, 15) for m in range(1, 5)]
    da = xr.DataArray([1, 2, 3, 4], coords={"time": times}, dims="time")
 
    # Simple frequency inference (returns FrequencyResult object)
