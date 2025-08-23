@@ -65,8 +65,8 @@ class TestPymorDataArrayAccessor:
 
         # Results should be identical
         assert pymor_result == timefreq_result
-        assert pymor_result["frequency"] == "M"
-        assert pymor_result["status"] == "valid"
+        assert pymor_result.frequency == "M"
+        assert pymor_result.status == "valid"
 
     def test_pymor_check_resolution_delegation(self, sample_dataarray):
         """Test that pymor.check_resolution delegates correctly to timefreq."""
@@ -182,8 +182,8 @@ class TestPymorDatasetAccessor:
 
         # Results should be identical
         assert pymor_result == timefreq_result
-        assert pymor_result["frequency"] == "M"
-        assert pymor_result["status"] == "valid"
+        assert pymor_result.frequency == "M"
+        assert pymor_result.status == "valid"
 
     def test_pymor_check_resolution_delegation(self, sample_dataset):
         """Test that dataset pymor.check_resolution delegates correctly."""
