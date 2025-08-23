@@ -25,7 +25,7 @@ Quick Start
 
    import xarray as xr
    import cftime
-   from toypymor.infer_freq import infer_frequency
+   from pymor.core.infer_freq import infer_frequency
 
    # Create a DataArray with 360_day calendar
    times = [cftime.Datetime360Day(2000, 1, 1 + i * 15) for i in range(4)]
@@ -138,7 +138,7 @@ The ``status`` field in ``FrequencyResult`` indicates the quality and characteri
 .. code-block:: python
 
    import cftime
-   from toypymor.infer_freq import infer_frequency
+   from pymor.core.infer_freq import infer_frequency
 
    # Valid: Perfect monthly spacing
    times_valid = [
