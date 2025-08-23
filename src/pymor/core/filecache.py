@@ -106,6 +106,8 @@ import xarray as xr
 from imohash import hashfile
 from tqdm.contrib.concurrent import process_map
 
+from .infer_freq import infer_frequency
+
 CACHE_FILE = "~/.cache/pymor_filecache.csv"
 
 
@@ -235,6 +237,21 @@ class Filecache:
             self.df = pd.DataFrame(records)
         else:
             self.df = pd.concat([self.df, pd.DataFrame(records)], ignore_index=True)
+
+    def infer_freq(self, filename: str):
+        info = self.get(filename)
+        if info.freq is not None:
+            return info.freq
+        filepath = info.filepath
+        dirname = os.path.dirname(filepath)
+        variable = info.variable
+        # we need variable records from this directory only.
+        mask = self.df.filepath.str.startswith(dirname)
+        df = self.df[mask]
+        df = df[df.variable == variable]
+        dates = df.start.sort_values().values
+        dates = [pd.Timestamp(d) for d in dates]
+        return infer_frequency(dates, log=True)
 
     def _make_record(self, filename: str) -> pd.Series:
         """
