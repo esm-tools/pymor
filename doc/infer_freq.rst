@@ -138,7 +138,7 @@ The ``status`` field in ``FrequencyResult`` indicates the quality and characteri
 .. code-block:: python
 
    import cftime
-   from toypycmor.infer_freq import infer_frequency
+   from pycmor.core.infer_freq import infer_frequency
 
    # Valid: Perfect monthly spacing
    times_valid = [
