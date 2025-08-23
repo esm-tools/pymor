@@ -276,11 +276,10 @@ def infer_frequency(
         if return_metadata=True.
     """
     # Extract values from xarray objects if needed
-    if hasattr(times, 'values'):
+    if hasattr(times, "values"):
         times_values = times.values
     else:
         times_values = times
-    
     try:
         freq = xr.infer_freq(times_values)
         if freq is not None:
