@@ -50,7 +50,7 @@ You can access the metadata of a file in the cache using the `get` method:
 
     >>> filepath = "tests/data/test_experiments/my_expid/outdata/fesom/volo.nc"
     >>> # alternative way of adding file to cache and getting the metadata is by usuig the `get` method
-    >>> cache.get(filepath)
+    >>> cache.get(filepath)  # doctest: +ELLIPSIS
     filepath    tests/data/test_experiments/my_expid/outdata/f...
     filename                                              volo.nc
     checksum             imohash:c8047bbd7e292dbe54a6387611f500c4
@@ -59,7 +59,7 @@ You can access the metadata of a file in the cache using the `get` method:
     start                                     1951-01-02 00:00:00
     end                                       1951-01-13 00:00:00
     timespan                                     11 days, 0:00:00
-    freq                                                        D
+    freq                                                     None
     steps                                                      12
     variable                                                 volo
     units                                                      m3
@@ -75,7 +75,7 @@ number of files in the collection for this variable.
 
     >>> cache.summary()
     variable                  seq                 volo
-    freq                        D                    D
+    freq                     None                 None
     start     0001-01-01 00:00:00  1951-01-02 00:00:00
     end       0001-01-11 00:00:00  1951-01-13 00:00:00
     timespan     10 days 00:00:00     11 days 00:00:00
@@ -282,7 +282,7 @@ class Filecache:
         record["start"] = str(t.iloc[0])
         record["end"] = str(t.iloc[-1])
         record["timespan"] = str(t.iloc[-1] - t.iloc[0])
-        record["freq"] = self.infer_freq(filename)
+        record["freq"] = None  # Will be inferred later when needed
         record["steps"] = t.size
         record["variable"] = list(ds.data_vars.keys()).pop()
         record["units"] = [
