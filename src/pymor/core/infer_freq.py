@@ -1,3 +1,4 @@
+import warnings
 from collections import namedtuple
 
 import numpy as np
@@ -769,6 +770,7 @@ class TimeFrequencyAccessor:
         # Using both (freq_str used for resampling, target_approx_interval for validation)
         data.timefreq.resample_safe(target_approx_interval=90.0, freq_str='3M')
         """
+        warnings.warn("resample_safe is incomplete, use resample instead", stacklevel=1)
         # Validate input arguments
         if target_approx_interval is None and freq_str is None:
             raise ValueError(

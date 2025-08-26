@@ -282,7 +282,7 @@ class Filecache:
         record["start"] = str(t.iloc[0])
         record["end"] = str(t.iloc[-1])
         record["timespan"] = str(t.iloc[-1] - t.iloc[0])
-        record["freq"] = t.index.freq
+        record["freq"] = self.infer_freq(filename)
         record["steps"] = t.size
         record["variable"] = list(ds.data_vars.keys()).pop()
         record["units"] = [
