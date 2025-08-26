@@ -8,6 +8,7 @@ from xarray.core.extensions import (
     register_dataset_accessor,
 )
 
+from .logging import logger
 from .time_utils import get_time_label
 
 # Result object for frequency inference with metadata
@@ -306,20 +307,20 @@ def log_frequency_check(name, freq, delta, step, exact, status, strict=False):
     """
     Log the results of the frequency check.
     """
-    print(f"[Freq Check] {name}")
-    print(f"  → Inferred Frequency : {freq or 'None'}")
-    print(f"  → Step Multiple      : {step or 'None'}")
+    logger.info(f"[Freq Check] {name}")
+    logger.info(f"  → Inferred Frequency : {freq or 'None'}")
+    logger.info(f"  → Step Multiple      : {step or 'None'}")
 
     # Handle None delta values safely
     if delta is not None:
-        print(f"  → Median Δ (days)    : {delta:.2f}")
+        logger.info(f"  → Median Δ (days)    : {delta:.2f}")
     else:
-        print("  → Median Δ (days)    : None")
+        logger.info("  → Median Δ (days)    : None")
 
-    print(f"  → Regular Spacing    : {'✅' if exact else '❌'}")
-    print(f"  → Strict Mode        : {'✅' if strict else '❌'}")
-    print(f"  → Status             : {status}")
-    print("-" * 40)
+    logger.info(f"  → Regular Spacing    : {'✅' if exact else '❌'}")
+    logger.info(f"  → Strict Mode        : {'✅' if strict else '❌'}")
+    logger.info(f"  → Status             : {status}")
+    logger.info("-" * 40)
 
 
 def approx_interval_to_frequency_str(approx_interval, tolerance=0.1):
