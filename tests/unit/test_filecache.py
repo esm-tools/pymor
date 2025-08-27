@@ -111,7 +111,7 @@ class TestFilecache:
         mock_stat.return_value.st_size = 1024
         mock_stat.return_value.st_mtime = 1234567890
         mock_hashfile.return_value = "abc123"
-        time = pd.date_range("2000-01-01", periods=12, freq="M")
+        time = pd.date_range("2000-01-01", periods=12, freq="ME")
         mock_ds = Mock()
         mock_ds.time.to_pandas.return_value = pd.Series(time, index=time)
         mock_ds.data_vars.keys.return_value = ["temperature"]
@@ -119,7 +119,9 @@ class TestFilecache:
         mock_ds.close = Mock()
         mock_open_dataset.return_value = mock_ds
         cache = Filecache()
-        with patch.object(cache, "infer_freq", return_value="M") as mock_infer_freq:
+        with patch.object(
+            cache, "_infer_freq_from_file", return_value="ME"
+        ) as mock_infer_freq:
             record = cache._make_record(sample_netcdf_file)
             assert isinstance(record, pd.Series)
             assert record["filename"] == os.path.basename(sample_netcdf_file)
@@ -129,9 +131,11 @@ class TestFilecache:
             assert record["mtime"] == 1234567890
             assert record["variable"] == "temperature"
             assert record["units"] == "K"
-            assert record["freq"] == "M"
+            assert record["freq"] == "ME"
             assert record["steps"] == 12
-            mock_infer_freq.assert_called_once_with(sample_netcdf_file)
+            mock_infer_freq.assert_called_once_with(
+                sample_netcdf_file, mock_ds, mock_ds.time.to_pandas.return_value
+            )
 
     def test_add_file_new(self, sample_cache_data):  # noqa: F811  # noqa: F811
         """Test adding a new file to cache."""
@@ -319,14 +323,15 @@ class TestFilecacheIntegration:
             cache_file = os.path.join(tmpdir, "test_cache.csv")
             with patch("pymor.core.filecache.CACHE_FILE", cache_file):
                 cache = Filecache()
-                with patch.object(cache, "infer_freq", return_value="M"):
-                    cache.add_file(sample_netcdf_file)
+                cache.add_file(sample_netcdf_file)
+                # Manually set frequency to ME for the test
+                cache.df.loc[0, "freq"] = "ME"
                 cache.cache_meta = "#2024-01-01;1ME\n"
                 cache.save()
                 loaded_cache = Filecache.load()
                 assert len(loaded_cache.df) == 1
                 assert loaded_cache.df.iloc[0]["variable"] == "temperature"
-                assert loaded_cache.df.iloc[0]["freq"] == "M"
+                assert loaded_cache.df.iloc[0]["freq"] == "ME"
 
     def test_error_handling_invalid_file(self):
         """Test error handling when adding invalid file."""

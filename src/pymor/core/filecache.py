@@ -59,7 +59,7 @@ You can access the metadata of a file in the cache using the `get` method:
     start                                     1951-01-02 00:00:00
     end                                       1951-01-13 00:00:00
     timespan                                     11 days, 0:00:00
-    freq                                                     None
+    freq                                                        D
     steps                                                      12
     variable                                                 volo
     units                                                      m3
@@ -75,7 +75,7 @@ number of files in the collection for this variable.
 
     >>> cache.summary()
     variable                  seq                 volo
-    freq                     None                 None
+    freq                        D                    D
     start     0001-01-01 00:00:00  1951-01-02 00:00:00
     end       0001-01-11 00:00:00  1951-01-13 00:00:00
     timespan     10 days 00:00:00     11 days 00:00:00
@@ -251,7 +251,15 @@ class Filecache:
         df = df[df.variable == variable]
         dates = df.start.sort_values().values
         dates = [pd.Timestamp(d) for d in dates]
-        return infer_frequency(dates, log=True)
+        freq = infer_frequency(dates, log=True)
+
+        # Update the cache with the inferred frequency
+        filename_mask = self.df.filepath == filepath
+        if filename_mask.any():
+            self.df.loc[filename_mask, "freq"] = freq
+            self._new_record = True  # Mark for saving
+
+        return freq
 
     def _make_record(self, filename: str) -> pd.Series:
         """
@@ -282,7 +290,8 @@ class Filecache:
         record["start"] = str(t.iloc[0])
         record["end"] = str(t.iloc[-1])
         record["timespan"] = str(t.iloc[-1] - t.iloc[0])
-        record["freq"] = None  # Will be inferred later when needed
+        # Try to infer frequency from this file's time steps first
+        record["freq"] = self._infer_freq_from_file(filename, ds, t)
         record["steps"] = t.size
         record["variable"] = list(ds.data_vars.keys()).pop()
         record["units"] = [
@@ -290,6 +299,146 @@ class Filecache:
         ].pop()
         ds.close()
         return pd.Series(record)
+
+    def _infer_freq_from_file(
+        self, filename: str, ds: xr.Dataset, time_series: pd.Series
+    ) -> str:
+        """
+        Infer frequency from a file's time steps, with fallback to multi-file approach.
+
+        Parameters
+        ----------
+        filename : str
+            Path to the file being processed
+        ds : xr.Dataset
+            The opened xarray dataset
+        time_series : pd.Series
+            The time coordinate as pandas Series
+
+        Returns
+        -------
+        str or None
+            The inferred frequency, or None if unable to determine
+        """
+        # Convert time series to timestamps, handling cftime objects
+        try:
+            if hasattr(time_series.iloc[0], "strftime"):  # cftime object
+                timestamps = [
+                    pd.Timestamp(t.strftime("%Y-%m-%d %H:%M:%S")) for t in time_series
+                ]
+            else:
+                timestamps = [pd.Timestamp(t) for t in time_series]
+        except Exception:
+            return None
+
+        # Strategy 1: Try to infer from single file if it has enough time steps (>2)
+        if len(timestamps) > 2:
+            try:
+                freq = infer_frequency(
+                    timestamps, log=False
+                )  # Don't log for single file attempts
+                if freq is not None:
+                    return freq
+            except Exception:
+                pass
+
+        # Strategy 2: Fallback to multi-file approach for files with 1-2 time steps
+        return self._infer_freq_from_directory(filename, ds)
+
+    def _infer_freq_from_directory(self, filename: str, ds: xr.Dataset) -> str:
+        """
+        Infer frequency by collecting time steps from all files with same variable in same directory.
+        Optimized to avoid redundant file I/O and O(N²) behavior.
+
+        Parameters
+        ----------
+        filename : str
+            Path to the current file
+        ds : xr.Dataset
+            The opened xarray dataset
+
+        Returns
+        -------
+        str or None
+            The inferred frequency, or None if unable to determine
+        """
+        try:
+            dirname = os.path.dirname(filename)
+            variable = list(ds.data_vars.keys())[0]
+
+            # Find all files in cache with same variable and directory
+            mask = self.df.filepath.str.startswith(dirname)
+            df = self.df[mask]
+            df = df[df.variable == variable]
+
+            # Early termination: if any file already has frequency determined, use it
+            existing_freq = df["freq"].dropna()
+            if not existing_freq.empty and existing_freq.iloc[0] is not None:
+                freq = existing_freq.iloc[0]
+                self._update_freq_for_group(dirname, variable, freq)
+                return freq
+
+            if len(df) < 2:  # Need at least 2 files for multi-file inference
+                return None
+
+            # Use cached timestamps from start/end instead of re-reading files
+            all_timestamps = []
+
+            for _, row in df.iterrows():
+                try:
+                    # Extract timestamps from cached start/end data
+                    start_ts = pd.Timestamp(row.start)
+                    end_ts = pd.Timestamp(row.end)
+
+                    # For files with multiple steps, approximate intermediate timestamps
+                    steps = row.steps
+                    if steps == 1:
+                        all_timestamps.append(start_ts)
+                    elif steps == 2:
+                        all_timestamps.extend([start_ts, end_ts])
+                    else:
+                        # For files with >2 steps, we already have frequency from single-file inference
+                        # Just use start timestamp to represent the file
+                        all_timestamps.append(start_ts)
+
+                except Exception:
+                    continue
+
+            if len(all_timestamps) > 2:
+                # Sort all timestamps and infer frequency
+                all_timestamps.sort()
+                freq = infer_frequency(all_timestamps, log=True)
+
+                # Update frequency for all files in this group
+                if freq is not None:
+                    self._update_freq_for_group(dirname, variable, freq)
+
+                return freq
+
+        except Exception:
+            pass
+
+        return None
+
+    def _update_freq_for_group(self, dirname: str, variable: str, freq: str) -> None:
+        """
+        Update frequency for all files with same variable in same directory.
+
+        Parameters
+        ----------
+        dirname : str
+            Directory path
+        variable : str
+            Variable name
+        freq : str
+            Inferred frequency
+        """
+        mask = self.df.filepath.str.startswith(dirname)
+        df_mask = mask & (self.df.variable == variable)
+
+        if df_mask.any():
+            self.df.loc[df_mask, "freq"] = freq
+            self._new_record = True
 
     def summary(self, variable=None) -> pd.DataFrame:
         """
