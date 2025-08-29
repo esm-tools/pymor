@@ -1,5 +1,6 @@
 import cftime
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 
@@ -510,8 +511,6 @@ def test_numpy_datetime64_with_different_units():
 
 def test_resample_safe_error_paths():
     """Test error paths in resample_safe methods."""
-    import pandas as pd
-
     # Create a coarse time series (quarterly)
     coarse_times = pd.date_range("2000-01-01", periods=4, freq="QS")
     da = xr.DataArray([1, 2, 3, 4], coords={"time": coarse_times}, dims=["time"])
@@ -558,8 +557,6 @@ def test_log_frequency_check_function():
 
 def test_pandas_datetime_index_input():
     """Test with pandas DatetimeIndex input."""
-    import pandas as pd
-
     # Test with pandas DatetimeIndex
     times_index = pd.date_range("2000-01-01", periods=5, freq="D")
     result = infer_frequency(times_index, return_metadata=True)
@@ -569,8 +566,6 @@ def test_pandas_datetime_index_input():
 
 def test_get_time_label_dataset_with_time_coord():
     """Test get_time_label with Dataset containing 'time' coordinate."""
-    import pandas as pd
-
     # Create dataset with time coordinate
     time_coord = pd.date_range("2000-01-01", periods=10)
     ds = xr.Dataset(
@@ -583,8 +578,6 @@ def test_get_time_label_dataset_with_time_coord():
 
 def test_get_time_label_dataset_with_custom_time_coord():
     """Test get_time_label with Dataset containing custom time coordinate name."""
-    import pandas as pd
-
     # Create dataset with 'T' as time coordinate
     time_coord = pd.date_range("2000-01-01", periods=5)
     ds = xr.Dataset({"data": (["T"], np.random.rand(5))}, coords={"T": time_coord})
@@ -595,8 +588,6 @@ def test_get_time_label_dataset_with_custom_time_coord():
 
 def test_get_time_label_dataarray_with_time_coord():
     """Test get_time_label with DataArray containing time coordinate."""
-    import pandas as pd
-
     # Create DataArray with time coordinate
     time_coord = pd.date_range("2000-01-01", periods=8)
     da = xr.DataArray(np.random.rand(8), coords={"time": time_coord}, dims=["time"])
@@ -607,8 +598,6 @@ def test_get_time_label_dataarray_with_time_coord():
 
 def test_get_time_label_dataarray_with_custom_time_coord():
     """Test get_time_label with DataArray containing custom time coordinate name."""
-    import pandas as pd
-
     # Create DataArray with 'T' as time coordinate
     time_coord = pd.date_range("2000-01-01", periods=6)
     da = xr.DataArray(np.random.rand(6), coords={"T": time_coord}, dims=["T"])
@@ -654,8 +643,6 @@ def test_get_time_label_dataset_with_non_datetime_time_coord():
 
 def test_get_time_label_multiple_datetime_coords():
     """Test get_time_label with multiple datetime coordinates."""
-    import pandas as pd
-
     # Create dataset with multiple datetime coordinates
     # The function uses appendleft(), so the last processed coord gets priority
     time1 = pd.date_range("2000-01-01", periods=3)
@@ -677,8 +664,6 @@ def test_get_time_label_multiple_datetime_coords():
 
 def test_get_time_label_datetime_coord_not_used_by_datavar():
     """Test get_time_label when datetime coord exists but not used by data variables."""
-    import pandas as pd
-
     # Create dataset where datetime coord exists but no data variable uses it
     time_coord = pd.date_range("2000-01-01", periods=5)
     ds = xr.Dataset(
@@ -692,8 +677,6 @@ def test_get_time_label_datetime_coord_not_used_by_datavar():
 
 def test_get_time_label_scalar_datetime_coord():
     """Test get_time_label with scalar datetime coordinate (no dimensions)."""
-    import pandas as pd
-
     # Create dataset with scalar datetime coordinate
     ds = xr.Dataset(
         {"data": (["x"], np.random.rand(3))},
@@ -925,10 +908,35 @@ def test_check_resolution_with_strict_mode():
     assert "status" in result_non_strict
 
 
+def test_infer_freq_with_missing_month():
+    """Test that infer_frequency can handle a single missing month."""
+    # Monthly data, but March is missing
+    times = pd.to_datetime(["2000-01-31", "2000-02-29", "2000-04-30"])
+    freq = infer_frequency(times)
+    assert freq == "M", f"Expected 'M', but got {freq}"
+
+
+def test_check_resolution_with_strict_mode():
+    """Test check_resolution with strict mode enabled."""
+    # Create slightly irregular monthly data
+    times = [
+        cftime.Datetime360Day(2000, 1, 1),
+        cftime.Datetime360Day(2000, 2, 2),  # One day off
+        cftime.Datetime360Day(2000, 3, 1),
+    ]
+    da = xr.DataArray([1, 2, 3], coords={"time": times}, dims="time")
+
+    # Test with strict=True
+    result = da.timefreq.check_resolution(
+        target_approx_interval=30.0, calendar="360_day", strict=True
+    )
+
+    assert result["status"] == "irregular"
+    assert not result["is_valid_for_resampling"]
+
+
 def test_check_resolution_with_pandas_datetime():
     """Test check_resolution with pandas datetime objects."""
-    import pandas as pd
-
     # Create monthly time series with pandas datetime
     times = pd.date_range("2000-01-01", periods=3, freq="MS")
     da = xr.DataArray([1, 2, 3], coords={"time": times}, dims="time")
