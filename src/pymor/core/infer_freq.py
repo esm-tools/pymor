@@ -157,7 +157,12 @@ def _infer_frequency_core(
             return FrequencyResult(None, None, None, False, error_status)
         return None
     deltas = np.diff(ordinals)
-    median_delta = np.median(deltas)
+    # To handle irregular time series with gaps, find the most common delta.
+    # We round the deltas to a reasonable precision to group similar values.
+    rounded_deltas = np.round(deltas, decimals=2)
+    unique_deltas, counts = np.unique(rounded_deltas, return_counts=True)
+    most_common_delta_index = np.argmax(counts)
+    median_delta = unique_deltas[most_common_delta_index]
     std_delta = np.std(deltas)
 
     days_in_calendar_year = {
@@ -179,15 +184,25 @@ def _infer_frequency_core(
 
     matched_freq = None
     matched_step = None
-    for freq, base_days in base_freqs.items():
-        for step in range(1, 13):
-            test_delta = base_days * step
-            if abs(median_delta - test_delta) <= tol * test_delta:
-                matched_freq = freq
-                matched_step = step
+    # Prioritize monthly check to avoid incorrect '4W' match
+    monthly_days = base_freqs["M"]
+    # Use a larger tolerance for monthly checks to account for varying month lengths
+    if abs(median_delta - monthly_days) <= 0.15 * monthly_days:
+        matched_freq = "M"
+        matched_step = 1
+    else:
+        for freq, base_days in base_freqs.items():
+            # Skip monthly check as it's already done
+            if freq == "M":
+                continue
+            for step in range(1, 13):
+                test_delta = base_days * step
+                if abs(median_delta - test_delta) <= tol * test_delta:
+                    matched_freq = freq
+                    matched_step = step
+                    break
+            if matched_freq:
                 break
-        if matched_freq:
-            break
 
     if matched_freq is None:
         # For irregular time series, try to find the closest match with relaxed tolerance
