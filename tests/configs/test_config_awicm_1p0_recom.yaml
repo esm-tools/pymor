@@ -17,6 +17,7 @@ general:
 rules:
   - name: "temp_with_levels"
     experiment_id: "piControl"
+    activity_id: "CMIP"
     output_directory: "./output"
     source_id: "FESOM"
     grid_label: gn

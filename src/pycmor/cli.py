@@ -1,9 +1,9 @@
 import os
 import sys
 from importlib import resources
+from importlib.metadata import entry_points
 from typing import List
 
-import pkg_resources
 import rich_click as click
 import yaml
 from click_loguru import ClickLoguru
@@ -22,11 +22,7 @@ from .dev import utils as dev_utils
 from .fesom_1p4.nodes_to_levels import convert
 from .scripts.update_dimensionless_mappings import update_dimensionless_mappings
 
-MAX_FRAMES = int(
-    os.environ.get(
-        "PYCMOR_ERROR_MAX_FRAMES", os.environ.get("PYMOR_ERROR_MAX_FRAMES", 3)
-    )
-)
+MAX_FRAMES = int(os.environ.get("PYCMOR_ERROR_MAX_FRAMES", os.environ.get("PYMOR_ERROR_MAX_FRAMES", 3)))
 """
 str: The maximum number of frames to show in the traceback if there is an error. Default to 3
 """
@@ -56,9 +52,7 @@ def pymor_cli_group(func):
     func = click_loguru.logging_options(func)
     func = click.group()(func)
     func = click_loguru.stash_subcommand()(func)
-    func = click.version_option(
-        version=VERSION, prog_name="PyCMOR - Makes CMOR Simple"
-    )(func)
+    func = click.version_option(version=VERSION, prog_name="PyCMOR - Makes CMOR Simple")(func)
     return func
 
 
@@ -69,9 +63,10 @@ def find_subcommands():
     groups = ["pycmor.cli_subcommands", "pymor.cli_subcommands"]
     discovered_subcommands = {}
     for group in groups:
-        for entry_point in pkg_resources.iter_entry_points(group):
+        eps = entry_points(group=group) if hasattr(entry_points(), "__getitem__") else entry_points().get(group, [])
+        for entry_point in eps:
             discovered_subcommands[entry_point.name] = {
-                "plugin_name": entry_point.module_name.split(".")[0],
+                "plugin_name": entry_point.value.split(":")[0].split(".")[0],
                 "callable": entry_point.load(),
             }
     return discovered_subcommands
@@ -101,6 +96,9 @@ def process(config_file):
     # NOTE(PG): The ``init_logger`` decorator above removes *ALL* previously configured loggers,
     #           so we need to re-create the report logger here. Paul does not like this at all.
     add_report_logger()
+    from .core.banner import show_banner
+
+    show_banner()
     logger.info(f"Processing {config_file}")
     with open(config_file, "r") as f:
         cfg = yaml.safe_load(f)
@@ -180,11 +178,10 @@ def scripts():
 
 
 @develop.command()
-@click_loguru.logging_options
 @click_loguru.init_logger()
 @click.argument("directory", type=click.Path(exists=True))
 @click.argument("output_file", type=click.File("w"), required=False, default=None)
-def ls(directory, output_file, verbose, quiet, logfile, profile_mem):
+def ls(directory, output_file):
     yaml_str = dev_utils.ls_to_yaml(directory)
     # Append to beginning of output file
     if output_file is not None:
@@ -202,10 +199,9 @@ def ls(directory, output_file, verbose, quiet, logfile, profile_mem):
 
 
 @validate.command()
-@click_loguru.logging_options
 @click_loguru.init_logger()
 @click.argument("config_file", type=click.Path(exists=True))
-def config(config_file, verbose, quiet, logfile, profile_mem):
+def config(config_file):
     logger.info(f"Checking if a CMORizer can be built from {config_file}")
     with open(config_file, "r") as f:
         cfg = yaml.safe_load(f)
@@ -225,9 +221,7 @@ def config(config_file, verbose, quiet, logfile, profile_mem):
                 GENERAL_VALIDATOR.errors,
             ]
         ):
-            logger.success(
-                f"Configuration {config_file} is valid for general settings, rules, and pipelines!"
-            )
+            logger.success(f"Configuration {config_file} is valid for general settings, rules, and pipelines!")
         for key, error in {
             **GENERAL_VALIDATOR.errors,
             **PIPELINES_VALIDATOR.errors,
@@ -237,11 +231,10 @@ def config(config_file, verbose, quiet, logfile, profile_mem):
 
 
 @validate.command()
-@click_loguru.logging_options
 @click_loguru.init_logger()
 @click.argument("config_file", type=click.Path(exists=True))
 @click.argument("table_name", type=click.STRING)
-def table(config_file, table_name, verbose, quiet, logfile, profile_mem):
+def table(config_file, table_name):
     logger.info(f"Processing {config_file}")
     with open(config_file, "r") as f:
         cfg = yaml.safe_load(f)
@@ -250,11 +243,10 @@ def table(config_file, table_name, verbose, quiet, logfile, profile_mem):
 
 
 @validate.command()
-@click_loguru.logging_options
 @click_loguru.init_logger()
 @click.argument("config_file", type=click.Path(exists=True))
 @click.argument("output_dir", type=click.STRING)
-def directory(config_file, output_dir, verbose, quiet, logfile, profile_mem):
+def directory(config_file, output_dir):
     logger.info(f"Processing {config_file}")
     with open(config_file, "r") as f:
         cfg = yaml.safe_load(f)
@@ -291,14 +283,13 @@ scripts.add_command(update_dimensionless_mappings)
 
 
 @cache.command()
-@click_loguru.logging_options
 @click_loguru.init_logger()
 @click.argument(
     "cache_dir",
     default=f"{os.environ['HOME']}/.prefect/storage/",
     type=click.Path(exists=True, dir_okay=True),
 )
-def inspect_prefect_global(cache_dir, verbose, quiet, logfile, profile_mem):
+def inspect_prefect_global(cache_dir):
     """Print information about items in Prefect's storage cache"""
     logger.info(f"Inspecting Prefect Cache at {cache_dir}")
     caching.inspect_cache(cache_dir)
@@ -306,22 +297,20 @@ def inspect_prefect_global(cache_dir, verbose, quiet, logfile, profile_mem):
 
 
 @cache.command()
-@click_loguru.logging_options
 @click_loguru.init_logger()
 @click.argument(
     "result",
     type=click.Path(exists=True),
 )
-def inspect_prefect_result(result, verbose, quiet, logfile, profile_mem):
+def inspect_prefect_result(result):
     obj = caching.inspect_result(result)
     logger.info(obj)
     return 0
 
 
 @cache.command()
-@click_loguru.logging_options
 @click.argument("files", type=click.Path(exists=True), nargs=-1)
-def populate_cache(files: List, verbose, quiet, logfile, profile_mem):
+def populate_cache(files: List):
     fc.add_files(files)
     fc.save()
 

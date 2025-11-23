@@ -1,7 +1,8 @@
 """
-==========================
-The Pycmor Standard Library
-==========================
+===========================
+The PyCMOR Standard Library
+===========================
+
 The standard library contains functions that are included in the default
 pipelines, and are generally used as ``step`` functions. We expose several
 useful ones:
@@ -26,15 +27,10 @@ from xarray import DataArray, Dataset
 from ..core.logging import logger
 from ..core.rule import Rule
 from .bounds import add_vertical_bounds as _add_vertical_bounds
-from .coordinate_attributes import (
-    set_coordinate_attributes as _set_coordinate_attributes,
-)
+from .coordinate_attributes import set_coordinate_attributes as _set_coordinate_attributes
 from .dataset_helpers import freq_is_coarser_than_data, get_time_label, has_time_axis
 from .dimension_mapping import map_dimensions as _map_dimensions
-from .exceptions import (
-    PycmorResamplingError,
-    PycmorResamplingTimeAxisIncompatibilityError,
-)
+from .exceptions import PycmorResamplingError, PycmorResamplingTimeAxisIncompatibilityError
 from .generic import load_data as _load_data
 from .generic import show_data as _show_data
 from .generic import trigger_compute as _trigger_compute
@@ -60,9 +56,7 @@ __all__ = [
 ]
 
 
-def convert_units(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def convert_units(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Convert units of a DataArray or Dataset based upon the Data Request Variable you
     have selected. Automatically handles chemical elements and dimensionless units.
@@ -83,9 +77,7 @@ def convert_units(
     return handle_unit_conversion(data, rule)
 
 
-def time_average(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def time_average(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Compute the time average of a DataArray or Dataset based upon the Data Request Variable you
     have selected.
@@ -106,9 +98,7 @@ def time_average(
     return timeavg(data, rule)
 
 
-def load_data(
-    data: Union[DataArray, Dataset, None], rule: Rule
-) -> Union[DataArray, Dataset]:
+def load_data(data: Union[DataArray, Dataset, None], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Load data from files according to the rule specification.
 
@@ -137,9 +127,7 @@ def load_data(
     return _load_data(data, rule)
 
 
-def get_variable(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def get_variable(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Extract a variable from a dataset as a DataArray.
 
@@ -168,9 +156,7 @@ def get_variable(
     return data
 
 
-def temporal_resample(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def temporal_resample(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Resample a DataArray or Dataset to a different temporal frequency.
 
@@ -219,9 +205,7 @@ def temporal_resample(
         )
 
 
-def trigger_compute(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def trigger_compute(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Trigger computation of lazy (dask-backed) data operations.
 
@@ -266,9 +250,7 @@ def show_data(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, D
     return _show_data(data, rule)
 
 
-def set_global_attributes(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def set_global_attributes(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Set global metadata attributes for a Dataset or DataArray.
 
@@ -291,9 +273,7 @@ def set_global_attributes(
     return _set_global_attributes(data, rule)
 
 
-def set_variable_attributes(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def set_variable_attributes(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Set variable-specific metadata attributes.
 
@@ -316,9 +296,7 @@ def set_variable_attributes(
     return set_variable_attrs(data, rule)
 
 
-def set_coordinate_attributes(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def set_coordinate_attributes(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Set CF-compliant metadata attributes on coordinate variables.
 
@@ -366,9 +344,7 @@ def set_coordinate_attributes(
     return _set_coordinate_attributes(data, rule)
 
 
-def map_dimensions(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def map_dimensions(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Map dimensions from source data to CMIP table requirements.
 
@@ -424,9 +400,7 @@ def map_dimensions(
     return _map_dimensions(data, rule)
 
 
-def checkpoint_pipeline(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def checkpoint_pipeline(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Insert a checkpoint in the pipeline processing.
 
@@ -457,9 +431,7 @@ def checkpoint_pipeline(
     return data
 
 
-def add_vertical_bounds(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def add_vertical_bounds(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Add vertical coordinate bounds to a dataset (similar to cdo genlevelbounds).
 
@@ -486,6 +458,7 @@ def add_vertical_bounds(
     --------
     >>> import xarray as xr
     >>> import numpy as np
+    >>> from pycmor.core.rule import Rule
     >>> ds = xr.Dataset({
     ...     'ta': (['time', 'plev', 'lat', 'lon'], np.random.rand(10, 8, 5, 6)),
     ... }, coords={
@@ -493,8 +466,9 @@ def add_vertical_bounds(
     ...     'lat': np.linspace(-90, 90, 5),
     ...     'lon': np.linspace(0, 360, 6),
     ... })
+    >>> rule = Rule(cmor_variable='ta', model_variable='ta')
     >>> ds_with_bounds = add_vertical_bounds(ds, rule)
-    >>> print('plev_bnds' in ds_with_bounds)
+    >>> 'plev_bnds' in ds_with_bounds
     True
 
     Notes

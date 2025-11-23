@@ -17,18 +17,26 @@ Usage:
 ------
 >>> from pycmor.data_request import CMIP7Interface
 >>> interface = CMIP7Interface()
+>>> interface.load_metadata('v1.2.2.2')  # doctest: +ELLIPSIS
+>>> len(interface.metadata.get('Compound Name', {})) > 0
+True
 >>>
 >>> # Get metadata by CMIP7 compound name
->>> metadata = interface.get_variable_metadata('atmos.clt.tavg-u-hxy-u.mon.GLB')
+>>> metadata = interface.get_variable_metadata('atmos.tas.tavg-h2m-hxy-u.mon.GLB')
+>>> metadata is not None
+True
+>>> metadata['standard_name']  # doctest: +ELLIPSIS
+'air_temperature'
 >>>
 >>> # Get metadata by CMIP6 compound name (backward compatibility)
->>> metadata = interface.get_variable_by_cmip6_name('Amon.clt')
+>>> metadata = interface.get_variable_by_cmip6_name('Amon.tas')
+>>> metadata is not None
+True
 >>>
 >>> # Find all variants of a variable
->>> variants = interface.find_variable_variants('clt')
->>>
->>> # Get variables for an experiment
->>> vars_hist = interface.get_variables_for_experiment('historical', 'v1.2.2.2')
+>>> variants = interface.find_variable_variants('tas', realm='atmos')
+>>> len(variants) > 0
+True
 """
 
 import json
@@ -46,10 +54,7 @@ try:
     logger.debug("CMIP7 Data Request API loaded successfully")
 except ImportError as e:
     CMIP7_API_AVAILABLE = False
-    logger.warning(
-        f"CMIP7 Data Request API not available: {e}. "
-        "Install with: pip install CMIP7-data-request-api"
-    )
+    logger.warning(f"CMIP7 Data Request API not available: {e}. " "Install with: pip install CMIP7-data-request-api")
     dreq_content = None
     export_dreq_lists_json = None
 
@@ -78,15 +83,14 @@ class CMIP7Interface:
     >>> interface.load_metadata('v1.2.2.2')
     >>> metadata = interface.get_variable_metadata('atmos.tas.tavg-h2m-hxy-u.mon.GLB')
     >>> print(metadata['standard_name'])
-    'air_temperature'
+    air_temperature
     """
 
     def __init__(self):
         """Initialize the CMIP7 interface."""
         if not CMIP7_API_AVAILABLE:
             raise ImportError(
-                "CMIP7 Data Request API is not available. "
-                "Install with: pip install CMIP7-data-request-api"
+                "CMIP7 Data Request API is not available. " "Install with: pip install CMIP7-data-request-api"
             )
 
         self._metadata = None
@@ -117,7 +121,7 @@ class CMIP7Interface:
         version: str = "v1.2.2.2",
         metadata_file: Optional[Union[str, Path]] = None,
         force_reload: bool = False,
-    ) -> Dict:
+    ) -> None:
         """
         Load CMIP7 metadata for a specific version.
 
@@ -130,14 +134,9 @@ class CMIP7Interface:
             instead of using the API.
         force_reload : bool, optional
             If True, force reload even if already loaded. Default is False.
-
-        Returns
-        -------
-        Dict
-            The loaded metadata dictionary.
         """
         if not force_reload and self._metadata is not None and self._version == version:
-            return self._metadata
+            return
 
         if metadata_file is not None:
             # Load from local file
@@ -145,24 +144,79 @@ class CMIP7Interface:
             logger.info(f"Loading CMIP7 metadata from file: {metadata_file}")
             with open(metadata_file, "r") as f:
                 self._metadata = json.load(f)
-            self._version = self._metadata.get("Header", {}).get(
-                "dreq content version", version
-            )
+            self._version = self._metadata.get("Header", {}).get("dreq content version", version)
         else:
-            # Use the API to export metadata
-            logger.info(f"Loading CMIP7 metadata for version: {version}")
-            # For now, we expect the user to have run export_dreq_lists_json
-            # and provide the metadata file path
-            raise NotImplementedError(
-                "Direct API loading not yet implemented. "
-                "Please run export_dreq_lists_json to generate metadata file, "
-                "then use load_metadata(metadata_file='path/to/metadata.json')"
-            )
+            # Check for cached metadata file first
+            # Priority: env var > user cache > system cache
+            import os
 
-        logger.info(
-            f"Loaded metadata for {len(self._metadata.get('Compound Name', {}))} variables"
-        )
-        return self._metadata
+            cached_file = None
+
+            # 1. Check environment variable
+            env_metadata_dir = os.getenv("PYCMOR_CMIP7_METADATA_DIR")
+            logger.debug(f"PYCMOR_CMIP7_METADATA_DIR={env_metadata_dir}")
+            if env_metadata_dir:
+                env_cache_path = Path(env_metadata_dir) / f"{version}.json"
+                logger.debug(f"Checking env var path: {env_cache_path} (exists={env_cache_path.exists()})")
+                if env_cache_path.exists():
+                    cached_file = env_cache_path
+
+            # 2. Check standard cache locations
+            if not cached_file:
+                logger.debug(f"Path.home() = {Path.home()}")
+                cache_locations = [
+                    Path.home() / ".cache" / "pycmor" / "cmip7_metadata" / f"{version}.json",
+                    Path("/home/mambauser") / ".cache" / "pycmor" / "cmip7_metadata" / f"{version}.json",
+                ]
+                for cache_path in cache_locations:
+                    logger.debug(f"Checking cache path: {cache_path} (exists={cache_path.exists()})")
+                    if cache_path.exists():
+                        cached_file = cache_path
+                        break
+
+            if cached_file:
+                logger.info(f"Loading CMIP7 metadata from cache: {cached_file}")
+                with open(cached_file, "r") as f:
+                    self._metadata = json.load(f)
+                self._version = version
+            else:
+                # Use the API to export metadata directly
+                import subprocess
+                import tempfile
+
+                logger.info(f"Loading CMIP7 metadata for version: {version} using API")
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    tmpdir_path = Path(tmpdir)
+                    output_file = tmpdir_path / "metadata.json"
+                    # Export metadata using the command-line tool
+                    # Uses -a (all opportunities) and -m (variables metadata output)
+                    # We need both the main output and the metadata output
+                    logger.debug(f"Exporting CMIP7 data request to: {output_file}")
+                    experiments_file = tmpdir_path / "experiments.json"
+                    result = subprocess.run(
+                        ["export_dreq_lists_json", "-a", version, str(experiments_file), "-m", str(output_file)],
+                        capture_output=True,
+                        text=True,
+                    )
+                    if result.returncode != 0:
+                        raise RuntimeError(
+                            f"Failed to export CMIP7 metadata: {result.stderr}\n"
+                            f"You may need to run: export_dreq_lists_json -a {version} "
+                            f"<experiments_file> -m <metadata_file>"
+                        )
+                    # Load the generated metadata file
+                    metadata_file = output_file
+                    if not metadata_file.exists():
+                        raise FileNotFoundError(
+                            f"Metadata file not found after export: {metadata_file}. "
+                            f"Expected files in {tmpdir_path}: {list(tmpdir_path.glob('*'))}"
+                        )
+                    logger.debug(f"Reading metadata from: {metadata_file}")
+                    with open(metadata_file, "r") as f:
+                        self._metadata = json.load(f)
+                    self._version = version
+
+        logger.info(f"Loaded metadata for {len(self._metadata.get('Compound Name', {}))} variables")
 
     def load_experiments_data(self, experiments_file: Union[str, Path]) -> Dict:
         """
@@ -330,17 +384,12 @@ class CMIP7Interface:
             If experiments data not loaded or experiment not found.
         """
         if self._experiments_data is None:
-            raise ValueError(
-                "Experiments data not loaded. Call load_experiments_data() first."
-            )
+            raise ValueError("Experiments data not loaded. Call load_experiments_data() first.")
 
         experiments = self._experiments_data.get("experiment", {})
         if experiment not in experiments:
             available = list(experiments.keys())
-            raise ValueError(
-                f"Experiment '{experiment}' not found. "
-                f"Available experiments: {available[:10]}..."
-            )
+            raise ValueError(f"Experiment '{experiment}' not found. " f"Available experiments: {available[:10]}...")
 
         exp_data = experiments[experiment]
 
@@ -369,9 +418,7 @@ class CMIP7Interface:
             If experiments data not loaded.
         """
         if self._experiments_data is None:
-            raise ValueError(
-                "Experiments data not loaded. Call load_experiments_data() first."
-            )
+            raise ValueError("Experiments data not loaded. Call load_experiments_data() first.")
 
         return list(self._experiments_data.get("experiment", {}).keys())
 
@@ -428,9 +475,7 @@ class CMIP7Interface:
             "region": parts[4],
         }
 
-    def build_compound_name(
-        self, realm: str, variable: str, branding: str, frequency: str, region: str
-    ) -> str:
+    def build_compound_name(self, realm: str, variable: str, branding: str, frequency: str, region: str) -> str:
         """
         Build a CMIP7 compound name from components.
 
@@ -471,9 +516,7 @@ class CMIP7Interface:
 
 
 # Convenience function
-def get_cmip7_interface(
-    version: str = "v1.2.2.2", metadata_file: Optional[Union[str, Path]] = None
-) -> CMIP7Interface:
+def get_cmip7_interface(version: str = "v1.2.2.2", metadata_file: Optional[Union[str, Path]] = None) -> CMIP7Interface:
     """
     Get a CMIP7Interface instance with metadata loaded.
 
@@ -491,8 +534,10 @@ def get_cmip7_interface(
 
     Examples
     --------
-    >>> interface = get_cmip7_interface(metadata_file='dreq_v1.2.2.2_metadata.json')
+    >>> interface = get_cmip7_interface()  # Downloads and loads v1.2.2.2
     >>> metadata = interface.get_variable_metadata('atmos.tas.tavg-h2m-hxy-u.mon.GLB')
+    >>> print(metadata['standard_name'])  # doctest: +ELLIPSIS
+    air_temperature
     """
     interface = CMIP7Interface()
     interface.load_metadata(version, metadata_file=metadata_file)

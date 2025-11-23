@@ -8,10 +8,10 @@ def test_variable_attrs_dataarray(rule_after_cmip6_cmorizer_init, mocker):
     # Set the fixture as the rule
     rule = rule_after_cmip6_cmorizer_init
 
-    # Mock the _pymor_cfg to return the required values
+    # Mock the _pycmor_cfg to return the required values
     mock_cfg = mocker.Mock()
     mock_cfg.return_value = 1.0e30  # Default missing value
-    rule._pymor_cfg = mock_cfg
+    rule._pycmor_cfg = mock_cfg
 
     # Set the DataArray with a name that matches the rule's model_variable
     da = xr.DataArray(name=rule.model_variable)

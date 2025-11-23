@@ -9,12 +9,7 @@ import pendulum
 from semver.version import Version
 
 from ..core.factory import MetaFactory
-from ..core.logging import logger
-from .variable import (
-    CMIP6DataRequestVariable,
-    CMIP7DataRequestVariable,
-    DataRequestVariable,
-)
+from .variable import CMIP6DataRequestVariable, CMIP7DataRequestVariable, DataRequestVariable
 
 ################################################################################
 # BLUEPRINTS: Abstract classes for the data request tables
@@ -271,9 +266,7 @@ class CMIP7DataRequestTableHeader(DataRequestTableHeader):
         )
 
     @classmethod
-    def from_all_var_info(
-        cls, table_name: str, all_var_info: dict = None
-    ) -> "CMIP7DataRequestTableHeader":
+    def from_all_var_info(cls, table_name: str, all_var_info: dict = None) -> "CMIP7DataRequestTableHeader":
         """Create header from all_var_info.json for a specific table.
 
         This method is for backward compatibility with CMIP6 table structure.
@@ -297,18 +290,12 @@ class CMIP7DataRequestTableHeader(DataRequestTableHeader):
 
         # Filter by CMIP6 table name for backward compatibility
         all_vars_for_table = {
-            k: v
-            for k, v in all_var_info["Compound Name"].items()
-            if v.get("cmip6_table") == table_name
+            k: v for k, v in all_var_info["Compound Name"].items() if v.get("cmip6_cmor_table") == table_name
         }
 
         if not all_vars_for_table:
             # Fallback: try prefix matching (old behavior)
-            all_vars_for_table = {
-                k: v
-                for k, v in all_var_info["Compound Name"].items()
-                if k.startswith(table_name)
-            }
+            all_vars_for_table = {k: v for k, v in all_var_info["Compound Name"].items() if k.startswith(table_name)}
 
         attrs_for_table = {
             "realm": set(),
@@ -414,9 +401,7 @@ class CMIP6DataRequestTableHeader(DataRequestTableHeader):
             _realm=[data["realm"]],
             _table_date=pendulum.parse(data["table_date"], strict=False).date(),
             # This might be None, if the approx interval is an empty string...
-            _approx_interval=(
-                float(data["approx_interval"]) if data["approx_interval"] else None
-            ),
+            _approx_interval=(float(data["approx_interval"]) if data["approx_interval"] else None),
             _generic_levels=data["generic_levels"].split(" "),
         )
         # Optionally get the rest, which might not be present:
@@ -426,9 +411,9 @@ class CMIP6DataRequestTableHeader(DataRequestTableHeader):
         # Handle Version conversions
         if "_data_specs_version" in extracted_data:
             for old_value, new_value in cls._HARD_CODED_DATA_SPECS_REPLACEMENTS.items():
-                extracted_data["_data_specs_version"] = extracted_data[
-                    "_data_specs_version"
-                ].replace(old_value, new_value)
+                extracted_data["_data_specs_version"] = extracted_data["_data_specs_version"].replace(
+                    old_value, new_value
+                )
             extracted_data["_data_specs_version"] = Version.parse(
                 extracted_data["_data_specs_version"],
                 optional_minor_and_patch=True,
@@ -442,9 +427,7 @@ class CMIP6DataRequestTableHeader(DataRequestTableHeader):
         if "_missing_value" in extracted_data:
             extracted_data["_missing_value"] = float(extracted_data["_missing_value"])
         if "_int_missing_value" in extracted_data:
-            extracted_data["_int_missing_value"] = int(
-                extracted_data["_int_missing_value"]
-            )
+            extracted_data["_int_missing_value"] = int(extracted_data["_int_missing_value"])
         return cls(**extracted_data)
 
     @property
@@ -550,22 +533,35 @@ class CMIP6DataRequestTable(DataRequestTable):
         for v in self._variables:
             if getattr(v, find_by) == name:
                 return v
-        raise ValueError(
-            f"A Variable with the attribute {find_by}={name} not found in the table."
-        )
+        raise ValueError(f"A Variable with the attribute {find_by}={name} not found in the table.")
 
     @classmethod
     def from_dict(cls, data: dict) -> "CMIP6DataRequestTable":
         header = CMIP6DataRequestTableHeader.from_dict(data["Header"])
-        variables = [
-            CMIP6DataRequestVariable.from_dict(v)
-            for v in data["variable_entry"].values()
-        ]
+        variables = [CMIP6DataRequestVariable.from_dict(v) for v in data["variable_entry"].values()]
         return cls(header, variables)
 
     @classmethod
-    def table_dict_from_directory(cls, path) -> dict:
-        # We need to know which files to skip...
+    def find_all(cls, path):
+        """
+        Find and yield all CMIP6 DataRequestTable instances from directory.
+
+        Only parses files matching CMIP6_*.json pattern to avoid parsing
+        non-table files (e.g., CMIP7 metadata.json).
+
+        Parameters
+        ----------
+        path : str or Path
+            Directory containing CMIP6 table JSON files
+
+        Yields
+        ------
+        CMIP6DataRequestTable
+            Table instances parsed from JSON files
+        """
+        path = pathlib.Path(path)
+
+        # Skip non-table files
         _skip_files = [
             "CMIP6_CV_test.json",
             "CMIP6_coordinate.json",
@@ -574,15 +570,34 @@ class CMIP6DataRequestTable(DataRequestTable):
             "CMIP6_grids.json",
             "CMIP6_input_example.json",
         ]
-        path = pathlib.Path(path)  # noop if already a Path
-        tables = {}
-        for file in path.iterdir():
+
+        # Only match CMIP6 table files - prevents parsing CMIP7 metadata.json
+        for file in path.glob("CMIP6_*.json"):
             if file.name in _skip_files:
                 continue
-            if file.is_file() and file.suffix == ".json":
-                table = cls.from_json_file(file)
-                tables[table.table_id] = table
-        return tables
+
+            yield cls.from_json_file(file)
+
+    @classmethod
+    def table_dict_from_directory(cls, path) -> dict:
+        """
+        Load tables as dict mapping table_id to table object.
+
+        .. deprecated::
+            Use :meth:`find_all` instead. This method is kept for
+            backward compatibility.
+
+        Parameters
+        ----------
+        path : str or Path
+            Directory containing table JSON files
+
+        Returns
+        -------
+        dict
+            Dictionary mapping table_id to CMIP6DataRequestTable objects
+        """
+        return {t.table_id: t for t in cls.find_all(path)}
 
     @classmethod
     def from_json_file(cls, jfile) -> "CMIP6DataRequestTable":
@@ -633,9 +648,7 @@ class CMIP7DataRequestTable(DataRequestTable):
         for v in self._variables:
             if getattr(v, find_by) == name:
                 return v
-        raise ValueError(
-            f"A Variable with the attribute {find_by}={name} not found in the table."
-        )
+        raise ValueError(f"A Variable with the attribute {find_by}={name} not found in the table.")
 
     @classmethod
     def from_dict(cls, data: dict) -> "CMIP7DataRequestTable":
@@ -662,29 +675,60 @@ class CMIP7DataRequestTable(DataRequestTable):
         header = CMIP7DataRequestTableHeader.from_all_var_info(table_name, all_var_info)
         variables = []
         for var_name, var_dict in all_var_info["Compound Name"].items():
-            if var_dict["cmip6_cmor_table"] == table_name:
+            if var_dict.get("cmip6_cmor_table") == table_name:
                 variables.append(CMIP7DataRequestVariable.from_dict(var_dict))
         return cls(header, variables)
 
     @classmethod
-    def table_dict_from_directory(cls, path) -> dict:
-        path = pathlib.Path(path)  # noop if already a Path
-        tables = {}
-        try:
-            with open(path / "all_var_info.json", "r") as f:
-                all_var_info = json.load(f)
-        except FileNotFoundError:
-            logger.error(f"No all_var_info.json found in {path}.")
-            logger.error(
-                "It is currently possible to only create tables from the all_var_info.json file!"
-            )
-            logger.error("Sorry...")
-            raise FileNotFoundError
-        table_ids = set(k.split(".")[0] for k in all_var_info["Compound Name"].keys())
+    def find_all(cls, path):
+        """
+        Find and yield all CMIP7 DataRequestTable instances.
+
+        For CMIP7, loads from packaged all_var_info.json.
+        Path parameter ignored (kept for API consistency with CMIP6).
+
+        Parameters
+        ----------
+        path : str or Path
+            Path parameter (ignored for CMIP7)
+
+        Yields
+        ------
+        CMIP7DataRequestTable
+            Table instances created from packaged data
+        """
+        # Use packaged data for CMIP7
+        _all_var_info = files("pycmor.data.cmip7").joinpath("all_var_info.json")
+        with open(_all_var_info, "r") as f:
+            all_var_info = json.load(f)
+
+        table_ids = set(
+            v.get("cmip6_cmor_table") for v in all_var_info["Compound Name"].values() if v.get("cmip6_cmor_table")
+        )
+
         for table_id in table_ids:
-            table = cls.from_all_var_info(table_id, all_var_info)
-            tables[table_id] = table
-        return tables
+            yield cls.from_all_var_info(table_id, all_var_info)
+
+    @classmethod
+    def table_dict_from_directory(cls, path) -> dict:
+        """
+        Load tables as dict mapping table_id to table object.
+
+        .. deprecated::
+            Use :meth:`find_all` instead. This method is kept for
+            backward compatibility.
+
+        Parameters
+        ----------
+        path : str or Path
+            Path parameter (ignored for CMIP7)
+
+        Returns
+        -------
+        dict
+            Dictionary mapping table_id to CMIP7DataRequestTable objects
+        """
+        return {t.table_id: t for t in cls.find_all(path)}
 
     @classmethod
     def from_json_file(cls, jfile) -> "CMIP7DataRequestTable":

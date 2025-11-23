@@ -58,10 +58,7 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         so we use the CMIP6 list as a baseline for compatibility.
         """
         # Check if CMIP7 CV has the list
-        if (
-            "required_global_attributes" in self.cv
-            and self.cv["required_global_attributes"]
-        ):
+        if "required_global_attributes" in self.cv and self.cv["required_global_attributes"]:
             return self.cv["required_global_attributes"]
 
         # Fallback to CMIP6-compatible list
@@ -145,9 +142,7 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         )
         d = pattern.match(label)
         if d is None:
-            raise ValueError(
-                f"`label` must be of the form 'r<int>i<int>p<int>f<int>', Got: {label}"
-            )
+            raise ValueError(f"`label` must be of the form 'r<int>i<int>p<int>f<int>', Got: {label}")
         d = {name: int(val) for name, val in d.groupdict().items()}
         return d
 
@@ -241,14 +236,10 @@ class CMIP7GlobalAttributes(GlobalAttributes):
 
         if realm is None:
             # Fallback to user-provided value
-            realm = self.rule_dict.get(
-                "realm", self.rule_dict.get("model_component", None)
-            )
+            realm = self.rule_dict.get("realm", self.rule_dict.get("model_component", None))
 
         if realm is None:
-            raise ValueError(
-                "Realm/modeling_realm not found in variable metadata or rule_dict"
-            )
+            raise ValueError("Realm/modeling_realm not found in variable metadata or rule_dict")
 
         return realm
 
@@ -276,9 +267,7 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         CMIP7 doesn't yet have source_id CV with resolution info,
         so we use user-provided nominal resolution.
         """
-        user_resolution = self.rule_dict.get(
-            "nominal_resolution", self.rule_dict.get("resolution", None)
-        )
+        user_resolution = self.rule_dict.get("nominal_resolution", self.rule_dict.get("resolution", None))
         if user_resolution:
             return user_resolution
 
@@ -378,13 +367,10 @@ class CMIP7GlobalAttributes(GlobalAttributes):
                 if user_activity_id:
                     if user_activity_id not in activities:
                         raise ValueError(
-                            f"Activity ID '{user_activity_id}' is not valid. "
-                            f"Allowed values: {activities}"
+                            f"Activity ID '{user_activity_id}' is not valid. " f"Allowed values: {activities}"
                         )
                     return user_activity_id
-                raise ValueError(
-                    f"Multiple activities are not supported, got: {activities}"
-                )
+                raise ValueError(f"Multiple activities are not supported, got: {activities}")
 
             if len(activities) == 1:
                 return activities[0]
@@ -394,9 +380,7 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         if user_activity_id:
             return user_activity_id
 
-        raise ValueError(
-            f"Could not determine activity_id for experiment '{experiment_id}'"
-        )
+        raise ValueError(f"Could not determine activity_id for experiment '{experiment_id}'")
 
     def get_sub_experiment_id(self):
         """
@@ -410,9 +394,7 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         if "experiment" in self.cv and experiment_id in self.cv["experiment"]:
             exp_data = self.cv["experiment"][experiment_id]
             # CMIP7 may use different field name
-            sub_exp = exp_data.get(
-                "sub-experiment", exp_data.get("sub_experiment_id", ["none"])
-            )
+            sub_exp = exp_data.get("sub-experiment", exp_data.get("sub_experiment_id", ["none"]))
             if isinstance(sub_exp, list):
                 return " ".join(sub_exp)
             return str(sub_exp)
@@ -472,21 +454,64 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         """
         Get table ID.
 
-        In CMIP7, we use the cmip6_table field for backward compatibility.
+        Priority:
+        1. cmip6_table field from variable metadata (CMIP7 compatibility)
+        2. table_id from rule configuration
+        3. Derive from compound_name if available (CMIP7 standard, useful for CMIP6 too)
         """
+        from ..core.logging import logger
+
         # Check if drv is a dict or object
         if isinstance(self.drv, dict):
             table_id = self.drv.get("cmip6_table", None)
         else:
             table_id = getattr(self.drv, "cmip6_table", None)
+        logger.debug(f"table_id from variable metadata (cmip6_table): {table_id}")
 
         if table_id is None:
             # Fallback to user-provided
             table_id = self.rule_dict.get("table_id", None)
+            logger.debug(f"table_id from rule_dict: {table_id}")
+
+        # If still not found, try to derive from compound_name (works for both CMIP6 and CMIP7)
+        if table_id is None:
+            compound_name = self.rule_dict.get("compound_name", None)
+            logger.debug(f"Attempting to derive table_id from compound_name: {compound_name}")
+            if compound_name:
+                # compound_name format: component.variable.cell_methods.frequency.grid
+                # Example: ocnBgchem.fgco2.tavg-u-hxy-sea.mon.GLB
+                parts = compound_name.split(".")
+                logger.debug(f"compound_name split into {len(parts)} parts: {parts}")
+                if len(parts) >= 5:
+                    component = parts[0]  # e.g., ocnBgchem
+                    frequency = parts[3]  # e.g., mon
+
+                    # Map component prefix to realm letter
+                    realm_map = {
+                        "atmos": "A",
+                        "ocean": "O",
+                        "ocn": "O",
+                        "ocnBgchem": "O",
+                        "seaIce": "SI",
+                        "land": "L",
+                        "landIce": "LI",
+                    }
+
+                    # Get realm letter (default to first letter if not in map)
+                    realm_letter = realm_map.get(component, component[0].upper())
+
+                    # Capitalize frequency and combine with realm
+                    # mon -> Omon, day -> Oday, etc.
+                    table_id = f"{realm_letter}{frequency}"
+                    logger.debug(f"Derived table_id: {table_id} (realm={realm_letter}, freq={frequency})")
+                else:
+                    logger.warning(f"compound_name has {len(parts)} parts, expected at least 5")
 
         if table_id is None:
+            logger.error(f"Could not determine table_id. rule_dict keys: {list(self.rule_dict.keys())}")
             raise ValueError("table_id not found in variable metadata or rule_dict")
 
+        logger.debug(f"Final table_id: {table_id}")
         return table_id
 
     def get_mip_era(self):
@@ -621,9 +646,7 @@ class CMIP6GlobalAttributes(GlobalAttributes):
         )
         d = pattern.match(label)
         if d is None:
-            raise ValueError(
-                f"`label` must be of the form 'r<int>i<int>p<int>f<int>', Got: {label}"
-            )
+            raise ValueError(f"`label` must be of the form 'r<int>i<int>p<int>f<int>', Got: {label}")
         d = {name: int(val) for name, val in d.groupdict().items()}
         return d
 
@@ -671,13 +694,10 @@ class CMIP6GlobalAttributes(GlobalAttributes):
             if user_institution_id:
                 if user_institution_id not in institution_ids:
                     raise ValueError(
-                        f"Institution ID '{user_institution_id}' is not valid. "
-                        f"Allowed values: {institution_ids}"
+                        f"Institution ID '{user_institution_id}' is not valid. " f"Allowed values: {institution_ids}"
                     )
                 return user_institution_id
-            raise ValueError(
-                f"Multiple institutions are not supported, got: {institution_ids}"
-            )
+            raise ValueError(f"Multiple institutions are not supported, got: {institution_ids}")
         return institution_ids[0]
 
     def get_institution(self):
@@ -703,14 +723,10 @@ class CMIP6GlobalAttributes(GlobalAttributes):
         source_id = self.get_source_id()
         cv_source_id = self.cv["source_id"][source_id]
         model_component = self.get_realm()
-        grid_description = cv_source_id["model_component"][model_component][
-            "description"
-        ]
+        grid_description = cv_source_id["model_component"][model_component]["description"]
         if grid_description == "none":
             # check if user has provided grid description
-            user_grid_description = self.rule_dict.get(
-                "description", self.rule_dict.get("grid", None)
-            )
+            user_grid_description = self.rule_dict.get("description", self.rule_dict.get("grid", None))
             if user_grid_description:
                 grid_description = user_grid_description
         return grid_description
@@ -726,9 +742,7 @@ class CMIP6GlobalAttributes(GlobalAttributes):
             nominal_resolution = cv_model_component["native_ominal_resolution"]
         if nominal_resolution == "none":
             # check if user has provided nominal resolution
-            user_nominal_resolution = self.rule_dict.get(
-                "nominal_resolution", self.rule_dict.get("resolution", None)
-            )
+            user_nominal_resolution = self.rule_dict.get("nominal_resolution", self.rule_dict.get("resolution", None))
             if user_nominal_resolution:
                 nominal_resolution = user_nominal_resolution
         return nominal_resolution
@@ -748,9 +762,7 @@ class CMIP6GlobalAttributes(GlobalAttributes):
             license_text = re.sub(r"\[.*?\]", "", license_text)
             license_text = license_text.format(institution_id, license_id, license_url)
         else:
-            license_text = license_text.format(
-                institution_id, license_id, license_url, further_info_url
-            )
+            license_text = license_text.format(institution_id, license_id, license_url, further_info_url)
         return license_text
 
     def get_experiment_id(self):
@@ -769,13 +781,10 @@ class CMIP6GlobalAttributes(GlobalAttributes):
             if user_activity_id:
                 if user_activity_id not in activity_ids:
                     raise ValueError(
-                        f"Activity ID '{user_activity_id}' is not valid. "
-                        f"Allowed values: {activity_ids}"
+                        f"Activity ID '{user_activity_id}' is not valid. " f"Allowed values: {activity_ids}"
                     )
                 return user_activity_id
-            raise ValueError(
-                f"Multiple activities are not supported, got: {activity_ids}"
-            )
+            raise ValueError(f"Multiple activities are not supported, got: {activity_ids}")
         return activity_ids[0]
 
     def get_sub_experiment_id(self):

@@ -11,6 +11,7 @@ from pathlib import Path
 import requests
 
 from .factory import MetaFactory
+from .resource_locator import CMIP6CVLocator, CMIP7CVLocator
 
 
 class ControlledVocabularies(dict, metaclass=MetaFactory):
@@ -52,10 +53,38 @@ class CMIP6ControlledVocabularies(ControlledVocabularies):
             self.update(d)
 
     @classmethod
-    def load(cls, table_dir=None):
-        """Load the controlled vocabularies from the CMIP6_CVs directory"""
-        cv_dir = Path(table_dir)
-        return cls.from_directory(cv_dir)
+    def load(cls, table_dir=None, version=None):
+        """Load the controlled vocabularies from the CMIP6_CVs directory
+
+        Uses CVLocator with 5-level priority:
+        1. table_dir (if provided)
+        2. XDG cache
+        3. Remote git
+        4. Packaged resources
+        5. Vendored CMIP6_CVs submodule
+
+        Parameters
+        ----------
+        table_dir : str or Path, optional
+            User-specified CV_Dir path
+        version : str, optional
+            CV version tag (default: "6.2.58.64")
+
+        Returns
+        -------
+        CMIP6ControlledVocabularies
+            Loaded controlled vocabularies
+        """
+        locator = CMIP6CVLocator(version=version, user_path=table_dir)
+        cv_path = locator.locate()
+
+        if cv_path is None:
+            raise FileNotFoundError(
+                "Could not load CMIP6 controlled vocabularies from any source. "
+                "Check that git submodules are initialized or internet connection is available."
+            )
+
+        return cls.from_directory(cv_path)
 
     @classmethod
     def from_directory(cls, directory):
@@ -72,9 +101,7 @@ class CMIP6ControlledVocabularies(ControlledVocabularies):
     def print_experiment_ids(self):
         """Print experiment ids with start and end years and parent experiment ids"""
         for k, v in self["experiment_id"].items():
-            print(
-                f"{k} {v['start_year']}-{v['end_year']} parent:{', '.join(v['parent_experiment_id'])}"
-            )
+            print(f"{k} {v['start_year']}-{v['end_year']} parent:{', '.join(v['parent_experiment_id'])}")
 
     @staticmethod
     def dict_from_json_file(path):
@@ -170,25 +197,38 @@ class CMIP7ControlledVocabularies(ControlledVocabularies):
         self.update(cv_data)
 
     @classmethod
-    def load(cls, table_dir=None):
+    def load(cls, table_dir=None, version=None):
         """Load the controlled vocabularies from the CMIP7_CVs directory
+
+        Uses CVLocator with 5-level priority:
+        1. table_dir (if provided)
+        2. XDG cache
+        3. Remote git
+        4. Packaged resources
+        5. Vendored CMIP7-CVs submodule
 
         Parameters
         ----------
         table_dir : str or Path, optional
-            Path to the CMIP7 CVs directory (should contain experiment/, project/ subdirs)
-            If None, uses the vendored CMIP7-CVs submodule in the repository.
+            User-specified CV_Dir path
+        version : str, optional
+            Git branch/tag (default: "src-data")
 
         Returns
         -------
         CMIP7ControlledVocabularies
             A new CMIP7ControlledVocabularies object
         """
-        if table_dir is None:
-            # Use the vendored CMIP7-CVs submodule
-            table_dir = cls._get_vendored_cv_path()
-        cv_dir = Path(table_dir)
-        return cls.from_directory(cv_dir)
+        locator = CMIP7CVLocator(version=version, user_path=table_dir)
+        cv_path = locator.locate()
+
+        if cv_path is None:
+            raise FileNotFoundError(
+                "Could not load CMIP7 controlled vocabularies from any source. "
+                "Check that git submodules are initialized or internet connection is available."
+            )
+
+        return cls.from_directory(cv_path)
 
     @staticmethod
     def _get_vendored_cv_path():
@@ -406,9 +446,7 @@ class CMIP7ControlledVocabularies(ControlledVocabularies):
         for exp_id, exp_data in self["experiment"].items():
             start = exp_data.get("start", exp_data.get("start-year", "N/A"))
             end = exp_data.get("end", exp_data.get("end-year", "N/A"))
-            parent = exp_data.get(
-                "parent-experiment", exp_data.get("parent_experiment_id", [])
-            )
+            parent = exp_data.get("parent-experiment", exp_data.get("parent_experiment_id", []))
 
             # Handle parent experiment format
             if isinstance(parent, list):
