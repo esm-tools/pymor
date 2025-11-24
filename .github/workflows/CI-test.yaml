@@ -2,9 +2,11 @@
 name: Run Basic Tests
 on:
   push:
-    branches: ["main", "prep-release"]
+    # Prototype and future branches get their own tests...
+    branches: ["main", "prep-release", "prototype/*", "future/*"]
     tags: ["v*.*.*"]
   pull_request:
+    # ...and everything else is a PR!
     branches: ["main", "prep-release"]
 jobs:
   # Setup job for linting and formatting checks
