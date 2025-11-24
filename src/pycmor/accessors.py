@@ -9,6 +9,7 @@ from xarray import register_dataarray_accessor, register_dataset_accessor
 
 # Import modules that register specialized xarray accessors
 from .core.infer_freq import DatasetFrequencyAccessor, TimeFrequencyAccessor
+from .core.rule import Rule
 
 # Future accessor imports can be added here as the project grows
 # from .other_module import other_accessor  # noqa: F401
@@ -30,8 +31,18 @@ class PycmorDataArrayAccessor:
     data.pycmor.check_resolution(target_approx_interval=1.0)  # daily
     data.pycmor.infer_frequency()  # infer frequency from data
 
-    # Future pycmor functionality will also be available here
-    # data.pycmor.other_feature()
+    # Pipeline operations - simple stateless processing with CMIP7 (default)
+    result = data.pycmor.process('atmos.tas.tavg-h2m-hxy-u.mon.GLB')
+
+    # CMIP6 usage with simple variable name
+    result = data.pycmor.process('tas', cmor_version='CMIP6')
+
+    # With custom pipeline
+    from pycmor.pipeline import DefaultPipeline
+    result = data.pycmor.process(
+        'ocean.tos.tavg-hxy-u.mon.GLB',
+        pipeline=DefaultPipeline
+    )
     """
 
     def __init__(self, xarray_obj):
@@ -61,9 +72,180 @@ class PycmorDataArrayAccessor:
         """
         return self._timefreq.infer_frequency(*args, **kwargs)
 
-    # Future pycmor methods can be added here
-    # def other_feature(self, *args, **kwargs):
-    #     return self._other_accessor.other_feature(*args, **kwargs)
+    # Pipeline methods
+    def process(
+        self,
+        variable,
+        cmor_version="CMIP7",
+        pipeline=None,
+        compound_name=None,
+        cmor_variable=None,
+        data_request_variable=None,
+        **rule_kwargs,
+    ):
+        """Process this data through a pycmor pipeline.
+
+        Parameters
+        ----------
+        variable : str
+            Variable identifier to process. How this is interpreted depends on cmor_version:
+            - For CMIP6: interpreted as cmor_variable (e.g., 'tas', 'pr')
+            - For CMIP7+: interpreted as compound_name (e.g., 'atmos.tas.tavg-h2m-hxy-u.mon.GLB')
+            Cannot be used together with compound_name, cmor_variable, or data_request_variable kwargs.
+        cmor_version : str, optional
+            CMIP version to use for variable lookup (e.g., 'CMIP6', 'CMIP7').
+            Defaults to 'CMIP7'. Determines how the positional variable arg is interpreted.
+        pipeline : Pipeline instance, class, string, or None, optional
+            Pipeline to use. If None, uses DefaultPipeline.
+            If string, looks for pipeline class in pycmor.pipeline module.
+            If class, instantiates it.
+            If instance, uses it directly.
+        compound_name : str, optional
+            CMIP7 compound name for explicit lookup (e.g., 'atmos.tas.tavg-h2m-hxy-u.mon.GLB').
+            Cannot be used with positional variable arg.
+        cmor_variable : str, optional
+            CMOR variable name for explicit lookup (e.g., 'tas').
+            Cannot be used with positional variable arg.
+        data_request_variable : DataRequestVariable, optional
+            Explicit DataRequestVariable instance to use.
+            If provided, variable lookup is skipped.
+            Cannot be used with positional variable arg.
+        **rule_kwargs
+            Additional arguments for Rule constructor (units, etc.)
+
+        Returns
+        -------
+        xr.DataArray
+            Processed data
+
+        Examples
+        --------
+        # CMIP7 usage with compound name (default)
+        result = data.pycmor.process('atmos.tas.tavg-h2m-hxy-u.mon.GLB')
+
+        # CMIP6 usage with simple variable name
+        result = data.pycmor.process('tas', cmor_version='CMIP6')
+
+        # Explicit compound_name kwarg
+        result = data.pycmor.process(
+            compound_name='atmos.tas.tavg-h2m-hxy-u.mon.GLB',
+            cmor_version='CMIP7'
+        )
+
+        # Explicit cmor_variable kwarg
+        result = data.pycmor.process(
+            cmor_variable='tas',
+            cmor_version='CMIP6'
+        )
+
+        # Use with custom pipeline
+        from pycmor.pipeline import DefaultPipeline
+        result = data.pycmor.process(
+            'atmos.pr.tavg-hxy-u.mon.GLB',
+            pipeline=DefaultPipeline
+        )
+
+        # Use explicit DataRequestVariable instance
+        from pycmor.data_request.collection import CMIP7DataRequest
+        dr = CMIP7DataRequest.from_vendored_json()
+        drv = dr.variables['atmos.tas.tavg-h2m-hxy-u.mon.GLB']
+        result = data.pycmor.process(
+            'atmos.tas.tavg-h2m-hxy-u.mon.GLB',
+            data_request_variable=drv
+        )
+
+        # Use with additional rule kwargs
+        result = data.pycmor.process(
+            'ocean.tos.tavg-hxy-u.mon.GLB',
+            units='degC'
+        )
+        """
+        # Conflict checks
+        if variable and data_request_variable:
+            raise ValueError("Cannot specify both positional variable and data_request_variable")
+        if variable and compound_name:
+            raise ValueError("Cannot specify both positional variable and compound_name kwarg")
+        if variable and cmor_variable:
+            raise ValueError("Cannot specify both positional variable and cmor_variable kwarg")
+
+        # Interpret the positional variable arg based on CMIP version
+        if variable:
+            if cmor_version == "CMIP6":
+                cmor_variable = variable
+            else:  # CMIP7+ defaults to compound_name
+                compound_name = variable
+
+        # Get or create DataRequestVariable
+        if data_request_variable is not None:
+            drv = data_request_variable
+        elif compound_name or cmor_variable:
+            # Look up variable in DataRequest using TableLocator priority chain
+            from .core.factory import create_factory
+            from .core.resource_locator import TableLocator
+            from .data_request.collection import DataRequest
+
+            # Get the versioned classes using factory pattern
+            DataRequestFactory = create_factory(DataRequest)
+            DataRequestClass = DataRequestFactory.get(cmor_version)
+
+            TableLocatorFactory = create_factory(TableLocator)
+            TableLocatorClass = TableLocatorFactory.get(cmor_version)
+
+            # Use TableLocator to find tables with 5-level priority chain:
+            # 1. User-specified path (none here)
+            # 2. XDG cache
+            # 3. Remote git (with caching)
+            # 4. Packaged resources
+            # 5. Vendored submodules
+            locator = TableLocatorClass(version=None, user_path=None)
+            table_dir = locator.locate()
+
+            # Create DataRequest from located directory
+            dr = DataRequestClass.from_directory(table_dir)
+
+            # Look up the variable by compound_name or cmor_variable
+            lookup_key = compound_name if compound_name else cmor_variable
+            if lookup_key not in dr.variables:
+                raise ValueError(
+                    f"Variable '{lookup_key}' not found in {cmor_version} DataRequest. "
+                    f"Available variables: {sorted(dr.variables.keys())[:10]}..."
+                )
+            drv = dr.variables[lookup_key]
+        else:
+            raise ValueError(
+                "Must provide a variable identifier. "
+                "Examples:\n"
+                "  CMIP7: process('atmos.tas.tavg-h2m-hxy-u.mon.GLB')\n"
+                "  CMIP6: process('tas', cmor_version='CMIP6')"
+            )
+
+        # Build rule from kwargs - no inputs needed since we have data
+        if "inputs" not in rule_kwargs:
+            rule_kwargs["inputs"] = []
+
+        # Attach DataRequestVariable to rule
+        # Use compound_name if available (CMIP7), otherwise use cmor_variable (CMIP6)
+        if compound_name:
+            rule_kwargs["compound_name"] = compound_name
+        if cmor_variable:
+            rule_kwargs["cmor_variable"] = cmor_variable
+        rule_kwargs["data_request_variables"] = [drv]
+
+        rule = Rule.from_dict(rule_kwargs)
+
+        # Handle pipeline - default to DefaultPipeline
+        if pipeline is None:
+            from .core.pipeline import DefaultPipeline
+
+            pipeline = DefaultPipeline()
+        elif isinstance(pipeline, str):
+            from .core.utils import get_callable_by_name
+
+            pipeline = get_callable_by_name(f"pycmor.pipeline.{pipeline}")()
+        elif isinstance(pipeline, type):
+            pipeline = pipeline()
+
+        return pipeline.run(self._obj, rule)
 
 
 @register_dataset_accessor("pycmor")
@@ -82,8 +264,18 @@ class PycmorDatasetAccessor:
     dataset.pycmor.check_resolution(target_approx_interval=1.0)  # daily
     dataset.pycmor.infer_frequency()  # infer frequency from data
 
-    # Future pycmor functionality will also be available here
-    # dataset.pycmor.other_feature()
+    # Pipeline operations - simple stateless processing with CMIP7 (default)
+    result = dataset.pycmor.process('atmos.tas.tavg-h2m-hxy-u.mon.GLB')
+
+    # CMIP6 usage with simple variable name
+    result = dataset.pycmor.process('tas', cmor_version='CMIP6')
+
+    # With custom pipeline
+    from pycmor.pipeline import DefaultPipeline
+    result = dataset.pycmor.process(
+        'ocean.tos.tavg-hxy-u.mon.GLB',
+        pipeline=DefaultPipeline
+    )
     """
 
     def __init__(self, xarray_obj):
@@ -113,6 +305,177 @@ class PycmorDatasetAccessor:
         """
         return self._timefreq.infer_frequency(*args, **kwargs)
 
-    # Future pycmor methods can be added here
-    # def other_feature(self, *args, **kwargs):
-    #     return self._other_accessor.other_feature(*args, **kwargs)
+    # Pipeline methods
+    def process(
+        self,
+        variable,
+        cmor_version="CMIP7",
+        pipeline=None,
+        compound_name=None,
+        cmor_variable=None,
+        data_request_variable=None,
+        **rule_kwargs,
+    ):
+        """Process this data through a pycmor pipeline.
+
+        Parameters
+        ----------
+        variable : str
+            Variable identifier to process. How this is interpreted depends on cmor_version:
+            - For CMIP6: interpreted as cmor_variable (e.g., 'tas', 'pr')
+            - For CMIP7+: interpreted as compound_name (e.g., 'atmos.tas.tavg-h2m-hxy-u.mon.GLB')
+            Cannot be used together with compound_name, cmor_variable, or data_request_variable kwargs.
+        cmor_version : str, optional
+            CMIP version to use for variable lookup (e.g., 'CMIP6', 'CMIP7').
+            Defaults to 'CMIP7'. Determines how the positional variable arg is interpreted.
+        pipeline : Pipeline instance, class, string, or None, optional
+            Pipeline to use. If None, uses DefaultPipeline.
+            If string, looks for pipeline class in pycmor.pipeline module.
+            If class, instantiates it.
+            If instance, uses it directly.
+        compound_name : str, optional
+            CMIP7 compound name for explicit lookup (e.g., 'atmos.tas.tavg-h2m-hxy-u.mon.GLB').
+            Cannot be used with positional variable arg.
+        cmor_variable : str, optional
+            CMOR variable name for explicit lookup (e.g., 'tas').
+            Cannot be used with positional variable arg.
+        data_request_variable : DataRequestVariable, optional
+            Explicit DataRequestVariable instance to use.
+            If provided, variable lookup is skipped.
+            Cannot be used with positional variable arg.
+        **rule_kwargs
+            Additional arguments for Rule constructor (units, etc.)
+
+        Returns
+        -------
+        xr.Dataset
+            Processed data
+
+        Examples
+        --------
+        # CMIP7 usage with compound name (default)
+        result = dataset.pycmor.process('atmos.tas.tavg-h2m-hxy-u.mon.GLB')
+
+        # CMIP6 usage with simple variable name
+        result = dataset.pycmor.process('tas', cmor_version='CMIP6')
+
+        # Explicit compound_name kwarg
+        result = dataset.pycmor.process(
+            compound_name='atmos.tas.tavg-h2m-hxy-u.mon.GLB',
+            cmor_version='CMIP7'
+        )
+
+        # Explicit cmor_variable kwarg
+        result = dataset.pycmor.process(
+            cmor_variable='tas',
+            cmor_version='CMIP6'
+        )
+
+        # Use with custom pipeline
+        from pycmor.pipeline import DefaultPipeline
+        result = dataset.pycmor.process(
+            'atmos.pr.tavg-hxy-u.mon.GLB',
+            pipeline=DefaultPipeline
+        )
+
+        # Use explicit DataRequestVariable instance
+        from pycmor.data_request.collection import CMIP7DataRequest
+        dr = CMIP7DataRequest.from_vendored_json()
+        drv = dr.variables['atmos.tas.tavg-h2m-hxy-u.mon.GLB']
+        result = dataset.pycmor.process(
+            'atmos.tas.tavg-h2m-hxy-u.mon.GLB',
+            data_request_variable=drv
+        )
+
+        # Use with additional rule kwargs
+        result = dataset.pycmor.process(
+            'ocean.tos.tavg-hxy-u.mon.GLB',
+            units='degC'
+        )
+        """
+        # Conflict checks
+        if variable and data_request_variable:
+            raise ValueError("Cannot specify both positional variable and data_request_variable")
+        if variable and compound_name:
+            raise ValueError("Cannot specify both positional variable and compound_name kwarg")
+        if variable and cmor_variable:
+            raise ValueError("Cannot specify both positional variable and cmor_variable kwarg")
+
+        # Interpret the positional variable arg based on CMIP version
+        if variable:
+            if cmor_version == "CMIP6":
+                cmor_variable = variable
+            else:  # CMIP7+ defaults to compound_name
+                compound_name = variable
+
+        # Get or create DataRequestVariable
+        if data_request_variable is not None:
+            drv = data_request_variable
+        elif compound_name or cmor_variable:
+            # Look up variable in DataRequest using TableLocator priority chain
+            from .core.factory import create_factory
+            from .core.resource_locator import TableLocator
+            from .data_request.collection import DataRequest
+
+            # Get the versioned classes using factory pattern
+            DataRequestFactory = create_factory(DataRequest)
+            DataRequestClass = DataRequestFactory.get(cmor_version)
+
+            TableLocatorFactory = create_factory(TableLocator)
+            TableLocatorClass = TableLocatorFactory.get(cmor_version)
+
+            # Use TableLocator to find tables with 5-level priority chain:
+            # 1. User-specified path (none here)
+            # 2. XDG cache
+            # 3. Remote git (with caching)
+            # 4. Packaged resources
+            # 5. Vendored submodules
+            locator = TableLocatorClass(version=None, user_path=None)
+            table_dir = locator.locate()
+
+            # Create DataRequest from located directory
+            dr = DataRequestClass.from_directory(table_dir)
+
+            # Look up the variable by compound_name or cmor_variable
+            lookup_key = compound_name if compound_name else cmor_variable
+            if lookup_key not in dr.variables:
+                raise ValueError(
+                    f"Variable '{lookup_key}' not found in {cmor_version} DataRequest. "
+                    f"Available variables: {sorted(dr.variables.keys())[:10]}..."
+                )
+            drv = dr.variables[lookup_key]
+        else:
+            raise ValueError(
+                "Must provide a variable identifier. "
+                "Examples:\n"
+                "  CMIP7: process('atmos.tas.tavg-h2m-hxy-u.mon.GLB')\n"
+                "  CMIP6: process('tas', cmor_version='CMIP6')"
+            )
+
+        # Build rule from kwargs - no inputs needed since we have data
+        if "inputs" not in rule_kwargs:
+            rule_kwargs["inputs"] = []
+
+        # Attach DataRequestVariable to rule
+        # Use compound_name if available (CMIP7), otherwise use cmor_variable (CMIP6)
+        if compound_name:
+            rule_kwargs["compound_name"] = compound_name
+        if cmor_variable:
+            rule_kwargs["cmor_variable"] = cmor_variable
+        rule_kwargs["data_request_variables"] = [drv]
+
+        rule = Rule.from_dict(rule_kwargs)
+
+        # Handle pipeline - default to DefaultPipeline
+        if pipeline is None:
+            from .core.pipeline import DefaultPipeline
+
+            pipeline = DefaultPipeline()
+        elif isinstance(pipeline, str):
+            from .core.utils import get_callable_by_name
+
+            pipeline = get_callable_by_name(f"pycmor.pipeline.{pipeline}")()
+        elif isinstance(pipeline, type):
+            pipeline = pipeline()
+
+        return pipeline.run(self._obj, rule)

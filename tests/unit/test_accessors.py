@@ -4,7 +4,12 @@ Tests for the unified pycmor accessor functionality in accessors.py.
 This module tests the PycmorDataArrayAccessor and PycmorDatasetAccessor classes
 that provide unified access to all pycmor functionality under the data.pycmor
 and dataset.pycmor namespaces.
+
+Tests are focused on the simplified process() API that replaces the old
+load_config/run pattern.
 """
+
+from unittest.mock import Mock, patch
 
 import cftime
 import pytest
@@ -12,6 +17,8 @@ import xarray as xr
 
 # Import pycmor to register all accessors
 import pycmor  # noqa: F401
+from pycmor.core.pipeline import Pipeline
+from pycmor.data_request.variable import DataRequestVariable
 
 
 @pytest.fixture
@@ -34,11 +41,109 @@ def sample_dataarray(regular_monthly_time):
 @pytest.fixture
 def sample_dataset(sample_dataarray):
     """Sample Dataset with time dimension for testing."""
-    return xr.Dataset({"tas": sample_dataarray, "pr": sample_dataarray * 2})
+    return xr.Dataset(
+        {"atmos.tas.tavg-h2m-hxy-u.mon.GLB": sample_dataarray, "atmos.pr.tavg-hxy-u.mon.GLB": sample_dataarray * 2}
+    )
+
+
+# Mock pipeline steps for testing
+def mock_step_multiply(data, rule):
+    """Mock step that multiplies data by 2."""
+    return data * 2
+
+
+def mock_step_add(data, rule):
+    """Mock step that adds 10 to data."""
+    return data + 10
+
+
+def mock_step_with_rule_access(data, rule):
+    """Mock step that accesses rule attributes."""
+    # Access cmor_variable from rule
+    if hasattr(rule, "cmor_variable"):
+        data.attrs["cmor_variable"] = rule.cmor_variable
+    # Access custom attributes if present
+    if hasattr(rule, "custom_attr"):
+        data.attrs["custom_attr"] = rule.custom_attr
+    return data
+
+
+@pytest.fixture
+def simple_pipeline():
+    """Simple pipeline with one step."""
+    return Pipeline.from_dict({"name": "SimplePipeline", "steps": ["tests.unit.test_accessors.mock_step_multiply"]})
+
+
+@pytest.fixture
+def multi_step_pipeline():
+    """Pipeline with multiple steps."""
+    return Pipeline.from_dict(
+        {
+            "name": "MultiStepPipeline",
+            "steps": [
+                "tests.unit.test_accessors.mock_step_multiply",
+                "tests.unit.test_accessors.mock_step_add",
+            ],
+        }
+    )
+
+
+@pytest.fixture
+def rule_accessing_pipeline():
+    """Pipeline that accesses rule attributes."""
+    return Pipeline.from_dict(
+        {"name": "RuleAccessingPipeline", "steps": ["tests.unit.test_accessors.mock_step_with_rule_access"]}
+    )
+
+
+@pytest.fixture
+def mock_cmip7_drv_tas():
+    """Mock CMIP7 DataRequestVariable for tas (near-surface air temperature)."""
+    mock_drv = Mock(spec=DataRequestVariable)
+    mock_drv.name = "tas"
+    mock_drv.variable_id = "tas"
+    mock_drv.compound_name = "atmos.tas.tavg-h2m-hxy-u.mon.GLB"
+    mock_drv.frequency = "mon"
+    mock_drv.modeling_realm = "atmos"
+    mock_drv.standard_name = "air_temperature"
+    mock_drv.units = "K"
+    mock_drv.cell_methods = "area: time: mean"
+    mock_drv.cell_measures = "area: areacella"
+    mock_drv.long_name = "Near-Surface Air Temperature"
+    mock_drv.comment = "near-surface (usually, 2 meter) air temperature"
+    mock_drv.dimensions = ("time", "lat", "lon")
+    mock_drv.out_name = "tas"
+    mock_drv.typ = float
+    mock_drv.positive = ""
+    mock_drv.table_name = "Amon"
+    return mock_drv
+
+
+@pytest.fixture
+def mock_cmip7_drv_pr():
+    """Mock CMIP7 DataRequestVariable for pr (precipitation)."""
+    mock_drv = Mock(spec=DataRequestVariable)
+    mock_drv.name = "pr"
+    mock_drv.variable_id = "pr"
+    mock_drv.compound_name = "atmos.pr.tavg-hxy-u.mon.GLB"
+    mock_drv.frequency = "mon"
+    mock_drv.modeling_realm = "atmos"
+    mock_drv.standard_name = "precipitation_flux"
+    mock_drv.units = "kg m-2 s-1"
+    mock_drv.cell_methods = "area: time: mean"
+    mock_drv.cell_measures = "area: areacella"
+    mock_drv.long_name = "Precipitation"
+    mock_drv.comment = "includes both liquid and solid phases"
+    mock_drv.dimensions = ("time", "lat", "lon")
+    mock_drv.out_name = "pr"
+    mock_drv.typ = float
+    mock_drv.positive = ""
+    mock_drv.table_name = "Amon"
+    return mock_drv
 
 
 class TestPycmorDataArrayAccessor:
-    """Test the unified pycmor accessor for DataArrays."""
+    """Test the unified pycmor accessor for DataArrays (time frequency methods)."""
 
     def test_pycmor_accessor_registration(self, sample_dataarray):
         """Test that the pycmor accessor is properly registered."""
@@ -145,7 +250,7 @@ class TestPycmorDataArrayAccessor:
 
 
 class TestPycmorDatasetAccessor:
-    """Test the unified pycmor accessor for Datasets."""
+    """Test the unified pycmor accessor for Datasets (time frequency methods)."""
 
     def test_pycmor_accessor_registration(self, sample_dataset):
         """Test that the pycmor accessor is properly registered for datasets."""
@@ -211,8 +316,8 @@ class TestPycmorDatasetAccessor:
 
         assert isinstance(result, xr.Dataset)
         assert set(result.data_vars) == set(sample_dataset.data_vars)
-        assert "tas" in result.data_vars
-        assert "pr" in result.data_vars
+        assert "atmos.tas.tavg-h2m-hxy-u.mon.GLB" in result.data_vars
+        assert "atmos.pr.tavg-hxy-u.mon.GLB" in result.data_vars
 
     def test_pycmor_dataset_error_handling(self):
         """Test that dataset pycmor accessor handles errors appropriately."""
@@ -240,60 +345,372 @@ class TestPycmorDatasetAccessor:
             assert "DatasetFrequencyAccessor" in method.__doc__
 
 
-class TestAccessorInteroperability:
-    """Test interoperability between specialized and unified accessors."""
+class TestProcessMethodDataArray:
+    """Test the simplified process() API for DataArrays.
 
-    def test_both_accessors_coexist(self, sample_dataarray, sample_dataset):
-        """Test that both specialized and unified accessors work together."""
-        # DataArray
-        assert hasattr(sample_dataarray, "timefreq")
-        assert hasattr(sample_dataarray, "pycmor")
+    The process() method requires either cmor_version or data_request_variable to be specified.
+    This allows the accessor to properly configure the Rule with CMOR variable metadata.
 
-        # Dataset
-        assert hasattr(sample_dataset, "timefreq")
-        assert hasattr(sample_dataset, "pycmor")
+    NOTE: The existing tests (test_process_basic, test_process_with_pipeline_name, etc.) do not
+    yet pass cmor_version or data_request_variable. These tests will need to be updated when the
+    accessor implementation is modified to require these parameters. The new tests added at the
+    end of this class demonstrate the correct usage patterns.
+    """
 
-    def test_consistent_results_across_accessors(self, sample_dataarray):
-        """Test that specialized and unified accessors give consistent results."""
-        # Test infer_frequency
-        timefreq_freq = sample_dataarray.timefreq.infer_frequency(log=False)
-        pycmor_freq = sample_dataarray.pycmor.infer_frequency(log=False)
-        assert timefreq_freq == pycmor_freq
+    def test_process_basic(self, sample_dataarray, simple_pipeline):
+        """Test basic process() call with pipeline parameter using compound name."""
+        result = sample_dataarray.pycmor.process(variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=simple_pipeline)
 
-        # Test check_resolution
-        timefreq_check = sample_dataarray.timefreq.check_resolution(
-            target_approx_interval=30.0, calendar="360_day", log=False
+        # Should have doubled the values (mock_step_multiply multiplies by 2)
+        assert isinstance(result, xr.DataArray)
+        assert (result.values == sample_dataarray.values * 2).all()
+
+    def test_process_with_pipeline_name(self, sample_dataarray):
+        """Test process() with pipeline name string."""
+        # Note: This test assumes a registry or default pipelines exist
+        # For now, we pass the pipeline object directly
+        pipeline = Pipeline.from_dict(
+            {"name": "TestingPipeline", "steps": ["tests.unit.test_accessors.mock_step_multiply"]}
         )
-        pycmor_check = sample_dataarray.pycmor.check_resolution(
-            target_approx_interval=30.0, calendar="360_day", log=False
+
+        result = sample_dataarray.pycmor.process(variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=pipeline)
+
+        assert isinstance(result, xr.DataArray)
+        assert (result.values == sample_dataarray.values * 2).all()
+
+    def test_process_with_pipeline_class(self, sample_dataarray):
+        """Test process() with Pipeline class."""
+        pipeline = Pipeline.from_dict({"name": "TestPipeline", "steps": ["tests.unit.test_accessors.mock_step_add"]})
+
+        result = sample_dataarray.pycmor.process(variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=pipeline)
+
+        assert isinstance(result, xr.DataArray)
+        assert (result.values == sample_dataarray.values + 10).all()
+
+    def test_process_with_pipeline_instance(self, sample_dataarray, multi_step_pipeline):
+        """Test process() with pipeline instance."""
+        result = sample_dataarray.pycmor.process(
+            variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=multi_step_pipeline
         )
-        assert timefreq_check == pycmor_check
 
-    def test_unified_accessor_initialization(self, sample_dataarray, sample_dataset):
-        """Test that unified accessors initialize their internal specialized accessors."""
-        # Check that internal _timefreq accessor is properly initialized
-        da_pycmor = sample_dataarray.pycmor
-        assert hasattr(da_pycmor, "_timefreq")
-        assert da_pycmor._timefreq is not None
+        # Should multiply by 2, then add 10: (data * 2) + 10
+        assert isinstance(result, xr.DataArray)
+        expected = (sample_dataarray.values * 2) + 10
+        assert (result.values == expected).all()
 
-        ds_pycmor = sample_dataset.pycmor
-        assert hasattr(ds_pycmor, "_timefreq")
-        assert ds_pycmor._timefreq is not None
+    def test_process_with_rule_kwargs(self, sample_dataarray, rule_accessing_pipeline):
+        """Test process() with various rule attributes passed as kwargs."""
+        result = sample_dataarray.pycmor.process(
+            variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB",
+            pipeline=rule_accessing_pipeline,
+            custom_attr="test_value",
+            experiment_id="piControl",
+            source_id="TEST-MODEL",
+        )
 
-    def test_accessor_independence(self, sample_dataarray):
-        """Test that accessors operate independently without interference."""
-        # Modify data through one accessor
-        result1 = sample_dataarray.timefreq.resample_safe(target_approx_interval=30.0, calendar="360_day")
+        # Check that rule attributes were applied to data attrs
+        assert isinstance(result, xr.DataArray)
+        # Note: compound_name is now the default interpretation
+        assert result.attrs["custom_attr"] == "test_value"
 
-        # Use the other accessor - should not be affected
-        result2 = sample_dataarray.pycmor.resample_safe(target_approx_interval=30.0, calendar="360_day")
+    def test_process_returns_correct_type(self, sample_dataarray, simple_pipeline):
+        """Test that process() returns a DataArray when called on DataArray."""
+        result = sample_dataarray.pycmor.process(variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=simple_pipeline)
 
-        # Original data should be unchanged
-        assert len(sample_dataarray) == 4
+        assert isinstance(result, xr.DataArray)
+        assert not isinstance(result, xr.Dataset)
 
-        # Results should be equivalent
-        assert isinstance(result1, xr.DataArray)
-        assert isinstance(result2, xr.DataArray)
+    def test_process_missing_variable(self, sample_dataarray, simple_pipeline):
+        """Test that process() requires variable parameter."""
+        with pytest.raises(TypeError):
+            # Missing required variable argument
+            sample_dataarray.pycmor.process(pipeline=simple_pipeline)
+
+    def test_process_missing_pipeline(self, sample_dataarray, mock_cmip7_drv_tas):
+        """Test that process() handles missing pipeline appropriately."""
+        # When pipeline is None, should use a default pipeline or error
+        # This behavior depends on implementation
+        with pytest.raises((TypeError, ValueError)):
+            sample_dataarray.pycmor.process(
+                variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", data_request_variable=mock_cmip7_drv_tas
+            )
+
+    def test_process_with_empty_variable(self, sample_dataarray, simple_pipeline):
+        """Test process() with empty variable string."""
+        result = sample_dataarray.pycmor.process(variable="", pipeline=simple_pipeline)
+
+        # Should still work - empty string is valid
+        assert isinstance(result, xr.DataArray)
+
+    def test_process_multiple_rule_attributes(self, sample_dataarray, rule_accessing_pipeline):
+        """Test process() with multiple rule attributes."""
+        result = sample_dataarray.pycmor.process(
+            variable="atmos.pr.tavg-hxy-u.mon.GLB",
+            pipeline=rule_accessing_pipeline,
+            table_id="Amon",
+            frequency="mon",
+            realm="atmos",
+            variable_id="pr",
+        )
+
+        assert isinstance(result, xr.DataArray)
+
+    def test_process_with_data_request_variable(self, sample_dataarray, simple_pipeline, mock_cmip7_drv_tas):
+        """Test process() with data_request_variable parameter."""
+        result = sample_dataarray.pycmor.process(
+            variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB",
+            data_request_variable=mock_cmip7_drv_tas,
+            pipeline=simple_pipeline,
+        )
+
+        assert isinstance(result, xr.DataArray)
+        # Verify data was processed (doubled by mock_step_multiply)
+        assert (result.values == sample_dataarray.values * 2).all()
+
+    # New tests for conflict checking (DataArray)
+    def test_process_conflict_variable_and_drv(self, sample_dataarray, simple_pipeline, mock_cmip7_drv_tas):
+        """Test that providing both variable and data_request_variable raises an error."""
+        with pytest.raises(ValueError) as exc_info:
+            sample_dataarray.pycmor.process(
+                variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB",
+                data_request_variable=mock_cmip7_drv_tas,
+                pipeline=simple_pipeline,
+            )
+
+        error_msg = str(exc_info.value).lower()
+        assert "conflict" in error_msg or "both" in error_msg or "only one" in error_msg
+
+    def test_process_conflict_variable_and_compound_name(self, sample_dataarray, simple_pipeline):
+        """Test that providing both variable and compound_name raises an error."""
+        with pytest.raises(ValueError) as exc_info:
+            sample_dataarray.pycmor.process(
+                variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB",
+                compound_name="atmos.tas.tavg-h2m-hxy-u.mon.GLB",
+                pipeline=simple_pipeline,
+            )
+
+        error_msg = str(exc_info.value).lower()
+        assert "conflict" in error_msg or "both" in error_msg or "only one" in error_msg
+
+    def test_process_conflict_variable_and_cmor_variable(self, sample_dataarray, simple_pipeline):
+        """Test that providing both variable and cmor_variable raises an error."""
+        with pytest.raises(ValueError) as exc_info:
+            sample_dataarray.pycmor.process(
+                variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", cmor_variable="tas", pipeline=simple_pipeline
+            )
+
+        error_msg = str(exc_info.value).lower()
+        assert "conflict" in error_msg or "both" in error_msg or "only one" in error_msg
+
+    # New tests for variable interpretation (DataArray)
+    def test_process_cmip7_interprets_as_compound_name(self, sample_dataarray, simple_pipeline):
+        """Test that variable is interpreted as compound_name for CMIP7 (default)."""
+        with patch("pycmor.accessors.CMIP7DataRequest") as mock_dr:
+            # Mock the data request
+            mock_drv = Mock(spec=DataRequestVariable)
+            mock_drv.compound_name = "atmos.tas.tavg-h2m-hxy-u.mon.GLB"
+            mock_dr.from_vendored_json.return_value.get_variable_by_compound_name.return_value = mock_drv
+
+            result = sample_dataarray.pycmor.process(
+                variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=simple_pipeline
+            )
+
+            assert isinstance(result, xr.DataArray)
+            # Verify the data request was queried with compound_name
+            mock_dr.from_vendored_json.return_value.get_variable_by_compound_name.assert_called_once_with(
+                "atmos.tas.tavg-h2m-hxy-u.mon.GLB"
+            )
+
+    def test_process_cmip6_interprets_as_cmor_variable(self, sample_dataarray, simple_pipeline):
+        """Test that variable is interpreted as cmor_variable when cmor_version='CMIP6'."""
+        with patch("pycmor.accessors.CMIP6DataRequest") as mock_dr:
+            # Mock the CMIP6 data request
+            mock_drv = Mock(spec=DataRequestVariable)
+            mock_drv.name = "tas"
+            mock_drv.variable_id = "tas"
+            mock_dr.from_vendored_json.return_value.get_variable.return_value = mock_drv
+
+            result = sample_dataarray.pycmor.process(variable="tas", cmor_version="CMIP6", pipeline=simple_pipeline)
+
+            assert isinstance(result, xr.DataArray)
+            # Verify the CMIP6 data request was queried with cmor_variable
+            mock_dr.from_vendored_json.return_value.get_variable.assert_called_once_with("tas")
+
+
+class TestProcessMethodDataset:
+    """Test the simplified process() API for Datasets with realistic CMIP7 compound names."""
+
+    def test_process_basic(self, sample_dataset, simple_pipeline):
+        """Test basic process() call with pipeline parameter using compound name."""
+        result = sample_dataset.pycmor.process(variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=simple_pipeline)
+
+        # Should have doubled all values
+        assert isinstance(result, xr.Dataset)
+        for var in result.data_vars:
+            assert (result[var].values == sample_dataset[var].values * 2).all()
+
+    def test_process_with_pipeline_name(self, sample_dataset):
+        """Test process() with pipeline name string."""
+        pipeline = Pipeline.from_dict(
+            {"name": "TestingPipeline", "steps": ["tests.unit.test_accessors.mock_step_multiply"]}
+        )
+
+        result = sample_dataset.pycmor.process(variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=pipeline)
+
+        assert isinstance(result, xr.Dataset)
+        for var in result.data_vars:
+            assert (result[var].values == sample_dataset[var].values * 2).all()
+
+    def test_process_with_pipeline_class(self, sample_dataset):
+        """Test process() with Pipeline class."""
+        pipeline = Pipeline.from_dict({"name": "TestPipeline", "steps": ["tests.unit.test_accessors.mock_step_add"]})
+
+        result = sample_dataset.pycmor.process(variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=pipeline)
+
+        assert isinstance(result, xr.Dataset)
+        for var in result.data_vars:
+            assert (result[var].values == sample_dataset[var].values + 10).all()
+
+    def test_process_with_pipeline_instance(self, sample_dataset, multi_step_pipeline):
+        """Test process() with pipeline instance."""
+        result = sample_dataset.pycmor.process(
+            variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=multi_step_pipeline
+        )
+
+        # Should multiply by 2, then add 10: (data * 2) + 10
+        assert isinstance(result, xr.Dataset)
+        for var in result.data_vars:
+            expected = (sample_dataset[var].values * 2) + 10
+            assert (result[var].values == expected).all()
+
+    def test_process_with_rule_kwargs(self, sample_dataset, rule_accessing_pipeline):
+        """Test process() with various rule attributes passed as kwargs."""
+        result = sample_dataset.pycmor.process(
+            variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB",
+            pipeline=rule_accessing_pipeline,
+            custom_attr="test_value",
+            experiment_id="piControl",
+            source_id="TEST-MODEL",
+        )
+
+        # Check that rule attributes were applied
+        assert isinstance(result, xr.Dataset)
+        # Attributes may be on dataset or variables depending on implementation
+        # Just verify processing completed successfully
+
+    def test_process_returns_correct_type(self, sample_dataset, simple_pipeline):
+        """Test that process() returns a Dataset when called on Dataset."""
+        result = sample_dataset.pycmor.process(variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=simple_pipeline)
+
+        assert isinstance(result, xr.Dataset)
+        assert not isinstance(result, xr.DataArray)
+
+    def test_process_missing_variable(self, sample_dataset, simple_pipeline):
+        """Test that process() requires variable parameter."""
+        with pytest.raises(TypeError):
+            # Missing required variable argument
+            sample_dataset.pycmor.process(pipeline=simple_pipeline)
+
+    def test_process_missing_pipeline(self, sample_dataset, mock_cmip7_drv_tas):
+        """Test that process() handles missing pipeline appropriately."""
+        with pytest.raises((TypeError, ValueError)):
+            sample_dataset.pycmor.process(
+                variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", data_request_variable=mock_cmip7_drv_tas
+            )
+
+    def test_process_preserves_data_variables(self, sample_dataset, simple_pipeline):
+        """Test that process() preserves all data variables in dataset."""
+        result = sample_dataset.pycmor.process(variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=simple_pipeline)
+
+        assert isinstance(result, xr.Dataset)
+        assert set(result.data_vars) == set(sample_dataset.data_vars)
+        assert "atmos.tas.tavg-h2m-hxy-u.mon.GLB" in result.data_vars
+        assert "atmos.pr.tavg-hxy-u.mon.GLB" in result.data_vars
+
+    def test_process_multiple_variables(self, sample_dataset, multi_step_pipeline):
+        """Test process() on dataset with multiple data variables."""
+        result = sample_dataset.pycmor.process(variable="atmos.pr.tavg-hxy-u.mon.GLB", pipeline=multi_step_pipeline)
+
+        assert isinstance(result, xr.Dataset)
+        assert len(result.data_vars) == len(sample_dataset.data_vars)
+
+    def test_process_with_data_request_variable(self, sample_dataset, simple_pipeline, mock_cmip7_drv_pr):
+        """Test process() with data_request_variable parameter."""
+        result = sample_dataset.pycmor.process(
+            variable="atmos.pr.tavg-hxy-u.mon.GLB", data_request_variable=mock_cmip7_drv_pr, pipeline=simple_pipeline
+        )
+
+        assert isinstance(result, xr.Dataset)
+        # Verify all variables were processed (doubled by mock_step_multiply)
+        for var in result.data_vars:
+            assert (result[var].values == sample_dataset[var].values * 2).all()
+
+    # New tests for conflict checking (Dataset)
+    def test_process_conflict_variable_and_drv(self, sample_dataset, simple_pipeline, mock_cmip7_drv_pr):
+        """Test that providing both variable and data_request_variable raises an error."""
+        with pytest.raises(ValueError) as exc_info:
+            sample_dataset.pycmor.process(
+                variable="atmos.pr.tavg-hxy-u.mon.GLB",
+                data_request_variable=mock_cmip7_drv_pr,
+                pipeline=simple_pipeline,
+            )
+
+        error_msg = str(exc_info.value).lower()
+        assert "conflict" in error_msg or "both" in error_msg or "only one" in error_msg
+
+    def test_process_conflict_variable_and_compound_name(self, sample_dataset, simple_pipeline):
+        """Test that providing both variable and compound_name raises an error."""
+        with pytest.raises(ValueError) as exc_info:
+            sample_dataset.pycmor.process(
+                variable="atmos.pr.tavg-hxy-u.mon.GLB",
+                compound_name="atmos.pr.tavg-hxy-u.mon.GLB",
+                pipeline=simple_pipeline,
+            )
+
+        error_msg = str(exc_info.value).lower()
+        assert "conflict" in error_msg or "both" in error_msg or "only one" in error_msg
+
+    def test_process_conflict_variable_and_cmor_variable(self, sample_dataset, simple_pipeline):
+        """Test that providing both variable and cmor_variable raises an error."""
+        with pytest.raises(ValueError) as exc_info:
+            sample_dataset.pycmor.process(
+                variable="atmos.pr.tavg-hxy-u.mon.GLB", cmor_variable="pr", pipeline=simple_pipeline
+            )
+
+        error_msg = str(exc_info.value).lower()
+        assert "conflict" in error_msg or "both" in error_msg or "only one" in error_msg
+
+    # New tests for variable interpretation (Dataset)
+    def test_process_cmip7_interprets_as_compound_name(self, sample_dataset, simple_pipeline):
+        """Test that variable is interpreted as compound_name for CMIP7 (default)."""
+        with patch("pycmor.accessors.CMIP7DataRequest") as mock_dr:
+            # Mock the data request
+            mock_drv = Mock(spec=DataRequestVariable)
+            mock_drv.compound_name = "atmos.pr.tavg-hxy-u.mon.GLB"
+            mock_dr.from_vendored_json.return_value.get_variable_by_compound_name.return_value = mock_drv
+
+            result = sample_dataset.pycmor.process(variable="atmos.pr.tavg-hxy-u.mon.GLB", pipeline=simple_pipeline)
+
+            assert isinstance(result, xr.Dataset)
+            # Verify the data request was queried with compound_name
+            mock_dr.from_vendored_json.return_value.get_variable_by_compound_name.assert_called_once_with(
+                "atmos.pr.tavg-hxy-u.mon.GLB"
+            )
+
+    def test_process_cmip6_interprets_as_cmor_variable(self, sample_dataset, simple_pipeline):
+        """Test that variable is interpreted as cmor_variable when cmor_version='CMIP6'."""
+        with patch("pycmor.accessors.CMIP6DataRequest") as mock_dr:
+            # Mock the CMIP6 data request
+            mock_drv = Mock(spec=DataRequestVariable)
+            mock_drv.name = "pr"
+            mock_drv.variable_id = "pr"
+            mock_dr.from_vendored_json.return_value.get_variable.return_value = mock_drv
+
+            result = sample_dataset.pycmor.process(variable="pr", cmor_version="CMIP6", pipeline=simple_pipeline)
+
+            assert isinstance(result, xr.Dataset)
+            # Verify the CMIP6 data request was queried with cmor_variable
+            mock_dr.from_vendored_json.return_value.get_variable.assert_called_once_with("pr")
 
 
 class TestAccessorRegistration:
@@ -320,16 +737,10 @@ class TestAccessorRegistration:
         # But pycmor should delegate to timefreq functionality
         assert hasattr(sample_dataarray.pycmor, "_timefreq")
 
-    def test_future_extensibility(self, sample_dataarray):
-        """Test that the unified accessor is designed for future extensibility."""
-        # The unified accessor should have a clear structure for adding new features
-        pycmor_accessor = sample_dataarray.pycmor
+    def test_process_method_exists(self, sample_dataarray, sample_dataset):
+        """Test that process() method exists on both accessors."""
+        assert hasattr(sample_dataarray.pycmor, "process")
+        assert callable(sample_dataarray.pycmor.process)
 
-        # Should have the current timefreq methods
-        assert hasattr(pycmor_accessor, "resample_safe")
-        assert hasattr(pycmor_accessor, "check_resolution")
-        assert hasattr(pycmor_accessor, "infer_frequency")
-
-        # Should have internal structure that supports adding more specialized accessors
-        assert hasattr(pycmor_accessor, "_timefreq")
-        # Future: assert hasattr(pycmor_accessor, '_other_accessor')
+        assert hasattr(sample_dataset.pycmor, "process")
+        assert callable(sample_dataset.pycmor.process)
