@@ -1,4 +1,4 @@
-.. pymor documentation master file, created by
+.. pycmor documentation master file, created by
    sphinx-quickstart on Fri Jun 14 09:55:12 2024.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
@@ -14,24 +14,30 @@ Contents
 
    quickstart
    installation
-   pymor_building_blocks
-   pymor_cli
-   pymor_configuration
-   pymor_saving_output
-   pymor_aux_files
+   pycmor_building_blocks
+   pycmor_cli
+   pycmor_configuration
+   pycmor_saving_output
+   netcdf_chunking
+   pycmor_aux_files
+   cmip7_configuration
+   cmip7_interface
+   cmip7_controlled_vocabularies
    table_explorer
-   pymor_on_slurm
+   pycmor_on_slurm
    schemas
    standard_library
+   coordinate_bounds
    including_custom_steps
    including_subcommand_plugins
-   pymor_fesom
+   pycmor_fesom
    timeaveraging_frequencies
    accessors
    infer_freq
    cookbook
    developer_guide
    developer_setup
+   test_infrastructure
    roadmap
    API
 

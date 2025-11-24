@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath("../src"))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "pymor"
+project = "pycmor"
 copyright = "2024, Paul Gierz"
 author = "Paul Gierz"
 
@@ -33,9 +33,7 @@ with open("API.rst", "w") as rst:
     rst.write("=============================\n")
     rst.write("Reference: Code Documentation\n")
     rst.write("=============================\n")
-    rst.write(
-        "This documentation is primarily intended for developers and contributors!\n\n"
-    )
+    rst.write("This documentation is primarily intended for developers and contributors!\n\n")
     rst.write(".. toctree::\n")
     rst.write("   :glob:\n\n")
     rst.write("   api/*")
@@ -100,5 +98,5 @@ napoleon_custom_sections = [("Mutates", "params_style")]
 
 html_theme = "sphinx_book_theme"
 html_static_path = ["_static"]
-html_logo = "../assets/Pymor1280x640.png"
-html_favicon = "../assets/PymorO240x240.png"
+html_logo = "../assets/Pycmor1280x640.png"
+html_favicon = "../assets/PycmorSquare.png"

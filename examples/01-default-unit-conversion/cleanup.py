@@ -26,24 +26,22 @@ def cleanup():
     current_dir = Path.cwd()
 
     for item in current_dir.rglob("*"):
-        if (
-            item.is_file()
-            and item.name.startswith("slurm")
-            and item.name.endswith("out")
-        ):
+        if item.is_file() and item.name.startswith("slurm") and item.name.endswith("out"):
             rm_file(item)
-        if (
-            item.is_file()
-            and item.name.startswith("pymor")
-            and item.name.endswith("json")
-        ):
+        if item.is_file() and item.name.startswith("pycmor") and item.name.endswith("json"):
             rm_file(item)
         if item.is_file() and item.name.endswith("nc"):
             rm_file(item)
-        if item.name == "pymor_report.log":
+        if item.name == "pycmor_report.log":
             rm_file(item)
         elif item.is_dir() and item.name == "logs":
             rm_dir(item)
+
+    # Remove model_runs directory entirely (equivalent to rm -rf)
+    model_runs = current_dir / "model_runs"
+    if model_runs.exists() and model_runs.is_dir():
+        rm_dir(model_runs)
+
     print("Cleanup completed.")
 
 
