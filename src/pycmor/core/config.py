@@ -609,6 +609,61 @@ class PycmorConfigManager(ConfigManager):
         except InvalidKeyError:
             return default
 
+    def get_inherit_section(self):
+        """
+        Get the inherit section from configuration as a dict.
+
+        The inherit section contains default rule attributes that should be
+        applied to all processing operations. This is useful for setting
+        common metadata like source_id, experiment_id, variant_label, etc.
+
+        Returns
+        -------
+        dict
+            Dictionary of inherit values from the config file(s).
+            Returns empty dict if no inherit section is found.
+
+        Examples
+        --------
+        In your config file (~/.pycmor.yaml or ${XDG_CONFIG_HOME}/pycmor/pycmor.yaml):
+
+        .. code-block:: yaml
+
+            inherit:
+              source_id: "FESOM2"
+              experiment_id: "historical"
+              variant_label: "r1i1p1f1"
+              grid_label: "gn"
+              institution_id: "AWI"
+              output_directory: "/tmp/cmor_output"
+
+        Then in code:
+
+        >>> config = PycmorConfigManager.from_pycmor_cfg()
+        >>> defaults = config.get_inherit_section()
+        >>> print(defaults)
+        {'source_id': 'FESOM2', 'experiment_id': 'historical', ...}
+        """
+        import yaml
+
+        inherit_dict = {}
+
+        # Search through config files in reverse order (lowest priority first)
+        for config_file in reversed(self._CONFIG_FILES):
+            config_path = pathlib.Path(config_file).expanduser()
+            if config_path.exists():
+                try:
+                    with open(config_path) as f:
+                        config_data = yaml.safe_load(f)
+                        if config_data and "inherit" in config_data:
+                            # Merge, with later files taking precedence
+                            inherit_dict.update(config_data["inherit"])
+                except Exception:
+                    # If file can't be read or parsed, skip it
+                    pass
+
+        return inherit_dict
+
 
 # ---------------------------------------------------------------------------
 # Configuration injection decorator

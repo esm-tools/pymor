@@ -43,6 +43,18 @@ class PycmorDataArrayAccessor:
         'ocean.tos.tavg-hxy-u.mon.GLB',
         pipeline=DefaultPipeline
     )
+
+    # Inherit defaults from config file
+    # In ~/.pycmor.yaml or ${XDG_CONFIG_HOME}/pycmor/pycmor.yaml:
+    #   inherit:
+    #     source_id: "FESOM2"
+    #     experiment_id: "historical"
+    #     variant_label: "r1i1p1f1"
+    #     grid_label: "gn"
+    #
+    # These values are automatically applied to all process() calls
+    result = data.pycmor.process('atmos.tas.tavg-h2m-hxy-u.mon.GLB')
+    # source_id, experiment_id, etc. come from config file
     """
 
     def __init__(self, xarray_obj):
@@ -219,19 +231,28 @@ class PycmorDataArrayAccessor:
                 "  CMIP6: process('tas', cmor_version='CMIP6')"
             )
 
+        # Get inherit defaults from config file
+        from .core.config import PycmorConfigManager
+
+        config = PycmorConfigManager.from_pycmor_cfg()
+        inherit_defaults = config.get_inherit_section()
+
+        # Merge: inherit < rule_kwargs (explicit args override defaults)
+        merged_kwargs = {**inherit_defaults, **rule_kwargs}
+
         # Build rule from kwargs - no inputs needed since we have data
-        if "inputs" not in rule_kwargs:
-            rule_kwargs["inputs"] = []
+        if "inputs" not in merged_kwargs:
+            merged_kwargs["inputs"] = []
 
         # Attach DataRequestVariable to rule
         # Use compound_name if available (CMIP7), otherwise use cmor_variable (CMIP6)
         if compound_name:
-            rule_kwargs["compound_name"] = compound_name
+            merged_kwargs["compound_name"] = compound_name
         if cmor_variable:
-            rule_kwargs["cmor_variable"] = cmor_variable
-        rule_kwargs["data_request_variables"] = [drv]
+            merged_kwargs["cmor_variable"] = cmor_variable
+        merged_kwargs["data_request_variables"] = [drv]
 
-        rule = Rule.from_dict(rule_kwargs)
+        rule = Rule.from_dict(merged_kwargs)
 
         # Handle pipeline - default to DefaultPipeline
         if pipeline is None:
@@ -276,6 +297,18 @@ class PycmorDatasetAccessor:
         'ocean.tos.tavg-hxy-u.mon.GLB',
         pipeline=DefaultPipeline
     )
+
+    # Inherit defaults from config file
+    # In ~/.pycmor.yaml or ${XDG_CONFIG_HOME}/pycmor/pycmor.yaml:
+    #   inherit:
+    #     source_id: "FESOM2"
+    #     experiment_id: "historical"
+    #     variant_label: "r1i1p1f1"
+    #     grid_label: "gn"
+    #
+    # These values are automatically applied to all process() calls
+    result = dataset.pycmor.process('atmos.tas.tavg-h2m-hxy-u.mon.GLB')
+    # source_id, experiment_id, etc. come from config file
     """
 
     def __init__(self, xarray_obj):
@@ -452,19 +485,28 @@ class PycmorDatasetAccessor:
                 "  CMIP6: process('tas', cmor_version='CMIP6')"
             )
 
+        # Get inherit defaults from config file
+        from .core.config import PycmorConfigManager
+
+        config = PycmorConfigManager.from_pycmor_cfg()
+        inherit_defaults = config.get_inherit_section()
+
+        # Merge: inherit < rule_kwargs (explicit args override defaults)
+        merged_kwargs = {**inherit_defaults, **rule_kwargs}
+
         # Build rule from kwargs - no inputs needed since we have data
-        if "inputs" not in rule_kwargs:
-            rule_kwargs["inputs"] = []
+        if "inputs" not in merged_kwargs:
+            merged_kwargs["inputs"] = []
 
         # Attach DataRequestVariable to rule
         # Use compound_name if available (CMIP7), otherwise use cmor_variable (CMIP6)
         if compound_name:
-            rule_kwargs["compound_name"] = compound_name
+            merged_kwargs["compound_name"] = compound_name
         if cmor_variable:
-            rule_kwargs["cmor_variable"] = cmor_variable
-        rule_kwargs["data_request_variables"] = [drv]
+            merged_kwargs["cmor_variable"] = cmor_variable
+        merged_kwargs["data_request_variables"] = [drv]
 
-        rule = Rule.from_dict(rule_kwargs)
+        rule = Rule.from_dict(merged_kwargs)
 
         # Handle pipeline - default to DefaultPipeline
         if pipeline is None:
