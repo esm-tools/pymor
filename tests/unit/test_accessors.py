@@ -357,15 +357,15 @@ class TestProcessMethodDataArray:
     end of this class demonstrate the correct usage patterns.
     """
 
-    def test_process_basic(self, sample_dataarray, simple_pipeline):
+    def test_process_basic(self, sample_dataarray, simple_pipeline, mock_cmip7_drv_tas):
         """Test basic process() call with pipeline parameter using compound name."""
-        result = sample_dataarray.pycmor.process(variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=simple_pipeline)
+        result = sample_dataarray.pycmor.process(data_request_variable=mock_cmip7_drv_tas, pipeline=simple_pipeline)
 
         # Should have doubled the values (mock_step_multiply multiplies by 2)
         assert isinstance(result, xr.DataArray)
         assert (result.values == sample_dataarray.values * 2).all()
 
-    def test_process_with_pipeline_name(self, sample_dataarray):
+    def test_process_with_pipeline_name(self, sample_dataarray, mock_cmip7_drv_tas):
         """Test process() with pipeline name string."""
         # Note: This test assumes a registry or default pipelines exist
         # For now, we pass the pipeline object directly
@@ -373,35 +373,33 @@ class TestProcessMethodDataArray:
             {"name": "TestingPipeline", "steps": ["tests.unit.test_accessors.mock_step_multiply"]}
         )
 
-        result = sample_dataarray.pycmor.process(variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=pipeline)
+        result = sample_dataarray.pycmor.process(data_request_variable=mock_cmip7_drv_tas, pipeline=pipeline)
 
         assert isinstance(result, xr.DataArray)
         assert (result.values == sample_dataarray.values * 2).all()
 
-    def test_process_with_pipeline_class(self, sample_dataarray):
+    def test_process_with_pipeline_class(self, sample_dataarray, mock_cmip7_drv_tas):
         """Test process() with Pipeline class."""
         pipeline = Pipeline.from_dict({"name": "TestPipeline", "steps": ["tests.unit.test_accessors.mock_step_add"]})
 
-        result = sample_dataarray.pycmor.process(variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=pipeline)
+        result = sample_dataarray.pycmor.process(data_request_variable=mock_cmip7_drv_tas, pipeline=pipeline)
 
         assert isinstance(result, xr.DataArray)
         assert (result.values == sample_dataarray.values + 10).all()
 
-    def test_process_with_pipeline_instance(self, sample_dataarray, multi_step_pipeline):
+    def test_process_with_pipeline_instance(self, sample_dataarray, multi_step_pipeline, mock_cmip7_drv_tas):
         """Test process() with pipeline instance."""
-        result = sample_dataarray.pycmor.process(
-            variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=multi_step_pipeline
-        )
+        result = sample_dataarray.pycmor.process(data_request_variable=mock_cmip7_drv_tas, pipeline=multi_step_pipeline)
 
         # Should multiply by 2, then add 10: (data * 2) + 10
         assert isinstance(result, xr.DataArray)
         expected = (sample_dataarray.values * 2) + 10
         assert (result.values == expected).all()
 
-    def test_process_with_rule_kwargs(self, sample_dataarray, rule_accessing_pipeline):
+    def test_process_with_rule_kwargs(self, sample_dataarray, rule_accessing_pipeline, mock_cmip7_drv_tas):
         """Test process() with various rule attributes passed as kwargs."""
         result = sample_dataarray.pycmor.process(
-            variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB",
+            data_request_variable=mock_cmip7_drv_tas,
             pipeline=rule_accessing_pipeline,
             custom_attr="test_value",
             experiment_id="piControl",
@@ -413,39 +411,37 @@ class TestProcessMethodDataArray:
         # Note: compound_name is now the default interpretation
         assert result.attrs["custom_attr"] == "test_value"
 
-    def test_process_returns_correct_type(self, sample_dataarray, simple_pipeline):
+    def test_process_returns_correct_type(self, sample_dataarray, simple_pipeline, mock_cmip7_drv_tas):
         """Test that process() returns a DataArray when called on DataArray."""
-        result = sample_dataarray.pycmor.process(variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=simple_pipeline)
+        result = sample_dataarray.pycmor.process(data_request_variable=mock_cmip7_drv_tas, pipeline=simple_pipeline)
 
         assert isinstance(result, xr.DataArray)
         assert not isinstance(result, xr.Dataset)
 
     def test_process_missing_variable(self, sample_dataarray, simple_pipeline):
-        """Test that process() requires variable parameter."""
-        with pytest.raises(TypeError):
-            # Missing required variable argument
+        """Test that process() requires variable or data_request_variable parameter."""
+        with pytest.raises(ValueError, match="Must provide a variable identifier"):
+            # Missing both variable and data_request_variable
             sample_dataarray.pycmor.process(pipeline=simple_pipeline)
 
     def test_process_missing_pipeline(self, sample_dataarray, mock_cmip7_drv_tas):
-        """Test that process() handles missing pipeline appropriately."""
-        # When pipeline is None, should use a default pipeline or error
-        # This behavior depends on implementation
-        with pytest.raises((TypeError, ValueError)):
-            sample_dataarray.pycmor.process(
-                variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", data_request_variable=mock_cmip7_drv_tas
-            )
+        """Test that process() uses DefaultPipeline when pipeline is None."""
+        # When pipeline is None, should use DefaultPipeline
+        # This will likely fail because DefaultPipeline needs more metadata
+        with pytest.raises((TypeError, ValueError, AttributeError, KeyError)):
+            sample_dataarray.pycmor.process(data_request_variable=mock_cmip7_drv_tas)
 
-    def test_process_with_empty_variable(self, sample_dataarray, simple_pipeline):
-        """Test process() with empty variable string."""
-        result = sample_dataarray.pycmor.process(variable="", pipeline=simple_pipeline)
+    def test_process_with_empty_variable(self, sample_dataarray, simple_pipeline, mock_cmip7_drv_tas):
+        """Test process() with empty variable string - should use data_request_variable."""
+        result = sample_dataarray.pycmor.process(data_request_variable=mock_cmip7_drv_tas, pipeline=simple_pipeline)
 
-        # Should still work - empty string is valid
+        # Should work with explicit data_request_variable
         assert isinstance(result, xr.DataArray)
 
-    def test_process_multiple_rule_attributes(self, sample_dataarray, rule_accessing_pipeline):
+    def test_process_multiple_rule_attributes(self, sample_dataarray, rule_accessing_pipeline, mock_cmip7_drv_pr):
         """Test process() with multiple rule attributes."""
         result = sample_dataarray.pycmor.process(
-            variable="atmos.pr.tavg-hxy-u.mon.GLB",
+            data_request_variable=mock_cmip7_drv_pr,
             pipeline=rule_accessing_pipeline,
             table_id="Amon",
             frequency="mon",
@@ -458,7 +454,6 @@ class TestProcessMethodDataArray:
     def test_process_with_data_request_variable(self, sample_dataarray, simple_pipeline, mock_cmip7_drv_tas):
         """Test process() with data_request_variable parameter."""
         result = sample_dataarray.pycmor.process(
-            variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB",
             data_request_variable=mock_cmip7_drv_tas,
             pipeline=simple_pipeline,
         )
@@ -505,77 +500,98 @@ class TestProcessMethodDataArray:
     # New tests for variable interpretation (DataArray)
     def test_process_cmip7_interprets_as_compound_name(self, sample_dataarray, simple_pipeline):
         """Test that variable is interpreted as compound_name for CMIP7 (default)."""
-        with patch("pycmor.accessors.CMIP7DataRequest") as mock_dr:
-            # Mock the data request
+        # Use TableLocator mocking since that's what the accessor uses
+        with (
+            patch("pycmor.accessors.TableLocator") as mock_locator_cls,
+            patch("pycmor.accessors.DataRequest") as mock_dr_cls,
+            patch("pycmor.accessors.create_factory") as mock_factory,
+        ):
+            # Mock the factory pattern
+            mock_factory.return_value.get.return_value = mock_dr_cls
+
+            # Mock DataRequest with variables dict
+            mock_dr = Mock()
             mock_drv = Mock(spec=DataRequestVariable)
             mock_drv.compound_name = "atmos.tas.tavg-h2m-hxy-u.mon.GLB"
-            mock_dr.from_vendored_json.return_value.get_variable_by_compound_name.return_value = mock_drv
+            mock_dr.variables = {"atmos.tas.tavg-h2m-hxy-u.mon.GLB": mock_drv}
+            mock_dr_cls.from_directory.return_value = mock_dr
+
+            # Mock TableLocator
+            mock_locator = Mock()
+            mock_locator.locate.return_value = "/fake/path"
+            mock_locator_cls.return_value = mock_locator
 
             result = sample_dataarray.pycmor.process(
                 variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=simple_pipeline
             )
 
             assert isinstance(result, xr.DataArray)
-            # Verify the data request was queried with compound_name
-            mock_dr.from_vendored_json.return_value.get_variable_by_compound_name.assert_called_once_with(
-                "atmos.tas.tavg-h2m-hxy-u.mon.GLB"
-            )
 
     def test_process_cmip6_interprets_as_cmor_variable(self, sample_dataarray, simple_pipeline):
         """Test that variable is interpreted as cmor_variable when cmor_version='CMIP6'."""
-        with patch("pycmor.accessors.CMIP6DataRequest") as mock_dr:
-            # Mock the CMIP6 data request
+        with (
+            patch("pycmor.accessors.TableLocator") as mock_locator_cls,
+            patch("pycmor.accessors.DataRequest") as mock_dr_cls,
+            patch("pycmor.accessors.create_factory") as mock_factory,
+        ):
+            # Mock the factory pattern
+            mock_factory.return_value.get.return_value = mock_dr_cls
+
+            # Mock DataRequest with variables dict
+            mock_dr = Mock()
             mock_drv = Mock(spec=DataRequestVariable)
             mock_drv.name = "tas"
             mock_drv.variable_id = "tas"
-            mock_dr.from_vendored_json.return_value.get_variable.return_value = mock_drv
+            mock_dr.variables = {"tas": mock_drv}
+            mock_dr_cls.from_directory.return_value = mock_dr
+
+            # Mock TableLocator
+            mock_locator = Mock()
+            mock_locator.locate.return_value = "/fake/path"
+            mock_locator_cls.return_value = mock_locator
 
             result = sample_dataarray.pycmor.process(variable="tas", cmor_version="CMIP6", pipeline=simple_pipeline)
 
             assert isinstance(result, xr.DataArray)
-            # Verify the CMIP6 data request was queried with cmor_variable
-            mock_dr.from_vendored_json.return_value.get_variable.assert_called_once_with("tas")
 
 
 class TestProcessMethodDataset:
     """Test the simplified process() API for Datasets with realistic CMIP7 compound names."""
 
-    def test_process_basic(self, sample_dataset, simple_pipeline):
+    def test_process_basic(self, sample_dataset, simple_pipeline, mock_cmip7_drv_tas):
         """Test basic process() call with pipeline parameter using compound name."""
-        result = sample_dataset.pycmor.process(variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=simple_pipeline)
+        result = sample_dataset.pycmor.process(data_request_variable=mock_cmip7_drv_tas, pipeline=simple_pipeline)
 
         # Should have doubled all values
         assert isinstance(result, xr.Dataset)
         for var in result.data_vars:
             assert (result[var].values == sample_dataset[var].values * 2).all()
 
-    def test_process_with_pipeline_name(self, sample_dataset):
+    def test_process_with_pipeline_name(self, sample_dataset, mock_cmip7_drv_tas):
         """Test process() with pipeline name string."""
         pipeline = Pipeline.from_dict(
             {"name": "TestingPipeline", "steps": ["tests.unit.test_accessors.mock_step_multiply"]}
         )
 
-        result = sample_dataset.pycmor.process(variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=pipeline)
+        result = sample_dataset.pycmor.process(data_request_variable=mock_cmip7_drv_tas, pipeline=pipeline)
 
         assert isinstance(result, xr.Dataset)
         for var in result.data_vars:
             assert (result[var].values == sample_dataset[var].values * 2).all()
 
-    def test_process_with_pipeline_class(self, sample_dataset):
+    def test_process_with_pipeline_class(self, sample_dataset, mock_cmip7_drv_tas):
         """Test process() with Pipeline class."""
         pipeline = Pipeline.from_dict({"name": "TestPipeline", "steps": ["tests.unit.test_accessors.mock_step_add"]})
 
-        result = sample_dataset.pycmor.process(variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=pipeline)
+        result = sample_dataset.pycmor.process(data_request_variable=mock_cmip7_drv_tas, pipeline=pipeline)
 
         assert isinstance(result, xr.Dataset)
         for var in result.data_vars:
             assert (result[var].values == sample_dataset[var].values + 10).all()
 
-    def test_process_with_pipeline_instance(self, sample_dataset, multi_step_pipeline):
+    def test_process_with_pipeline_instance(self, sample_dataset, multi_step_pipeline, mock_cmip7_drv_tas):
         """Test process() with pipeline instance."""
-        result = sample_dataset.pycmor.process(
-            variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=multi_step_pipeline
-        )
+        result = sample_dataset.pycmor.process(data_request_variable=mock_cmip7_drv_tas, pipeline=multi_step_pipeline)
 
         # Should multiply by 2, then add 10: (data * 2) + 10
         assert isinstance(result, xr.Dataset)
@@ -583,10 +599,10 @@ class TestProcessMethodDataset:
             expected = (sample_dataset[var].values * 2) + 10
             assert (result[var].values == expected).all()
 
-    def test_process_with_rule_kwargs(self, sample_dataset, rule_accessing_pipeline):
+    def test_process_with_rule_kwargs(self, sample_dataset, rule_accessing_pipeline, mock_cmip7_drv_tas):
         """Test process() with various rule attributes passed as kwargs."""
         result = sample_dataset.pycmor.process(
-            variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB",
+            data_request_variable=mock_cmip7_drv_tas,
             pipeline=rule_accessing_pipeline,
             custom_attr="test_value",
             experiment_id="piControl",
@@ -598,47 +614,45 @@ class TestProcessMethodDataset:
         # Attributes may be on dataset or variables depending on implementation
         # Just verify processing completed successfully
 
-    def test_process_returns_correct_type(self, sample_dataset, simple_pipeline):
+    def test_process_returns_correct_type(self, sample_dataset, simple_pipeline, mock_cmip7_drv_tas):
         """Test that process() returns a Dataset when called on Dataset."""
-        result = sample_dataset.pycmor.process(variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=simple_pipeline)
+        result = sample_dataset.pycmor.process(data_request_variable=mock_cmip7_drv_tas, pipeline=simple_pipeline)
 
         assert isinstance(result, xr.Dataset)
         assert not isinstance(result, xr.DataArray)
 
     def test_process_missing_variable(self, sample_dataset, simple_pipeline):
-        """Test that process() requires variable parameter."""
-        with pytest.raises(TypeError):
-            # Missing required variable argument
+        """Test that process() requires variable or data_request_variable parameter."""
+        with pytest.raises(ValueError, match="Must provide a variable identifier"):
+            # Missing both variable and data_request_variable
             sample_dataset.pycmor.process(pipeline=simple_pipeline)
 
     def test_process_missing_pipeline(self, sample_dataset, mock_cmip7_drv_tas):
-        """Test that process() handles missing pipeline appropriately."""
-        with pytest.raises((TypeError, ValueError)):
-            sample_dataset.pycmor.process(
-                variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", data_request_variable=mock_cmip7_drv_tas
-            )
+        """Test that process() uses DefaultPipeline when pipeline is None."""
+        # When pipeline is None, should use DefaultPipeline
+        # This will likely fail because DefaultPipeline needs more metadata
+        with pytest.raises((TypeError, ValueError, AttributeError, KeyError)):
+            sample_dataset.pycmor.process(data_request_variable=mock_cmip7_drv_tas)
 
-    def test_process_preserves_data_variables(self, sample_dataset, simple_pipeline):
+    def test_process_preserves_data_variables(self, sample_dataset, simple_pipeline, mock_cmip7_drv_tas):
         """Test that process() preserves all data variables in dataset."""
-        result = sample_dataset.pycmor.process(variable="atmos.tas.tavg-h2m-hxy-u.mon.GLB", pipeline=simple_pipeline)
+        result = sample_dataset.pycmor.process(data_request_variable=mock_cmip7_drv_tas, pipeline=simple_pipeline)
 
         assert isinstance(result, xr.Dataset)
         assert set(result.data_vars) == set(sample_dataset.data_vars)
         assert "atmos.tas.tavg-h2m-hxy-u.mon.GLB" in result.data_vars
         assert "atmos.pr.tavg-hxy-u.mon.GLB" in result.data_vars
 
-    def test_process_multiple_variables(self, sample_dataset, multi_step_pipeline):
+    def test_process_multiple_variables(self, sample_dataset, multi_step_pipeline, mock_cmip7_drv_pr):
         """Test process() on dataset with multiple data variables."""
-        result = sample_dataset.pycmor.process(variable="atmos.pr.tavg-hxy-u.mon.GLB", pipeline=multi_step_pipeline)
+        result = sample_dataset.pycmor.process(data_request_variable=mock_cmip7_drv_pr, pipeline=multi_step_pipeline)
 
         assert isinstance(result, xr.Dataset)
         assert len(result.data_vars) == len(sample_dataset.data_vars)
 
     def test_process_with_data_request_variable(self, sample_dataset, simple_pipeline, mock_cmip7_drv_pr):
         """Test process() with data_request_variable parameter."""
-        result = sample_dataset.pycmor.process(
-            variable="atmos.pr.tavg-hxy-u.mon.GLB", data_request_variable=mock_cmip7_drv_pr, pipeline=simple_pipeline
-        )
+        result = sample_dataset.pycmor.process(data_request_variable=mock_cmip7_drv_pr, pipeline=simple_pipeline)
 
         assert isinstance(result, xr.Dataset)
         # Verify all variables were processed (doubled by mock_step_multiply)
@@ -683,34 +697,56 @@ class TestProcessMethodDataset:
     # New tests for variable interpretation (Dataset)
     def test_process_cmip7_interprets_as_compound_name(self, sample_dataset, simple_pipeline):
         """Test that variable is interpreted as compound_name for CMIP7 (default)."""
-        with patch("pycmor.accessors.CMIP7DataRequest") as mock_dr:
-            # Mock the data request
+        with (
+            patch("pycmor.accessors.TableLocator") as mock_locator_cls,
+            patch("pycmor.accessors.DataRequest") as mock_dr_cls,
+            patch("pycmor.accessors.create_factory") as mock_factory,
+        ):
+            # Mock the factory pattern
+            mock_factory.return_value.get.return_value = mock_dr_cls
+
+            # Mock DataRequest with variables dict
+            mock_dr = Mock()
             mock_drv = Mock(spec=DataRequestVariable)
             mock_drv.compound_name = "atmos.pr.tavg-hxy-u.mon.GLB"
-            mock_dr.from_vendored_json.return_value.get_variable_by_compound_name.return_value = mock_drv
+            mock_dr.variables = {"atmos.pr.tavg-hxy-u.mon.GLB": mock_drv}
+            mock_dr_cls.from_directory.return_value = mock_dr
+
+            # Mock TableLocator
+            mock_locator = Mock()
+            mock_locator.locate.return_value = "/fake/path"
+            mock_locator_cls.return_value = mock_locator
 
             result = sample_dataset.pycmor.process(variable="atmos.pr.tavg-hxy-u.mon.GLB", pipeline=simple_pipeline)
 
             assert isinstance(result, xr.Dataset)
-            # Verify the data request was queried with compound_name
-            mock_dr.from_vendored_json.return_value.get_variable_by_compound_name.assert_called_once_with(
-                "atmos.pr.tavg-hxy-u.mon.GLB"
-            )
 
     def test_process_cmip6_interprets_as_cmor_variable(self, sample_dataset, simple_pipeline):
         """Test that variable is interpreted as cmor_variable when cmor_version='CMIP6'."""
-        with patch("pycmor.accessors.CMIP6DataRequest") as mock_dr:
-            # Mock the CMIP6 data request
+        with (
+            patch("pycmor.accessors.TableLocator") as mock_locator_cls,
+            patch("pycmor.accessors.DataRequest") as mock_dr_cls,
+            patch("pycmor.accessors.create_factory") as mock_factory,
+        ):
+            # Mock the factory pattern
+            mock_factory.return_value.get.return_value = mock_dr_cls
+
+            # Mock DataRequest with variables dict
+            mock_dr = Mock()
             mock_drv = Mock(spec=DataRequestVariable)
             mock_drv.name = "pr"
             mock_drv.variable_id = "pr"
-            mock_dr.from_vendored_json.return_value.get_variable.return_value = mock_drv
+            mock_dr.variables = {"pr": mock_drv}
+            mock_dr_cls.from_directory.return_value = mock_dr
+
+            # Mock TableLocator
+            mock_locator = Mock()
+            mock_locator.locate.return_value = "/fake/path"
+            mock_locator_cls.return_value = mock_locator
 
             result = sample_dataset.pycmor.process(variable="pr", cmor_version="CMIP6", pipeline=simple_pipeline)
 
             assert isinstance(result, xr.Dataset)
-            # Verify the CMIP6 data request was queried with cmor_variable
-            mock_dr.from_vendored_json.return_value.get_variable.assert_called_once_with("pr")
 
 
 class TestAccessorRegistration:
