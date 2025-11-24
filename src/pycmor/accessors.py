@@ -1,7 +1,7 @@
 """
-Xarray accessor registration module for pymor.
+Xarray accessor registration module for pycmor.
 
-This module imports and registers all xarray accessors used throughout the pymor project.
+This module imports and registers all xarray accessors used throughout the pycmor project.
 By importing this module, all accessors become available on xarray DataArrays and Datasets.
 """
 
@@ -14,24 +14,24 @@ from .core.infer_freq import DatasetFrequencyAccessor, TimeFrequencyAccessor
 # from .other_module import other_accessor  # noqa: F401
 
 
-@register_dataarray_accessor("pymor")
-class PymorDataArrayAccessor:
+@register_dataarray_accessor("pycmor")
+class PycmorDataArrayAccessor:
     """
-    Unified pymor accessor for xarray DataArrays.
+    Unified pycmor accessor for xarray DataArrays.
 
-    This accessor provides access to all pymor functionality under a single namespace.
+    This accessor provides access to all pycmor functionality under a single namespace.
     It delegates to specialized accessors like timefreq while providing a unified interface.
 
     Examples
     --------
     # Time frequency operations
-    data.pymor.resample_safe(target_approx_interval=30.0)  # ~monthly
-    data.pymor.resample_safe(freq_str='3M')  # 3-monthly
-    data.pymor.check_resolution(target_approx_interval=1.0)  # daily
-    data.pymor.infer_frequency()  # infer frequency from data
+    data.pycmor.resample_safe(target_approx_interval=30.0)  # ~monthly
+    data.pycmor.resample_safe(freq_str='3M')  # 3-monthly
+    data.pycmor.check_resolution(target_approx_interval=1.0)  # daily
+    data.pycmor.infer_frequency()  # infer frequency from data
 
-    # Future pymor functionality will also be available here
-    # data.pymor.other_feature()
+    # Future pycmor functionality will also be available here
+    # data.pycmor.other_feature()
     """
 
     def __init__(self, xarray_obj):
@@ -61,29 +61,29 @@ class PymorDataArrayAccessor:
         """
         return self._timefreq.infer_frequency(*args, **kwargs)
 
-    # Future pymor methods can be added here
+    # Future pycmor methods can be added here
     # def other_feature(self, *args, **kwargs):
     #     return self._other_accessor.other_feature(*args, **kwargs)
 
 
-@register_dataset_accessor("pymor")
-class PymorDatasetAccessor:
+@register_dataset_accessor("pycmor")
+class PycmorDatasetAccessor:
     """
-    Unified pymor accessor for xarray Datasets.
+    Unified pycmor accessor for xarray Datasets.
 
-    This accessor provides access to all pymor functionality under a single namespace.
+    This accessor provides access to all pycmor functionality under a single namespace.
     It delegates to specialized accessors like timefreq while providing a unified interface.
 
     Examples
     --------
     # Time frequency operations
-    dataset.pymor.resample_safe(target_approx_interval=30.0)  # ~monthly
-    dataset.pymor.resample_safe(freq_str='3M')  # 3-monthly
-    dataset.pymor.check_resolution(target_approx_interval=1.0)  # daily
-    dataset.pymor.infer_frequency()  # infer frequency from data
+    dataset.pycmor.resample_safe(target_approx_interval=30.0)  # ~monthly
+    dataset.pycmor.resample_safe(freq_str='3M')  # 3-monthly
+    dataset.pycmor.check_resolution(target_approx_interval=1.0)  # daily
+    dataset.pycmor.infer_frequency()  # infer frequency from data
 
-    # Future pymor functionality will also be available here
-    # dataset.pymor.other_feature()
+    # Future pycmor functionality will also be available here
+    # dataset.pycmor.other_feature()
     """
 
     def __init__(self, xarray_obj):
@@ -113,6 +113,6 @@ class PymorDatasetAccessor:
         """
         return self._timefreq.infer_frequency(*args, **kwargs)
 
-    # Future pymor methods can be added here
+    # Future pycmor methods can be added here
     # def other_feature(self, *args, **kwargs):
     #     return self._other_accessor.other_feature(*args, **kwargs)

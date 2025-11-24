@@ -10,7 +10,7 @@ import cftime
 import pytest
 import xarray as xr
 
-# Import pymor to register all accessors
+# Import pycmor to register all accessors
 import pycmor  # noqa: F401
 
 
@@ -42,7 +42,7 @@ class TestPycmorDataArrayAccessor:
 
     def test_pycmor_accessor_registration(self, sample_dataarray):
         """Test that the pycmor accessor is properly registered."""
-        assert hasattr(sample_dataarray, "pymor")
+        assert hasattr(sample_dataarray, "pycmor")
         assert hasattr(sample_dataarray, "timefreq")  # Specialized accessor still available
 
     def test_pycmor_accessor_methods_available(self, sample_dataarray):
@@ -54,7 +54,7 @@ class TestPycmorDataArrayAccessor:
             assert callable(getattr(sample_dataarray.pycmor, method))
 
     def test_pycmor_infer_frequency_delegation(self, sample_dataarray):
-        """Test that pymor.infer_frequency delegates correctly to timefreq."""
+        """Test that pycmor.infer_frequency delegates correctly to timefreq."""
         # Test via pycmor accessor
         pycmor_result = sample_dataarray.pycmor.infer_frequency(log=False)
 
@@ -67,7 +67,7 @@ class TestPycmorDataArrayAccessor:
         assert pycmor_result.status == "valid"
 
     def test_pycmor_check_resolution_delegation(self, sample_dataarray):
-        """Test that pymor.check_resolution delegates correctly to timefreq."""
+        """Test that pycmor.check_resolution delegates correctly to timefreq."""
         target_interval = 30.0
 
         # Test via pycmor accessor
@@ -86,7 +86,7 @@ class TestPycmorDataArrayAccessor:
         assert "comparison_status" in pycmor_result
 
     def test_pycmor_resample_safe_delegation(self, sample_dataarray):
-        """Test that pymor.resample_safe delegates correctly to timefreq."""
+        """Test that pycmor.resample_safe delegates correctly to timefreq."""
         # Test via pycmor accessor
         pycmor_result = sample_dataarray.pycmor.resample_safe(target_approx_interval=30.0, calendar="360_day")
 
@@ -100,7 +100,7 @@ class TestPycmorDataArrayAccessor:
         assert pycmor_result.name == timefreq_result.name
 
     def test_pycmor_resample_safe_with_freq_str(self, sample_dataarray):
-        """Test pymor.resample_safe with frequency string parameter."""
+        """Test pycmor.resample_safe with frequency string parameter."""
         result = sample_dataarray.pycmor.resample_safe(freq_str="M", calendar="360_day")
 
         assert isinstance(result, xr.DataArray)
@@ -108,7 +108,7 @@ class TestPycmorDataArrayAccessor:
         assert result.name == sample_dataarray.name
 
     def test_pycmor_resample_safe_parameter_flexibility(self, sample_dataarray):
-        """Test that pymor.resample_safe accepts flexible parameter combinations."""
+        """Test that pycmor.resample_safe accepts flexible parameter combinations."""
         # Test with target_approx_interval only
         result1 = sample_dataarray.pycmor.resample_safe(target_approx_interval=30.0, calendar="360_day")
 
@@ -149,7 +149,7 @@ class TestPycmorDatasetAccessor:
 
     def test_pycmor_accessor_registration(self, sample_dataset):
         """Test that the pycmor accessor is properly registered for datasets."""
-        assert hasattr(sample_dataset, "pymor")
+        assert hasattr(sample_dataset, "pycmor")
         assert hasattr(sample_dataset, "timefreq")  # Specialized accessor still available
 
     def test_pycmor_accessor_methods_available(self, sample_dataset):
@@ -161,7 +161,7 @@ class TestPycmorDatasetAccessor:
             assert callable(getattr(sample_dataset.pycmor, method))
 
     def test_pycmor_infer_frequency_delegation(self, sample_dataset):
-        """Test that dataset pymor.infer_frequency delegates correctly."""
+        """Test that dataset pycmor.infer_frequency delegates correctly."""
         # Test via pycmor accessor
         pycmor_result = sample_dataset.pycmor.infer_frequency(log=False)
 
@@ -174,7 +174,7 @@ class TestPycmorDatasetAccessor:
         assert pycmor_result.status == "valid"
 
     def test_pycmor_check_resolution_delegation(self, sample_dataset):
-        """Test that dataset pymor.check_resolution delegates correctly."""
+        """Test that dataset pycmor.check_resolution delegates correctly."""
         target_interval = 30.0
 
         # Test via pycmor accessor
@@ -192,7 +192,7 @@ class TestPycmorDatasetAccessor:
         assert "is_valid_for_resampling" in pycmor_result
 
     def test_pycmor_resample_safe_delegation(self, sample_dataset):
-        """Test that dataset pymor.resample_safe delegates correctly."""
+        """Test that dataset pycmor.resample_safe delegates correctly."""
         # Test via pycmor accessor
         pycmor_result = sample_dataset.pycmor.resample_safe(target_approx_interval=30.0, calendar="360_day")
 
@@ -206,7 +206,7 @@ class TestPycmorDatasetAccessor:
         assert pycmor_result.dims == timefreq_result.dims
 
     def test_pycmor_resample_safe_preserves_variables(self, sample_dataset):
-        """Test that dataset pymor.resample_safe preserves all data variables."""
+        """Test that dataset pycmor.resample_safe preserves all data variables."""
         result = sample_dataset.pycmor.resample_safe(freq_str="M", calendar="360_day")
 
         assert isinstance(result, xr.Dataset)
@@ -247,11 +247,11 @@ class TestAccessorInteroperability:
         """Test that both specialized and unified accessors work together."""
         # DataArray
         assert hasattr(sample_dataarray, "timefreq")
-        assert hasattr(sample_dataarray, "pymor")
+        assert hasattr(sample_dataarray, "pycmor")
 
         # Dataset
         assert hasattr(sample_dataset, "timefreq")
-        assert hasattr(sample_dataset, "pymor")
+        assert hasattr(sample_dataset, "pycmor")
 
     def test_consistent_results_across_accessors(self, sample_dataarray):
         """Test that specialized and unified accessors give consistent results."""
@@ -308,16 +308,16 @@ class TestAccessorRegistration:
 
         # Both specialized and unified accessors should be available
         assert hasattr(da, "timefreq")
-        assert hasattr(da, "pymor")
+        assert hasattr(da, "pycmor")
         assert hasattr(ds, "timefreq")
-        assert hasattr(ds, "pymor")
+        assert hasattr(ds, "pycmor")
 
     def test_accessor_namespace_separation(self, sample_dataarray):
         """Test that accessor namespaces are properly separated."""
-        # timefreq and pymor should be different objects
+        # timefreq and pycmor should be different objects
         assert sample_dataarray.timefreq is not sample_dataarray.pycmor
 
-        # But pymor should delegate to timefreq functionality
+        # But pycmor should delegate to timefreq functionality
         assert hasattr(sample_dataarray.pycmor, "_timefreq")
 
     def test_future_extensibility(self, sample_dataarray):
