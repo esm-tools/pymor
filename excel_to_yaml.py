@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-Convert CMIP7 variable mapping Excel file to YAML for use in pycmor
+Convert CMIP7 variable mapping Excel file to YAML for use in pycmor.
+Uses compound names as unique identifiers.
 """
 
 import pandas as pd
 import yaml
-from pathlib import Path
 import argparse
+
 
 def excel_to_yaml(excel_path, yaml_path, filter_status=None):
     """
@@ -14,9 +15,9 @@ def excel_to_yaml(excel_path, yaml_path, filter_status=None):
 
     Parameters
     ----------
-    excel_path : str or Path
+    excel_path : str
         Path to the Excel file
-    yaml_path : str or Path
+    yaml_path : str
         Path to output YAML file
     filter_status : str, optional
         Only include variables with this status (e.g., 'completed')
@@ -28,28 +29,34 @@ def excel_to_yaml(excel_path, yaml_path, filter_status=None):
     # Read Excel file
     print(f"\nReading Excel file: {excel_path}")
     df = pd.read_excel(excel_path, sheet_name='Variable Mapping')
-    print(f"Total variables in Excel: {len(df)}")
+    print(f"Total compound names in Excel: {len(df)}")
 
     # Filter by status if requested
     if filter_status:
         df = df[df['status'] == filter_status]
-        print(f"Filtered to status '{filter_status}': {len(df)} variables")
+        print(f"Filtered to status '{filter_status}': {len(df)} compound names")
 
-    # Convert to dictionary format
+    # Convert to dictionary format using compound_name as key
     print("\nConverting to YAML structure...")
     variables = {}
 
     for _, row in df.iterrows():
-        var_id = row['variable_id']
+        compound_name = row['compound_name']
 
         # Build variable entry
         var_entry = {
+            # Identifiers
+            'table': row['table'] if pd.notna(row['table']) else None,
+            'variable_id': row['variable_id'] if pd.notna(row['variable_id']) else None,
+
             # CMIP7 metadata
             'standard_name': row['standard_name'] if pd.notna(row['standard_name']) else None,
             'long_name': row['long_name'] if pd.notna(row['long_name']) else None,
             'units': row['units'] if pd.notna(row['units']) else None,
             'frequency': row['frequency'] if pd.notna(row['frequency']) else None,
             'modeling_realm': row['modeling_realm'] if pd.notna(row['modeling_realm']) else None,
+            'region': row['region'] if pd.notna(row['region']) else None,
+            'method_level_grid': row['method_level_grid'] if pd.notna(row['method_level_grid']) else None,
 
             # Model mappings
             'model_mappings': {
@@ -84,13 +91,13 @@ def excel_to_yaml(excel_path, yaml_path, filter_status=None):
         # Remove None values from top level
         var_entry = {k: v for k, v in var_entry.items() if v is not None}
 
-        variables[var_id] = var_entry
+        variables[compound_name] = var_entry
 
     # Write YAML file
     print(f"\nWriting YAML file: {yaml_path}")
     with open(yaml_path, 'w') as f:
         yaml.dump(
-            {'cmip7_variables': variables},
+            {'cmip7_compound_variables': variables},
             f,
             default_flow_style=False,
             sort_keys=True,
@@ -99,7 +106,7 @@ def excel_to_yaml(excel_path, yaml_path, filter_status=None):
         )
 
     print(f"\n✓ YAML file created successfully")
-    print(f"  - Variables included: {len(variables)}")
+    print(f"  - Compound names included: {len(variables)}")
 
     # Statistics
     print("\n" + "="*80)
@@ -112,7 +119,7 @@ def excel_to_yaml(excel_path, yaml_path, filter_status=None):
     with_recom = sum(1 for v in variables.values() if 'model_mappings' in v and 'recom' in v['model_mappings'])
     with_lpj = sum(1 for v in variables.values() if 'model_mappings' in v and 'lpj_guess' in v['model_mappings'])
 
-    print(f"Variables with model mappings:")
+    print(f"Compound names with model mappings:")
     print(f"  - FESOM: {with_fesom}")
     print(f"  - OIFS: {with_oifs}")
     print(f"  - REcoM: {with_recom}")
@@ -124,17 +131,21 @@ def excel_to_yaml(excel_path, yaml_path, filter_status=None):
         status = v.get('status', 'pending')
         status_counts[status] = status_counts.get(status, 0) + 1
 
-    print(f"\nVariables by status:")
+    print(f"\nCompound names by status:")
     for status, count in sorted(status_counts.items()):
         print(f"  - {status}: {count}")
 
+    # Count unique variable_ids
+    unique_vars = set(v.get('variable_id') for v in variables.values() if v.get('variable_id'))
+    print(f"\nUnique variable_ids: {len(unique_vars)}")
+
     print("\n" + "="*80)
-    print("SAMPLE YAML OUTPUT (first 3 variables)")
+    print("SAMPLE YAML OUTPUT (first 3 compound names)")
     print("="*80)
 
     # Show sample
     sample_vars = dict(list(variables.items())[:3])
-    print(yaml.dump({'cmip7_variables': sample_vars}, default_flow_style=False, sort_keys=True))
+    print(yaml.dump({'cmip7_compound_variables': sample_vars}, default_flow_style=False, sort_keys=True))
 
     return variables
 
@@ -176,22 +187,33 @@ To use this YAML file in pycmor:
     with open('cmip7_variable_mapping.yaml', 'r') as f:
         var_mapping = yaml.safe_load(f)
 
-    # Access variable information
-    variables = var_mapping['cmip7_variables']
+    # Access compound variable information
+    compound_vars = var_mapping['cmip7_compound_variables']
 
-    # Example: Get FESOM mapping for 'thetao'
-    if 'thetao' in variables:
-        fesom_var = variables['thetao']['model_mappings']['fesom']
-        print(f"CMIP7 'thetao' maps to FESOM '{fesom_var}'")
+    # Example: Get OIFS mapping for daily mean tas
+    compound_name = 'atmos.tas.tavg-h2m-hxy-u.day.GLB'
+    if compound_name in compound_vars:
+        oifs_var = compound_vars[compound_name]['model_mappings']['oifs']
+        preprocess = compound_vars[compound_name]['processing']['preprocess']
+        print(f"{compound_name} -> OIFS '{oifs_var}' (method: {preprocess})")
 
-    # Example: Get all ocean variables mapped to FESOM
-    ocean_vars = {
-        var_id: var_info
-        for var_id, var_info in variables.items()
-        if 'ocean' in var_info.get('modeling_realm', '')
+    # Example: Get all monthly ocean variables mapped to FESOM
+    ocean_fesom_vars = {
+        comp_name: var_info
+        for comp_name, var_info in compound_vars.items()
+        if var_info.get('frequency') == 'mon'
+        and 'ocean' in var_info.get('modeling_realm', '')
         and 'model_mappings' in var_info
         and 'fesom' in var_info['model_mappings']
     }
+
+    # Example: Get all variants of a specific variable
+    tas_variants = {
+        comp_name: var_info
+        for comp_name, var_info in compound_vars.items()
+        if var_info.get('variable_id') == 'tas'
+    }
+    print(f"Found {len(tas_variants)} variants of 'tas'")
 """)
 
 
