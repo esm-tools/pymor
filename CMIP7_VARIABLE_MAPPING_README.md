@@ -8,20 +8,40 @@ The workflow provides a user-friendly Excel interface for collaborative variable
 
 ## Files
 
-- **`cmip7_variable_mapping.xlsx`** - Excel file with pre-populated CMIP7 variables (987 variables)
-- **`create_cmip7_variable_mapping.py`** - Script to generate the Excel file from CMIP7 data request
+### Data Files
+
+- **`dreq_v1.2.2.2.json`** - CMIP7 Data Request with experiments and priority levels (required by create script)
+- **`dreq_v1.2.2.2_metadata.json`** - CMIP7 variable metadata with compound names, units, standard names (required by create script)
+- **`cmip7_variable_mapping.xlsx`** - Excel file with pre-populated CMIP7 variables (1,974 compound names covering 987 unique variables)
+
+### Scripts
+
+- **`create_cmip7_variable_mapping.py`** - Script to generate the Excel file from CMIP7 data request JSON files
 - **`excel_to_yaml.py`** - Script to convert filled Excel to YAML format
+
+### Output
+
 - **`cmip7_variable_mapping.yaml`** - Generated YAML file for use in pycmor (created after filling Excel)
 
 ## Quick Start
 
 ### 1. Create the Excel File (Already Done)
 
-The Excel file has been created with all 987 CMIP7 variables pre-populated:
+The Excel file has been created with 1,974 compound names covering 987 unique CMIP7 variables:
 
 ```bash
 conda run -n pycmor-dev python create_cmip7_variable_mapping.py
 ```
+
+**Note:** The script requires `dreq_v1.2.2.2.json` and `dreq_v1.2.2.2_metadata.json` to be present in the same directory.
+
+**What are compound names?**
+Each CMIP7 variable can appear in multiple contexts with different frequencies, regions, or methods. For example:
+- `atmos.tas.tavg-h2m-hxy-u.day.GLB` (daily mean)
+- `atmos.tas.tavg-h2m-hxy-u.mon.GLB` (monthly mean)
+- `atmos.tas.tmax-h2m-hxy-u.day.GLB` (daily maximum)
+
+Each compound name may require different preprocessing, so they are listed separately in the Excel file.
 
 ### 2. Fill in the Excel File
 
@@ -31,9 +51,10 @@ Open `cmip7_variable_mapping.xlsx` in Excel or LibreOffice:
 
 | Color | Columns | Description | Action |
 |-------|---------|-------------|--------|
-| 🔵 Blue | `variable_id`, `standard_name`, `long_name`, `units`, `frequency`, `modeling_realm` | CMIP7 metadata (pre-populated) | **DO NOT EDIT** |
+| ⬜ Gray | `compound_name`, `table`, `variable_id` | Unique identifiers | **DO NOT EDIT** |
+| 🔵 Blue | `standard_name`, `units`, `frequency`, `modeling_realm`, `region`, `method_level_grid`, `dreq_priority` | CMIP7 metadata (pre-populated) | **DO NOT EDIT** |
 | 🟢 Green | `fesom`, `oifs`, `recom`, `lpj_guess` | Model-specific variable names | **Fill in as needed** |
-| 🟡 Yellow | `preprocess`, `formula`, `comment`, `status`, `priority` | Processing information | **Fill in as needed** |
+| 🟡 Yellow | `preprocess`, `formula`, `comment`, `status`, `user_priority` | Processing information | **Fill in as needed** |
 
 **Example Entries:**
 
@@ -47,7 +68,15 @@ Open `cmip7_variable_mapping.xlsx` in Excel or LibreOffice:
 
 **Dropdown Values:**
 - **status**: `pending`, `in_progress`, `completed`, `not_applicable`
-- **priority**: `high`, `medium`, `low`
+- **user_priority**: `high`, `medium`, `low` (your implementation priority)
+
+**CMIP7 Data Request Priority Levels (read-only):**
+- **dreq_priority**: Shows the priority level from CMIP7 experiments
+  - **Core** (131 variables): Essential for all CMIP7 experiments
+  - **High** (1,038 variables): High priority for most experiments
+  - **Medium** (469 variables): Medium priority
+  - **Low** (112 variables): Lower priority
+  - Some variables have multiple priorities across different experiments (e.g., "High, Medium")
 
 ### 3. Convert Excel to YAML
 
@@ -177,8 +206,20 @@ print(f"Found {len(ocean_fesom_vars)} ocean variables mapped to FESOM")
 ## Data Source
 
 The CMIP7 variable list is extracted from:
-- `dreq_v1.2.2.2_metadata.json` - CMIP7 Data Request metadata
-- Total: **987 unique CMIP7 variables**
+- **`dreq_v1.2.2.2_metadata.json`** - CMIP7 Data Request metadata (compound names, units, standard names)
+- **`dreq_v1.2.2.2.json`** - Full CMIP7 Data Request (experiments and priority levels)
+- Total: **1,974 compound names** covering **987 unique CMIP7 variables**
+
+### Fetching the Data Request Files
+
+The JSON files are included in this repository, but you can also fetch them directly using the CMIP7 Data Request API:
+
+```bash
+pip install CMIP7-data-request-api
+export_dreq_lists_json -a -m dreq_v1.2.2.2_metadata.json v1.2.2.2 dreq_v1.2.2.2.json
+```
+
+This will download the latest version of the CMIP7 Data Request files.
 
 ## Preprocessing Method Examples
 
