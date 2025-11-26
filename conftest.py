@@ -95,34 +95,17 @@ pytest_plugins = [
 ]
 
 
-def _discover_builtin_model_runs():
-    """Get list of built-in model run classes.
+def _discover_model_runs():
+    """Discover all model run classes via entry points.
+
+    Discovers both built-in models (shipped with pycmor) and external
+    plugin models. All models are registered via the 'pycmor.models'
+    entry point group in pyproject.toml.
 
     Returns
     -------
     list
-        List of BaseModelRun subclasses for built-in models
-    """
-    from tests.contrib.models.awicm_recom.fixtures.model import AwicmRecomModelRun
-    from tests.contrib.models.fesom_2p6_pimesh.fixtures.model import Fesom2p6PimeshModelRun
-    from tests.contrib.models.fesom_uxarray.fixtures.model import FesomUxarrayModelRun
-
-    return [
-        AwicmRecomModelRun,
-        Fesom2p6PimeshModelRun,
-        FesomUxarrayModelRun,
-    ]
-
-
-def _discover_plugin_model_runs():
-    """Discover model run classes from installed plugins.
-
-    Plugins register model runs via the 'pycmor.models' entry point group.
-
-    Returns
-    -------
-    list
-        List of BaseModelRun subclasses from plugins
+        List of BaseModelRun subclasses
     """
     try:
         import importlib.metadata as importlib_metadata
@@ -130,9 +113,9 @@ def _discover_plugin_model_runs():
         # Python < 3.8
         import importlib_metadata
 
-    plugin_models = []
+    models = []
 
-    # Discover plugins via entry points
+    # Discover all models via entry points
     entry_points = importlib_metadata.entry_points()
 
     # Handle both old dict-style and new SelectableGroups-style
@@ -146,22 +129,27 @@ def _discover_plugin_model_runs():
     for entry_point in pycmor_models:
         try:
             model_class = entry_point.load()
-            plugin_models.append(model_class)
-            logging.info(f"Discovered plugin model: {entry_point.name} from {entry_point.value}")
+            models.append(model_class)
+            logging.info(f"Discovered model: {entry_point.name} from {entry_point.value}")
         except Exception as e:
-            logging.warning(f"Failed to load plugin model {entry_point.name}: {e}")
+            logging.warning(f"Failed to load model {entry_point.name}: {e}")
 
-    return plugin_models
+    return models
 
 
 def pytest_generate_tests(metafunc):
     """Dynamically parametrize tests with available model runs.
 
     This hook enables generic model tests to run against all registered models,
-    both built-in and from plugins. Tests using the 'model_run_class' fixture
-    will be parametrized with all discovered model run classes.
+    both built-in and from external plugins. Tests using the 'model_run_class'
+    fixture will be parametrized with all discovered model run classes.
 
-    External plugins can register their models via entry points:
+    Built-in models are registered in pyproject.toml:
+
+        [project.entry-points."pycmor.models"]
+        awicm_recom = "tests.contrib.models.awicm_recom.fixtures.model:AwicmRecomModelRun"
+
+    External plugins register their models the same way:
 
         [project.entry-points."pycmor.models"]
         cesm = "pycmor_plugin_cesm.model:CESMModelRun"
@@ -172,10 +160,8 @@ def pytest_generate_tests(metafunc):
         The pytest metafunc object for parametrization
     """
     if "model_run_class" in metafunc.fixturenames:
-        # Collect all model run classes
-        builtin_models = _discover_builtin_model_runs()
-        plugin_models = _discover_plugin_model_runs()
-        all_models = builtin_models + plugin_models
+        # Discover all model run classes via entry points
+        all_models = _discover_model_runs()
 
         # Parametrize with model class and use model_name as test ID
         metafunc.parametrize(
