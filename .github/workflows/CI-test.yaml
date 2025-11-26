@@ -36,8 +36,8 @@ jobs:
         run: |
           # This verifies that the conftest.py fixture setup works correctly
           # before we attempt to run the full doctest suite in Docker
-          # --no-cov disables coverage from pyproject.toml to avoid importing heavy deps
-          PYTHONPATH=src python -m pytest -vvv --no-cov tests/doctest_sanity_check.py
+          # Override addopts from pyproject.toml to avoid coverage (pytest-cov not installed)
+          PYTHONPATH=src python -m pytest -vvv -o addopts="" tests/doctest_sanity_check.py
   # Setup job for linting and formatting checks
   lint_and_format:
     name: Lint and Format Check
