@@ -31,13 +31,12 @@ jobs:
       - name: Install minimal dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest pyyaml
+          python -m pip install pytest pyyaml 'ruamel.yaml'
       - name: Run doctest sanity check
         run: |
           # This verifies that the conftest.py fixture setup works correctly
           # before we attempt to run the full doctest suite in Docker
           PYTHONPATH=src python -m pytest -vvv --doctest-modules tests/doctest_sanity_check.py
-
   # Setup job for linting and formatting checks
   lint_and_format:
     name: Lint and Format Check
@@ -71,7 +70,6 @@ jobs:
       - name: Run yamllint
         run: |
           yamllint .
-
   # Build jobs - one per Python version
   build-3-9:
     name: Build Test Image Python 3.9
@@ -111,7 +109,6 @@ jobs:
             PYTHON_VERSION=3.9
           cache-from: type=gha,scope=py3.9
           cache-to: type=gha,mode=max,scope=py3.9
-
   build-3-10:
     name: Build Test Image Python 3.10
     needs: [lint_and_format]
@@ -150,7 +147,6 @@ jobs:
             PYTHON_VERSION=3.10
           cache-from: type=gha,scope=py3.10
           cache-to: type=gha,mode=max,scope=py3.10
-
   build-3-11:
     name: Build Test Image Python 3.11
     needs: [lint_and_format]
@@ -189,7 +185,6 @@ jobs:
             PYTHON_VERSION=3.11
           cache-from: type=gha,scope=py3.11
           cache-to: type=gha,mode=max,scope=py3.11
-
   build-3-12:
     name: Build Test Image Python 3.12
     needs: [lint_and_format]
@@ -228,7 +223,6 @@ jobs:
             PYTHON_VERSION=3.12
           cache-from: type=gha,scope=py3.12
           cache-to: type=gha,mode=max,scope=py3.12
-
   # Meta test jobs - one per Python version
   test-meta-3-9:
     name: Meta Test Python 3.9
@@ -277,7 +271,6 @@ jobs:
         with:
           name: coverage-reports-meta-3.9
           path: coverage-meta-3.9.xml
-
   test-meta-3-10:
     name: Meta Test Python 3.10
     needs: [build-3-10]
@@ -325,7 +318,6 @@ jobs:
         with:
           name: coverage-reports-meta-3.10
           path: coverage-meta-3.10.xml
-
   test-meta-3-11:
     name: Meta Test Python 3.11
     needs: [build-3-11]
@@ -373,7 +365,6 @@ jobs:
         with:
           name: coverage-reports-meta-3.11
           path: coverage-meta-3.11.xml
-
   test-meta-3-12:
     name: Meta Test Python 3.12
     needs: [build-3-12]
@@ -421,7 +412,6 @@ jobs:
         with:
           name: coverage-reports-meta-3.12
           path: coverage-meta-3.12.xml
-
   # Unit test jobs - one per Python version
   test-unit-3-9:
     name: Unit Test Python 3.9
@@ -468,7 +458,6 @@ jobs:
         with:
           name: coverage-reports-unit-3.9
           path: coverage-unit-3.9.xml
-
   test-unit-3-10:
     name: Unit Test Python 3.10
     needs: [test-meta-3-10]
@@ -514,7 +503,6 @@ jobs:
         with:
           name: coverage-reports-unit-3.10
           path: coverage-unit-3.10.xml
-
   test-unit-3-11:
     name: Unit Test Python 3.11
     needs: [test-meta-3-11]
@@ -560,7 +548,6 @@ jobs:
         with:
           name: coverage-reports-unit-3.11
           path: coverage-unit-3.11.xml
-
   test-unit-3-12:
     name: Unit Test Python 3.12
     needs: [test-meta-3-12]
@@ -606,7 +593,6 @@ jobs:
         with:
           name: coverage-reports-unit-3.12
           path: coverage-unit-3.12.xml
-
   # Integration test jobs - one per Python version
   test-integration-3-9:
     name: Integration Test Python 3.9
@@ -653,7 +639,6 @@ jobs:
         with:
           name: coverage-reports-integration-3.9
           path: coverage-integration-3.9.xml
-
   test-integration-3-10:
     name: Integration Test Python 3.10
     needs: [test-meta-3-10]
@@ -699,7 +684,6 @@ jobs:
         with:
           name: coverage-reports-integration-3.10
           path: coverage-integration-3.10.xml
-
   test-integration-3-11:
     name: Integration Test Python 3.11
     needs: [test-meta-3-11]
@@ -745,7 +729,6 @@ jobs:
         with:
           name: coverage-reports-integration-3.11
           path: coverage-integration-3.11.xml
-
   test-integration-3-12:
     name: Integration Test Python 3.12
     needs: [test-meta-3-12]
@@ -791,7 +774,6 @@ jobs:
         with:
           name: coverage-reports-integration-3.12
           path: coverage-integration-3.12.xml
-
   # Doctest jobs - one per Python version
   test-doctest-3-9:
     name: Doctest Python 3.9
@@ -835,7 +817,6 @@ jobs:
         with:
           name: coverage-reports-doctest-3.9
           path: coverage-doctest-3.9.xml
-
   test-doctest-3-10:
     name: Doctest Python 3.10
     needs: [doctest-sanity-check, test-meta-3-10]
@@ -878,7 +859,6 @@ jobs:
         with:
           name: coverage-reports-doctest-3.10
           path: coverage-doctest-3.10.xml
-
   test-doctest-3-11:
     name: Doctest Python 3.11
     needs: [doctest-sanity-check, test-meta-3-11]
@@ -921,7 +901,6 @@ jobs:
         with:
           name: coverage-reports-doctest-3.11
           path: coverage-doctest-3.11.xml
-
   test-doctest-3-12:
     name: Doctest Python 3.12
     needs: [doctest-sanity-check, test-meta-3-12]
@@ -964,7 +943,6 @@ jobs:
         with:
           name: coverage-reports-doctest-3.12
           path: coverage-doctest-3.12.xml
-
   # Status and output jobs
   post-status:
     name: Post Status for other jobs
@@ -980,7 +958,6 @@ jobs:
           echo "test_status=success" >> $GITHUB_ENV
           echo "lint_status=success" >> $GITHUB_OUTPUT
           echo "test_status=success" >> $GITHUB_OUTPUT
-
   set-output:
     name: Set Output for Ref
     runs-on: ubuntu-latest
@@ -1000,7 +977,6 @@ jobs:
           fi
           echo "cat ${GITHUB_OUTPUT}"
           cat $GITHUB_OUTPUT
-
   set-workflow-artifact:
     name: Set workflow artifact
     runs-on: ubuntu-latest
@@ -1021,7 +997,6 @@ jobs:
         with:
           name: status-${{ github.run_id }}
           path: status.dat
-
   # Combined test coverage report
   coverage:
     name: Generate Coverage Report
