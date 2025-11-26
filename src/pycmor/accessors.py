@@ -245,11 +245,19 @@ class PycmorDataArrayAccessor:
             merged_kwargs["inputs"] = []
 
         # Attach DataRequestVariable to rule
-        # Use compound_name if available (CMIP7), otherwise use cmor_variable (CMIP6)
+        # Rule.from_dict requires cmor_variable, so extract it from DRV if needed
+        if not cmor_variable:
+            # For CMIP7, extract cmor_variable from DataRequestVariable
+            cmor_variable = getattr(drv, "variable_id", None) or getattr(drv, "name", None)
+            if not cmor_variable:
+                raise ValueError(f"Cannot determine cmor_variable from DataRequestVariable: {drv}")
+
+        merged_kwargs["cmor_variable"] = cmor_variable
+
+        # Also attach compound_name if available (CMIP7)
         if compound_name:
             merged_kwargs["compound_name"] = compound_name
-        if cmor_variable:
-            merged_kwargs["cmor_variable"] = cmor_variable
+
         merged_kwargs["data_request_variables"] = [drv]
 
         rule = Rule.from_dict(merged_kwargs)
@@ -499,11 +507,19 @@ class PycmorDatasetAccessor:
             merged_kwargs["inputs"] = []
 
         # Attach DataRequestVariable to rule
-        # Use compound_name if available (CMIP7), otherwise use cmor_variable (CMIP6)
+        # Rule.from_dict requires cmor_variable, so extract it from DRV if needed
+        if not cmor_variable:
+            # For CMIP7, extract cmor_variable from DataRequestVariable
+            cmor_variable = getattr(drv, "variable_id", None) or getattr(drv, "name", None)
+            if not cmor_variable:
+                raise ValueError(f"Cannot determine cmor_variable from DataRequestVariable: {drv}")
+
+        merged_kwargs["cmor_variable"] = cmor_variable
+
+        # Also attach compound_name if available (CMIP7)
         if compound_name:
             merged_kwargs["compound_name"] = compound_name
-        if cmor_variable:
-            merged_kwargs["cmor_variable"] = cmor_variable
+
         merged_kwargs["data_request_variables"] = [drv]
 
         rule = Rule.from_dict(merged_kwargs)
