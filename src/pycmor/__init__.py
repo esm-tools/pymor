@@ -2,7 +2,8 @@
 
 # Import module that registers all xarray accessors
 try:
-    from .accessors import *  # noqa: F401, F403
+
+    from . import accessors  # noqa: F401
 
     _XARRAY_ACCESSOR_AVAILABLE = True
 except ImportError:
