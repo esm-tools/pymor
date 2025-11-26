@@ -513,6 +513,8 @@ class TestProcessMethodDataArray:
             mock_dr = Mock()
             mock_drv = Mock(spec=DataRequestVariable)
             mock_drv.compound_name = "atmos.tas.tavg-h2m-hxy-u.mon.GLB"
+            mock_drv.variable_id = "tas"
+            mock_drv.name = "tas"
             mock_dr.variables = {"atmos.tas.tavg-h2m-hxy-u.mon.GLB": mock_drv}
             mock_dr_cls.from_directory.return_value = mock_dr
 
@@ -709,6 +711,8 @@ class TestProcessMethodDataset:
             mock_dr = Mock()
             mock_drv = Mock(spec=DataRequestVariable)
             mock_drv.compound_name = "atmos.pr.tavg-hxy-u.mon.GLB"
+            mock_drv.variable_id = "pr"
+            mock_drv.name = "pr"
             mock_dr.variables = {"atmos.pr.tavg-hxy-u.mon.GLB": mock_drv}
             mock_dr_cls.from_directory.return_value = mock_dr
 
