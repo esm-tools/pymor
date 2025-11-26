@@ -88,4 +88,8 @@ pytest_plugins = [
     # Model-contrib fixtures (new structure)
     "tests.contrib.models.awicm_recom.fixtures.datadir",
     "tests.contrib.models.awicm_recom.fixtures.datasets",
+    "tests.contrib.models.fesom_2p6_pimesh.fixtures.datadir",
+    "tests.contrib.models.fesom_2p6_pimesh.fixtures.datasets",
+    "tests.contrib.models.fesom_uxarray.fixtures.datadir",
+    "tests.contrib.models.fesom_uxarray.fixtures.datasets",
 ]

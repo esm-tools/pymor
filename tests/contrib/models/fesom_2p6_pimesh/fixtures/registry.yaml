@@ -1,0 +1,9 @@
+# Test data registry for FESOM 2.6 PI mesh model
+#
+# This file defines remote test data files that can be downloaded
+# and cached by the test suite using pooch.
+fesom_2p6_pimesh.tar:
+  url: https://nextcloud.awi.de/s/AL2cFQx5xGE473S/download/fesom_2p6_pimesh.tar
+  sha256: null # TODO: Add checksum for validation
+  description: FESOM 2.6 PI mesh test data with ocean output
+  extract_dir: fesom_2p6_pimesh
