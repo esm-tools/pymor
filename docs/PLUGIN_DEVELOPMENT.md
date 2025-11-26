@@ -13,9 +13,10 @@ When you install a plugin with `pip install pycmor-plugin-yourmodel[test]`, the 
 
 ## Example Plugins
 
-This guide uses two realistic examples:
-1. **FOCI** - Flexible Ocean Climate Infrastructure (GEOMAR)
-2. **ICON** - Icosahedral Nonhydrostatic model (MPI-M)
+This guide uses three realistic examples from German climate modeling centers:
+1. **FOCI** - Flexible Ocean Climate Infrastructure (GEOMAR Kiel)
+2. **ICON** - Icosahedral Nonhydrostatic model (MPI-M Hamburg)
+3. **POEM** - Potsdam Earth Model (PIK Potsdam)
 
 ## Creating a Plugin
 
@@ -205,6 +206,85 @@ class ICONModelRun(BaseModelRun):
         return xr.open_mfdataset(nc_files, **kwargs)
 ```
 
+**Example 3: POEM at PIK**
+
+In `src/pycmor_plugin_poem/model.py`:
+
+```python
+"""POEM model run implementation for PIK."""
+
+from pathlib import Path
+from pycmor.tests.fixtures.base_model_run import BaseModelRun
+
+
+class POEMModelRun(BaseModelRun):
+    """POEM (Potsdam Earth Model) model run.
+
+    POEM is a fast and comprehensive Earth system model featuring:
+    - Ocean general circulation model
+    - Statistical-dynamical atmosphere
+    - LPJmL land biosphere model
+    - PISM ice-sheet model
+
+    Developed at PIK Potsdam for planetary boundaries and long-term climate research.
+    """
+
+    def fetch_real_datadir(self) -> Path:
+        """Download real POEM data using pooch.
+
+        Returns
+        -------
+        Path
+            Path to the extracted data directory
+        """
+        from tests.fixtures.example_data.data_fetcher import fetch_and_extract
+
+        return fetch_and_extract("poem_test_data.tar", registry_path=self.registry_path)
+
+    def generate_stub_datadir(self, stub_dir: Path) -> Path:
+        """Generate stub POEM data from YAML manifest.
+
+        Parameters
+        ----------
+        stub_dir : Path
+            Temporary directory for stub data
+
+        Returns
+        -------
+        Path
+            Path to the stub data directory
+        """
+        from tests.fixtures.stub_generator import generate_stub_files
+
+        generate_stub_files(self.stub_manifest_path, stub_dir)
+        return stub_dir
+
+    def open_mfdataset(self, **kwargs):
+        """Open POEM dataset from data directory.
+
+        POEM uses standard Earth system model output conventions.
+
+        Parameters
+        ----------
+        **kwargs
+            Additional keyword arguments for xr.open_mfdataset
+
+        Returns
+        -------
+        xr.Dataset
+            Opened dataset
+        """
+        import xarray as xr
+
+        # POEM file pattern: poem_*.nc
+        nc_files = list(self.datadir.glob("poem_*.nc"))
+
+        if not nc_files:
+            raise FileNotFoundError(f"No POEM files found in {self.datadir}")
+
+        return xr.open_mfdataset(nc_files, **kwargs)
+```
+
 ### 3. Create Fixture Files
 
 **Example: FOCI registry.yaml**
@@ -227,6 +307,17 @@ icon_test_data.tar:
   sha256: null  # Add SHA256 hash for verification
   description: ICON CMIP6 test data from MPI-M
   extract_dir: icon_test_data
+```
+
+**Example: POEM registry.yaml**
+
+```yaml
+# src/pycmor_plugin_poem/fixtures/registry.yaml
+poem_test_data.tar:
+  url: https://www.pik-potsdam.de/poem/test_data/poem_cmip6_test.tar
+  sha256: null  # Add SHA256 hash for verification
+  description: POEM CMIP6 test data from PIK
+  extract_dir: poem_test_data
 ```
 
 **Example: FOCI stub_manifest.yaml**
@@ -280,6 +371,32 @@ files:
           standard_name: surface_air_pressure
 ```
 
+**Example: POEM stub_manifest.yaml**
+
+```yaml
+# src/pycmor_plugin_poem/fixtures/stub_manifest.yaml
+files:
+  - path: poem_ocean_2000.nc
+    dimensions:
+      time: 12
+      lat: 180
+      lon: 360
+      depth: 40
+    variables:
+      thetao:
+        dims: [time, depth, lat, lon]
+        attrs:
+          long_name: Sea Water Potential Temperature
+          units: degC
+          standard_name: sea_water_potential_temperature
+      tos:
+        dims: [time, lat, lon]
+        attrs:
+          long_name: Sea Surface Temperature
+          units: degC
+          standard_name: sea_surface_temperature
+```
+
 ### 4. Register Your Plugin
 
 **Example: FOCI pyproject.toml (GEOMAR)**
@@ -326,6 +443,28 @@ test = [
 icon = "pycmor_plugin_icon.model:ICONModelRun"
 ```
 
+**Example: POEM pyproject.toml (PIK)**
+
+```toml
+[project]
+name = "pycmor-plugin-poem"
+version = "0.1.0"
+description = "POEM model plugin for pycmor (PIK Potsdam)"
+dependencies = [
+    "pycmor>=1.0.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pycmor[test]",  # Include pycmor's test dependencies
+    "pytest>=7.0",
+]
+
+# Register your model via entry points
+[project.entry-points."pycmor.fixtures.model_runs"]
+poem = "pycmor_plugin_poem.model:POEMModelRun"
+```
+
 ## Using Your Plugin
 
 ### Installation
@@ -333,11 +472,14 @@ icon = "pycmor_plugin_icon.model:ICONModelRun"
 Users install your plugin with the test extra:
 
 ```bash
-# At GEOMAR
+# At GEOMAR Kiel
 pip install pycmor-plugin-foci[test]
 
-# At MPI-M
+# At MPI-M Hamburg
 pip install pycmor-plugin-icon[test]
+
+# At PIK Potsdam
+pip install pycmor-plugin-poem[test]
 ```
 
 ### Running Tests
@@ -356,6 +498,7 @@ tests/test_generic_models.py::test_model_run_has_datadir[fesom2p6pimesh] PASSED
 tests/test_generic_models.py::test_model_run_has_datadir[fesomuxarray] PASSED
 tests/test_generic_models.py::test_model_run_has_datadir[foci] PASSED  ← GEOMAR's FOCI!
 tests/test_generic_models.py::test_model_run_has_datadir[icon] PASSED  ← MPI-M's ICON!
+tests/test_generic_models.py::test_model_run_has_datadir[poem] PASSED  ← PIK's POEM!
 ...
 ```
 
