@@ -1,25 +1,19 @@
 """Fixtures for Rule objects and related test data.
 
-Note: Heavy pycmor imports are kept at module level since they're lightweight
-compared to numpy/pandas/xarray. Only the scientific computing libraries
-are lazily imported in specific fixtures.
+Note: All pycmor imports are done lazily inside fixtures to avoid pulling in
+heavy dependencies during pytest collection phase. This prevents import errors
+when dependencies like 'deprecation' are not available in minimal test environments.
 """
 
 import pytest
-
-from pycmor.core.aux_files import AuxiliaryFile
-from pycmor.core.config import PycmorConfigManager
-from pycmor.core.controlled_vocabularies import ControlledVocabularies
-from pycmor.core.factory import create_factory
-from pycmor.core.rule import Rule
-from pycmor.data_request.collection import CMIP6DataRequest
-from pycmor.data_request.table import CMIP6DataRequestTable
-from pycmor.data_request.variable import CMIP6DataRequestVariable
 
 
 @pytest.fixture
 def fesom_2p6_esmtools_temp_rule(fesom_2p6_pimesh_esm_tools_datadir):
     """Rule object for FESOM 2.6 temperature using new datadir fixture."""
+    from pycmor.core.config import PycmorConfigManager
+    from pycmor.core.rule import Rule
+
     pycmor_config = PycmorConfigManager.from_pycmor_cfg({})
     return Rule.from_dict(
         {
@@ -45,6 +39,9 @@ def fesom_2p6_esmtools_temp_rule(fesom_2p6_pimesh_esm_tools_datadir):
 
 @pytest.fixture
 def fesom_2p6_esmtools_temp_rule_without_data():
+    from pycmor.core.config import PycmorConfigManager
+    from pycmor.core.rule import Rule
+
     pycmor_config = PycmorConfigManager.from_pycmor_cfg({})
     return Rule.from_dict(
         {
@@ -69,6 +66,9 @@ def fesom_2p6_esmtools_temp_rule_without_data():
 @pytest.fixture
 def pi_uxarray_temp_rule(pi_uxarray_datadir):
     """Rule object for PI UXarray temperature using new datadir fixture."""
+    from pycmor.core.config import PycmorConfigManager
+    from pycmor.core.rule import Rule
+
     pycmor_config = PycmorConfigManager.from_pycmor_cfg({})
     return Rule.from_dict(
         {
@@ -94,6 +94,9 @@ def pi_uxarray_temp_rule(pi_uxarray_datadir):
 
 @pytest.fixture
 def simple_rule():
+    from pycmor.core.config import PycmorConfigManager
+    from pycmor.core.rule import Rule
+
     r = Rule(
         inputs=[
             {
@@ -114,6 +117,9 @@ def simple_rule():
 
 @pytest.fixture
 def rule_with_mass_units():
+    from pycmor.core.rule import Rule
+    from pycmor.data_request.variable import CMIP6DataRequestVariable
+
     r = Rule(
         inputs=[
             {
@@ -161,6 +167,9 @@ def rule_with_mass_units():
 
 @pytest.fixture
 def rule_with_data_request():
+    from pycmor.core.rule import Rule
+    from pycmor.data_request.variable import CMIP6DataRequestVariable
+
     r = Rule(
         name="temp",
         source_id="AWI-CM-1-1-HR",
@@ -210,6 +219,9 @@ def rule_with_data_request():
 
 @pytest.fixture
 def rule_with_unsorted_data():
+    from pycmor.core.rule import Rule
+    from pycmor.data_request.variable import CMIP6DataRequestVariable
+
     r = Rule(
         array_order=["time", "lat", "lon"],
         inputs=[
@@ -270,6 +282,7 @@ def dummy_array():
 
 @pytest.fixture
 def rule_sos():
+    from pycmor.core.rule import Rule
     from tests.utils.constants import TEST_ROOT
 
     sos_path = TEST_ROOT / "data" / "dummy_data"
@@ -281,13 +294,19 @@ def rule_sos():
 
 @pytest.fixture
 def rule_after_cmip6_cmorizer_init(tmp_path, CMIP_Tables_Dir, CV_dir):
+    from pycmor.core.aux_files import AuxiliaryFile
+    from pycmor.core.controlled_vocabularies import ControlledVocabularies
+    from pycmor.core.factory import create_factory
+    from pycmor.core.rule import Rule
+    from pycmor.data_request.collection import CMIP6DataRequest
+    from pycmor.data_request.table import CMIP6DataRequestTable
+
     # Slimmed down version of what the CMORizer does.
     # This is somewhat of an integration test by itself.
     #
     # `inputs` requires:
     #  - concrete `path` to exist
     #  - a file to exist matching the `pattern`
-
     # Set the temporary directory and nc file
     d = tmp_path / "inputs"
     d.mkdir(exist_ok=True)

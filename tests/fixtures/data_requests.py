@@ -1,10 +1,15 @@
 import pytest
 
-from pycmor.data_request.variable import DataRequestVariable
-
 
 @pytest.fixture
 def dr_sos():
+    """Fixture for ocean salinity DataRequestVariable.
+
+    Import is done inside the fixture to avoid pulling in heavy dependencies
+    during pytest collection phase.
+    """
+    from pycmor.data_request.variable import DataRequestVariable
+
     return DataRequestVariable(
         variable_id="sos",
         unit="0.001",
