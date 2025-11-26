@@ -20,73 +20,34 @@ pytestmark = pytest.mark.skipif(
         "netcdf4",
     ],
 )
-def test_open_awicm_1p0_recom(awicm_1p0_recom_data, engine):
+def test_open_awicm_1p0_recom(awicm_1p0_recom_datadir, engine):
     ds = xr.open_mfdataset(
-        f"{awicm_1p0_recom_data}/awi-esm-1-1-lr_kh800/piControl/outdata/fesom/*.nc",
+        f"{awicm_1p0_recom_datadir}/awi-esm-1-1-lr_kh800/piControl/outdata/fesom/*.nc",
         engine=engine,
     )
     assert isinstance(ds, xr.Dataset)
 
 
 @pytest.mark.parametrize(
-    "engine",
+    "engine,use_cftime,parallel",
     [
-        "h5netcdf",
+        pytest.param("h5netcdf", False, False, id="basic"),
+        pytest.param("h5netcdf", True, False, id="with_cftime"),
+        pytest.param("h5netcdf", False, True, id="with_parallel"),
+        pytest.param("h5netcdf", True, True, id="with_cftime_and_parallel"),
     ],
 )
-def test_open_fesom_2p6_pimesh_esm_tools(fesom_2p6_pimesh_esm_tools_data, engine):
+def test_open_fesom_2p6_pimesh_esm_tools(fesom_2p6_pimesh_esm_tools_datadir, engine, use_cftime, parallel):
     matching_files = [
-        f for f in (fesom_2p6_pimesh_esm_tools_data / "outdata/fesom/").iterdir() if f.name.startswith("temp.fesom")
+        f for f in (fesom_2p6_pimesh_esm_tools_datadir / "outdata/fesom/").iterdir() if f.name.startswith("temp.fesom")
     ]
     assert len(matching_files) > 0
-    ds = xr.open_mfdataset(
-        matching_files,
-        engine=engine,
-    )
-    assert isinstance(ds, xr.Dataset)
 
+    kwargs = {"engine": engine}
+    if use_cftime:
+        kwargs["use_cftime"] = True
+    if parallel:
+        kwargs["parallel"] = True
 
-@pytest.mark.parametrize(
-    "engine",
-    [
-        "h5netcdf",
-    ],
-)
-def test_open_fesom_2p6_pimesh_esm_tools_cftime(fesom_2p6_pimesh_esm_tools_data, engine):
-    ds = xr.open_mfdataset(
-        (f for f in (fesom_2p6_pimesh_esm_tools_data / "outdata/fesom/").iterdir() if f.name.startswith("temp")),
-        use_cftime=True,
-        engine=engine,
-    )
-    assert isinstance(ds, xr.Dataset)
-
-
-@pytest.mark.parametrize(
-    "engine",
-    [
-        "h5netcdf",
-    ],
-)
-def test_open_fesom_2p6_pimesh_esm_tools_parallel(fesom_2p6_pimesh_esm_tools_data, engine):
-    ds = xr.open_mfdataset(
-        (f for f in (fesom_2p6_pimesh_esm_tools_data / "outdata/fesom/").iterdir() if f.name.startswith("temp")),
-        parallel=True,
-        engine=engine,
-    )
-    assert isinstance(ds, xr.Dataset)
-
-
-@pytest.mark.parametrize(
-    "engine",
-    [
-        "h5netcdf",
-    ],
-)
-def test_open_fesom_2p6_pimesh_esm_tools_full(fesom_2p6_pimesh_esm_tools_data, engine):
-    ds = xr.open_mfdataset(
-        (f for f in (fesom_2p6_pimesh_esm_tools_data / "outdata/fesom/").iterdir() if f.name.startswith("temp")),
-        use_cftime=True,
-        parallel=True,
-        engine=engine,
-    )
+    ds = xr.open_mfdataset(matching_files, **kwargs)
     assert isinstance(ds, xr.Dataset)

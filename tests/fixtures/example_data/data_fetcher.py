@@ -22,14 +22,25 @@ def get_cache_dir() -> Path:
     )
 
 
-def load_registry():
-    """Load the test data registry from YAML."""
-    registry_file = Path(__file__).parent / "test_data_registry.yaml"
+def load_registry(registry_path=None):
+    """Load the test data registry from YAML.
+
+    Parameters
+    ----------
+    registry_path : Path or str, optional
+        Path to a model-specific registry file. If not provided, uses the
+        default central registry at test_data_registry.yaml
+    """
+    if registry_path is None:
+        registry_file = Path(__file__).parent / "test_data_registry.yaml"
+    else:
+        registry_file = Path(registry_path)
+
     with open(registry_file) as f:
         return yaml.safe_load(f)
 
 
-def fetch_and_extract(filename: str) -> Path:
+def fetch_and_extract(filename: str, registry_path=None) -> Path:
     """
     Fetch and extract a test data tarball.
 
@@ -40,6 +51,9 @@ def fetch_and_extract(filename: str) -> Path:
     ----------
     filename : str
         Name of the file in the registry (e.g., "fesom_2p6_pimesh.tar")
+    registry_path : Path or str, optional
+        Path to a model-specific registry file. If not provided, uses the
+        default central registry.
 
     Returns
     -------
@@ -61,7 +75,7 @@ def fetch_and_extract(filename: str) -> Path:
     """
     import pooch
 
-    registry = load_registry()
+    registry = load_registry(registry_path)
 
     if filename not in registry:
         raise ValueError(f"Unknown test data file: {filename}. " f"Available files: {list(registry.keys())}")
@@ -101,7 +115,7 @@ def fetch_and_extract(filename: str) -> Path:
     return extracted_path
 
 
-def fetch_tarball(filename: str) -> Path:
+def fetch_tarball(filename: str, registry_path=None) -> Path:
     """
     Fetch a test data tarball without extracting.
 
@@ -109,6 +123,9 @@ def fetch_tarball(filename: str) -> Path:
     ----------
     filename : str
         Name of the file in the registry
+    registry_path : Path or str, optional
+        Path to a model-specific registry file. If not provided, uses the
+        default central registry.
 
     Returns
     -------
@@ -121,7 +138,7 @@ def fetch_tarball(filename: str) -> Path:
     """
     import pooch
 
-    registry = load_registry()
+    registry = load_registry(registry_path)
 
     if filename not in registry:
         raise ValueError(f"Unknown test data file: {filename}")

@@ -85,4 +85,7 @@ pytest_plugins = [
     "tests.fixtures.fake_data.fesom_mesh",
     "tests.fixtures.fake_filesystem",
     "tests.fixtures.sample_rules",
+    # Model-contrib fixtures (new structure)
+    "tests.contrib.models.awicm_recom.fixtures.datadir",
+    "tests.contrib.models.awicm_recom.fixtures.datasets",
 ]
