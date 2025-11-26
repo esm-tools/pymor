@@ -18,7 +18,8 @@ from pycmor.data_request.variable import CMIP6DataRequestVariable
 
 
 @pytest.fixture
-def fesom_2p6_esmtools_temp_rule(fesom_2p6_pimesh_esm_tools_data):
+def fesom_2p6_esmtools_temp_rule(fesom_2p6_pimesh_esm_tools_datadir):
+    """Rule object for FESOM 2.6 temperature using new datadir fixture."""
     pycmor_config = PycmorConfigManager.from_pycmor_cfg({})
     return Rule.from_dict(
         {
@@ -31,7 +32,7 @@ def fesom_2p6_esmtools_temp_rule(fesom_2p6_pimesh_esm_tools_data):
             "variant_label": "r1i1p1f1",
             "inputs": [
                 {
-                    "path": fesom_2p6_pimesh_esm_tools_data / "outdata/fesom",
+                    "path": fesom_2p6_pimesh_esm_tools_datadir / "outdata/fesom",
                     "pattern": "temp.fesom..*.nc",
                 },
             ],
@@ -66,7 +67,8 @@ def fesom_2p6_esmtools_temp_rule_without_data():
 
 
 @pytest.fixture
-def pi_uxarray_temp_rule(pi_uxarray_data):
+def pi_uxarray_temp_rule(pi_uxarray_datadir):
+    """Rule object for PI UXarray temperature using new datadir fixture."""
     pycmor_config = PycmorConfigManager.from_pycmor_cfg({})
     return Rule.from_dict(
         {
@@ -79,7 +81,7 @@ def pi_uxarray_temp_rule(pi_uxarray_data):
             "variant_label": "r1i1p1f1",
             "inputs": [
                 {
-                    "path": pi_uxarray_data,
+                    "path": pi_uxarray_datadir,
                     "pattern": "temp.fesom..*.nc",
                 },
             ],
