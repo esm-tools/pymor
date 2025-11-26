@@ -5,6 +5,41 @@ import pytest
 from tests.utils.constants import TEST_ROOT  # noqa: F401
 
 
+@pytest.fixture(autouse=True)
+def setup_doctest_config_file(doctest_namespace, tmp_path, monkeypatch):
+    """Create a temporary config file for doctests that expect inherit section.
+
+    This fixture sets up a temporary XDG_CONFIG_HOME with a pycmor.yaml file
+    containing an inherit section, so doctests can demonstrate config behavior
+    without requiring actual user config files.
+
+    Note: This only runs for doctests because it requires the doctest_namespace
+    fixture, which is only available when pytest is running doctests.
+    """
+    import yaml
+
+    # Set XDG_CONFIG_HOME to tmp_path so PycmorConfigManager finds our test config
+    config_dir = tmp_path / "pycmor"
+    config_dir.mkdir()
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+
+    # Create the config file with inherit section matching doctest examples
+    config_file = config_dir / "pycmor.yaml"
+    config_content = {
+        "inherit": {
+            "source_id": "FESOM2",
+            "experiment_id": "historical",
+            "variant_label": "r1i1p1f1",
+            "grid_label": "gn",
+            "institution_id": "AWI",
+            "output_directory": "/tmp/cmor_output",
+        }
+    }
+    config_file.write_text(yaml.dump(config_content))
+
+    # No need to inject into doctest_namespace - the real code will find the file
+
+
 @pytest.fixture(scope="function", autouse=True)
 def suppress_third_party_logs():
     """Suppress noisy INFO logs from distributed/dask/prefect during tests.
