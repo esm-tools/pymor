@@ -1,3 +1,10 @@
+"""Fixtures for Rule objects and related test data.
+
+Note: Heavy pycmor imports are kept at module level since they're lightweight
+compared to numpy/pandas/xarray. Only the scientific computing libraries
+are lazily imported in specific fixtures.
+"""
+
 import pytest
 
 from pycmor.core.aux_files import AuxiliaryFile
