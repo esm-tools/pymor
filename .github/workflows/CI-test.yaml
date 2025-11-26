@@ -841,6 +841,14 @@ jobs:
       - name: Create persistent cache directory
         run: |
           mkdir -p ~/.cache/pycmor/test_data
+      - name: Doctest sanity check
+        run: |
+          docker run --rm \
+            -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
+            -v ${{ github.workspace }}:/workspace \
+            --user root \
+            ghcr.io/esm-tools/pycmor-testground:py3.10-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
+            bash -c "PYTHONPATH=src pytest -vvv --doctest-modules tests/doctest_sanity_check.py"
       - name: Test with doctest and generate coverage
         run: |
           docker run --rm \

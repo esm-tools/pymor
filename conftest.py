@@ -5,23 +5,25 @@ import pytest
 from tests.utils.constants import TEST_ROOT  # noqa: F401
 
 
-@pytest.fixture(autouse=True)
-def setup_doctest_config_file(doctest_namespace, tmp_path, monkeypatch):
+@pytest.fixture(scope="session", autouse=True)
+def setup_doctest_config_file(tmp_path_factory):
     """Create a temporary config file for doctests that expect inherit section.
 
     This fixture sets up a temporary XDG_CONFIG_HOME with a pycmor.yaml file
     containing an inherit section, so doctests can demonstrate config behavior
     without requiring actual user config files.
-
-    Note: This only runs for doctests because it requires the doctest_namespace
-    fixture, which is only available when pytest is running doctests.
     """
+    import os
+
     import yaml
+
+    # Create a session-scoped temp directory
+    tmp_path = tmp_path_factory.mktemp("config")
 
     # Set XDG_CONFIG_HOME to tmp_path so PycmorConfigManager finds our test config
     config_dir = tmp_path / "pycmor"
     config_dir.mkdir()
-    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    os.environ["XDG_CONFIG_HOME"] = str(tmp_path)
 
     # Create the config file with inherit section matching doctest examples
     config_file = config_dir / "pycmor.yaml"
@@ -37,7 +39,11 @@ def setup_doctest_config_file(doctest_namespace, tmp_path, monkeypatch):
     }
     config_file.write_text(yaml.dump(config_content))
 
-    # No need to inject into doctest_namespace - the real code will find the file
+    yield
+
+    # Cleanup: remove the env var after session
+    if "XDG_CONFIG_HOME" in os.environ:
+        del os.environ["XDG_CONFIG_HOME"]
 
 
 @pytest.fixture(scope="function", autouse=True)
