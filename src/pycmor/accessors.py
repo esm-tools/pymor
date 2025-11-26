@@ -87,7 +87,7 @@ class PycmorDataArrayAccessor:
     # Pipeline methods
     def process(
         self,
-        variable,
+        variable=None,
         cmor_version="CMIP7",
         pipeline=None,
         compound_name=None,
@@ -341,7 +341,7 @@ class PycmorDatasetAccessor:
     # Pipeline methods
     def process(
         self,
-        variable,
+        variable=None,
         cmor_version="CMIP7",
         pipeline=None,
         compound_name=None,

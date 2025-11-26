@@ -502,9 +502,9 @@ class TestProcessMethodDataArray:
         """Test that variable is interpreted as compound_name for CMIP7 (default)."""
         # Use TableLocator mocking since that's what the accessor uses
         with (
-            patch("pycmor.accessors.TableLocator") as mock_locator_cls,
-            patch("pycmor.accessors.DataRequest") as mock_dr_cls,
-            patch("pycmor.accessors.create_factory") as mock_factory,
+            patch("pycmor.core.resource_locator.TableLocator") as mock_locator_cls,
+            patch("pycmor.data_request.collection.DataRequest") as mock_dr_cls,
+            patch("pycmor.core.factory.create_factory") as mock_factory,
         ):
             # Mock the factory pattern
             mock_factory.return_value.get.return_value = mock_dr_cls
@@ -530,9 +530,9 @@ class TestProcessMethodDataArray:
     def test_process_cmip6_interprets_as_cmor_variable(self, sample_dataarray, simple_pipeline):
         """Test that variable is interpreted as cmor_variable when cmor_version='CMIP6'."""
         with (
-            patch("pycmor.accessors.TableLocator") as mock_locator_cls,
-            patch("pycmor.accessors.DataRequest") as mock_dr_cls,
-            patch("pycmor.accessors.create_factory") as mock_factory,
+            patch("pycmor.core.resource_locator.TableLocator") as mock_locator_cls,
+            patch("pycmor.data_request.collection.DataRequest") as mock_dr_cls,
+            patch("pycmor.core.factory.create_factory") as mock_factory,
         ):
             # Mock the factory pattern
             mock_factory.return_value.get.return_value = mock_dr_cls
@@ -698,9 +698,9 @@ class TestProcessMethodDataset:
     def test_process_cmip7_interprets_as_compound_name(self, sample_dataset, simple_pipeline):
         """Test that variable is interpreted as compound_name for CMIP7 (default)."""
         with (
-            patch("pycmor.accessors.TableLocator") as mock_locator_cls,
-            patch("pycmor.accessors.DataRequest") as mock_dr_cls,
-            patch("pycmor.accessors.create_factory") as mock_factory,
+            patch("pycmor.core.resource_locator.TableLocator") as mock_locator_cls,
+            patch("pycmor.data_request.collection.DataRequest") as mock_dr_cls,
+            patch("pycmor.core.factory.create_factory") as mock_factory,
         ):
             # Mock the factory pattern
             mock_factory.return_value.get.return_value = mock_dr_cls
@@ -724,9 +724,9 @@ class TestProcessMethodDataset:
     def test_process_cmip6_interprets_as_cmor_variable(self, sample_dataset, simple_pipeline):
         """Test that variable is interpreted as cmor_variable when cmor_version='CMIP6'."""
         with (
-            patch("pycmor.accessors.TableLocator") as mock_locator_cls,
-            patch("pycmor.accessors.DataRequest") as mock_dr_cls,
-            patch("pycmor.accessors.create_factory") as mock_factory,
+            patch("pycmor.core.resource_locator.TableLocator") as mock_locator_cls,
+            patch("pycmor.data_request.collection.DataRequest") as mock_dr_cls,
+            patch("pycmor.core.factory.create_factory") as mock_factory,
         ):
             # Mock the factory pattern
             mock_factory.return_value.get.return_value = mock_dr_cls
