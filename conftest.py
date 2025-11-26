@@ -99,7 +99,7 @@ def _discover_model_runs():
     """Discover all model run classes via entry points.
 
     Discovers both built-in models (shipped with pycmor) and external
-    plugin models. All models are registered via the 'pycmor.models'
+    plugin models. All models are registered via the 'pycmor.fixtures.model_runs'
     entry point group in pyproject.toml.
 
     Returns
@@ -121,10 +121,10 @@ def _discover_model_runs():
     # Handle both old dict-style and new SelectableGroups-style
     if hasattr(entry_points, "select"):
         # Python 3.10+ with importlib.metadata.EntryPoints
-        pycmor_models = entry_points.select(group="pycmor.models")
+        pycmor_models = entry_points.select(group="pycmor.fixtures.model_runs")
     else:
         # Python 3.9 and earlier
-        pycmor_models = entry_points.get("pycmor.models", [])
+        pycmor_models = entry_points.get("pycmor.fixtures.model_runs", [])
 
     for entry_point in pycmor_models:
         try:
@@ -146,12 +146,12 @@ def pytest_generate_tests(metafunc):
 
     Built-in models are registered in pyproject.toml:
 
-        [project.entry-points."pycmor.models"]
+        [project.entry-points."pycmor.fixtures.model_runs"]
         awicm_recom = "tests.contrib.models.awicm_recom.fixtures.model:AwicmRecomModelRun"
 
     External plugins register their models the same way:
 
-        [project.entry-points."pycmor.models"]
+        [project.entry-points."pycmor.fixtures.model_runs"]
         cesm = "pycmor_plugin_cesm.model:CESMModelRun"
 
     Parameters

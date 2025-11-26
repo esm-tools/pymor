@@ -11,43 +11,72 @@ pycmor uses a plugin system that allows external developers to:
 
 When you install a plugin with `pip install pycmor-plugin-yourmodel[test]`, the plugin's model will automatically be tested alongside pycmor's built-in models.
 
+## Example Plugins
+
+This guide uses two realistic examples:
+1. **FOCI** - Flexible Ocean Climate Infrastructure (GEOMAR)
+2. **ICON** - Icosahedral Nonhydrostatic model (MPI-M)
+
 ## Creating a Plugin
 
 ### 1. Package Structure
 
-Create a package with the following structure:
+**Example: FOCI plugin at GEOMAR**
 
 ```
-pycmor-plugin-cesm/
+pycmor-plugin-foci/
 ├── pyproject.toml
 ├── README.md
 ├── src/
-│   └── pycmor_plugin_cesm/
+│   └── pycmor_plugin_foci/
 │       ├── __init__.py
-│       ├── model.py          # Your ModelRun class
+│       ├── model.py          # FOCIModelRun class
 │       └── fixtures/
 │           ├── registry.yaml       # Pooch registry for real data
 │           └── stub_manifest.yaml  # Stub data specification
 └── tests/
-    └── test_cesm_specific.py  # Model-specific tests
+    └── test_foci_specific.py  # Model-specific tests
+```
+
+**Example: ICON plugin at MPI-M**
+
+```
+pycmor-plugin-icon/
+├── pyproject.toml
+├── README.md
+├── src/
+│   └── pycmor_plugin_icon/
+│       ├── __init__.py
+│       ├── model.py          # ICONModelRun class
+│       └── fixtures/
+│           ├── registry.yaml
+│           └── stub_manifest.yaml
+└── tests/
+    └── test_icon_specific.py
 ```
 
 ### 2. Implement Your ModelRun Class
 
-In `src/pycmor_plugin_cesm/model.py`:
+**Example 1: FOCI at GEOMAR**
+
+In `src/pycmor_plugin_foci/model.py`:
 
 ```python
-"""CESM model run implementation."""
+"""FOCI model run implementation for GEOMAR."""
 
 from pathlib import Path
 from pycmor.tests.fixtures.base_model_run import BaseModelRun
 
 
-class CESMModelRun(BaseModelRun):
-    """CESM model run with atmosphere and ocean output."""
+class FOCIModelRun(BaseModelRun):
+    """FOCI (Flexible Ocean Climate Infrastructure) model run.
+
+    FOCI couples NEMO ocean model with ECHAM atmosphere model.
+    Developed and maintained at GEOMAR Helmholtz Centre for Ocean Research.
+    """
 
     def fetch_real_datadir(self) -> Path:
-        """Download real CESM data using pooch.
+        """Download real FOCI data using pooch.
 
         Returns
         -------
@@ -56,10 +85,10 @@ class CESMModelRun(BaseModelRun):
         """
         from tests.fixtures.example_data.data_fetcher import fetch_and_extract
 
-        return fetch_and_extract("cesm_data.tar", registry_path=self.registry_path)
+        return fetch_and_extract("foci_test_data.tar", registry_path=self.registry_path)
 
     def generate_stub_datadir(self, stub_dir: Path) -> Path:
-        """Generate stub CESM data from YAML manifest.
+        """Generate stub FOCI data from YAML manifest.
 
         Parameters
         ----------
@@ -77,7 +106,9 @@ class CESMModelRun(BaseModelRun):
         return stub_dir
 
     def open_mfdataset(self, **kwargs):
-        """Open CESM dataset from data directory.
+        """Open FOCI dataset from data directory.
+
+        FOCI uses NEMO ocean output with specific file naming patterns.
 
         Parameters
         ----------
@@ -91,61 +122,173 @@ class CESMModelRun(BaseModelRun):
         """
         import xarray as xr
 
-        # CESM-specific file pattern
-        nc_files = list(self.datadir.glob("*.cam.h0.*.nc"))
+        # FOCI/NEMO file pattern: FOCI_*_1m_*.nc
+        nc_files = list(self.datadir.glob("FOCI_*_1m_*.nc"))
 
         if not nc_files:
-            raise FileNotFoundError(f"No CESM files found in {self.datadir}")
+            raise FileNotFoundError(f"No FOCI files found in {self.datadir}")
+
+        return xr.open_mfdataset(nc_files, **kwargs)
+```
+
+**Example 2: ICON at MPI-M**
+
+In `src/pycmor_plugin_icon/model.py`:
+
+```python
+"""ICON model run implementation for MPI-M."""
+
+from pathlib import Path
+from pycmor.tests.fixtures.base_model_run import BaseModelRun
+
+
+class ICONModelRun(BaseModelRun):
+    """ICON (Icosahedral Nonhydrostatic) model run.
+
+    ICON is a unified modeling framework for atmosphere, ocean, and land.
+    Developed at MPI-M and DWD.
+    """
+
+    def fetch_real_datadir(self) -> Path:
+        """Download real ICON data using pooch.
+
+        Returns
+        -------
+        Path
+            Path to the extracted data directory
+        """
+        from tests.fixtures.example_data.data_fetcher import fetch_and_extract
+
+        return fetch_and_extract("icon_test_data.tar", registry_path=self.registry_path)
+
+    def generate_stub_datadir(self, stub_dir: Path) -> Path:
+        """Generate stub ICON data from YAML manifest.
+
+        Parameters
+        ----------
+        stub_dir : Path
+            Temporary directory for stub data
+
+        Returns
+        -------
+        Path
+            Path to the stub data directory
+        """
+        from tests.fixtures.stub_generator import generate_stub_files
+
+        generate_stub_files(self.stub_manifest_path, stub_dir)
+        return stub_dir
+
+    def open_mfdataset(self, **kwargs):
+        """Open ICON dataset from data directory.
+
+        ICON uses unstructured icosahedral grids with specific conventions.
+
+        Parameters
+        ----------
+        **kwargs
+            Additional keyword arguments for xr.open_mfdataset
+
+        Returns
+        -------
+        xr.Dataset
+            Opened dataset
+        """
+        import xarray as xr
+
+        # ICON file pattern: icon_atm_*.nc
+        nc_files = list(self.datadir.glob("icon_atm_*.nc"))
+
+        if not nc_files:
+            raise FileNotFoundError(f"No ICON files found in {self.datadir}")
 
         return xr.open_mfdataset(nc_files, **kwargs)
 ```
 
 ### 3. Create Fixture Files
 
-**registry.yaml** - Pooch configuration for downloading real test data:
+**Example: FOCI registry.yaml**
 
 ```yaml
-# fixtures/registry.yaml
-cesm_data.tar:
-  url: https://example.com/cesm_test_data.tar
+# src/pycmor_plugin_foci/fixtures/registry.yaml
+foci_test_data.tar:
+  url: https://data.geomar.de/foci/test_data/foci_cmip6_test.tar
   sha256: null  # Add SHA256 hash for verification
-  description: CESM test data
-  extract_dir: cesm_data
+  description: FOCI CMIP6 test data from GEOMAR
+  extract_dir: foci_test_data
 ```
 
-**stub_manifest.yaml** - Specification for generating lightweight stub data:
+**Example: ICON registry.yaml**
 
 ```yaml
-# fixtures/stub_manifest.yaml
+# src/pycmor_plugin_icon/fixtures/registry.yaml
+icon_test_data.tar:
+  url: https://mpimet.mpg.de/icon/test_data/icon_cmip6_test.tar
+  sha256: null  # Add SHA256 hash for verification
+  description: ICON CMIP6 test data from MPI-M
+  extract_dir: icon_test_data
+```
+
+**Example: FOCI stub_manifest.yaml**
+
+```yaml
+# src/pycmor_plugin_foci/fixtures/stub_manifest.yaml
 files:
-  - path: cesm_output.cam.h0.0001-01.nc
+  - path: FOCI_ocean_1m_2000-01.nc
     dimensions:
       time: 12
-      lat: 96
-      lon: 144
-      lev: 32
+      y: 180
+      x: 360
+      depth: 50
     variables:
-      T:
-        dims: [time, lev, lat, lon]
+      thetao:
+        dims: [time, depth, y, x]
         attrs:
-          long_name: Temperature
+          long_name: Sea Water Potential Temperature
+          units: degC
+          standard_name: sea_water_potential_temperature
+      so:
+        dims: [time, depth, y, x]
+        attrs:
+          long_name: Sea Water Salinity
+          units: psu
+          standard_name: sea_water_salinity
+```
+
+**Example: ICON stub_manifest.yaml**
+
+```yaml
+# src/pycmor_plugin_icon/fixtures/stub_manifest.yaml
+files:
+  - path: icon_atm_2d_ml_2000-01.nc
+    dimensions:
+      time: 12
+      ncells: 20480  # R2B04 resolution
+      nlevels: 90
+    variables:
+      tas:
+        dims: [time, ncells]
+        attrs:
+          long_name: Near-Surface Air Temperature
           units: K
-      PS:
-        dims: [time, lat, lon]
+          standard_name: air_temperature
+      ps:
+        dims: [time, ncells]
         attrs:
-          long_name: Surface pressure
+          long_name: Surface Air Pressure
           units: Pa
+          standard_name: surface_air_pressure
 ```
 
 ### 4. Register Your Plugin
 
-In `pyproject.toml`:
+**Example: FOCI pyproject.toml (GEOMAR)**
 
 ```toml
 [project]
-name = "pycmor-plugin-cesm"
+name = "pycmor-plugin-foci"
 version = "0.1.0"
-description = "CESM model plugin for pycmor"
+description = "FOCI model plugin for pycmor (GEOMAR)"
 dependencies = [
     "pycmor>=1.0.0",
 ]
@@ -157,8 +300,30 @@ test = [
 ]
 
 # Register your model via entry points
-[project.entry-points."pycmor.models"]
-cesm = "pycmor_plugin_cesm.model:CESMModelRun"
+[project.entry-points."pycmor.fixtures.model_runs"]
+foci = "pycmor_plugin_foci.model:FOCIModelRun"
+```
+
+**Example: ICON pyproject.toml (MPI-M)**
+
+```toml
+[project]
+name = "pycmor-plugin-icon"
+version = "0.1.0"
+description = "ICON model plugin for pycmor (MPI-M)"
+dependencies = [
+    "pycmor>=1.0.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pycmor[test]",  # Include pycmor's test dependencies
+    "pytest>=7.0",
+]
+
+# Register your model via entry points
+[project.entry-points."pycmor.fixtures.model_runs"]
+icon = "pycmor_plugin_icon.model:ICONModelRun"
 ```
 
 ## Using Your Plugin
@@ -168,7 +333,11 @@ cesm = "pycmor_plugin_cesm.model:CESMModelRun"
 Users install your plugin with the test extra:
 
 ```bash
-pip install pycmor-plugin-cesm[test]
+# At GEOMAR
+pip install pycmor-plugin-foci[test]
+
+# At MPI-M
+pip install pycmor-plugin-icon[test]
 ```
 
 ### Running Tests
@@ -185,7 +354,8 @@ Output:
 tests/test_generic_models.py::test_model_run_has_datadir[awicmrecom] PASSED
 tests/test_generic_models.py::test_model_run_has_datadir[fesom2p6pimesh] PASSED
 tests/test_generic_models.py::test_model_run_has_datadir[fesomuxarray] PASSED
-tests/test_generic_models.py::test_model_run_has_datadir[cesm] PASSED  ← Your model!
+tests/test_generic_models.py::test_model_run_has_datadir[foci] PASSED  ← GEOMAR's FOCI!
+tests/test_generic_models.py::test_model_run_has_datadir[icon] PASSED  ← MPI-M's ICON!
 ...
 ```
 
@@ -202,36 +372,88 @@ Your model will automatically be tested against:
 
 ## Adding Model-Specific Tests
 
-You can also add tests specific to your model in `tests/test_cesm_specific.py`:
+You can also add tests specific to your model.
+
+**Example: FOCI-specific tests** (`tests/test_foci_specific.py`):
 
 ```python
 import pytest
 
 
-def test_cesm_has_atmosphere_variables(cesm_model_run):
-    """Test CESM-specific atmosphere variables."""
-    ds = cesm_model_run.ds
-    assert 'T' in ds.data_vars
-    assert 'PS' in ds.data_vars
+def test_foci_has_ocean_variables(foci_model_run):
+    """Test FOCI-specific ocean variables from NEMO."""
+    ds = foci_model_run.ds
+    assert 'thetao' in ds.data_vars, "Missing potential temperature"
+    assert 'so' in ds.data_vars, "Missing salinity"
+
+
+def test_foci_nemo_grid_structure(foci_model_run):
+    """Test that FOCI uses expected NEMO grid dimensions."""
+    ds = foci_model_run.ds
+    assert 'x' in ds.dims or 'i' in ds.dims, "Missing NEMO x/i dimension"
+    assert 'y' in ds.dims or 'j' in ds.dims, "Missing NEMO y/j dimension"
+```
+
+**Example: ICON-specific tests** (`tests/test_icon_specific.py`):
+
+```python
+import pytest
+
+
+def test_icon_has_unstructured_grid(icon_model_run):
+    """Test ICON uses icosahedral unstructured grid."""
+    ds = icon_model_run.ds
+    assert 'ncells' in ds.dims, "Missing ncells dimension for unstructured grid"
+
+
+def test_icon_atmosphere_variables(icon_model_run):
+    """Test ICON-specific atmosphere variables."""
+    ds = icon_model_run.ds
+    assert 'tas' in ds.data_vars, "Missing near-surface air temperature"
+    assert 'ps' in ds.data_vars, "Missing surface pressure"
 ```
 
 To make your model_run fixture available, create `conftest.py`:
 
+**Example: FOCI conftest.py**
+
 ```python
 import pytest
-from pycmor_plugin_cesm.model import CESMModelRun
+from pycmor_plugin_foci.model import FOCIModelRun
 
 
 @pytest.fixture(scope="session")
-def cesm_model_run(request, tmp_path_factory):
-    """CESM model run fixture for tests."""
-    use_real = CESMModelRun.should_use_real_data(request)
-    # Provide fixtures_dir pointing to your package's fixtures/
+def foci_model_run(request, tmp_path_factory):
+    """FOCI model run fixture for tests."""
+    use_real = FOCIModelRun.should_use_real_data(request)
     from pathlib import Path
-    fixtures_dir = Path(__file__).parent.parent / "src" / "pycmor_plugin_cesm" / "fixtures"
+    fixtures_dir = Path(__file__).parent.parent / "src" / "pycmor_plugin_foci" / "fixtures"
 
-    return CESMModelRun(
-        model_name="cesm",
+    return FOCIModelRun(
+        model_name="foci",
+        fixtures_dir=fixtures_dir,
+        use_real=use_real,
+        tmp_path_factory=tmp_path_factory,
+    )
+```
+
+**Example: ICON conftest.py**
+
+```python
+import pytest
+from pycmor_plugin_icon.model import ICONModelRun
+
+
+
+@pytest.fixture(scope="session")
+def icon_model_run(request, tmp_path_factory):
+    """ICON model run fixture for tests."""
+    use_real = ICONModelRun.should_use_real_data(request)
+    from pathlib import Path
+    fixtures_dir = Path(__file__).parent.parent / "src" / "pycmor_plugin_icon" / "fixtures"
+
+    return ICONModelRun(
+        model_name="icon",
         fixtures_dir=fixtures_dir,
         use_real=use_real,
         tmp_path_factory=tmp_path_factory,
@@ -240,7 +462,7 @@ def cesm_model_run(request, tmp_path_factory):
 
 ## Best Practices
 
-1. **Use descriptive model names** - Name your ModelRun class clearly (e.g., `CESMModelRun`, not `ModelRun`)
+1. **Use descriptive model names** - Name your ModelRun class clearly (e.g., `FOCIModelRun`, `ICONModelRun`, not `ModelRun`)
 
 2. **Provide both real and stub data** - Implement both `fetch_real_datadir()` and `generate_stub_datadir()`
 
