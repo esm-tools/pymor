@@ -31,7 +31,7 @@ jobs:
       - name: Install minimal dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install ruamel.yaml pyfakefs pytest pytest-asyncio pytest-mock pyyaml
+          python -m pip install ruamel.yaml pyfakefs pytest pytest-asyncio pytest-mock pytest-github-actions-annotate-failures pyyaml
       - name: Run doctest sanity check
         run: |
           # This verifies that the conftest.py fixture setup works correctly
@@ -255,6 +255,7 @@ jobs:
       - name: Test if data will work (Meta-Test) and generate coverage
         run: |
           docker run --rm \
+            -e GITHUB_ACTIONS=true \
             -e HDF5_DEBUG=1 \
             -e NETCDF_DEBUG=1 \
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
@@ -302,6 +303,7 @@ jobs:
       - name: Test if data will work (Meta-Test) and generate coverage
         run: |
           docker run --rm \
+            -e GITHUB_ACTIONS=true \
             -e HDF5_DEBUG=1 \
             -e NETCDF_DEBUG=1 \
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
@@ -349,6 +351,7 @@ jobs:
       - name: Test if data will work (Meta-Test) and generate coverage
         run: |
           docker run --rm \
+            -e GITHUB_ACTIONS=true \
             -e HDF5_DEBUG=1 \
             -e NETCDF_DEBUG=1 \
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
@@ -396,6 +399,7 @@ jobs:
       - name: Test if data will work (Meta-Test) and generate coverage
         run: |
           docker run --rm \
+            -e GITHUB_ACTIONS=true \
             -e HDF5_DEBUG=1 \
             -e NETCDF_DEBUG=1 \
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
@@ -444,6 +448,7 @@ jobs:
       - name: Test with pytest (Unit) and generate coverage
         run: |
           docker run --rm \
+            -e GITHUB_ACTIONS=true \
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
@@ -489,6 +494,7 @@ jobs:
       - name: Test with pytest (Unit) and generate coverage
         run: |
           docker run --rm \
+            -e GITHUB_ACTIONS=true \
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
@@ -534,6 +540,7 @@ jobs:
       - name: Test with pytest (Unit) and generate coverage
         run: |
           docker run --rm \
+            -e GITHUB_ACTIONS=true \
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
@@ -579,6 +586,7 @@ jobs:
       - name: Test with pytest (Unit) and generate coverage
         run: |
           docker run --rm \
+            -e GITHUB_ACTIONS=true \
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
@@ -625,6 +633,7 @@ jobs:
       - name: Test with pytest (Integration) and generate coverage
         run: |
           docker run --rm \
+            -e GITHUB_ACTIONS=true \
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
@@ -670,6 +679,7 @@ jobs:
       - name: Test with pytest (Integration) and generate coverage
         run: |
           docker run --rm \
+            -e GITHUB_ACTIONS=true \
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
@@ -715,6 +725,7 @@ jobs:
       - name: Test with pytest (Integration) and generate coverage
         run: |
           docker run --rm \
+            -e GITHUB_ACTIONS=true \
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
@@ -760,6 +771,7 @@ jobs:
       - name: Test with pytest (Integration) and generate coverage
         run: |
           docker run --rm \
+            -e GITHUB_ACTIONS=true \
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
@@ -806,6 +818,7 @@ jobs:
       - name: Test with doctest and generate coverage
         run: |
           docker run --rm \
+            -e GITHUB_ACTIONS=true \
             -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
             -v ${{ github.workspace }}:/workspace \
             -v ~/.cache/pycmor:/home/mambauser/.cache/pycmor \
@@ -848,6 +861,7 @@ jobs:
       - name: Test with doctest and generate coverage
         run: |
           docker run --rm \
+            -e GITHUB_ACTIONS=true \
             -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
             -v ${{ github.workspace }}:/workspace \
             -v ~/.cache/pycmor:/home/mambauser/.cache/pycmor \
@@ -890,6 +904,7 @@ jobs:
       - name: Test with doctest and generate coverage
         run: |
           docker run --rm \
+            -e GITHUB_ACTIONS=true \
             -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
             -v ${{ github.workspace }}:/workspace \
             -v ~/.cache/pycmor:/home/mambauser/.cache/pycmor \
@@ -932,6 +947,7 @@ jobs:
       - name: Test with doctest and generate coverage
         run: |
           docker run --rm \
+            -e GITHUB_ACTIONS=true \
             -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
             -v ${{ github.workspace }}:/workspace \
             -v ~/.cache/pycmor:/home/mambauser/.cache/pycmor \
