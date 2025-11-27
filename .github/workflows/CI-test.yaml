@@ -602,12 +602,13 @@ jobs:
         with:
           name: coverage-reports-unit-3.12
           path: coverage-unit-3.12.xml
-  # Discovery job to dynamically get list of registered models from entry points
+  # Discovery job to dynamically get list of registered models and orchestrators
   discover-models:
-    name: Discover Model Fixtures
+    name: Discover Model Fixtures and Orchestrators
     runs-on: ubuntu-latest
     outputs:
       models: ${{ steps.discover.outputs.models }}
+      orchestrators: ${{ steps.discover.outputs.orchestrators }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -620,12 +621,20 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e . --no-deps
-      - name: Discover models from entry points
+      - name: Discover models and orchestrators
         id: discover
         run: |
-          python .github/scripts/discover_models.py > models.json
+          python .github/scripts/discover_models.py --output models > models.json
           echo "models=$(cat models.json)" >> $GITHUB_OUTPUT
+
+          python .github/scripts/discover_models.py --output orchestrators > orchestrators.json
+          echo "orchestrators=$(cat orchestrators.json)" >> $GITHUB_OUTPUT
+
+          echo "Models:"
           cat models.json
+          echo ""
+          echo "Orchestrators:"
+          cat orchestrators.json
 
   # Integration test matrix - Python 3.9
   test-integration-matrix-3-9:
@@ -637,16 +646,7 @@ jobs:
       matrix:
         model: ${{ fromJson(needs.discover-models.outputs.models) }}
         cmip-version: ['cmip6', 'cmip7']
-        orchestrator-config:
-          - id: 'prefect-dask'
-            pipeline_workflow_orchestrator: 'prefect'
-            enable_dask: 'yes'
-          - id: 'native-dask'
-            pipeline_workflow_orchestrator: 'native'
-            enable_dask: 'yes'
-          - id: 'native-nodask'
-            pipeline_workflow_orchestrator: 'native'
-            enable_dask: 'no'
+        orchestrator-config: ${{ fromJson(needs.discover-models.outputs.orchestrators) }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -696,16 +696,7 @@ jobs:
       matrix:
         model: ${{ fromJson(needs.discover-models.outputs.models) }}
         cmip-version: ['cmip6', 'cmip7']
-        orchestrator-config:
-          - id: 'prefect-dask'
-            pipeline_workflow_orchestrator: 'prefect'
-            enable_dask: 'yes'
-          - id: 'native-dask'
-            pipeline_workflow_orchestrator: 'native'
-            enable_dask: 'yes'
-          - id: 'native-nodask'
-            pipeline_workflow_orchestrator: 'native'
-            enable_dask: 'no'
+        orchestrator-config: ${{ fromJson(needs.discover-models.outputs.orchestrators) }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -755,16 +746,7 @@ jobs:
       matrix:
         model: ${{ fromJson(needs.discover-models.outputs.models) }}
         cmip-version: ['cmip6', 'cmip7']
-        orchestrator-config:
-          - id: 'prefect-dask'
-            pipeline_workflow_orchestrator: 'prefect'
-            enable_dask: 'yes'
-          - id: 'native-dask'
-            pipeline_workflow_orchestrator: 'native'
-            enable_dask: 'yes'
-          - id: 'native-nodask'
-            pipeline_workflow_orchestrator: 'native'
-            enable_dask: 'no'
+        orchestrator-config: ${{ fromJson(needs.discover-models.outputs.orchestrators) }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -814,16 +796,7 @@ jobs:
       matrix:
         model: ${{ fromJson(needs.discover-models.outputs.models) }}
         cmip-version: ['cmip6', 'cmip7']
-        orchestrator-config:
-          - id: 'prefect-dask'
-            pipeline_workflow_orchestrator: 'prefect'
-            enable_dask: 'yes'
-          - id: 'native-dask'
-            pipeline_workflow_orchestrator: 'native'
-            enable_dask: 'yes'
-          - id: 'native-nodask'
-            pipeline_workflow_orchestrator: 'native'
-            enable_dask: 'no'
+        orchestrator-config: ${{ fromJson(needs.discover-models.outputs.orchestrators) }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -1069,6 +1042,90 @@ jobs:
           fi
           echo "cat ${GITHUB_OUTPUT}"
           cat $GITHUB_OUTPUT
+  generate-test-matrix-table:
+    name: Generate Test Matrix Status Table
+    runs-on: ubuntu-latest
+    needs: [discover-models, test-integration-matrix-3-9, test-integration-matrix-3-10, test-integration-matrix-3-11, test-integration-matrix-3-12]
+    if: always() && github.event_name == 'pull_request'
+    steps:
+      - name: Generate matrix status tables
+        env:
+          MODELS_JSON: ${{ needs.discover-models.outputs.models }}
+          ORCHESTRATORS_JSON: ${{ needs.discover-models.outputs.orchestrators }}
+          PY39_RESULT: ${{ needs.test-integration-matrix-3-9.result }}
+          PY310_RESULT: ${{ needs.test-integration-matrix-3-10.result }}
+          PY311_RESULT: ${{ needs.test-integration-matrix-3-11.result }}
+          PY312_RESULT: ${{ needs.test-integration-matrix-3-12.result }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Parse model list and orchestrator configs from discovery job
+          MODELS=$(echo "$MODELS_JSON" | jq -r '.[]')
+          ORCHESTRATOR_IDS=$(echo "$ORCHESTRATORS_JSON" | jq -r '.[].id')
+
+          # Function to get job status for specific combination
+          get_status() {
+            local py_version=$1
+            local model=$2
+            local orch=$3
+            local cmip=$4
+
+            # Query GitHub API for job status
+            # Job name format: "Integration 3.X / model / cmipY / orch"
+            local job_name="Integration ${py_version} / ${model} / ${cmip} / ${orch}"
+
+            # Get the job status from this workflow run
+            local status=$(gh api "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" \
+              --jq ".jobs[] | select(.name == \"${job_name}\") | .conclusion")
+
+            if [ "$status" == "success" ]; then
+              echo "✅"
+            elif [ "$status" == "failure" ]; then
+              echo "❌"
+            elif [ "$status" == "cancelled" ]; then
+              echo "⏸️"
+            elif [ "$status" == "skipped" ]; then
+              echo "⏭️"
+            else
+              echo "⏳"
+            fi
+          }
+
+          # Generate tables
+          cat > test-matrix-status.md << 'TABLE_START'
+          ## Integration Test Matrix Status
+
+          TABLE_START
+
+          for py_ver in "3.9" "3.10" "3.11" "3.12"; do
+            py_ver_nodot=$(echo $py_ver | tr -d '.')
+
+            echo "" >> test-matrix-status.md
+            echo "### Python ${py_ver}" >> test-matrix-status.md
+            echo "" >> test-matrix-status.md
+            echo "| Model / Orchestrator | CMIP6 | CMIP7 |" >> test-matrix-status.md
+            echo "|---------------------|-------|-------|" >> test-matrix-status.md
+
+            for model in $MODELS; do
+              for orch in $ORCHESTRATOR_IDS; do
+                cmip6_status=$(get_status "$py_ver" "$model" "$orch" "cmip6")
+                cmip7_status=$(get_status "$py_ver" "$model" "$orch" "cmip7")
+                echo "| ${model} / ${orch} | ${cmip6_status} | ${cmip7_status} |" >> test-matrix-status.md
+              done
+            done
+          done
+
+          echo "" >> test-matrix-status.md
+          echo "---" >> test-matrix-status.md
+          echo "*Generated automatically by the CI workflow*" >> test-matrix-status.md
+
+          cat test-matrix-status.md
+      - name: Post comment on PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --body-file test-matrix-status.md \
+            --repo ${{ github.repository }}
   set-workflow-artifact:
     name: Set workflow artifact
     runs-on: ubuntu-latest
