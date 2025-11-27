@@ -1,24 +1,23 @@
 import re
 
-from pymor.core.controlled_vocabularies import ControlledVocabularies
-from pymor.core.factory import create_factory
-from pymor.std_lib.global_attributes import GlobalAttributes
+from pycmor.core.controlled_vocabularies import ControlledVocabularies
+from pycmor.core.factory import create_factory
+from pycmor.std_lib.global_attributes import GlobalAttributes
 
 # Name, expected pass
-creation_date_format = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$"
-tracking_id_format = r"^hdl:\d{2}\.\d{5}/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$"
+creation_date_format = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$"  # noqa: W605
+tracking_id_format = r"^hdl:\d{2}\.\d{5}/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$"  # noqa: W605
 global_attributes = {
     "Conventions": "CF-1.7 CMIP-6.2",
     "activity_id": "CMIP",
     "data_specs_version": "1.0.27",
     "experiment": "pre-industrial control",
     "experiment_id": "piControl",
-    "forcing_index": 1,
+    "forcing_index": "1",
     "frequency": "day",
-    "grid": "FESOM 1.4 (unstructured grid in the horizontal with 1306775 wet "
-    "nodes; 46 levels; top grid cell 0-5 m)",
+    "grid": "FESOM 1.4 (unstructured grid in the horizontal with 1306775 wet " "nodes; 46 levels; top grid cell 0-5 m)",
     "grid_label": "gn",
-    "initialization_index": 1,
+    "initialization_index": "1",
     "institution": "Alfred Wegener Institute, Helmholtz Centre for Polar and "
     "Marine Research, Am Handelshafen 12, 27570 Bremerhaven, "
     "Germany",
@@ -38,9 +37,9 @@ global_attributes = {
     "negligence) are excluded to the fullest extent permitted by law.",
     "mip_era": "CMIP6",
     "nominal_resolution": "25 km",
-    "physics_index": 1,
+    "physics_index": "1",
     "product": "model-output",
-    "realization_index": 1,
+    "realization_index": "1",
     # use `modeling_realm` from variable instead of `realm` in table header
     # "realm": "ocnBgchem",
     "realm": "ocean",

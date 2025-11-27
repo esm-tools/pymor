@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from pymor.core.gather_inputs import (
+from pycmor.core.gather_inputs import (
     _files_to_string,
     _filter_by_year,
     _input_files_in_path,
@@ -62,9 +62,7 @@ def test_listing_function(config, expected_pattern, expected_output, fs_basic):
     assert set(expected_output) == set(output)
 
 
-@pytest.mark.parametrize(
-    "config", ["config_empty", "config_pattern_env_var_name"], indirect=True
-)
+@pytest.mark.parametrize("config", ["config_empty", "config_pattern_env_var_name"], indirect=True)
 @pytest.mark.parametrize("env", ["env_empty"], indirect=True)
 def test_default_pattern(config, env):
     pattern = _input_pattern_from_env(config)
@@ -72,13 +70,11 @@ def test_default_pattern(config, env):
     assert pattern.match("test")
 
 
-@pytest.mark.parametrize(
-    "config", ["config_empty", "config_pattern_env_var_name"], indirect=True
-)
+@pytest.mark.parametrize("config", ["config_empty", "config_pattern_env_var_name"], indirect=True)
 @pytest.mark.parametrize("env", ["env_empty"], indirect=True)
 def test_custom_pattern_name(config, env):
     os.environ["CMOR_PATTERN"] = "test.*"
-    os.environ["PYMOR_INPUT_PATTERN"] = "test.*"
+    os.environ["PYCMOR_INPUT_PATTERN"] = "test.*"
     pattern = _input_pattern_from_env(config)
     assert isinstance(pattern, re.Pattern)
     assert pattern.match("test123")
@@ -101,7 +97,7 @@ def test_custom_both(config_pattern_env_var_name_and_value, env):
     assert isinstance(pattern, re.Pattern)
     assert pattern.match("other_test123.nc")
     os.environ["CMOR_PATTERN"] = "test.*"
-    os.environ["PYMOR_INPUT_PATTERN"] = "test.*"
+    os.environ["PYCMOR_INPUT_PATTERN"] = "test.*"
     pattern = _input_pattern_from_env(config)
     assert isinstance(pattern, re.Pattern)
     assert pattern.match("test123")
@@ -122,7 +118,7 @@ def test_custom_both(config_pattern_env_var_name_and_value, env):
 @pytest.mark.parametrize("env", ["env_empty"], indirect=True)
 def test_env_var_no_match(config, fs, env):
     os.environ["CMOR_PATTERN"] = "no_match*"
-    os.environ["PYMOR_INPUT_PATTERN"] = "no_match*"
+    os.environ["PYCMOR_INPUT_PATTERN"] = "no_match*"
     pattern = _input_pattern_from_env(config)
     output = _input_files_in_path("/path/to", pattern)
     assert output == []
@@ -150,9 +146,7 @@ def test_env_var_no_match(config, fs, env):
 #     assert output == []
 
 
-@pytest.mark.parametrize(
-    "config", ["config_empty", "config_pattern_env_var_name"], indirect=True
-)
+@pytest.mark.parametrize("config", ["config_empty", "config_pattern_env_var_name"], indirect=True)
 @pytest.mark.xfail(reason="subdirectories are not supported")
 def test_subdirectories_should_fail(config, fs_with_subdirs):
     pattern = _input_pattern_from_env(config)
@@ -187,15 +181,13 @@ def test__sort_by_year(fs_with_datestamps_years):
     import random
 
     random.shuffle(files)
-    fpattern = re.compile(r".*(?P<year>\d{4}).*")
+    fpattern = re.compile(r".*(?P<year>\d{4}).*")  # noqa: W605
 
     # Act
     sorted_files = _sort_by_year(files, fpattern)
 
     # Assert
-    assert sorted_files == [
-        pathlib.Path(f"/path/to/file_{year}.txt") for year in range(2000, 2010)
-    ]
+    assert sorted_files == [pathlib.Path(f"/path/to/file_{year}.txt") for year in range(2000, 2010)]
 
 
 def test__files_to_string():
@@ -250,18 +242,13 @@ def test__validate_rule_has_marked_regex_without_all_required_marks():
 
 def test__filter_by_year(fs_with_datestamps_years):
     """Test the _filter_by_year function."""
-    fake_files = [
-        pathlib.Path(f"/path/to/file_{year}.txt") for year in range(2000, 2010)
-    ]
-    fpattern = re.compile(r"file_(?P<year>\d{4})\.txt")
+    fake_files = [pathlib.Path(f"/path/to/file_{year}.txt") for year in range(2000, 2010)]
+    fpattern = re.compile(r"file_(?P<year>\d{4})\.txt")  # noqa: W605
 
     # Test filtering files from 2010 to 2015
     filtered_files = _filter_by_year(fake_files, fpattern, 2000, 2005)
     assert len(filtered_files) == 6
-    assert all(
-        2000 <= int(fpattern.match(f.name).group("year")) <= 2005
-        for f in filtered_files
-    )
+    assert all(2000 <= int(fpattern.match(f.name).group("year")) <= 2005 for f in filtered_files)
 
     # Test filtering files from 2005 to 2005 (only one year)
     filtered_files = _filter_by_year(fake_files, fpattern, 2005, 2005)
