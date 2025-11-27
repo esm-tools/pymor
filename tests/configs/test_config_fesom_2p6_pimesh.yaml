@@ -14,6 +14,7 @@ general:
 rules:
   - name: "temp"
     experiment_id: "piControl"
+    activity_id: "CMIP"
     output_directory: "./output"
     source_id: "AWI-CM-1-1-HR"
     model_component: "ocean"

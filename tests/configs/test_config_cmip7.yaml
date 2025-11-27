@@ -36,6 +36,7 @@ rules:
     output_directory: .
     variant_label: r1i1p1f1
     experiment_id: piControl
+    activity_id: "CMIP"
     source_id: "AWI-CM-1-1-HR"
     model_component: ocean
     grid_label: gn
@@ -53,6 +54,7 @@ rules:
     output_directory: .
     variant_label: r1i1p1f1
     experiment_id: piControl
+    activity_id: "CMIP"
     source_id: "AWI-CM-1-1-HR"
     model_component: ocean
     grid_label: gn
@@ -62,6 +64,7 @@ rules:
     output_directory: .
     variant_label: r1i1p1f1
     experiment_id: piControl
+    activity_id: "CMIP"
     source_id: "AWI-CM-1-1-HR"
     model_component: ocean
     grid_label: gn
