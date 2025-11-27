@@ -639,8 +639,14 @@ jobs:
         cmip-version: ['cmip6', 'cmip7']
         orchestrator-config:
           - id: 'prefect-dask'
+            pipeline_workflow_orchestrator: 'prefect'
+            enable_dask: 'yes'
           - id: 'native-dask'
+            pipeline_workflow_orchestrator: 'native'
+            enable_dask: 'yes'
           - id: 'native-nodask'
+            pipeline_workflow_orchestrator: 'native'
+            enable_dask: 'no'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -671,6 +677,8 @@ jobs:
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
+            -e PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR=${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }} \
+            -e PYCMOR_ENABLE_DASK=${{ matrix.orchestrator-config.enable_dask }} \
             -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
             -v ${{ github.workspace }}:/workspace \
             -v ~/.cache/pycmor:/home/mambauser/.cache/pycmor \
@@ -690,8 +698,14 @@ jobs:
         cmip-version: ['cmip6', 'cmip7']
         orchestrator-config:
           - id: 'prefect-dask'
+            pipeline_workflow_orchestrator: 'prefect'
+            enable_dask: 'yes'
           - id: 'native-dask'
+            pipeline_workflow_orchestrator: 'native'
+            enable_dask: 'yes'
           - id: 'native-nodask'
+            pipeline_workflow_orchestrator: 'native'
+            enable_dask: 'no'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -722,6 +736,8 @@ jobs:
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
+            -e PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR=${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }} \
+            -e PYCMOR_ENABLE_DASK=${{ matrix.orchestrator-config.enable_dask }} \
             -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
             -v ${{ github.workspace }}:/workspace \
             -v ~/.cache/pycmor:/home/mambauser/.cache/pycmor \
@@ -741,8 +757,14 @@ jobs:
         cmip-version: ['cmip6', 'cmip7']
         orchestrator-config:
           - id: 'prefect-dask'
+            pipeline_workflow_orchestrator: 'prefect'
+            enable_dask: 'yes'
           - id: 'native-dask'
+            pipeline_workflow_orchestrator: 'native'
+            enable_dask: 'yes'
           - id: 'native-nodask'
+            pipeline_workflow_orchestrator: 'native'
+            enable_dask: 'no'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -773,6 +795,8 @@ jobs:
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
+            -e PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR=${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }} \
+            -e PYCMOR_ENABLE_DASK=${{ matrix.orchestrator-config.enable_dask }} \
             -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
             -v ${{ github.workspace }}:/workspace \
             -v ~/.cache/pycmor:/home/mambauser/.cache/pycmor \
@@ -792,8 +816,14 @@ jobs:
         cmip-version: ['cmip6', 'cmip7']
         orchestrator-config:
           - id: 'prefect-dask'
+            pipeline_workflow_orchestrator: 'prefect'
+            enable_dask: 'yes'
           - id: 'native-dask'
+            pipeline_workflow_orchestrator: 'native'
+            enable_dask: 'yes'
           - id: 'native-nodask'
+            pipeline_workflow_orchestrator: 'native'
+            enable_dask: 'no'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -824,6 +854,8 @@ jobs:
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
+            -e PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR=${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }} \
+            -e PYCMOR_ENABLE_DASK=${{ matrix.orchestrator-config.enable_dask }} \
             -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
             -v ${{ github.workspace }}:/workspace \
             -v ~/.cache/pycmor:/home/mambauser/.cache/pycmor \
