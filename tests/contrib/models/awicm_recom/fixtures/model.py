@@ -48,9 +48,9 @@ class AwicmRecomModelRun(BaseModelRun):
             if test_file.exists():
                 try:
                     # Try to open the file to verify it's not corrupted
-                    import h5py
+                    import xarray as xr
 
-                    with h5py.File(test_file, "r"):
+                    with xr.open_dataset(test_file):
                         logger.info(f"Validated extraction: {final_data_path}")
                         return final_data_path
                 except (OSError, IOError) as e:
