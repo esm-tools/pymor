@@ -97,10 +97,18 @@ def test_cli_process(model_run_instance, cmip_version, tmp_path):
         capture_output=True,
         text=True,
         timeout=300,  # 5 minutes timeout
+        check=False,  # Don't raise exception on non-zero exit, we'll check manually
     )
 
-    # Check that command succeeded
-    assert result.returncode == 0, f"CLI command failed with stderr:\n{result.stderr}\nstdout:\n{result.stdout}"
+    # Check that command succeeded - if it fails, provide detailed error info
+    if result.returncode != 0:
+        error_msg = (
+            f"CLI command 'pycmor process' failed with exit code {result.returncode}\n"
+            f"Command: pycmor process {temp_config}\n"
+            f"\n=== STDERR ===\n{result.stderr}\n"
+            f"\n=== STDOUT ===\n{result.stdout}"
+        )
+        pytest.fail(error_msg)
 
     # Verify output was created
     output_dir = Path(cfg["general"]["output_directory"])
