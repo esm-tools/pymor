@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     git \
     git-lfs \
     build-essential \
+    tree \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory and give ownership to MAMBA_USER

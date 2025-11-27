@@ -670,6 +670,10 @@ jobs:
       - name: Create persistent cache directory
         run: |
           mkdir -p ~/.cache/pycmor/test_data
+      - name: Debug - Show cache directory contents
+        run: |
+          echo "=== Host cache directory structure ==="
+          tree -L 3 ~/.cache/pycmor/test_data/ || echo "Cache is empty"
       - name: Run integration test for specific combination
         run: |
           docker run --rm \
@@ -684,7 +688,7 @@ jobs:
             -v ~/.cache/pycmor:/root/.cache/pycmor \
             --user root \
             ghcr.io/esm-tools/pycmor-testground:py3.9-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process"
+            bash -c "echo '=== Container cache structure ===' && tree -L 4 /root/.cache/pycmor/test_data/ && echo '=== Running test ===' && pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process"
 
   # Integration test matrix - Python 3.10
   test-integration-matrix-3-10:
@@ -720,6 +724,10 @@ jobs:
       - name: Create persistent cache directory
         run: |
           mkdir -p ~/.cache/pycmor/test_data
+      - name: Debug - Show cache directory contents
+        run: |
+          echo "=== Host cache directory structure ==="
+          tree -L 3 ~/.cache/pycmor/test_data/ || echo "Cache is empty"
       - name: Run integration test for specific combination
         run: |
           docker run --rm \
@@ -734,7 +742,7 @@ jobs:
             -v ~/.cache/pycmor:/root/.cache/pycmor \
             --user root \
             ghcr.io/esm-tools/pycmor-testground:py3.10-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process"
+            bash -c "echo '=== Container cache structure ===' && tree -L 4 /root/.cache/pycmor/test_data/ && echo '=== Running test ===' && pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process"
 
   # Integration test matrix - Python 3.11
   test-integration-matrix-3-11:
@@ -770,6 +778,10 @@ jobs:
       - name: Create persistent cache directory
         run: |
           mkdir -p ~/.cache/pycmor/test_data
+      - name: Debug - Show cache directory contents
+        run: |
+          echo "=== Host cache directory structure ==="
+          tree -L 3 ~/.cache/pycmor/test_data/ || echo "Cache is empty"
       - name: Run integration test for specific combination
         run: |
           docker run --rm \
@@ -784,7 +796,7 @@ jobs:
             -v ~/.cache/pycmor:/root/.cache/pycmor \
             --user root \
             ghcr.io/esm-tools/pycmor-testground:py3.11-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process"
+            bash -c "echo '=== Container cache structure ===' && tree -L 4 /root/.cache/pycmor/test_data/ && echo '=== Running test ===' && pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process"
 
   # Integration test matrix - Python 3.12
   test-integration-matrix-3-12:
@@ -820,6 +832,10 @@ jobs:
       - name: Create persistent cache directory
         run: |
           mkdir -p ~/.cache/pycmor/test_data
+      - name: Debug - Show cache directory contents
+        run: |
+          echo "=== Host cache directory structure ==="
+          tree -L 3 ~/.cache/pycmor/test_data/ || echo "Cache is empty"
       - name: Run integration test for specific combination
         run: |
           docker run --rm \
@@ -834,7 +850,7 @@ jobs:
             -v ~/.cache/pycmor:/root/.cache/pycmor \
             --user root \
             ghcr.io/esm-tools/pycmor-testground:py3.12-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process"
+            bash -c "echo '=== Container cache structure ===' && tree -L 4 /root/.cache/pycmor/test_data/ && echo '=== Running test ===' && pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process"
   # Doctest jobs - one per Python version
   test-doctest-3-9:
     name: Doctest Python 3.9
