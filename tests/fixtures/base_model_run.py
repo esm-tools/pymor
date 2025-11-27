@@ -123,6 +123,28 @@ class BaseModelRun(ABC):
 
         return get_cache_dir()
 
+    @property
+    def config_path_cmip6(self) -> Path:
+        """Path to the CMIP6 configuration file for this model.
+
+        Returns
+        -------
+        Path
+            Path to config_cmip6.yaml in the model's fixtures directory
+        """
+        return self.fixtures_dir / "config_cmip6.yaml"
+
+    @property
+    def config_path_cmip7(self) -> Path:
+        """Path to the CMIP7 configuration file for this model.
+
+        Returns
+        -------
+        Path
+            Path to config_cmip7.yaml in the model's fixtures directory
+        """
+        return self.fixtures_dir / "config_cmip7.yaml"
+
     @staticmethod
     def should_use_real_data(request=None) -> bool:
         """Determine whether to use real or stub data.

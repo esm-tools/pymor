@@ -4,8 +4,6 @@ import tempfile
 
 import pytest
 
-from tests.utils.constants import TEST_ROOT  # noqa: F401
-
 
 def pytest_configure(config):
     """Set up XDG_CONFIG_HOME before any modules are imported.
@@ -86,10 +84,13 @@ pytest_plugins = [
     "tests.fixtures.fake_filesystem",
     "tests.fixtures.sample_rules",
     # Model-contrib fixtures (new structure)
+    "tests.contrib.models.awicm_recom.fixtures.config",
     "tests.contrib.models.awicm_recom.fixtures.datadir",
     "tests.contrib.models.awicm_recom.fixtures.datasets",
+    "tests.contrib.models.fesom_2p6_pimesh.fixtures.config",
     "tests.contrib.models.fesom_2p6_pimesh.fixtures.datadir",
     "tests.contrib.models.fesom_2p6_pimesh.fixtures.datasets",
+    "tests.contrib.models.fesom_uxarray.fixtures.config",
     "tests.contrib.models.fesom_uxarray.fixtures.datadir",
     "tests.contrib.models.fesom_uxarray.fixtures.datasets",
 ]
