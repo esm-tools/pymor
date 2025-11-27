@@ -142,8 +142,8 @@ externals = "pycmor.core.externals:externals"
 [project.entry-points."pycmor.fixtures.model_runs"]
 # Built-in model run fixtures shipped with pycmor
 awicm_recom = "tests.contrib.models.awicm_recom.fixtures.model:AwicmRecomModelRun"
-fesom_2p6_pimesh = "tests.contrib.models.fesom_2p6_pimesh.fixtures.model:Fesom2p6PimeshModelRun"
-fesom_uxarray = "tests.contrib.models.fesom_uxarray.fixtures.model:FesomUxarrayModelRun"
+fesom_2p6 = "tests.contrib.models.fesom_2p6.fixtures.model:Fesom2p6ModelRun"
+fesom_dev = "tests.contrib.models.fesom_dev.fixtures.model:FesomDevModelRun"
 
 [tool.setuptools]
 zip-safe = false

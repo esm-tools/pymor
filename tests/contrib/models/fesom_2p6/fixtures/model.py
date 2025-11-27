@@ -8,7 +8,7 @@ from tests.fixtures.base_model_run import BaseModelRun
 logger = logging.getLogger(__name__)
 
 
-class Fesom2p6PimeshModelRun(BaseModelRun):
+class Fesom2p6ModelRun(BaseModelRun):
     """FESOM 2.6 PI mesh model run.
 
     This model run includes FESOM 2.6 output on the PI mesh configuration.

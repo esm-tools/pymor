@@ -1,4 +1,4 @@
-"""FESOM UXarray (PI control) model run implementation."""
+"""FESOM dev (UXarray-compatible) model run implementation."""
 
 import logging
 import shutil
@@ -13,8 +13,8 @@ MESH_GIT_REPO = "https://gitlab.awi.de/fesom/pi"
 """str : Git repository URL for the FESOM PI mesh data."""
 
 
-class FesomUxarrayModelRun(BaseModelRun):
-    """FESOM UXarray PI control model run.
+class FesomDevModelRun(BaseModelRun):
+    """FESOM dev (UXarray-compatible) model run.
 
     This model run includes:
     - PI control simulation data (via pooch download)
