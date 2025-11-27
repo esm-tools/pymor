@@ -92,9 +92,7 @@ def test_dataarray_instead_of_dataset():
     """Test that passing a DataArray instead of a Dataset raises an error."""
     # Create a test DataArray with a time dimension
     times = pd.date_range("2000-01-01", periods=3, freq="D")
-    da = xr.DataArray(
-        np.random.rand(3), dims=["time"], coords={"time": times}, name="temperature"
-    )
+    da = xr.DataArray(np.random.rand(3), dims=["time"], coords={"time": times}, name="temperature")
 
     class MockRule:
         pass
@@ -136,10 +134,7 @@ def test_monthly_frequency():
 
     # For the last month, the end bound should be the start of the next month
     assert bounds[-1, 0] == times[-1].to_numpy()
-    assert (
-        bounds[-1, 1]
-        == (times[-1] + pd.offsets.MonthEnd(1) + pd.offsets.Day(1)).to_numpy()
-    )
+    assert bounds[-1, 1] == (times[-1] + pd.offsets.MonthEnd(1) + pd.offsets.Day(1)).to_numpy()
 
     # Check the time variable's bounds attribute
     assert "bounds" in result["time"].attrs

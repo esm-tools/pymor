@@ -57,9 +57,7 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
     logger.info(f"  → approx_interval: {approx_interval} days")
 
     # Get time method from rule or dataset attributes
-    time_method = getattr(rule, "time_method", None) or ds.attrs.get(
-        "time_method", "mean"
-    )
+    time_method = getattr(rule, "time_method", None) or ds.attrs.get("time_method", "mean")
     logger.info(f"  → time method : {time_method}")
 
     # Check if time bounds already exist
@@ -72,9 +70,7 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
 
     # Validate time method
     if time_method not in ["mean", "instantaneous", "climatology"]:
-        logger.warning(
-            f"  ⚠️  Unknown time method '{time_method}', defaulting to 'mean'"
-        )
+        logger.warning(f"  ⚠️  Unknown time method '{time_method}', defaulting to 'mean'")
         time_method = "mean"
 
     # Only create bounds for mean and instantaneous methods
@@ -93,9 +89,7 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
         raise ValueError(error_msg)
 
     # Log time values info
-    logger.info(
-        f"  → time values  : {len(time_values)} points from {time_values[0]} to {time_values[-1]}"
-    )
+    logger.info(f"  → time values  : {len(time_values)} points from {time_values[0]} to {time_values[-1]}")
 
     # Handle instantaneous time method
     if time_method == "instantaneous":
@@ -113,17 +107,13 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
             raise ValueError(error_msg)
 
         # Calculate data frequency in days
-        time_diff_seconds = np.median(
-            np.diff(time_values.astype("datetime64[s]").astype(float))
-        )
+        time_diff_seconds = np.median(np.diff(time_values.astype("datetime64[s]").astype(float)))
         data_freq_days = time_diff_seconds / (24 * 3600)  # Convert to days
         logger.info(f"  → data frequency: {data_freq_days:.2f} days")
 
         # Determine bounds based on approx_interval and data frequency
         if approx_interval is not None and abs(data_freq_days - approx_interval) < 0.1:
-            logger.info(
-                "  → data frequency matches approx_interval, using interval-based bounds"
-            )
+            logger.info("  → data frequency matches approx_interval, using interval-based bounds")
 
             # For monthly data (approx_interval ~30 days)
             if 28 <= approx_interval <= 32:
@@ -136,17 +126,13 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
                     time_values,
                     time_values[-1] + np.timedelta64(int(data_freq_days), "D"),
                 )
-                bounds_data = np.column_stack(
-                    [time_values_extended[:-1], time_values_extended[1:]]
-                )
+                bounds_data = np.column_stack([time_values_extended[:-1], time_values_extended[1:]])
         else:
             # Default behavior: use consecutive time points
             logger.info("  → using default consecutive time point bounds")
             time_diff = np.median(np.diff(time_values))
             time_values_extended = np.append(time_values, time_values[-1] + time_diff)
-            bounds_data = np.column_stack(
-                [time_values_extended[:-1], time_values_extended[1:]]
-            )
+            bounds_data = np.column_stack([time_values_extended[:-1], time_values_extended[1:]])
 
     # Create the bounds DataArray
     bounds = xr.DataArray(
@@ -168,9 +154,7 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
 
     # Log success message with bounds info
     logger.info(f"  → set time bounds: {time_bounds_label}{bounds.shape}")
-    logger.info(
-        f"  → bounds range   : {bounds.values[0][0]} to {bounds.values[-1][-1]}"
-    )
+    logger.info(f"  → bounds range   : {bounds.values[0][0]} to {bounds.values[-1][-1]}")
     logger.info("-" * 50)
     return ds
 
@@ -184,7 +168,7 @@ def _create_monthly_bounds(time_values):
 
     bounds_data = []
 
-    for i, time_val in enumerate(time_values):
+    for time_val in time_values:
         # Convert to pandas timestamp for easier month manipulation
         ts = pd.Timestamp(time_val)
 
