@@ -270,6 +270,8 @@ class Rule:
             afile = next(f for file_collection in self.inputs for f in file_collection.files)
             afile = pathlib.Path(afile)
             dir_timestamp = datetime.datetime.fromtimestamp(afile.parent.stat().st_ctime)
+        except StopIteration:
+            raise FileNotFoundError("No input files found to determine timestamp of directory!")
         except FileNotFoundError:
             # No input files, so use the current time -- this is a fallback triggered for test cases
             dir_timestamp = datetime.datetime.now()
