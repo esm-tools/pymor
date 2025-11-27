@@ -15,15 +15,17 @@ def discover_model_runs() -> dict[str, Type[BaseModelRun]]:
         Dictionary mapping model names to their ModelRun classes
     """
     model_runs = {}
-    entry_points = importlib.metadata.entry_points()
 
-    # Handle both old (dict) and new (EntryPoints object) styles
-    if hasattr(entry_points, "select"):
-        # Python 3.10+
-        eps = entry_points.select(group="pycmor.fixtures.model_runs")
-    else:
-        # Python 3.9
-        eps = entry_points.get("pycmor.fixtures.model_runs", [])
+    # Python 3.9 vs 3.10+ compatibility
+    # In 3.9: entry_points() returns dict[str, list[EntryPoint]]
+    # In 3.10+: entry_points() returns EntryPoints object with select() method
+    try:
+        # Try Python 3.10+ API first
+        eps = importlib.metadata.entry_points(group="pycmor.fixtures.model_runs")
+    except TypeError:
+        # Fall back to Python 3.9 API
+        all_eps = importlib.metadata.entry_points()
+        eps = all_eps.get("pycmor.fixtures.model_runs", [])
 
     for ep in eps:
         model_runs[ep.name] = ep.load()
