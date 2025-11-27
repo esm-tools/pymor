@@ -1,3 +1,12 @@
+"""DEPRECATED: Model-specific integration tests for FESOM uxarray.
+
+.. deprecated::
+   This module is deprecated and will be removed in a future version.
+   Use test_model_runs.py (library API) or test_cli_process.py (CLI)
+   instead, which provide matrix-based testing across all models and
+   CMIP versions via entry points.
+"""
+
 import yaml
 
 from pycmor.core.cmorizer import CMORizer
