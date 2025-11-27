@@ -266,7 +266,7 @@ jobs:
             -v ~/.cache/pycmor:/root/.cache/pycmor \
             --user root \
             ghcr.io/esm-tools/pycmor-testground:py3.9-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "pytest -vvv -s --cov=src/pycmor tests/meta/**.py && python -m coverage xml -o /workspace/coverage-meta-3.9.xml"
+            bash -c "pytest -vvv -s --cov=src/pycmor tests/meta/**.py && echo '=== Cache after meta tests ===' && tree -L 4 /root/.cache/pycmor/test_data/ && python -m coverage xml -o /workspace/coverage-meta-3.9.xml"
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -314,7 +314,7 @@ jobs:
             -v ~/.cache/pycmor:/root/.cache/pycmor \
             --user root \
             ghcr.io/esm-tools/pycmor-testground:py3.10-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "pytest -vvv -s --cov=src/pycmor tests/meta/**.py && python -m coverage xml -o /workspace/coverage-meta-3.10.xml"
+            bash -c "pytest -vvv -s --cov=src/pycmor tests/meta/**.py && echo '=== Cache after meta tests ===' && tree -L 4 /root/.cache/pycmor/test_data/ && python -m coverage xml -o /workspace/coverage-meta-3.10.xml"
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -362,7 +362,7 @@ jobs:
             -v ~/.cache/pycmor:/root/.cache/pycmor \
             --user root \
             ghcr.io/esm-tools/pycmor-testground:py3.11-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "pytest -vvv -s --cov=src/pycmor tests/meta/**.py && python -m coverage xml -o /workspace/coverage-meta-3.11.xml"
+            bash -c "pytest -vvv -s --cov=src/pycmor tests/meta/**.py && echo '=== Cache after meta tests ===' && tree -L 4 /root/.cache/pycmor/test_data/ && python -m coverage xml -o /workspace/coverage-meta-3.11.xml"
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -410,7 +410,7 @@ jobs:
             -v ~/.cache/pycmor:/root/.cache/pycmor \
             --user root \
             ghcr.io/esm-tools/pycmor-testground:py3.12-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "pytest -vvv -s --cov=src/pycmor tests/meta/**.py && python -m coverage xml -o /workspace/coverage-meta-3.12.xml"
+            bash -c "pytest -vvv -s --cov=src/pycmor tests/meta/**.py && echo '=== Cache after meta tests ===' && tree -L 4 /root/.cache/pycmor/test_data/ && python -m coverage xml -o /workspace/coverage-meta-3.12.xml"
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
