@@ -124,9 +124,7 @@ class DimensionMapper:
         """Compile regex patterns for efficiency"""
         self._compiled_patterns = {}
         for dim_type, patterns in self.DIMENSION_PATTERNS.items():
-            self._compiled_patterns[dim_type] = [
-                re.compile(p, re.IGNORECASE) for p in patterns
-            ]
+            self._compiled_patterns[dim_type] = [re.compile(p, re.IGNORECASE) for p in patterns]
 
     def detect_dimension_type(self, ds: xr.Dataset, dim_name: str) -> Optional[str]:
         """
@@ -155,9 +153,7 @@ class DimensionMapper:
         for dim_type, patterns in self._compiled_patterns.items():
             for pattern in patterns:
                 if pattern.match(dim_name):
-                    logger.debug(
-                        f"Dimension '{dim_name}' matched pattern for '{dim_type}'"
-                    )
+                    logger.debug(f"Dimension '{dim_name}' matched pattern for '{dim_type}'")
                     return dim_type
 
         # Strategy 2: Check standard_name attribute
@@ -166,26 +162,20 @@ class DimensionMapper:
             standard_name = coord.attrs.get("standard_name", "").lower()
             for dim_type, std_names in self.STANDARD_NAME_MAP.items():
                 if standard_name in std_names:
-                    logger.debug(
-                        f"Dimension '{dim_name}' matched standard_name for '{dim_type}'"
-                    )
+                    logger.debug(f"Dimension '{dim_name}' matched standard_name for '{dim_type}'")
                     return dim_type
 
             # Strategy 3: Check axis attribute
             axis = coord.attrs.get("axis", "").upper()
             for dim_type, expected_axis in self.AXIS_MAP.items():
                 if axis == expected_axis:
-                    logger.debug(
-                        f"Dimension '{dim_name}' matched axis for '{dim_type}'"
-                    )
+                    logger.debug(f"Dimension '{dim_name}' matched axis for '{dim_type}'")
                     return dim_type
 
             # Strategy 4: Analyze values
             dim_type = self._detect_from_values(coord)
             if dim_type:
-                logger.debug(
-                    f"Dimension '{dim_name}' detected from values as '{dim_type}'"
-                )
+                logger.debug(f"Dimension '{dim_name}' detected from values as '{dim_type}'")
                 return dim_type
 
         logger.debug(f"Could not detect type for dimension '{dim_name}'")
@@ -216,9 +206,7 @@ class DimensionMapper:
                     return "latitude"
 
             # Check for longitude (0 to 360 or -180 to 180)
-            if (np.all(values >= 0) and np.all(values <= 360)) or (
-                np.all(values >= -180) and np.all(values <= 180)
-            ):
+            if (np.all(values >= 0) and np.all(values <= 360)) or (np.all(values >= -180) and np.all(values <= 180)):
                 if len(values) > 10:  # Likely a grid
                     return "longitude"
 
@@ -369,8 +357,7 @@ class DimensionMapper:
             for source_dim, output_dim in user_mapping.items():
                 if source_dim not in source_dims:
                     logger.warning(
-                        f"User mapping specifies source dimension '{source_dim}' "
-                        f"which doesn't exist in dataset"
+                        f"User mapping specifies source dimension '{source_dim}' " f"which doesn't exist in dataset"
                     )
                     continue
 
@@ -409,9 +396,7 @@ class DimensionMapper:
                 mapped_source.add(source_dim)
                 mapped_cmip.add(cmip_dim)
                 unmapped_cmip.remove(cmip_dim)
-                logger.info(
-                    f"  Auto-mapped: {source_dim} → {cmip_dim} (type: {dim_type})"
-                )
+                logger.info(f"  Auto-mapped: {source_dim} → {cmip_dim} (type: {dim_type})")
 
         # Report unmapped dimensions
         final_unmapped_source = [d for d in source_dims if d not in mapped_source]
@@ -496,16 +481,12 @@ class DimensionMapper:
             # Strict mode: output dimensions must match CMIP table
             missing_cmip = cmip_dims - mapped_output
             if missing_cmip:
-                errors.append(
-                    f"Missing CMIP dimensions in mapping: {sorted(missing_cmip)}"
-                )
+                errors.append(f"Missing CMIP dimensions in mapping: {sorted(missing_cmip)}")
 
             # Check for non-CMIP dimensions in output
             extra_dims = mapped_output - cmip_dims
             if extra_dims:
-                errors.append(
-                    f"Output dimensions not in CMIP table: {sorted(extra_dims)}"
-                )
+                errors.append(f"Output dimensions not in CMIP table: {sorted(extra_dims)}")
         else:
             # Flexible mode: just check that we have the right number of dimensions
             if len(mapped_output) != len(cmip_dims):
@@ -528,9 +509,7 @@ class DimensionMapper:
         return is_valid, errors
 
 
-def map_dimensions(
-    ds: Union[xr.Dataset, xr.DataArray], rule
-) -> Union[xr.Dataset, xr.DataArray]:
+def map_dimensions(ds: Union[xr.Dataset, xr.DataArray], rule) -> Union[xr.Dataset, xr.DataArray]:
     """
     Pipeline function to map dimensions from source to CMIP requirements
 
@@ -594,12 +573,8 @@ def map_dimensions(
         )
 
         if not is_valid:
-            validation_mode = rule._pycmor_cfg(
-                "dimension_mapping_validation", default="warn"
-            )
-            error_msg = "Dimension mapping validation failed:\n" + "\n".join(
-                f"  - {e}" for e in errors
-            )
+            validation_mode = rule._pycmor_cfg("dimension_mapping_validation", default="warn")
+            error_msg = "Dimension mapping validation failed:\n" + "\n".join(f"  - {e}" for e in errors)
 
             if validation_mode == "error":
                 raise ValueError(error_msg)

@@ -36,10 +36,7 @@ def _load_coordinate_metadata() -> Dict[str, Dict[str, str]]:
     metadata_file = Path(__file__).parent.parent / "data" / "coordinate_metadata.yaml"
 
     if not metadata_file.exists():
-        logger.warning(
-            f"Coordinate metadata file not found: {metadata_file}. "
-            "Using empty metadata dictionary."
-        )
+        logger.warning(f"Coordinate metadata file not found: {metadata_file}. " "Using empty metadata dictionary.")
         return {}
 
     try:
@@ -49,8 +46,7 @@ def _load_coordinate_metadata() -> Dict[str, Dict[str, str]]:
         return metadata
     except Exception as e:
         logger.error(
-            f"Failed to load coordinate metadata from {metadata_file}: {e}. "
-            "Using empty metadata dictionary."
+            f"Failed to load coordinate metadata from {metadata_file}: {e}. " "Using empty metadata dictionary."
         )
         return {}
 
@@ -123,9 +119,7 @@ def _should_skip_coordinate(coord_name: str, rule: Rule) -> bool:
     return False
 
 
-def set_coordinate_attributes(
-    ds: Union[xr.Dataset, xr.DataArray], rule: Rule
-) -> Union[xr.Dataset, xr.DataArray]:
+def set_coordinate_attributes(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union[xr.Dataset, xr.DataArray]:
     """
     Set CF-compliant metadata attributes on coordinate variables.
 
@@ -201,9 +195,7 @@ def set_coordinate_attributes(
     for coord_name in ds.coords:
         # Skip coordinates that should not be processed
         if _should_skip_coordinate(coord_name, rule):
-            logger.debug(
-                f"  → Skipping '{coord_name}' (handled elsewhere or bounds variable)"
-            )
+            logger.debug(f"  → Skipping '{coord_name}' (handled elsewhere or bounds variable)")
             coords_skipped += 1
             continue
 
@@ -249,14 +241,10 @@ def set_coordinate_attributes(
                             f"got '{existing_value}', expected '{attr_value}'"
                         )
                     elif validation_mode == "fix":
-                        logger.info(
-                            f"      • {attr_name} corrected: '{existing_value}' → '{attr_value}'"
-                        )
+                        logger.info(f"      • {attr_name} corrected: '{existing_value}' → '{attr_value}'")
                         ds[coord_name].attrs[attr_name] = attr_value
                     else:
-                        logger.warning(
-                            f"Unknown validation mode '{validation_mode}', defaulting to 'warn'"
-                        )
+                        logger.warning(f"Unknown validation mode '{validation_mode}', defaulting to 'warn'")
                         logger.warning(
                             f"Coordinate '{coord_name}' has {attr_name}='{existing_value}' "
                             f"but expected '{attr_value}'"
@@ -264,9 +252,7 @@ def set_coordinate_attributes(
 
         coords_processed += 1
 
-    logger.info(
-        f"  → Processed {coords_processed} coordinates, skipped {coords_skipped}"
-    )
+    logger.info(f"  → Processed {coords_processed} coordinates, skipped {coords_skipped}")
 
     # Set 'coordinates' attribute on data variables
     if rule._pycmor_cfg("xarray_set_coordinates_attribute"):
@@ -293,9 +279,7 @@ def _set_coordinates_attribute(ds: xr.Dataset, rule: Rule) -> None:
     rule : Rule
         Processing rule
     """
-    logger.info(
-        "[Coordinate Attributes] Setting 'coordinates' attribute on data variables"
-    )
+    logger.info("[Coordinate Attributes] Setting 'coordinates' attribute on data variables")
 
     for var_name in ds.data_vars:
         # Get all coordinates used by this variable
