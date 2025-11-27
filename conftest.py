@@ -68,6 +68,50 @@ def suppress_third_party_logs():
         logging.getLogger(logger_name).setLevel(logging.WARNING)
 
 
+def _get_model_fixture_plugins():
+    """Dynamically discover model fixture plugins from entry points.
+
+    For each registered model (via pycmor.fixtures.model_runs entry point),
+    generate the fixture module paths for config, datadir, and datasets.
+
+    Returns
+    -------
+    list
+        List of fixture module paths
+    """
+    try:
+        import importlib.metadata as importlib_metadata
+    except ImportError:
+        import importlib_metadata
+
+    plugins = []
+
+    # Discover model entry points
+    entry_points = importlib_metadata.entry_points()
+    if hasattr(entry_points, "select"):
+        pycmor_models = entry_points.select(group="pycmor.fixtures.model_runs")
+    else:
+        pycmor_models = entry_points.get("pycmor.fixtures.model_runs", [])
+
+    for ep in pycmor_models:
+        # Extract module path from entry point value
+        # e.g., "tests.contrib.models.fesom_2p6.fixtures.model:Fesom2p6ModelRun"
+        # -> "tests.contrib.models.fesom_2p6.fixtures"
+        module_path = ep.value.split(":")[0]  # Get module path before ":"
+        base_path = ".".join(module_path.split(".")[:-1])  # Remove ".model"
+
+        # Add fixture modules for this model
+        plugins.extend(
+            [
+                f"{base_path}.config",
+                f"{base_path}.datadir",
+                f"{base_path}.datasets",
+            ]
+        )
+
+    return plugins
+
+
 pytest_plugins = [
     "tests.fixtures.CMIP_Tables_Dir",
     "tests.fixtures.CV_Dir",
@@ -83,17 +127,7 @@ pytest_plugins = [
     "tests.fixtures.fake_data.fesom_mesh",
     "tests.fixtures.fake_filesystem",
     "tests.fixtures.sample_rules",
-    # Model-contrib fixtures (new structure)
-    "tests.contrib.models.awicm_recom.fixtures.config",
-    "tests.contrib.models.awicm_recom.fixtures.datadir",
-    "tests.contrib.models.awicm_recom.fixtures.datasets",
-    "tests.contrib.models.fesom_2p6_pimesh.fixtures.config",
-    "tests.contrib.models.fesom_2p6_pimesh.fixtures.datadir",
-    "tests.contrib.models.fesom_2p6_pimesh.fixtures.datasets",
-    "tests.contrib.models.fesom_uxarray.fixtures.config",
-    "tests.contrib.models.fesom_uxarray.fixtures.datadir",
-    "tests.contrib.models.fesom_uxarray.fixtures.datasets",
-]
+] + _get_model_fixture_plugins()  # Dynamically add model-contrib fixtures
 
 
 def _discover_model_runs():

@@ -9,13 +9,13 @@ def fesom_2p6_pimesh_model_run(tmp_path_factory, request):
 
     Returns
     -------
-    Fesom2p6PimeshModelRun
+    Fesom2p6ModelRun
         Model run instance with data and config access
     """
-    from tests.contrib.models.fesom_2p6_pimesh.fixtures.model import Fesom2p6PimeshModelRun
+    from tests.contrib.models.fesom_2p6.fixtures.model import Fesom2p6ModelRun
 
-    use_real = Fesom2p6PimeshModelRun.should_use_real_data(request)
-    return Fesom2p6PimeshModelRun.from_module(__file__, use_real=use_real, tmp_path_factory=tmp_path_factory)
+    use_real = Fesom2p6ModelRun.should_use_real_data(request)
+    return Fesom2p6ModelRun.from_module(__file__, use_real=use_real, tmp_path_factory=tmp_path_factory)
 
 
 @pytest.fixture

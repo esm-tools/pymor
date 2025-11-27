@@ -8,25 +8,25 @@ import warnings
 
 import pytest
 
-from .model import FesomUxarrayModelRun
+from .model import FesomDevModelRun
 
 
 @pytest.fixture(scope="session")
 def fesom_uxarray_model_run(request, tmp_path_factory):
     """FESOM UXarray model run instance.
 
-    This fixture creates a FesomUxarrayModelRun instance that handles:
+    This fixture creates a FesomDevModelRun instance that handles:
     - Routing between real and stub data based on environment/markers
     - Lazy-loading of data directories, mesh directories, and datasets
     - Caching of downloaded/generated resources
 
     Returns
     -------
-    FesomUxarrayModelRun
+    FesomDevModelRun
         Model run instance with data and mesh access
     """
-    use_real = FesomUxarrayModelRun.should_use_real_data(request)
-    return FesomUxarrayModelRun.from_module(
+    use_real = FesomDevModelRun.should_use_real_data(request)
+    return FesomDevModelRun.from_module(
         __file__,
         use_real=use_real,
         tmp_path_factory=tmp_path_factory,
@@ -76,7 +76,7 @@ def fesom_uxarray_real_datadir(tmp_path_factory):
         DeprecationWarning,
         stacklevel=2,
     )
-    model_run = FesomUxarrayModelRun.from_module(__file__, use_real=True, tmp_path_factory=tmp_path_factory)
+    model_run = FesomDevModelRun.from_module(__file__, use_real=True, tmp_path_factory=tmp_path_factory)
     return model_run.datadir
 
 
@@ -88,7 +88,7 @@ def fesom_uxarray_stub_datadir(tmp_path_factory):
         DeprecationWarning,
         stacklevel=2,
     )
-    model_run = FesomUxarrayModelRun.from_module(__file__, use_real=False, tmp_path_factory=tmp_path_factory)
+    model_run = FesomDevModelRun.from_module(__file__, use_real=False, tmp_path_factory=tmp_path_factory)
     return model_run.datadir
 
 
@@ -100,7 +100,7 @@ def fesom_uxarray_real_meshdir(tmp_path_factory):
         DeprecationWarning,
         stacklevel=2,
     )
-    model_run = FesomUxarrayModelRun.from_module(__file__, use_real=True, tmp_path_factory=tmp_path_factory)
+    model_run = FesomDevModelRun.from_module(__file__, use_real=True, tmp_path_factory=tmp_path_factory)
     return model_run.meshdir
 
 
@@ -112,7 +112,7 @@ def fesom_uxarray_stub_meshdir(tmp_path_factory):
         DeprecationWarning,
         stacklevel=2,
     )
-    model_run = FesomUxarrayModelRun.from_module(__file__, use_real=False, tmp_path_factory=tmp_path_factory)
+    model_run = FesomDevModelRun.from_module(__file__, use_real=False, tmp_path_factory=tmp_path_factory)
     return model_run.meshdir
 
 

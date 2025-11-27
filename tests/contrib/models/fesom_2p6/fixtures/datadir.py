@@ -8,25 +8,25 @@ import warnings
 
 import pytest
 
-from .model import Fesom2p6PimeshModelRun
+from .model import Fesom2p6ModelRun
 
 
 @pytest.fixture(scope="session")
 def fesom_2p6_pimesh_esm_tools_model_run(request, tmp_path_factory):
     """FESOM 2.6 PI mesh model run instance.
 
-    This fixture creates a Fesom2p6PimeshModelRun instance that handles:
+    This fixture creates a Fesom2p6ModelRun instance that handles:
     - Routing between real and stub data based on environment/markers
     - Lazy-loading of data directories and datasets
     - Caching of downloaded/generated resources
 
     Returns
     -------
-    Fesom2p6PimeshModelRun
+    Fesom2p6ModelRun
         Model run instance with data access
     """
-    use_real = Fesom2p6PimeshModelRun.should_use_real_data(request)
-    return Fesom2p6PimeshModelRun.from_module(
+    use_real = Fesom2p6ModelRun.should_use_real_data(request)
+    return Fesom2p6ModelRun.from_module(
         __file__,
         use_real=use_real,
         tmp_path_factory=tmp_path_factory,
@@ -60,7 +60,7 @@ def fesom_2p6_pimesh_esm_tools_real_datadir(tmp_path_factory):
         DeprecationWarning,
         stacklevel=2,
     )
-    model_run = Fesom2p6PimeshModelRun.from_module(__file__, use_real=True, tmp_path_factory=tmp_path_factory)
+    model_run = Fesom2p6ModelRun.from_module(__file__, use_real=True, tmp_path_factory=tmp_path_factory)
     return model_run.datadir
 
 
@@ -83,7 +83,7 @@ def fesom_2p6_pimesh_esm_tools_stub_datadir(tmp_path_factory):
         DeprecationWarning,
         stacklevel=2,
     )
-    model_run = Fesom2p6PimeshModelRun.from_module(__file__, use_real=False, tmp_path_factory=tmp_path_factory)
+    model_run = Fesom2p6ModelRun.from_module(__file__, use_real=False, tmp_path_factory=tmp_path_factory)
     return model_run.datadir
 
 

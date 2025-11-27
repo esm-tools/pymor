@@ -9,13 +9,13 @@ def fesom_uxarray_model_run(tmp_path_factory, request):
 
     Returns
     -------
-    FesomUxarrayModelRun
+    FesomDevModelRun
         Model run instance with data and config access
     """
-    from tests.contrib.models.fesom_uxarray.fixtures.model import FesomUxarrayModelRun
+    from tests.contrib.models.fesom_dev.fixtures.model import FesomDevModelRun
 
-    use_real = FesomUxarrayModelRun.should_use_real_data(request)
-    return FesomUxarrayModelRun.from_module(__file__, use_real=use_real, tmp_path_factory=tmp_path_factory)
+    use_real = FesomDevModelRun.should_use_real_data(request)
+    return FesomDevModelRun.from_module(__file__, use_real=use_real, tmp_path_factory=tmp_path_factory)
 
 
 @pytest.fixture
