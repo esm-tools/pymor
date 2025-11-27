@@ -277,8 +277,8 @@ def load_mfdataset(data, rule_spec):
     for f in all_files:
         logger.info(f"  * {f}")
     mf_ds = xr.open_mfdataset(all_files, parallel=True, use_cftime=True, engine=engine)
-    if "time_counter" in mf_ds.dims and "time" not in mf_ds.dims:
-        mf_ds = mf_ds.rename({"time_counter": "time"})
+    if rule.get("time_dimname") in mf_ds.dims and "time" not in mf_ds.dims:
+        mf_ds = mf_ds.rename({rule.get("time_dimname"): "time"})
     return mf_ds
 
 
