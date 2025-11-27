@@ -48,11 +48,19 @@ def model_run_instance(request, tmp_path_factory):
 
 
 @pytest.mark.parametrize("cmip_version", ["cmip6", "cmip7"])
-def test_cli_process(model_run_instance, cmip_version, tmp_path):
+@pytest.mark.parametrize(
+    "orchestrator_config",
+    [
+        pytest.param({"pipeline_workflow_orchestrator": "prefect", "enable_dask": "yes"}, id="prefect-dask"),
+        pytest.param({"pipeline_workflow_orchestrator": "native", "enable_dask": "yes"}, id="native-dask"),
+        pytest.param({"pipeline_workflow_orchestrator": "native", "enable_dask": "no"}, id="native-nodask"),
+    ],
+)
+def test_cli_process(model_run_instance, cmip_version, orchestrator_config, tmp_path):
     """Test pycmor process CLI command with model configurations.
 
     This test creates a temporary config file with updated paths and runs
-    the pycmor CLI process command.
+    the pycmor CLI process command. Tests multiple orchestrator configurations.
 
     Parameters
     ----------
@@ -60,6 +68,8 @@ def test_cli_process(model_run_instance, cmip_version, tmp_path):
         Model run instance with data and config
     cmip_version : str
         CMIP version to test (cmip6 or cmip7)
+    orchestrator_config : dict
+        Orchestrator configuration to test (pipeline_workflow_orchestrator, enable_dask)
     tmp_path : Path
         Temporary directory for test artifacts
     """
@@ -86,8 +96,16 @@ def test_cli_process(model_run_instance, cmip_version, tmp_path):
         cfg["general"] = {}
     cfg["general"]["output_directory"] = str(tmp_path / "output")
 
+    # Apply orchestrator configuration
+    if "pycmor" not in cfg:
+        cfg["pycmor"] = {}
+    cfg["pycmor"].update(orchestrator_config)
+
     # Write modified config to temporary file
-    temp_config = tmp_path / f"config_{cmip_version}.yaml"
+    orch_type = orchestrator_config["pipeline_workflow_orchestrator"]
+    dask_status = "dask" if orchestrator_config["enable_dask"] == "yes" else "nodask"
+    orchestrator_desc = f"{orch_type}-{dask_status}"
+    temp_config = tmp_path / f"config_{cmip_version}_{orchestrator_desc}.yaml"
     with open(temp_config, "w") as f:
         yaml.dump(cfg, f)
 

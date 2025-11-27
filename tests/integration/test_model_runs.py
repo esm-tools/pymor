@@ -88,12 +88,20 @@ def test_library_initialization(model_run_instance, cmip_version):
 
 
 @pytest.mark.parametrize("cmip_version", ["cmip6", "cmip7"])
-def test_library_process(model_run_instance, cmip_version, tmp_path):
+@pytest.mark.parametrize(
+    "orchestrator_config",
+    [
+        pytest.param({"pipeline_workflow_orchestrator": "prefect", "enable_dask": "yes"}, id="prefect-dask"),
+        pytest.param({"pipeline_workflow_orchestrator": "native", "enable_dask": "yes"}, id="native-dask"),
+        pytest.param({"pipeline_workflow_orchestrator": "native", "enable_dask": "no"}, id="native-nodask"),
+    ],
+)
+def test_library_process(model_run_instance, cmip_version, orchestrator_config, tmp_path):
     """Test that CMORizer can process data from model config (library API).
 
     This test validates the full processing pipeline using the CMORizer
     library interface, from initialization through data processing to
-    output file creation.
+    output file creation. Tests multiple orchestrator configurations.
 
     Parameters
     ----------
@@ -101,6 +109,8 @@ def test_library_process(model_run_instance, cmip_version, tmp_path):
         Model run instance with data and config
     cmip_version : str
         CMIP version to test (cmip6 or cmip7)
+    orchestrator_config : dict
+        Orchestrator configuration to test (pipeline_workflow_orchestrator, enable_dask)
     tmp_path : Path
         Temporary directory for test artifacts
     """
@@ -111,7 +121,10 @@ def test_library_process(model_run_instance, cmip_version, tmp_path):
         config_path = model_run_instance.config_path_cmip7
 
     model_name = model_run_instance.__class__.__name__
-    logger.info(f"Testing library processing for {model_name} with {cmip_version.upper()}")
+    orch_type = orchestrator_config["pipeline_workflow_orchestrator"]
+    dask_status = "dask" if orchestrator_config["enable_dask"] == "yes" else "nodask"
+    orchestrator_desc = f"{orch_type}-{dask_status}"
+    logger.info(f"Testing library processing for {model_name} with {cmip_version.upper()} using {orchestrator_desc}")
 
     with open(config_path, "r") as f:
         cfg = yaml.safe_load(f)
@@ -128,6 +141,11 @@ def test_library_process(model_run_instance, cmip_version, tmp_path):
     if "general" not in cfg:
         cfg["general"] = {}
     cfg["general"]["output_directory"] = str(tmp_path / "output")
+
+    # Apply orchestrator configuration
+    if "pycmor" not in cfg:
+        cfg["pycmor"] = {}
+    cfg["pycmor"].update(orchestrator_config)
 
     # Process the data
     cmorizer = CMORizer.from_dict(cfg)
