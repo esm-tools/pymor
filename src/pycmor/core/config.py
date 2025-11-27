@@ -641,8 +641,10 @@ class PycmorConfigManager(ConfigManager):
 
         >>> config = PycmorConfigManager.from_pycmor_cfg()
         >>> defaults = config.get_inherit_section()
-        >>> print(defaults)
-        {'source_id': 'FESOM2', 'experiment_id': 'historical', ...}
+        >>> defaults['source_id']
+        'FESOM2'
+        >>> defaults['experiment_id']
+        'historical'
         """
         import yaml
 

@@ -1,32 +1,31 @@
 import logging
+import os
+import tempfile
 
 import pytest
 
 from tests.utils.constants import TEST_ROOT  # noqa: F401
 
 
-@pytest.fixture(scope="session", autouse=True)
-def setup_doctest_config_file(tmp_path_factory):
-    """Create a temporary config file for doctests that expect inherit section.
+def pytest_configure(config):
+    """Set up XDG_CONFIG_HOME before any modules are imported.
 
-    This fixture sets up a temporary XDG_CONFIG_HOME with a pycmor.yaml file
-    containing an inherit section, so doctests can demonstrate config behavior
-    without requiring actual user config files.
+    This runs very early in pytest's lifecycle, before test collection,
+    ensuring environment variables are set before any test modules import
+    code that reads them.
     """
-    import os
-
     import yaml
 
-    # Create a session-scoped temp directory
-    tmp_path = tmp_path_factory.mktemp("config")
+    # Create a temporary directory that will persist for the entire pytest session
+    tmp_dir = tempfile.mkdtemp(prefix="pycmor_test_config_")
+    config_dir = os.path.join(tmp_dir, "pycmor")
+    os.makedirs(config_dir, exist_ok=True)
 
-    # Set XDG_CONFIG_HOME to tmp_path so PycmorConfigManager finds our test config
-    config_dir = tmp_path / "pycmor"
-    config_dir.mkdir()
-    os.environ["XDG_CONFIG_HOME"] = str(tmp_path)
+    # Set XDG_CONFIG_HOME before any modules are imported
+    os.environ["XDG_CONFIG_HOME"] = tmp_dir
 
     # Create the config file with inherit section matching doctest examples
-    config_file = config_dir / "pycmor.yaml"
+    config_file = os.path.join(config_dir, "pycmor.yaml")
     config_content = {
         "inherit": {
             "source_id": "FESOM2",
@@ -37,13 +36,14 @@ def setup_doctest_config_file(tmp_path_factory):
             "output_directory": "/tmp/cmor_output",
         }
     }
-    config_file.write_text(yaml.dump(config_content))
 
-    yield
+    with open(config_file, "w") as f:
+        yaml.dump(config_content, f)
 
-    # Cleanup: remove the env var after session
-    if "XDG_CONFIG_HOME" in os.environ:
-        del os.environ["XDG_CONFIG_HOME"]
+    print(f"\n[pytest_configure] XDG_CONFIG_HOME set to: {os.environ['XDG_CONFIG_HOME']}")
+    print(f"[pytest_configure] Config file created at: {config_file}")
+    logging.debug(f"[pytest_configure] XDG_CONFIG_HOME set to: {os.environ['XDG_CONFIG_HOME']}")
+    logging.debug(f"[pytest_configure] Config file created at: {config_file}")
 
 
 @pytest.fixture(scope="function", autouse=True)
