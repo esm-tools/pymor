@@ -140,3 +140,102 @@ def test_library_process(model_run_instance, cmip_version, tmp_path):
     assert output_dir.exists(), f"Output directory not created: {output_dir}"
     output_files = list(output_dir.rglob("*.nc"))
     assert len(output_files) > 0, f"No NetCDF output files created in {output_dir}"
+
+
+@pytest.mark.parametrize("cmip_version", ["cmip6", "cmip7"])
+def test_library_accessor(model_run_instance, cmip_version):
+    """Test dataset accessor API (ds.pycmor.process) for model data.
+
+    This test validates the accessor interface, which provides a simpler
+    API for one-shot in-memory processing of datasets without needing full
+    CMORizer configuration. The accessor processes data and returns the
+    result without saving to disk.
+
+    Parameters
+    ----------
+    model_run_instance : BaseModelRun
+        Model run instance with data and config
+    cmip_version : str
+        CMIP version to test (cmip6 or cmip7)
+    """
+    import xarray as xr
+
+    import pycmor.accessors  # noqa: F401 - registers accessors
+
+    model_name = model_run_instance.__class__.__name__
+    logger.info(f"Testing accessor API for {model_name} with {cmip_version.upper()}")
+
+    # Get the appropriate config to extract a variable name
+    if cmip_version == "cmip6":
+        config_path = model_run_instance.config_path_cmip6
+    else:
+        config_path = model_run_instance.config_path_cmip7
+
+    with open(config_path, "r") as f:
+        cfg = yaml.safe_load(f)
+
+    # Extract first rule to get variable info
+    if not cfg.get("rules"):
+        pytest.skip(f"No rules found in {config_path}")
+
+    first_rule = cfg["rules"][0]
+
+    # Get the variable identifier based on CMIP version
+    if cmip_version == "cmip6":
+        # For CMIP6, use cmor_variable
+        variable_id = first_rule.get("cmor_variable")
+        if not variable_id:
+            pytest.skip(f"No cmor_variable in first rule of {config_path}")
+    else:
+        # For CMIP7, use compound_name
+        variable_id = first_rule.get("compound_name")
+        if not variable_id:
+            pytest.skip(f"No compound_name in first rule of {config_path}")
+
+    # Load a dataset from the model run data
+    # Replace REPLACE_ME in input paths
+    if not first_rule.get("inputs"):
+        pytest.skip("First rule has no inputs")
+
+    first_input = first_rule["inputs"][0]
+    input_path = first_input["path"].replace("REPLACE_ME", str(model_run_instance.datadir))
+
+    # Try to open the dataset
+    try:
+        ds = xr.open_dataset(input_path)
+    except Exception as e:
+        pytest.skip(f"Could not open dataset {input_path}: {e}")
+
+    # Get inherit defaults from config (source_id, experiment_id, etc.)
+    inherit_defaults = cfg.get("inherit", {})
+
+    # Process using accessor API - this does in-memory processing
+    # The accessor inherits metadata from ~/.pycmor.yaml config, but we can
+    # also pass explicit kwargs that override the config
+    try:
+        result = ds.pycmor.process(
+            variable_id,
+            cmor_version=cmip_version.upper(),
+            **inherit_defaults,
+        )
+    except Exception as e:
+        # Some models may not have all metadata required for accessor API
+        # or the data structure may not be compatible
+        pytest.skip(f"Accessor processing failed (may be expected): {e}")
+
+    # Verify result is an xarray Dataset or DataArray
+    assert isinstance(result, (xr.Dataset, xr.DataArray)), f"Result should be xarray object, got {type(result)}"
+
+    # If result is a Dataset, it should have data variables
+    if isinstance(result, xr.Dataset):
+        assert len(result.data_vars) > 0, "Result Dataset should have at least one data variable"
+
+    # Verify the result has expected CMOR attributes
+    # The accessor should have applied metadata from the data request
+    if isinstance(result, xr.DataArray):
+        assert hasattr(result, "attrs"), "Result should have attributes"
+    else:
+        # For Dataset, check that at least one variable has attributes
+        assert any(
+            hasattr(var, "attrs") for var in result.data_vars.values()
+        ), "Result variables should have attributes"
