@@ -250,6 +250,7 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
     steps:
       - uses: actions/checkout@v4
         with:
@@ -292,6 +293,7 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
     steps:
       - uses: actions/checkout@v4
         with:
@@ -334,6 +336,7 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
     steps:
       - uses: actions/checkout@v4
         with:
@@ -376,6 +379,7 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
     steps:
       - uses: actions/checkout@v4
         with:
@@ -417,6 +421,7 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
     steps:
       - uses: actions/checkout@v4
         with:
@@ -455,6 +460,7 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
     steps:
       - uses: actions/checkout@v4
         with:
@@ -493,6 +499,7 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
     steps:
       - uses: actions/checkout@v4
         with:
@@ -531,6 +538,7 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
     steps:
       - uses: actions/checkout@v4
         with:
@@ -606,6 +614,7 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
     strategy:
       fail-fast: false
       matrix:
@@ -652,6 +661,7 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
     strategy:
       fail-fast: false
       matrix:
@@ -698,6 +708,7 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
     strategy:
       fail-fast: false
       matrix:
@@ -744,6 +755,7 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
     strategy:
       fail-fast: false
       matrix:
