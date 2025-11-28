@@ -237,6 +237,9 @@ jobs:
     name: Meta Test Python 3.9
     needs: [build-3-9]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: micromamba run -n base /bin/bash -e {0}
     env:
       GITHUB_ACTIONS: true
       HDF5_DEBUG: 1
