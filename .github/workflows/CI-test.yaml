@@ -29,68 +29,74 @@ on:
 env:
   PYTEST_ADDOPTS: ${{ github.event.inputs.pytest_verbosity || '-v' }} -s
 
-# YAML anchors for reusable configurations
-x-anchors:
-  common-test-env: &common-test-env
-    GITHUB_ACTIONS: true
-    PYCMOR_USE_REAL_TEST_DATA: 1
-    PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
-    PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
-    PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
-  meta-test-env: &meta-test-env
-    HDF5_DEBUG: 1
-    NETCDF_DEBUG: 1
-  cache-step: &cache-step
-    name: Cache test data
-    uses: actions/cache@v4
-    with:
-      path: ~/.cache/pycmor/test_data
-      key: pycmor-test-data-v3
-      restore-keys: |
-        pycmor-test-data-
-  checkout-step: &checkout-step
-    uses: actions/checkout@v4
-    with:
-      submodules: recursive
-  create-cache-dir-step: &create-cache-dir-step
-    name: Create persistent cache directory
-    run: mkdir -p ~/.cache/pycmor/test_data
-  upload-coverage-step: &upload-coverage-step
-    name: Upload coverage reports
-    if: always()
-    uses: actions/upload-artifact@v4
-  ghcr-credentials: &ghcr-credentials
-    username: ${{ github.actor }}
-    password: ${{ secrets.GITHUB_TOKEN }}
-  docker-build-common: &docker-build-common
-    context: .
-    file: ./Dockerfile.test
-    push: true
-    platforms: ${{ github.event.inputs.build_arm64 == 'true' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
-  debug-cache-step: &debug-cache-step
-    name: Debug - Show cache directory contents
-    run: |
-      echo "=== Cache directory structure ==="
-      tree -h ~/.cache/pycmor/test_data/ || echo "Cache is empty"
-  integration-strategy: &integration-strategy
-    fail-fast: false
-    matrix:
-      model: ${{ fromJson(needs.discover-models.outputs.models) }}
-      cmip-version: ['cmip6', 'cmip7']
-      orchestrator-config: ${{ fromJson(needs.discover-models.outputs.orchestrators) }}
-  integration-matrix-env: &integration-matrix-env
-    PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR: ${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }}
-    PYCMOR_ENABLE_DASK: ${{ matrix.orchestrator-config.enable_dask }}
-  run-integration-test: &run-integration-test
-    name: Run integration test for specific combination
-    run: |
-      echo '=== Running test ==='
-      pytest -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process
-  run-doctest: &run-doctest
-    name: Run doctest
-    run: pytest --doctest-modules --cov=src/pycmor src/
-
 jobs:
+  # Anchor definitions (never runs - used only for YAML anchors)
+  .anchors:
+    if: false
+    runs-on: ubuntu-latest
+    env:
+      common-test-env: &common-test-env
+        GITHUB_ACTIONS: true
+        PYCMOR_USE_REAL_TEST_DATA: 1
+        PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+        PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
+        PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
+      meta-test-env: &meta-test-env
+        HDF5_DEBUG: 1
+        NETCDF_DEBUG: 1
+      integration-matrix-env: &integration-matrix-env
+        PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR: ${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }}
+        PYCMOR_ENABLE_DASK: ${{ matrix.orchestrator-config.enable_dask }}
+    container:
+      credentials: &ghcr-credentials
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    strategy: &integration-strategy
+      fail-fast: false
+      matrix:
+        model: ${{ fromJson(needs.discover-models.outputs.models) }}
+        cmip-version: ['cmip6', 'cmip7']
+        orchestrator-config: ${{ fromJson(needs.discover-models.outputs.orchestrators) }}
+    steps:
+      - &checkout-step
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - &cache-step
+        name: Cache test data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pycmor/test_data
+          key: pycmor-test-data-v3
+          restore-keys: |
+            pycmor-test-data-
+      - &create-cache-dir-step
+        name: Create persistent cache directory
+        run: mkdir -p ~/.cache/pycmor/test_data
+      - &debug-cache-step
+        name: Debug - Show cache directory contents
+        run: |
+          echo "=== Cache directory structure ==="
+          tree -h ~/.cache/pycmor/test_data/ || echo "Cache is empty"
+      - &run-integration-test
+        name: Run integration test for specific combination
+        run: |
+          echo '=== Running test ==='
+          pytest -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process
+      - &run-doctest
+        name: Run doctest
+        run: pytest --doctest-modules --cov=src/pycmor src/
+      - &upload-coverage-step
+        name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+      - uses: docker/build-push-action@v5
+        with: &docker-build-common
+          context: .
+          file: ./Dockerfile.test
+          push: true
+          platforms: ${{ github.event.inputs.build_arm64 == 'true' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
+
   # Standalone sanity check for doctest infrastructure
   doctest-sanity-check:
     name: Doctest Infrastructure Sanity Check
