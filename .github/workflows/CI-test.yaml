@@ -67,12 +67,7 @@ jobs:
         name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
-      - uses: docker/build-push-action@v5
-        with: &docker-build-common
-          context: .
-          file: ./Dockerfile.test
-          push: true
-          platforms: ${{ github.event.inputs.build_arm64 == 'true' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
+
 
   # Standalone sanity check for doctest infrastructure
   doctest-sanity-check:
@@ -157,7 +152,10 @@ jobs:
         name: Build and push Docker test image
         uses: docker/build-push-action@v5
         with:
-          <<: *docker-build-common
+          context: .
+          file: ./Dockerfile.test
+          push: true
+          platforms: ${{ github.event.inputs.build_arm64 == 'true' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
           tags: |
             ghcr.io/esm-tools/pycmor-testground:py3.9-${{ steps.vars.outputs.sha_short }}
             ghcr.io/esm-tools/pycmor-testground:py3.9-${{ steps.vars.outputs.branch_name }}
@@ -182,7 +180,10 @@ jobs:
       - name: Build and push Docker test image
         uses: docker/build-push-action@v5
         with:
-          <<: *docker-build-common
+          context: .
+          file: ./Dockerfile.test
+          push: true
+          platforms: ${{ github.event.inputs.build_arm64 == 'true' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
           tags: |
             ghcr.io/esm-tools/pycmor-testground:py3.10-${{ steps.vars.outputs.sha_short }}
             ghcr.io/esm-tools/pycmor-testground:py3.10-${{ steps.vars.outputs.branch_name }}
@@ -207,7 +208,10 @@ jobs:
       - name: Build and push Docker test image
         uses: docker/build-push-action@v5
         with:
-          <<: *docker-build-common
+          context: .
+          file: ./Dockerfile.test
+          push: true
+          platforms: ${{ github.event.inputs.build_arm64 == 'true' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
           tags: |
             ghcr.io/esm-tools/pycmor-testground:py3.11-${{ steps.vars.outputs.sha_short }}
             ghcr.io/esm-tools/pycmor-testground:py3.11-${{ steps.vars.outputs.branch_name }}
@@ -232,7 +236,10 @@ jobs:
       - name: Build and push Docker test image
         uses: docker/build-push-action@v5
         with:
-          <<: *docker-build-common
+          context: .
+          file: ./Dockerfile.test
+          push: true
+          platforms: ${{ github.event.inputs.build_arm64 == 'true' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
           tags: |
             ghcr.io/esm-tools/pycmor-testground:py3.12-${{ steps.vars.outputs.sha_short }}
             ghcr.io/esm-tools/pycmor-testground:py3.12-${{ steps.vars.outputs.branch_name }}
@@ -271,7 +278,9 @@ jobs:
       - &generate-coverage
         name: Generate coverage report
         run: python -m coverage xml -o coverage-meta-3.9.xml
-      - <<: *upload-coverage-step
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-reports-meta-3.9
           path: coverage-meta-3.9.xml
@@ -291,7 +300,9 @@ jobs:
       - *run-meta-tests
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-meta-3.10.xml
-      - <<: *upload-coverage-step
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-reports-meta-3.10
           path: coverage-meta-3.10.xml
@@ -311,7 +322,9 @@ jobs:
       - *run-meta-tests
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-meta-3.11.xml
-      - <<: *upload-coverage-step
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-reports-meta-3.11
           path: coverage-meta-3.11.xml
@@ -331,7 +344,9 @@ jobs:
       - *run-meta-tests
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-meta-3.12.xml
-      - <<: *upload-coverage-step
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-reports-meta-3.12
           path: coverage-meta-3.12.xml
@@ -358,7 +373,9 @@ jobs:
         run: pytest --cov=src/pycmor tests/unit/**.py
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-unit-3.9.xml
-      - <<: *upload-coverage-step
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-reports-unit-3.9
           path: coverage-unit-3.9.xml
@@ -378,7 +395,9 @@ jobs:
       - *run-unit-tests
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-unit-3.10.xml
-      - <<: *upload-coverage-step
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-reports-unit-3.10
           path: coverage-unit-3.10.xml
@@ -398,7 +417,9 @@ jobs:
       - *run-unit-tests
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-unit-3.11.xml
-      - <<: *upload-coverage-step
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-reports-unit-3.11
           path: coverage-unit-3.11.xml
@@ -418,7 +439,9 @@ jobs:
       - *run-unit-tests
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-unit-3.12.xml
-      - <<: *upload-coverage-step
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-reports-unit-3.12
           path: coverage-unit-3.12.xml
@@ -551,7 +574,9 @@ jobs:
       - *run-doctest
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-doctest-3.9.xml
-      - <<: *upload-coverage-step
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-reports-doctest-3.9
           path: coverage-doctest-3.9.xml
@@ -573,7 +598,9 @@ jobs:
       - *run-doctest
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-doctest-3.10.xml
-      - <<: *upload-coverage-step
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-reports-doctest-3.10
           path: coverage-doctest-3.10.xml
@@ -595,7 +622,9 @@ jobs:
       - *run-doctest
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-doctest-3.11.xml
-      - <<: *upload-coverage-step
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-reports-doctest-3.11
           path: coverage-doctest-3.11.xml
@@ -617,7 +646,9 @@ jobs:
       - *run-doctest
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-doctest-3.12.xml
-      - <<: *upload-coverage-step
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-reports-doctest-3.12
           path: coverage-doctest-3.12.xml
