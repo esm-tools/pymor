@@ -280,6 +280,9 @@ jobs:
     name: Meta Test Python 3.10
     needs: [build-3-10]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: micromamba run -n base /bin/bash -e {0}
     env:
       GITHUB_ACTIONS: true
       HDF5_DEBUG: 1
@@ -323,6 +326,9 @@ jobs:
     name: Meta Test Python 3.11
     needs: [build-3-11]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: micromamba run -n base /bin/bash -e {0}
     env:
       GITHUB_ACTIONS: true
       HDF5_DEBUG: 1
@@ -366,6 +372,9 @@ jobs:
     name: Meta Test Python 3.12
     needs: [build-3-12]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: micromamba run -n base /bin/bash -e {0}
     env:
       GITHUB_ACTIONS: true
       HDF5_DEBUG: 1
@@ -410,6 +419,9 @@ jobs:
     name: Unit Test Python 3.9
     needs: [build-3-9, test-meta-3-9]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: micromamba run -n base /bin/bash -e {0}
     env:
       GITHUB_ACTIONS: true
       PYCMOR_USE_REAL_TEST_DATA: 1
@@ -449,6 +461,9 @@ jobs:
     name: Unit Test Python 3.10
     needs: [build-3-10, test-meta-3-10]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: micromamba run -n base /bin/bash -e {0}
     env:
       GITHUB_ACTIONS: true
       PYCMOR_USE_REAL_TEST_DATA: 1
@@ -488,6 +503,9 @@ jobs:
     name: Unit Test Python 3.11
     needs: [build-3-11, test-meta-3-11]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: micromamba run -n base /bin/bash -e {0}
     env:
       GITHUB_ACTIONS: true
       PYCMOR_USE_REAL_TEST_DATA: 1
@@ -527,6 +545,9 @@ jobs:
     name: Unit Test Python 3.12
     needs: [build-3-12, test-meta-3-12]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: micromamba run -n base /bin/bash -e {0}
     env:
       GITHUB_ACTIONS: true
       PYCMOR_USE_REAL_TEST_DATA: 1
@@ -601,6 +622,9 @@ jobs:
     name: Integration 3.9 / ${{ matrix.model }} / ${{ matrix.cmip-version }} / ${{ matrix.orchestrator-config.id }}
     needs: [build-3-9, discover-models, test-meta-3-9]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: micromamba run -n base /bin/bash -e {0}
     env:
       GITHUB_ACTIONS: true
       PYCMOR_USE_REAL_TEST_DATA: 1
@@ -648,6 +672,9 @@ jobs:
     name: Integration 3.10 / ${{ matrix.model }} / ${{ matrix.cmip-version }} / ${{ matrix.orchestrator-config.id }}
     needs: [build-3-10, discover-models, test-meta-3-10]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: micromamba run -n base /bin/bash -e {0}
     env:
       GITHUB_ACTIONS: true
       PYCMOR_USE_REAL_TEST_DATA: 1
@@ -695,6 +722,9 @@ jobs:
     name: Integration 3.11 / ${{ matrix.model }} / ${{ matrix.cmip-version }} / ${{ matrix.orchestrator-config.id }}
     needs: [build-3-11, discover-models, test-meta-3-11]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: micromamba run -n base /bin/bash -e {0}
     env:
       GITHUB_ACTIONS: true
       PYCMOR_USE_REAL_TEST_DATA: 1
@@ -742,6 +772,9 @@ jobs:
     name: Integration 3.12 / ${{ matrix.model }} / ${{ matrix.cmip-version }} / ${{ matrix.orchestrator-config.id }}
     needs: [build-3-12, discover-models, test-meta-3-12]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: micromamba run -n base /bin/bash -e {0}
     env:
       GITHUB_ACTIONS: true
       PYCMOR_USE_REAL_TEST_DATA: 1
@@ -788,6 +821,9 @@ jobs:
     name: Doctest Python 3.9
     needs: [build-3-9, doctest-sanity-check, test-meta-3-9]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: micromamba run -n base /bin/bash -e {0}
     env:
       GITHUB_ACTIONS: true
       PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
@@ -824,6 +860,9 @@ jobs:
     name: Doctest Python 3.10
     needs: [build-3-10, doctest-sanity-check, test-meta-3-10]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: micromamba run -n base /bin/bash -e {0}
     env:
       GITHUB_ACTIONS: true
       PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
@@ -860,6 +899,9 @@ jobs:
     name: Doctest Python 3.11
     needs: [build-3-11, doctest-sanity-check, test-meta-3-11]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: micromamba run -n base /bin/bash -e {0}
     env:
       GITHUB_ACTIONS: true
       PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
@@ -896,6 +938,9 @@ jobs:
     name: Doctest Python 3.12
     needs: [build-3-12, doctest-sanity-check, test-meta-3-12]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: micromamba run -n base /bin/bash -e {0}
     env:
       GITHUB_ACTIONS: true
       PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
