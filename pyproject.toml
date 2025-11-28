@@ -141,9 +141,9 @@ externals = "pycmor.core.externals:externals"
 
 [project.entry-points."pycmor.fixtures.model_runs"]
 # Built-in model run fixtures shipped with pycmor
-awicm_recom = "tests.contrib.models.awicm_recom.fixtures.model:AwicmRecomModelRun"
-fesom_2p6 = "tests.contrib.models.fesom_2p6.fixtures.model:Fesom2p6ModelRun"
-fesom_dev = "tests.contrib.models.fesom_dev.fixtures.model:FesomDevModelRun"
+awicm_recom = "pycmor.tutorial.datasets.awicm_recom:AwicmRecomModelRun"
+fesom_2p6 = "pycmor.tutorial.datasets.fesom_2p6:Fesom2p6ModelRun"
+fesom_dev = "pycmor.tutorial.datasets.fesom_dev:FesomDevModelRun"
 
 [tool.setuptools]
 zip-safe = false
@@ -157,7 +157,11 @@ exclude = ["tests*"]
 "" = "src"
 
 [tool.setuptools.package-data]
-pycmor = ["data/*.yaml", "data/cmip7/all_var_info.json"]
+pycmor = [
+    "data/*.yaml",
+    "data/cmip7/all_var_info.json",
+    "tutorial/datasets/*.yaml",
+]
 
 # Versioneer configuration
 [tool.versioneer]

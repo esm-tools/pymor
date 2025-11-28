@@ -1,0 +1,12 @@
+# Test data registry for FESOM UXarray (PI control) model
+#
+# This file defines remote test data files that can be downloaded
+# and cached by the test suite using pooch.
+#
+# Note: Keeping original filename pi_uxarray.tar to match the download URL
+
+pi_uxarray.tar:
+  url: https://nextcloud.awi.de/s/swqyFgbL2jjgjRo/download/pi_uxarray.tar
+  sha256: null
+  description: FESOM PI control UXarray test data
+  extract_dir: pi_uxarray
