@@ -232,12 +232,79 @@ class FrozenPipeline(Pipeline):
         super().__init__(*steps, name=name, **kwargs)
 
 
+class DefaultOpenDataPipeline(FrozenPipeline):
+    """
+    Pipeline for opening and loading data.
+
+    This pipeline handles the initial data loading step.
+
+    Parameters
+    ----------
+    name : str, optional
+        The name of the pipeline.
+    """
+
+    STEPS = (
+        "pycmor.core.gather_inputs.load_mfdataset",
+        "pycmor.std_lib.generic.get_variable",
+    )
+    NAME = "pycmor.pipeline.DefaultOpenDataPipeline"
+
+
+class DefaultCorePipeline(FrozenPipeline):
+    """
+    Core processing pipeline without I/O operations.
+
+    This pipeline handles all data transformations and processing but does not
+    load or save data. Useful for testing and when working with data already
+    in memory.
+
+    Parameters
+    ----------
+    name : str, optional
+        The name of the pipeline.
+    """
+
+    STEPS = (
+        "pycmor.std_lib.add_vertical_bounds",
+        "pycmor.std_lib.timeaverage.timeavg",
+        "pycmor.std_lib.units.handle_unit_conversion",
+        "pycmor.std_lib.global_attributes.set_global_attributes",
+        "pycmor.std_lib.variable_attributes.set_variable_attributes",
+    )
+    NAME = "pycmor.pipeline.DefaultCorePipeline"
+
+
+class DefaultSaveDataPipeline(FrozenPipeline):
+    """
+    Pipeline for finalizing and saving processed data.
+
+    This pipeline handles caching, computation triggering, and file output.
+
+    Parameters
+    ----------
+    name : str, optional
+        The name of the pipeline.
+    """
+
+    STEPS = (
+        "pycmor.core.caching.manual_checkpoint",
+        "pycmor.std_lib.generic.trigger_compute",
+        "pycmor.std_lib.generic.show_data",
+        "pycmor.std_lib.files.save_dataset",
+    )
+    NAME = "pycmor.pipeline.DefaultSaveDataPipeline"
+
+
 class DefaultPipeline(FrozenPipeline):
     """
-    The DefaultPipeline class is a subclass of the Pipeline class. It is designed to be a general-purpose pipeline
-    for data processing. It includes steps for loading data, adding vertical bounds, handling unit conversion,
-    and setting CMIP-compliant attributes. The specific steps are fixed and cannot be customized, only the name
-    of the pipeline can be customized.
+    Complete default pipeline combining open, process, and save operations.
+
+    This pipeline includes steps for loading data, adding vertical bounds, handling unit conversion,
+    and setting CMIP-compliant attributes, then saving the output. The specific steps are fixed
+    and cannot be customized, only the name of the pipeline can be customized.
+
+    This combines: DefaultOpenDataPipeline + DefaultCorePipeline + DefaultSaveDataPipeline
 
     Parameters
     ----------
