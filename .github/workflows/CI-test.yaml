@@ -591,8 +591,21 @@ jobs:
   # Integration test matrix - Python 3.9
   test-integration-matrix-3-9:
     name: Integration 3.9 / ${{ matrix.model }} / ${{ matrix.cmip-version }} / ${{ matrix.orchestrator-config.id }}
-    needs: [discover-models, test-meta-3-9]
+    needs: [build-3-9, discover-models, test-meta-3-9]
     runs-on: ubuntu-latest
+    env:
+      GITHUB_ACTIONS: true
+      PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+      PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
+      PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR: ${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }}
+      PYCMOR_ENABLE_DASK: ${{ matrix.orchestrator-config.enable_dask }}
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
+    container:
+      image: ghcr.io/esm-tools/pycmor-testground:py3.9-${{ needs.build-3-9.outputs.branch_name }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     strategy:
       fail-fast: false
       matrix:
@@ -610,43 +623,35 @@ jobs:
           key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull Docker image from GHCR
-        run: |
-          docker pull ghcr.io/esm-tools/pycmor-testground:py3.9-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g")
       - name: Create persistent cache directory
-        run: |
-          mkdir -p ~/.cache/pycmor/test_data
+        run: mkdir -p ~/.cache/pycmor/test_data
       - name: Debug - Show cache directory contents
         run: |
-          echo "=== Host cache directory structure ==="
+          echo "=== Cache directory structure ==="
           tree -h ~/.cache/pycmor/test_data/ || echo "Cache is empty"
       - name: Run integration test for specific combination
         run: |
-          docker run --rm \
-            -e GITHUB_ACTIONS=true \
-            -e PYCMOR_USE_REAL_TEST_DATA=1 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
-            -e PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR=${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }} \
-            -e PYCMOR_ENABLE_DASK=${{ matrix.orchestrator-config.enable_dask }} \
-            -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
-            -v ${{ github.workspace }}:/workspace \
-            -v ~/.cache/pycmor:/root/.cache/pycmor \
-            --user root \
-            ghcr.io/esm-tools/pycmor-testground:py3.9-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "echo '=== Container cache structure ===' && tree -h /root/.cache/pycmor/test_data/ && echo '=== Running test ===' && pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process"
+          echo '=== Running test ==='
+          pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process
 
   # Integration test matrix - Python 3.10
   test-integration-matrix-3-10:
     name: Integration 3.10 / ${{ matrix.model }} / ${{ matrix.cmip-version }} / ${{ matrix.orchestrator-config.id }}
-    needs: [discover-models, test-meta-3-10]
+    needs: [build-3-10, discover-models, test-meta-3-10]
     runs-on: ubuntu-latest
+    env:
+      GITHUB_ACTIONS: true
+      PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+      PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
+      PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR: ${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }}
+      PYCMOR_ENABLE_DASK: ${{ matrix.orchestrator-config.enable_dask }}
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
+    container:
+      image: ghcr.io/esm-tools/pycmor-testground:py3.10-${{ needs.build-3-10.outputs.branch_name }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     strategy:
       fail-fast: false
       matrix:
@@ -664,43 +669,35 @@ jobs:
           key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull Docker image from GHCR
-        run: |
-          docker pull ghcr.io/esm-tools/pycmor-testground:py3.10-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g")
       - name: Create persistent cache directory
-        run: |
-          mkdir -p ~/.cache/pycmor/test_data
+        run: mkdir -p ~/.cache/pycmor/test_data
       - name: Debug - Show cache directory contents
         run: |
-          echo "=== Host cache directory structure ==="
+          echo "=== Cache directory structure ==="
           tree -h ~/.cache/pycmor/test_data/ || echo "Cache is empty"
       - name: Run integration test for specific combination
         run: |
-          docker run --rm \
-            -e GITHUB_ACTIONS=true \
-            -e PYCMOR_USE_REAL_TEST_DATA=1 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
-            -e PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR=${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }} \
-            -e PYCMOR_ENABLE_DASK=${{ matrix.orchestrator-config.enable_dask }} \
-            -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
-            -v ${{ github.workspace }}:/workspace \
-            -v ~/.cache/pycmor:/root/.cache/pycmor \
-            --user root \
-            ghcr.io/esm-tools/pycmor-testground:py3.10-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "echo '=== Container cache structure ===' && tree -h /root/.cache/pycmor/test_data/ && echo '=== Running test ===' && pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process"
+          echo '=== Running test ==='
+          pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process
 
   # Integration test matrix - Python 3.11
   test-integration-matrix-3-11:
     name: Integration 3.11 / ${{ matrix.model }} / ${{ matrix.cmip-version }} / ${{ matrix.orchestrator-config.id }}
-    needs: [discover-models, test-meta-3-11]
+    needs: [build-3-11, discover-models, test-meta-3-11]
     runs-on: ubuntu-latest
+    env:
+      GITHUB_ACTIONS: true
+      PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+      PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
+      PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR: ${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }}
+      PYCMOR_ENABLE_DASK: ${{ matrix.orchestrator-config.enable_dask }}
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
+    container:
+      image: ghcr.io/esm-tools/pycmor-testground:py3.11-${{ needs.build-3-11.outputs.branch_name }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     strategy:
       fail-fast: false
       matrix:
@@ -718,43 +715,35 @@ jobs:
           key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull Docker image from GHCR
-        run: |
-          docker pull ghcr.io/esm-tools/pycmor-testground:py3.11-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g")
       - name: Create persistent cache directory
-        run: |
-          mkdir -p ~/.cache/pycmor/test_data
+        run: mkdir -p ~/.cache/pycmor/test_data
       - name: Debug - Show cache directory contents
         run: |
-          echo "=== Host cache directory structure ==="
+          echo "=== Cache directory structure ==="
           tree -h ~/.cache/pycmor/test_data/ || echo "Cache is empty"
       - name: Run integration test for specific combination
         run: |
-          docker run --rm \
-            -e GITHUB_ACTIONS=true \
-            -e PYCMOR_USE_REAL_TEST_DATA=1 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
-            -e PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR=${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }} \
-            -e PYCMOR_ENABLE_DASK=${{ matrix.orchestrator-config.enable_dask }} \
-            -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
-            -v ${{ github.workspace }}:/workspace \
-            -v ~/.cache/pycmor:/root/.cache/pycmor \
-            --user root \
-            ghcr.io/esm-tools/pycmor-testground:py3.11-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "echo '=== Container cache structure ===' && tree -h /root/.cache/pycmor/test_data/ && echo '=== Running test ===' && pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process"
+          echo '=== Running test ==='
+          pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process
 
   # Integration test matrix - Python 3.12
   test-integration-matrix-3-12:
     name: Integration 3.12 / ${{ matrix.model }} / ${{ matrix.cmip-version }} / ${{ matrix.orchestrator-config.id }}
-    needs: [discover-models, test-meta-3-12]
+    needs: [build-3-12, discover-models, test-meta-3-12]
     runs-on: ubuntu-latest
+    env:
+      GITHUB_ACTIONS: true
+      PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+      PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
+      PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR: ${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }}
+      PYCMOR_ENABLE_DASK: ${{ matrix.orchestrator-config.enable_dask }}
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
+    container:
+      image: ghcr.io/esm-tools/pycmor-testground:py3.12-${{ needs.build-3-12.outputs.branch_name }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     strategy:
       fail-fast: false
       matrix:
@@ -772,37 +761,16 @@ jobs:
           key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull Docker image from GHCR
-        run: |
-          docker pull ghcr.io/esm-tools/pycmor-testground:py3.12-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g")
       - name: Create persistent cache directory
-        run: |
-          mkdir -p ~/.cache/pycmor/test_data
+        run: mkdir -p ~/.cache/pycmor/test_data
       - name: Debug - Show cache directory contents
         run: |
-          echo "=== Host cache directory structure ==="
+          echo "=== Cache directory structure ==="
           tree -h ~/.cache/pycmor/test_data/ || echo "Cache is empty"
       - name: Run integration test for specific combination
         run: |
-          docker run --rm \
-            -e GITHUB_ACTIONS=true \
-            -e PYCMOR_USE_REAL_TEST_DATA=1 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
-            -e PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR=${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }} \
-            -e PYCMOR_ENABLE_DASK=${{ matrix.orchestrator-config.enable_dask }} \
-            -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
-            -v ${{ github.workspace }}:/workspace \
-            -v ~/.cache/pycmor:/root/.cache/pycmor \
-            --user root \
-            ghcr.io/esm-tools/pycmor-testground:py3.12-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "echo '=== Container cache structure ===' && tree -h /root/.cache/pycmor/test_data/ && echo '=== Running test ===' && pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process"
+          echo '=== Running test ==='
+          pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process
   # Doctest jobs - one per Python version
   test-doctest-3-9:
     name: Doctest Python 3.9
