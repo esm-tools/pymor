@@ -7,12 +7,9 @@ By importing this module, all accessors become available on xarray DataArrays an
 
 from xarray import register_dataarray_accessor, register_dataset_accessor
 
-# Import modules that register specialized xarray accessors
-from .core.infer_freq import DatasetFrequencyAccessor, TimeFrequencyAccessor
-from .core.rule import Rule
-
-# Future accessor imports can be added here as the project grows
-# from .other_module import other_accessor  # noqa: F401
+# Lazy imports: defer heavy dependencies until they're actually needed
+# This allows the accessor to register even if some dependencies have issues
+# The actual imports happen inside __init__ or methods when needed
 
 
 @register_dataarray_accessor("pycmor")
@@ -59,8 +56,17 @@ class PycmorDataArrayAccessor:
 
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
-        # Initialize specialized accessors
-        self._timefreq = TimeFrequencyAccessor(xarray_obj)
+        # Lazy initialization of specialized accessors
+        self._timefreq = None
+
+    @property
+    def _get_timefreq(self):
+        """Lazy-load TimeFrequencyAccessor on first use."""
+        if self._timefreq is None:
+            from .core.infer_freq import TimeFrequencyAccessor
+
+            self._timefreq = TimeFrequencyAccessor(self._obj)
+        return self._timefreq
 
     # Time frequency methods - delegate to TimeFrequencyAccessor
     def resample_safe(self, *args, **kwargs):
@@ -68,21 +74,21 @@ class PycmorDataArrayAccessor:
 
         See TimeFrequencyAccessor.resample_safe for full documentation.
         """
-        return self._timefreq.resample_safe(*args, **kwargs)
+        return self._get_timefreq.resample_safe(*args, **kwargs)
 
     def check_resolution(self, *args, **kwargs):
         """Check if temporal resolution is sufficient for resampling.
 
         See TimeFrequencyAccessor.check_resolution for full documentation.
         """
-        return self._timefreq.check_resolution(*args, **kwargs)
+        return self._get_timefreq.check_resolution(*args, **kwargs)
 
     def infer_frequency(self, *args, **kwargs):
         """Infer frequency from time series data.
 
         See TimeFrequencyAccessor.infer_frequency for full documentation.
         """
-        return self._timefreq.infer_frequency(*args, **kwargs)
+        return self._get_timefreq.infer_frequency(*args, **kwargs)
 
     # Pipeline methods
     def process(
@@ -260,6 +266,9 @@ class PycmorDataArrayAccessor:
 
         merged_kwargs["data_request_variables"] = [drv]
 
+        # Lazy import Rule only when process() is called
+        from .core.rule import Rule
+
         rule = Rule.from_dict(merged_kwargs)
 
         # Handle pipeline - default to DefaultPipeline
@@ -321,8 +330,17 @@ class PycmorDatasetAccessor:
 
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
-        # Initialize specialized accessors
-        self._timefreq = DatasetFrequencyAccessor(xarray_obj)
+        # Lazy initialization of specialized accessors
+        self._timefreq = None
+
+    @property
+    def _get_timefreq(self):
+        """Lazy-load DatasetFrequencyAccessor on first use."""
+        if self._timefreq is None:
+            from .core.infer_freq import DatasetFrequencyAccessor
+
+            self._timefreq = DatasetFrequencyAccessor(self._obj)
+        return self._timefreq
 
     # Time frequency methods - delegate to DatasetFrequencyAccessor
     def resample_safe(self, *args, **kwargs):
@@ -330,21 +348,21 @@ class PycmorDatasetAccessor:
 
         See DatasetFrequencyAccessor.resample_safe for full documentation.
         """
-        return self._timefreq.resample_safe(*args, **kwargs)
+        return self._get_timefreq.resample_safe(*args, **kwargs)
 
     def check_resolution(self, *args, **kwargs):
         """Check if temporal resolution is sufficient for resampling.
 
         See DatasetFrequencyAccessor.check_resolution for full documentation.
         """
-        return self._timefreq.check_resolution(*args, **kwargs)
+        return self._get_timefreq.check_resolution(*args, **kwargs)
 
     def infer_frequency(self, *args, **kwargs):
         """Infer frequency from time series data.
 
         See DatasetFrequencyAccessor.infer_frequency for full documentation.
         """
-        return self._timefreq.infer_frequency(*args, **kwargs)
+        return self._get_timefreq.infer_frequency(*args, **kwargs)
 
     # Pipeline methods
     def process(
@@ -521,6 +539,9 @@ class PycmorDatasetAccessor:
             merged_kwargs["compound_name"] = compound_name
 
         merged_kwargs["data_request_variables"] = [drv]
+
+        # Lazy import Rule only when process() is called
+        from .core.rule import Rule
 
         rule = Rule.from_dict(merged_kwargs)
 
