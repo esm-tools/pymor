@@ -267,6 +267,10 @@ jobs:
             --user root \
             ghcr.io/esm-tools/pycmor-testground:py3.9-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
             bash -c "pytest -vvv -s --cov=src/pycmor tests/meta/**.py && echo '=== Cache after meta tests ===' && tree -h /root/.cache/pycmor/test_data/ && python -m coverage xml -o /workspace/coverage-meta-3.9.xml"
+      - name: Fix cache ownership for saving
+        if: always()
+        run: |
+          sudo chown -R runner:docker ~/.cache/pycmor/test_data
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -315,6 +319,10 @@ jobs:
             --user root \
             ghcr.io/esm-tools/pycmor-testground:py3.10-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
             bash -c "pytest -vvv -s --cov=src/pycmor tests/meta/**.py && echo '=== Cache after meta tests ===' && tree -h /root/.cache/pycmor/test_data/ && python -m coverage xml -o /workspace/coverage-meta-3.10.xml"
+      - name: Fix cache ownership for saving
+        if: always()
+        run: |
+          sudo chown -R runner:docker ~/.cache/pycmor/test_data
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -363,6 +371,10 @@ jobs:
             --user root \
             ghcr.io/esm-tools/pycmor-testground:py3.11-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
             bash -c "pytest -vvv -s --cov=src/pycmor tests/meta/**.py && echo '=== Cache after meta tests ===' && tree -h /root/.cache/pycmor/test_data/ && python -m coverage xml -o /workspace/coverage-meta-3.11.xml"
+      - name: Fix cache ownership for saving
+        if: always()
+        run: |
+          sudo chown -R runner:docker ~/.cache/pycmor/test_data
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -411,6 +423,10 @@ jobs:
             --user root \
             ghcr.io/esm-tools/pycmor-testground:py3.12-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
             bash -c "pytest -vvv -s --cov=src/pycmor tests/meta/**.py && echo '=== Cache after meta tests ===' && tree -h /root/.cache/pycmor/test_data/ && python -m coverage xml -o /workspace/coverage-meta-3.12.xml"
+      - name: Fix cache ownership for saving
+        if: always()
+        run: |
+          sudo chown -R runner:docker ~/.cache/pycmor/test_data
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
