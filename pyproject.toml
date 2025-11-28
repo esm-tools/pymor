@@ -112,6 +112,8 @@ fesom = [
     #
     #             $ gh pr view 215 --repo fesom/pyfesom2
     "pyfesom2",
+    # FESOM test datasets (external package)
+    "pycmor-test-data-fesom @ git+https://github.com/fesom/pycmor_test_data.git@main",
 ]
 
 cmip7 = [
@@ -141,9 +143,10 @@ externals = "pycmor.core.externals:externals"
 
 [project.entry-points."pycmor.fixtures.model_runs"]
 # Built-in model run fixtures shipped with pycmor
-awicm_recom = "pycmor.tutorial.datasets.awicm_recom:AwicmRecomModelRun"
-fesom_2p6 = "pycmor.tutorial.datasets.fesom_2p6:Fesom2p6ModelRun"
-fesom_dev = "pycmor.tutorial.datasets.fesom_dev:FesomDevModelRun"
+# Note: These point to test fixtures for pytest compatibility, which re-export from pycmor.tutorial.datasets
+awicm_recom = "tests.contrib.models.awicm_recom.fixtures.model:AwicmRecomModelRun"
+# FESOM datasets are now in external package: pip install pycmor[fesom]
+# fesom_2p6 and fesom_dev entry points come from pycmor-test-data-fesom package
 
 [tool.setuptools]
 zip-safe = false
