@@ -28,20 +28,18 @@ on:
 # Workflow-level environment variables
 env:
   PYTEST_ADDOPTS: ${{ github.event.inputs.pytest_verbosity || '-v' }} -s
+
 # YAML anchors for reusable configurations
 x-anchors:
-  # Common environment variables for all test jobs
   common-test-env: &common-test-env
     GITHUB_ACTIONS: true
     PYCMOR_USE_REAL_TEST_DATA: 1
     PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
     PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
     PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
-  # Additional environment variables for meta tests
   meta-test-env: &meta-test-env
     HDF5_DEBUG: 1
     NETCDF_DEBUG: 1
-  # Cache configuration
   cache-step: &cache-step
     name: Cache test data
     uses: actions/cache@v4
@@ -50,57 +48,48 @@ x-anchors:
       key: pycmor-test-data-v3
       restore-keys: |
         pycmor-test-data-
-  # Checkout step
   checkout-step: &checkout-step
     uses: actions/checkout@v4
     with:
       submodules: recursive
-  # Create cache directory step
   create-cache-dir-step: &create-cache-dir-step
     name: Create persistent cache directory
     run: mkdir -p ~/.cache/pycmor/test_data
-  # Upload coverage step template
   upload-coverage-step: &upload-coverage-step
     name: Upload coverage reports
     if: always()
     uses: actions/upload-artifact@v4
-  # Container credentials for GHCR
   ghcr-credentials: &ghcr-credentials
     username: ${{ github.actor }}
     password: ${{ secrets.GITHUB_TOKEN }}
-  # Common Docker build configuration
   docker-build-common: &docker-build-common
     context: .
     file: ./Dockerfile.test
     push: true
     platforms: ${{ github.event.inputs.build_arm64 == 'true' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
-  # Debug cache directory step
   debug-cache-step: &debug-cache-step
     name: Debug - Show cache directory contents
     run: |
       echo "=== Cache directory structure ==="
       tree -h ~/.cache/pycmor/test_data/ || echo "Cache is empty"
-  # Integration test strategy
   integration-strategy: &integration-strategy
     fail-fast: false
     matrix:
       model: ${{ fromJson(needs.discover-models.outputs.models) }}
       cmip-version: ['cmip6', 'cmip7']
       orchestrator-config: ${{ fromJson(needs.discover-models.outputs.orchestrators) }}
-  # Integration test matrix-specific environment variables
   integration-matrix-env: &integration-matrix-env
     PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR: ${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }}
     PYCMOR_ENABLE_DASK: ${{ matrix.orchestrator-config.enable_dask }}
-  # Integration test run step
   run-integration-test: &run-integration-test
     name: Run integration test for specific combination
     run: |
       echo '=== Running test ==='
       pytest -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process
-  # Doctest run step
   run-doctest: &run-doctest
     name: Run doctest
     run: pytest --doctest-modules --cov=src/pycmor src/
+
 jobs:
   # Standalone sanity check for doctest infrastructure
   doctest-sanity-check:
@@ -185,7 +174,7 @@ jobs:
         name: Build and push Docker test image
         uses: docker/build-push-action@v5
         with:
-          !!merge <<: *docker-build-common
+          <<: *docker-build-common
           tags: |
             ghcr.io/esm-tools/pycmor-testground:py3.9-${{ steps.vars.outputs.sha_short }}
             ghcr.io/esm-tools/pycmor-testground:py3.9-${{ steps.vars.outputs.branch_name }}
@@ -210,7 +199,7 @@ jobs:
       - name: Build and push Docker test image
         uses: docker/build-push-action@v5
         with:
-          !!merge <<: *docker-build-common
+          <<: *docker-build-common
           tags: |
             ghcr.io/esm-tools/pycmor-testground:py3.10-${{ steps.vars.outputs.sha_short }}
             ghcr.io/esm-tools/pycmor-testground:py3.10-${{ steps.vars.outputs.branch_name }}
@@ -235,7 +224,7 @@ jobs:
       - name: Build and push Docker test image
         uses: docker/build-push-action@v5
         with:
-          !!merge <<: *docker-build-common
+          <<: *docker-build-common
           tags: |
             ghcr.io/esm-tools/pycmor-testground:py3.11-${{ steps.vars.outputs.sha_short }}
             ghcr.io/esm-tools/pycmor-testground:py3.11-${{ steps.vars.outputs.branch_name }}
@@ -260,7 +249,7 @@ jobs:
       - name: Build and push Docker test image
         uses: docker/build-push-action@v5
         with:
-          !!merge <<: *docker-build-common
+          <<: *docker-build-common
           tags: |
             ghcr.io/esm-tools/pycmor-testground:py3.12-${{ steps.vars.outputs.sha_short }}
             ghcr.io/esm-tools/pycmor-testground:py3.12-${{ steps.vars.outputs.branch_name }}
@@ -274,7 +263,7 @@ jobs:
     needs: [build-3-9]
     runs-on: ubuntu-latest
     env:
-      !!merge <<: [*common-test-env, *meta-test-env]
+      <<: [*common-test-env, *meta-test-env]
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.9-${{ needs.build-3-9.outputs.branch_name }}
       credentials: *ghcr-credentials
@@ -291,7 +280,7 @@ jobs:
       - &generate-coverage
         name: Generate coverage report
         run: python -m coverage xml -o coverage-meta-3.9.xml
-      - !!merge <<: *upload-coverage-step
+      - <<: *upload-coverage-step
         with:
           name: coverage-reports-meta-3.9
           path: coverage-meta-3.9.xml
@@ -300,7 +289,7 @@ jobs:
     needs: [build-3-10]
     runs-on: ubuntu-latest
     env:
-      !!merge <<: [*common-test-env, *meta-test-env]
+      <<: [*common-test-env, *meta-test-env]
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.10-${{ needs.build-3-10.outputs.branch_name }}
       credentials: *ghcr-credentials
@@ -311,7 +300,7 @@ jobs:
       - *run-meta-tests
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-meta-3.10.xml
-      - !!merge <<: *upload-coverage-step
+      - <<: *upload-coverage-step
         with:
           name: coverage-reports-meta-3.10
           path: coverage-meta-3.10.xml
@@ -320,7 +309,7 @@ jobs:
     needs: [build-3-11]
     runs-on: ubuntu-latest
     env:
-      !!merge <<: [*common-test-env, *meta-test-env]
+      <<: [*common-test-env, *meta-test-env]
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.11-${{ needs.build-3-11.outputs.branch_name }}
       credentials: *ghcr-credentials
@@ -331,7 +320,7 @@ jobs:
       - *run-meta-tests
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-meta-3.11.xml
-      - !!merge <<: *upload-coverage-step
+      - <<: *upload-coverage-step
         with:
           name: coverage-reports-meta-3.11
           path: coverage-meta-3.11.xml
@@ -340,7 +329,7 @@ jobs:
     needs: [build-3-12]
     runs-on: ubuntu-latest
     env:
-      !!merge <<: [*common-test-env, *meta-test-env]
+      <<: [*common-test-env, *meta-test-env]
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.12-${{ needs.build-3-12.outputs.branch_name }}
       credentials: *ghcr-credentials
@@ -351,7 +340,7 @@ jobs:
       - *run-meta-tests
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-meta-3.12.xml
-      - !!merge <<: *upload-coverage-step
+      - <<: *upload-coverage-step
         with:
           name: coverage-reports-meta-3.12
           path: coverage-meta-3.12.xml
@@ -361,7 +350,7 @@ jobs:
     needs: [build-3-9, test-meta-3-9]
     runs-on: ubuntu-latest
     env:
-      !!merge <<: *common-test-env
+      <<: *common-test-env
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.9-${{ needs.build-3-9.outputs.branch_name }}
       credentials: *ghcr-credentials
@@ -374,7 +363,7 @@ jobs:
         run: pytest --cov=src/pycmor tests/unit/**.py
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-unit-3.9.xml
-      - !!merge <<: *upload-coverage-step
+      - <<: *upload-coverage-step
         with:
           name: coverage-reports-unit-3.9
           path: coverage-unit-3.9.xml
@@ -383,7 +372,7 @@ jobs:
     needs: [build-3-10, test-meta-3-10]
     runs-on: ubuntu-latest
     env:
-      !!merge <<: *common-test-env
+      <<: *common-test-env
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.10-${{ needs.build-3-10.outputs.branch_name }}
       credentials: *ghcr-credentials
@@ -394,7 +383,7 @@ jobs:
       - *run-unit-tests
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-unit-3.10.xml
-      - !!merge <<: *upload-coverage-step
+      - <<: *upload-coverage-step
         with:
           name: coverage-reports-unit-3.10
           path: coverage-unit-3.10.xml
@@ -403,7 +392,7 @@ jobs:
     needs: [build-3-11, test-meta-3-11]
     runs-on: ubuntu-latest
     env:
-      !!merge <<: *common-test-env
+      <<: *common-test-env
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.11-${{ needs.build-3-11.outputs.branch_name }}
       credentials: *ghcr-credentials
@@ -414,7 +403,7 @@ jobs:
       - *run-unit-tests
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-unit-3.11.xml
-      - !!merge <<: *upload-coverage-step
+      - <<: *upload-coverage-step
         with:
           name: coverage-reports-unit-3.11
           path: coverage-unit-3.11.xml
@@ -423,7 +412,7 @@ jobs:
     needs: [build-3-12, test-meta-3-12]
     runs-on: ubuntu-latest
     env:
-      !!merge <<: *common-test-env
+      <<: *common-test-env
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.12-${{ needs.build-3-12.outputs.branch_name }}
       credentials: *ghcr-credentials
@@ -434,7 +423,7 @@ jobs:
       - *run-unit-tests
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-unit-3.12.xml
-      - !!merge <<: *upload-coverage-step
+      - <<: *upload-coverage-step
         with:
           name: coverage-reports-unit-3.12
           path: coverage-unit-3.12.xml
@@ -475,7 +464,7 @@ jobs:
     needs: [build-3-9, discover-models, test-meta-3-9]
     runs-on: ubuntu-latest
     env:
-      !!merge <<: [*common-test-env, *integration-matrix-env]
+      <<: [*common-test-env, *integration-matrix-env]
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.9-${{ needs.build-3-9.outputs.branch_name }}
       credentials: *ghcr-credentials
@@ -492,7 +481,7 @@ jobs:
     needs: [build-3-10, discover-models, test-meta-3-10]
     runs-on: ubuntu-latest
     env:
-      !!merge <<: [*common-test-env, *integration-matrix-env]
+      <<: [*common-test-env, *integration-matrix-env]
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.10-${{ needs.build-3-10.outputs.branch_name }}
       credentials: *ghcr-credentials
@@ -509,7 +498,7 @@ jobs:
     needs: [build-3-11, discover-models, test-meta-3-11]
     runs-on: ubuntu-latest
     env:
-      !!merge <<: [*common-test-env, *integration-matrix-env]
+      <<: [*common-test-env, *integration-matrix-env]
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.11-${{ needs.build-3-11.outputs.branch_name }}
       credentials: *ghcr-credentials
@@ -526,7 +515,7 @@ jobs:
     needs: [build-3-12, discover-models, test-meta-3-12]
     runs-on: ubuntu-latest
     env:
-      !!merge <<: [*common-test-env, *integration-matrix-env]
+      <<: [*common-test-env, *integration-matrix-env]
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.12-${{ needs.build-3-12.outputs.branch_name }}
       credentials: *ghcr-credentials
@@ -543,7 +532,7 @@ jobs:
     needs: [build-3-9, doctest-sanity-check, test-meta-3-9]
     runs-on: ubuntu-latest
     env:
-      !!merge <<: *common-test-env
+      <<: *common-test-env
       PYTHONPATH: src
       PYTHONLOGLEVEL: CRITICAL
     container:
@@ -556,7 +545,7 @@ jobs:
       - *run-doctest
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-doctest-3.9.xml
-      - !!merge <<: *upload-coverage-step
+      - <<: *upload-coverage-step
         with:
           name: coverage-reports-doctest-3.9
           path: coverage-doctest-3.9.xml
@@ -565,7 +554,7 @@ jobs:
     needs: [build-3-10, doctest-sanity-check, test-meta-3-10]
     runs-on: ubuntu-latest
     env:
-      !!merge <<: *common-test-env
+      <<: *common-test-env
       PYTHONPATH: src
       PYTHONLOGLEVEL: CRITICAL
     container:
@@ -578,7 +567,7 @@ jobs:
       - *run-doctest
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-doctest-3.10.xml
-      - !!merge <<: *upload-coverage-step
+      - <<: *upload-coverage-step
         with:
           name: coverage-reports-doctest-3.10
           path: coverage-doctest-3.10.xml
@@ -587,7 +576,7 @@ jobs:
     needs: [build-3-11, doctest-sanity-check, test-meta-3-11]
     runs-on: ubuntu-latest
     env:
-      !!merge <<: *common-test-env
+      <<: *common-test-env
       PYTHONPATH: src
       PYTHONLOGLEVEL: CRITICAL
     container:
@@ -600,7 +589,7 @@ jobs:
       - *run-doctest
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-doctest-3.11.xml
-      - !!merge <<: *upload-coverage-step
+      - <<: *upload-coverage-step
         with:
           name: coverage-reports-doctest-3.11
           path: coverage-doctest-3.11.xml
@@ -609,7 +598,7 @@ jobs:
     needs: [build-3-12, doctest-sanity-check, test-meta-3-12]
     runs-on: ubuntu-latest
     env:
-      !!merge <<: *common-test-env
+      <<: *common-test-env
       PYTHONPATH: src
       PYTHONLOGLEVEL: CRITICAL
     container:
@@ -622,7 +611,7 @@ jobs:
       - *run-doctest
       - name: Generate coverage report
         run: python -m coverage xml -o coverage-doctest-3.12.xml
-      - !!merge <<: *upload-coverage-step
+      - <<: *upload-coverage-step
         with:
           name: coverage-reports-doctest-3.12
           path: coverage-doctest-3.12.xml
