@@ -76,6 +76,8 @@ jobs:
     name: Build Test Image Python 3.9
     needs: [lint_and_format]
     runs-on: ubuntu-latest
+    outputs:
+      branch_name: ${{ steps.vars.outputs.branch_name }}
     permissions:
       contents: read
       packages: write
@@ -114,6 +116,8 @@ jobs:
     name: Build Test Image Python 3.10
     needs: [lint_and_format]
     runs-on: ubuntu-latest
+    outputs:
+      branch_name: ${{ steps.vars.outputs.branch_name }}
     permissions:
       contents: read
       packages: write
@@ -152,6 +156,8 @@ jobs:
     name: Build Test Image Python 3.11
     needs: [lint_and_format]
     runs-on: ubuntu-latest
+    outputs:
+      branch_name: ${{ steps.vars.outputs.branch_name }}
     permissions:
       contents: read
       packages: write
@@ -190,6 +196,8 @@ jobs:
     name: Build Test Image Python 3.12
     needs: [lint_and_format]
     runs-on: ubuntu-latest
+    outputs:
+      branch_name: ${{ steps.vars.outputs.branch_name }}
     permissions:
       contents: read
       packages: write
@@ -229,6 +237,19 @@ jobs:
     name: Meta Test Python 3.9
     needs: [build-3-9]
     runs-on: ubuntu-latest
+    env:
+      GITHUB_ACTIONS: true
+      HDF5_DEBUG: 1
+      NETCDF_DEBUG: 1
+      PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+      PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
+    container:
+      image: ghcr.io/esm-tools/pycmor-testground:py3.9-${{ needs.build-3-9.outputs.branch_name }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -237,40 +258,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pycmor/test_data
-          key: pycmor-test-data-v2
+          key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull Docker image from GHCR
-        run: |
-          docker pull ghcr.io/esm-tools/pycmor-testground:py3.9-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g")
       - name: Create persistent cache directory
-        run: |
-          mkdir -p ~/.cache/pycmor/test_data
+        run: mkdir -p ~/.cache/pycmor/test_data
       - name: Test if data will work (Meta-Test) and generate coverage
         run: |
-          docker run --rm \
-            -e GITHUB_ACTIONS=true \
-            -e HDF5_DEBUG=1 \
-            -e NETCDF_DEBUG=1 \
-            -e PYCMOR_USE_REAL_TEST_DATA=1 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
-            -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
-            -v ${{ github.workspace }}:/workspace \
-            -v ~/.cache/pycmor:/root/.cache/pycmor \
-            --user root \
-            ghcr.io/esm-tools/pycmor-testground:py3.9-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "pytest -vvv -s --cov=src/pycmor tests/meta/**.py && echo '=== Cache after meta tests ===' && tree -h /root/.cache/pycmor/test_data/ && python -m coverage xml -o /workspace/coverage-meta-3.9.xml"
-      - name: Fix cache ownership for saving
-        if: always()
-        run: |
-          sudo chown -R runner:docker ~/.cache/pycmor/test_data
+          pytest -vvv -s --cov=src/pycmor tests/meta/**.py
+          echo '=== Cache after meta tests ==='
+          tree -h ~/.cache/pycmor/test_data/
+          python -m coverage xml -o coverage-meta-3.9.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -281,6 +279,19 @@ jobs:
     name: Meta Test Python 3.10
     needs: [build-3-10]
     runs-on: ubuntu-latest
+    env:
+      GITHUB_ACTIONS: true
+      HDF5_DEBUG: 1
+      NETCDF_DEBUG: 1
+      PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+      PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
+    container:
+      image: ghcr.io/esm-tools/pycmor-testground:py3.10-${{ needs.build-3-10.outputs.branch_name }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -289,40 +300,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pycmor/test_data
-          key: pycmor-test-data-v2
+          key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull Docker image from GHCR
-        run: |
-          docker pull ghcr.io/esm-tools/pycmor-testground:py3.10-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g")
       - name: Create persistent cache directory
-        run: |
-          mkdir -p ~/.cache/pycmor/test_data
+        run: mkdir -p ~/.cache/pycmor/test_data
       - name: Test if data will work (Meta-Test) and generate coverage
         run: |
-          docker run --rm \
-            -e GITHUB_ACTIONS=true \
-            -e HDF5_DEBUG=1 \
-            -e NETCDF_DEBUG=1 \
-            -e PYCMOR_USE_REAL_TEST_DATA=1 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
-            -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
-            -v ${{ github.workspace }}:/workspace \
-            -v ~/.cache/pycmor:/root/.cache/pycmor \
-            --user root \
-            ghcr.io/esm-tools/pycmor-testground:py3.10-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "pytest -vvv -s --cov=src/pycmor tests/meta/**.py && echo '=== Cache after meta tests ===' && tree -h /root/.cache/pycmor/test_data/ && python -m coverage xml -o /workspace/coverage-meta-3.10.xml"
-      - name: Fix cache ownership for saving
-        if: always()
-        run: |
-          sudo chown -R runner:docker ~/.cache/pycmor/test_data
+          pytest -vvv -s --cov=src/pycmor tests/meta/**.py
+          echo '=== Cache after meta tests ==='
+          tree -h ~/.cache/pycmor/test_data/
+          python -m coverage xml -o coverage-meta-3.10.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -333,6 +321,19 @@ jobs:
     name: Meta Test Python 3.11
     needs: [build-3-11]
     runs-on: ubuntu-latest
+    env:
+      GITHUB_ACTIONS: true
+      HDF5_DEBUG: 1
+      NETCDF_DEBUG: 1
+      PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+      PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
+    container:
+      image: ghcr.io/esm-tools/pycmor-testground:py3.11-${{ needs.build-3-11.outputs.branch_name }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -341,40 +342,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pycmor/test_data
-          key: pycmor-test-data-v2
+          key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull Docker image from GHCR
-        run: |
-          docker pull ghcr.io/esm-tools/pycmor-testground:py3.11-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g")
       - name: Create persistent cache directory
-        run: |
-          mkdir -p ~/.cache/pycmor/test_data
+        run: mkdir -p ~/.cache/pycmor/test_data
       - name: Test if data will work (Meta-Test) and generate coverage
         run: |
-          docker run --rm \
-            -e GITHUB_ACTIONS=true \
-            -e HDF5_DEBUG=1 \
-            -e NETCDF_DEBUG=1 \
-            -e PYCMOR_USE_REAL_TEST_DATA=1 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
-            -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
-            -v ${{ github.workspace }}:/workspace \
-            -v ~/.cache/pycmor:/root/.cache/pycmor \
-            --user root \
-            ghcr.io/esm-tools/pycmor-testground:py3.11-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "pytest -vvv -s --cov=src/pycmor tests/meta/**.py && echo '=== Cache after meta tests ===' && tree -h /root/.cache/pycmor/test_data/ && python -m coverage xml -o /workspace/coverage-meta-3.11.xml"
-      - name: Fix cache ownership for saving
-        if: always()
-        run: |
-          sudo chown -R runner:docker ~/.cache/pycmor/test_data
+          pytest -vvv -s --cov=src/pycmor tests/meta/**.py
+          echo '=== Cache after meta tests ==='
+          tree -h ~/.cache/pycmor/test_data/
+          python -m coverage xml -o coverage-meta-3.11.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -385,6 +363,19 @@ jobs:
     name: Meta Test Python 3.12
     needs: [build-3-12]
     runs-on: ubuntu-latest
+    env:
+      GITHUB_ACTIONS: true
+      HDF5_DEBUG: 1
+      NETCDF_DEBUG: 1
+      PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+      PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
+    container:
+      image: ghcr.io/esm-tools/pycmor-testground:py3.12-${{ needs.build-3-12.outputs.branch_name }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -393,40 +384,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pycmor/test_data
-          key: pycmor-test-data-v2
+          key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull Docker image from GHCR
-        run: |
-          docker pull ghcr.io/esm-tools/pycmor-testground:py3.12-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g")
       - name: Create persistent cache directory
-        run: |
-          mkdir -p ~/.cache/pycmor/test_data
+        run: mkdir -p ~/.cache/pycmor/test_data
       - name: Test if data will work (Meta-Test) and generate coverage
         run: |
-          docker run --rm \
-            -e GITHUB_ACTIONS=true \
-            -e HDF5_DEBUG=1 \
-            -e NETCDF_DEBUG=1 \
-            -e PYCMOR_USE_REAL_TEST_DATA=1 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
-            -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
-            -v ${{ github.workspace }}:/workspace \
-            -v ~/.cache/pycmor:/root/.cache/pycmor \
-            --user root \
-            ghcr.io/esm-tools/pycmor-testground:py3.12-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "pytest -vvv -s --cov=src/pycmor tests/meta/**.py && echo '=== Cache after meta tests ===' && tree -h /root/.cache/pycmor/test_data/ && python -m coverage xml -o /workspace/coverage-meta-3.12.xml"
-      - name: Fix cache ownership for saving
-        if: always()
-        run: |
-          sudo chown -R runner:docker ~/.cache/pycmor/test_data
+          pytest -vvv -s --cov=src/pycmor tests/meta/**.py
+          echo '=== Cache after meta tests ==='
+          tree -h ~/.cache/pycmor/test_data/
+          python -m coverage xml -o coverage-meta-3.12.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -446,7 +414,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pycmor/test_data
-          key: pycmor-test-data-v2
+          key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
       - name: Log in to GitHub Container Registry
@@ -492,7 +460,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pycmor/test_data
-          key: pycmor-test-data-v2
+          key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
       - name: Log in to GitHub Container Registry
@@ -538,7 +506,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pycmor/test_data
-          key: pycmor-test-data-v2
+          key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
       - name: Log in to GitHub Container Registry
@@ -584,7 +552,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pycmor/test_data
-          key: pycmor-test-data-v2
+          key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
       - name: Log in to GitHub Container Registry
@@ -671,7 +639,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pycmor/test_data
-          key: pycmor-test-data-v2
+          key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
       - name: Log in to GitHub Container Registry
@@ -725,7 +693,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pycmor/test_data
-          key: pycmor-test-data-v2
+          key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
       - name: Log in to GitHub Container Registry
@@ -779,7 +747,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pycmor/test_data
-          key: pycmor-test-data-v2
+          key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
       - name: Log in to GitHub Container Registry
@@ -833,7 +801,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pycmor/test_data
-          key: pycmor-test-data-v2
+          key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
       - name: Log in to GitHub Container Registry
@@ -880,7 +848,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pycmor/test_data
-          key: pycmor-test-data-v2
+          key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
       - name: Log in to GitHub Container Registry
@@ -923,7 +891,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pycmor/test_data
-          key: pycmor-test-data-v2
+          key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
       - name: Log in to GitHub Container Registry
@@ -966,7 +934,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pycmor/test_data
-          key: pycmor-test-data-v2
+          key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
       - name: Log in to GitHub Container Registry
@@ -1009,7 +977,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pycmor/test_data
-          key: pycmor-test-data-v2
+          key: pycmor-test-data-v3
           restore-keys: |
             pycmor-test-data-
       - name: Log in to GitHub Container Registry
