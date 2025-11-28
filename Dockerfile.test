@@ -14,6 +14,12 @@ RUN apt-get update && apt-get install -y \
     tree \
     && rm -rf /var/lib/apt/lists/*
 
+# Change mambauser UID to match GitHub Actions runner (1001)
+# This allows the container to write to mounted volumes in CI
+RUN usermod -u 1001 $MAMBA_USER && \
+    groupmod -g 1001 $MAMBA_USER && \
+    chown -R $MAMBA_USER:$MAMBA_USER /opt/conda /home/$MAMBA_USER
+
 # Set working directory and give ownership to MAMBA_USER
 WORKDIR /workspace
 RUN chown -R $MAMBA_USER:$MAMBA_USER /workspace && \

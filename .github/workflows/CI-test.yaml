@@ -15,66 +15,15 @@ on:
         required: false
         type: boolean
         default: false
-      pytest_verbosity:
-        description: 'Pytest verbosity level'
-        required: false
-        type: choice
-        options:
-          - '-vvv'
-          - '-vv'
-          - '-v'
-          - ''
-        default: '-v'
-# Workflow-level environment variables
-env:
-  PYTEST_ADDOPTS: ${{ github.event.inputs.pytest_verbosity || '-v' }} -s
-
 jobs:
-  # Anchor definitions (never runs - used only for YAML anchors)
-  .anchors:
-    if: false
-    runs-on: ubuntu-latest
-    steps:
-      - &checkout-step
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - &cache-step
-        name: Cache test data
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pycmor/test_data
-          key: pycmor-test-data-v3
-          restore-keys: |
-            pycmor-test-data-
-      - &create-cache-dir-step
-        name: Create persistent cache directory
-        run: mkdir -p ~/.cache/pycmor/test_data
-      - &debug-cache-step
-        name: Debug - Show cache directory contents
-        run: |
-          echo "=== Cache directory structure ==="
-          tree -h ~/.cache/pycmor/test_data/ || echo "Cache is empty"
-      - &run-integration-test
-        name: Run integration test for specific combination
-        run: |
-          echo '=== Running test ==='
-          pytest -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process
-      - &run-doctest
-        name: Run doctest
-        run: pytest --doctest-modules --cov=src/pycmor src/
-      - &upload-coverage-step
-        name: Upload coverage reports
-        if: always()
-        uses: actions/upload-artifact@v4
-
-
   # Standalone sanity check for doctest infrastructure
   doctest-sanity-check:
     name: Doctest Infrastructure Sanity Check
     runs-on: ubuntu-latest
     steps:
-      - *checkout-step
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -94,7 +43,9 @@ jobs:
     name: Lint and Format Check
     runs-on: ubuntu-latest
     steps:
-      - *checkout-step
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Set up Python 3.9
         uses: actions/setup-python@v5
         with:
@@ -131,25 +82,23 @@ jobs:
       contents: read
       packages: write
     steps:
-      - *checkout-step
-      - &get-branch-sha
-        name: Get short SHA and sanitize branch name
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Get short SHA and sanitize branch name
         id: vars
         run: |
           echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
           echo "branch_name=$(echo '${{ github.head_ref || github.ref_name }}' | sed 's/\//_/g')" >> $GITHUB_OUTPUT
-      - &setup-buildx
-        name: Set up Docker Buildx
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - &ghcr-login
-        name: Log in to GitHub Container Registry
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - &build-push-image
-        name: Build and push Docker test image
+      - name: Build and push Docker test image
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -173,10 +122,22 @@ jobs:
       contents: read
       packages: write
     steps:
-      - *checkout-step
-      - *get-branch-sha
-      - *setup-buildx
-      - *ghcr-login
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Get short SHA and sanitize branch name
+        id: vars
+        run: |
+          echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+          echo "branch_name=$(echo '${{ github.head_ref || github.ref_name }}' | sed 's/\//_/g')" >> $GITHUB_OUTPUT
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push Docker test image
         uses: docker/build-push-action@v5
         with:
@@ -201,10 +162,22 @@ jobs:
       contents: read
       packages: write
     steps:
-      - *checkout-step
-      - *get-branch-sha
-      - *setup-buildx
-      - *ghcr-login
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Get short SHA and sanitize branch name
+        id: vars
+        run: |
+          echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+          echo "branch_name=$(echo '${{ github.head_ref || github.ref_name }}' | sed 's/\//_/g')" >> $GITHUB_OUTPUT
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push Docker test image
         uses: docker/build-push-action@v5
         with:
@@ -229,10 +202,22 @@ jobs:
       contents: read
       packages: write
     steps:
-      - *checkout-step
-      - *get-branch-sha
-      - *setup-buildx
-      - *ghcr-login
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Get short SHA and sanitize branch name
+        id: vars
+        run: |
+          echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+          echo "branch_name=$(echo '${{ github.head_ref || github.ref_name }}' | sed 's/\//_/g')" >> $GITHUB_OUTPUT
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push Docker test image
         uses: docker/build-push-action@v5
         with:
@@ -252,32 +237,39 @@ jobs:
     name: Meta Test Python 3.9
     needs: [build-3-9]
     runs-on: ubuntu-latest
-    env: &common-and-meta-env
+    env:
       GITHUB_ACTIONS: true
+      HDF5_DEBUG: 1
+      NETCDF_DEBUG: 1
       PYCMOR_USE_REAL_TEST_DATA: 1
       PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
       PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
       PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
-      HDF5_DEBUG: 1
-      NETCDF_DEBUG: 1
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.9-${{ needs.build-3-9.outputs.branch_name }}
-      credentials: &ghcr-credentials
+      credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - *checkout-step
-      - *cache-step
-      - *create-cache-dir-step
-      - &run-meta-tests
-        name: Run meta tests
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Cache test data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pycmor/test_data
+          key: pycmor-test-data-v3
+          restore-keys: |
+            pycmor-test-data-
+      - name: Create persistent cache directory
+        run: mkdir -p ~/.cache/pycmor/test_data
+      - name: Test if data will work (Meta-Test) and generate coverage
         run: |
-          pytest --cov=src/pycmor tests/meta/**.py
+          pytest -vvv -s --cov=src/pycmor tests/meta/**.py
           echo '=== Cache after meta tests ==='
           tree -h ~/.cache/pycmor/test_data/
-      - &generate-coverage
-        name: Generate coverage report
-        run: python -m coverage xml -o coverage-meta-3.9.xml
+          python -m coverage xml -o coverage-meta-3.9.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -289,17 +281,38 @@ jobs:
     needs: [build-3-10]
     runs-on: ubuntu-latest
     env:
-      *common-and-meta-env
+      GITHUB_ACTIONS: true
+      HDF5_DEBUG: 1
+      NETCDF_DEBUG: 1
+      PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+      PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.10-${{ needs.build-3-10.outputs.branch_name }}
-      credentials: *ghcr-credentials
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - *checkout-step
-      - *cache-step
-      - *create-cache-dir-step
-      - *run-meta-tests
-      - name: Generate coverage report
-        run: python -m coverage xml -o coverage-meta-3.10.xml
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Cache test data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pycmor/test_data
+          key: pycmor-test-data-v3
+          restore-keys: |
+            pycmor-test-data-
+      - name: Create persistent cache directory
+        run: mkdir -p ~/.cache/pycmor/test_data
+      - name: Test if data will work (Meta-Test) and generate coverage
+        run: |
+          pytest -vvv -s --cov=src/pycmor tests/meta/**.py
+          echo '=== Cache after meta tests ==='
+          tree -h ~/.cache/pycmor/test_data/
+          python -m coverage xml -o coverage-meta-3.10.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -311,17 +324,38 @@ jobs:
     needs: [build-3-11]
     runs-on: ubuntu-latest
     env:
-      *common-and-meta-env
+      GITHUB_ACTIONS: true
+      HDF5_DEBUG: 1
+      NETCDF_DEBUG: 1
+      PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+      PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.11-${{ needs.build-3-11.outputs.branch_name }}
-      credentials: *ghcr-credentials
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - *checkout-step
-      - *cache-step
-      - *create-cache-dir-step
-      - *run-meta-tests
-      - name: Generate coverage report
-        run: python -m coverage xml -o coverage-meta-3.11.xml
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Cache test data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pycmor/test_data
+          key: pycmor-test-data-v3
+          restore-keys: |
+            pycmor-test-data-
+      - name: Create persistent cache directory
+        run: mkdir -p ~/.cache/pycmor/test_data
+      - name: Test if data will work (Meta-Test) and generate coverage
+        run: |
+          pytest -vvv -s --cov=src/pycmor tests/meta/**.py
+          echo '=== Cache after meta tests ==='
+          tree -h ~/.cache/pycmor/test_data/
+          python -m coverage xml -o coverage-meta-3.11.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -333,17 +367,38 @@ jobs:
     needs: [build-3-12]
     runs-on: ubuntu-latest
     env:
-      *common-and-meta-env
+      GITHUB_ACTIONS: true
+      HDF5_DEBUG: 1
+      NETCDF_DEBUG: 1
+      PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+      PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.12-${{ needs.build-3-12.outputs.branch_name }}
-      credentials: *ghcr-credentials
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - *checkout-step
-      - *cache-step
-      - *create-cache-dir-step
-      - *run-meta-tests
-      - name: Generate coverage report
-        run: python -m coverage xml -o coverage-meta-3.12.xml
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Cache test data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pycmor/test_data
+          key: pycmor-test-data-v3
+          restore-keys: |
+            pycmor-test-data-
+      - name: Create persistent cache directory
+        run: mkdir -p ~/.cache/pycmor/test_data
+      - name: Test if data will work (Meta-Test) and generate coverage
+        run: |
+          pytest -vvv -s --cov=src/pycmor tests/meta/**.py
+          echo '=== Cache after meta tests ==='
+          tree -h ~/.cache/pycmor/test_data/
+          python -m coverage xml -o coverage-meta-3.12.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -355,7 +410,7 @@ jobs:
     name: Unit Test Python 3.9
     needs: [build-3-9, test-meta-3-9]
     runs-on: ubuntu-latest
-    env: &common-test-env
+    env:
       GITHUB_ACTIONS: true
       PYCMOR_USE_REAL_TEST_DATA: 1
       PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
@@ -363,16 +418,27 @@ jobs:
       PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.9-${{ needs.build-3-9.outputs.branch_name }}
-      credentials: *ghcr-credentials
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - *checkout-step
-      - *cache-step
-      - *create-cache-dir-step
-      - &run-unit-tests
-        name: Run unit tests
-        run: pytest --cov=src/pycmor tests/unit/**.py
-      - name: Generate coverage report
-        run: python -m coverage xml -o coverage-unit-3.9.xml
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Cache test data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pycmor/test_data
+          key: pycmor-test-data-v3
+          restore-keys: |
+            pycmor-test-data-
+      - name: Create persistent cache directory
+        run: mkdir -p ~/.cache/pycmor/test_data
+      - name: Test with pytest (Unit) and generate coverage
+        run: |
+          pytest -vvv -s --cov=src/pycmor tests/unit/**.py
+          python -m coverage xml -o coverage-unit-3.9.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -384,17 +450,34 @@ jobs:
     needs: [build-3-10, test-meta-3-10]
     runs-on: ubuntu-latest
     env:
-      <<: *common-test-env
+      GITHUB_ACTIONS: true
+      PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+      PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.10-${{ needs.build-3-10.outputs.branch_name }}
-      credentials: *ghcr-credentials
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - *checkout-step
-      - *cache-step
-      - *create-cache-dir-step
-      - *run-unit-tests
-      - name: Generate coverage report
-        run: python -m coverage xml -o coverage-unit-3.10.xml
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Cache test data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pycmor/test_data
+          key: pycmor-test-data-v3
+          restore-keys: |
+            pycmor-test-data-
+      - name: Create persistent cache directory
+        run: mkdir -p ~/.cache/pycmor/test_data
+      - name: Test with pytest (Unit) and generate coverage
+        run: |
+          pytest -vvv -s --cov=src/pycmor tests/unit/**.py
+          python -m coverage xml -o coverage-unit-3.10.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -406,17 +489,34 @@ jobs:
     needs: [build-3-11, test-meta-3-11]
     runs-on: ubuntu-latest
     env:
-      <<: *common-test-env
+      GITHUB_ACTIONS: true
+      PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+      PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.11-${{ needs.build-3-11.outputs.branch_name }}
-      credentials: *ghcr-credentials
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - *checkout-step
-      - *cache-step
-      - *create-cache-dir-step
-      - *run-unit-tests
-      - name: Generate coverage report
-        run: python -m coverage xml -o coverage-unit-3.11.xml
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Cache test data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pycmor/test_data
+          key: pycmor-test-data-v3
+          restore-keys: |
+            pycmor-test-data-
+      - name: Create persistent cache directory
+        run: mkdir -p ~/.cache/pycmor/test_data
+      - name: Test with pytest (Unit) and generate coverage
+        run: |
+          pytest -vvv -s --cov=src/pycmor tests/unit/**.py
+          python -m coverage xml -o coverage-unit-3.11.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -428,17 +528,34 @@ jobs:
     needs: [build-3-12, test-meta-3-12]
     runs-on: ubuntu-latest
     env:
-      <<: *common-test-env
+      GITHUB_ACTIONS: true
+      PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+      PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.12-${{ needs.build-3-12.outputs.branch_name }}
-      credentials: *ghcr-credentials
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - *checkout-step
-      - *cache-step
-      - *create-cache-dir-step
-      - *run-unit-tests
-      - name: Generate coverage report
-        run: python -m coverage xml -o coverage-unit-3.12.xml
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Cache test data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pycmor/test_data
+          key: pycmor-test-data-v3
+          restore-keys: |
+            pycmor-test-data-
+      - name: Create persistent cache directory
+        run: mkdir -p ~/.cache/pycmor/test_data
+      - name: Test with pytest (Unit) and generate coverage
+        run: |
+          pytest -vvv -s --cov=src/pycmor tests/unit/**.py
+          python -m coverage xml -o coverage-unit-3.12.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -453,7 +570,9 @@ jobs:
       models: ${{ steps.discover.outputs.models }}
       orchestrators: ${{ steps.discover.outputs.orchestrators }}
     steps:
-      - *checkout-step
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -476,104 +595,225 @@ jobs:
           echo ""
           echo "Orchestrators:"
           cat orchestrators.json
+
   # Integration test matrix - Python 3.9
   test-integration-matrix-3-9:
     name: Integration 3.9 / ${{ matrix.model }} / ${{ matrix.cmip-version }} / ${{ matrix.orchestrator-config.id }}
     needs: [build-3-9, discover-models, test-meta-3-9]
     runs-on: ubuntu-latest
-    env: &integration-env
+    env:
       GITHUB_ACTIONS: true
       PYCMOR_USE_REAL_TEST_DATA: 1
       PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
       PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
-      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
       PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR: ${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }}
       PYCMOR_ENABLE_DASK: ${{ matrix.orchestrator-config.enable_dask }}
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.9-${{ needs.build-3-9.outputs.branch_name }}
-      credentials: *ghcr-credentials
-    strategy: &integration-strategy
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    strategy:
       fail-fast: false
       matrix:
         model: ${{ fromJson(needs.discover-models.outputs.models) }}
         cmip-version: ['cmip6', 'cmip7']
         orchestrator-config: ${{ fromJson(needs.discover-models.outputs.orchestrators) }}
     steps:
-      - *checkout-step
-      - *cache-step
-      - *create-cache-dir-step
-      - *debug-cache-step
-      - *run-integration-test
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Cache test data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pycmor/test_data
+          key: pycmor-test-data-v3
+          restore-keys: |
+            pycmor-test-data-
+      - name: Create persistent cache directory
+        run: mkdir -p ~/.cache/pycmor/test_data
+      - name: Debug - Show cache directory contents
+        run: |
+          echo "=== Cache directory structure ==="
+          tree -h ~/.cache/pycmor/test_data/ || echo "Cache is empty"
+      - name: Run integration test for specific combination
+        run: |
+          echo '=== Running test ==='
+          pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process
+
   # Integration test matrix - Python 3.10
   test-integration-matrix-3-10:
     name: Integration 3.10 / ${{ matrix.model }} / ${{ matrix.cmip-version }} / ${{ matrix.orchestrator-config.id }}
     needs: [build-3-10, discover-models, test-meta-3-10]
     runs-on: ubuntu-latest
     env:
-      *integration-env
+      GITHUB_ACTIONS: true
+      PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+      PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
+      PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR: ${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }}
+      PYCMOR_ENABLE_DASK: ${{ matrix.orchestrator-config.enable_dask }}
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.10-${{ needs.build-3-10.outputs.branch_name }}
-      credentials: *ghcr-credentials
-    strategy: *integration-strategy
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        model: ${{ fromJson(needs.discover-models.outputs.models) }}
+        cmip-version: ['cmip6', 'cmip7']
+        orchestrator-config: ${{ fromJson(needs.discover-models.outputs.orchestrators) }}
     steps:
-      - *checkout-step
-      - *cache-step
-      - *create-cache-dir-step
-      - *debug-cache-step
-      - *run-integration-test
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Cache test data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pycmor/test_data
+          key: pycmor-test-data-v3
+          restore-keys: |
+            pycmor-test-data-
+      - name: Create persistent cache directory
+        run: mkdir -p ~/.cache/pycmor/test_data
+      - name: Debug - Show cache directory contents
+        run: |
+          echo "=== Cache directory structure ==="
+          tree -h ~/.cache/pycmor/test_data/ || echo "Cache is empty"
+      - name: Run integration test for specific combination
+        run: |
+          echo '=== Running test ==='
+          pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process
+
   # Integration test matrix - Python 3.11
   test-integration-matrix-3-11:
     name: Integration 3.11 / ${{ matrix.model }} / ${{ matrix.cmip-version }} / ${{ matrix.orchestrator-config.id }}
     needs: [build-3-11, discover-models, test-meta-3-11]
     runs-on: ubuntu-latest
     env:
-      *integration-env
+      GITHUB_ACTIONS: true
+      PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+      PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
+      PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR: ${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }}
+      PYCMOR_ENABLE_DASK: ${{ matrix.orchestrator-config.enable_dask }}
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.11-${{ needs.build-3-11.outputs.branch_name }}
-      credentials: *ghcr-credentials
-    strategy: *integration-strategy
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        model: ${{ fromJson(needs.discover-models.outputs.models) }}
+        cmip-version: ['cmip6', 'cmip7']
+        orchestrator-config: ${{ fromJson(needs.discover-models.outputs.orchestrators) }}
     steps:
-      - *checkout-step
-      - *cache-step
-      - *create-cache-dir-step
-      - *debug-cache-step
-      - *run-integration-test
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Cache test data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pycmor/test_data
+          key: pycmor-test-data-v3
+          restore-keys: |
+            pycmor-test-data-
+      - name: Create persistent cache directory
+        run: mkdir -p ~/.cache/pycmor/test_data
+      - name: Debug - Show cache directory contents
+        run: |
+          echo "=== Cache directory structure ==="
+          tree -h ~/.cache/pycmor/test_data/ || echo "Cache is empty"
+      - name: Run integration test for specific combination
+        run: |
+          echo '=== Running test ==='
+          pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process
+
   # Integration test matrix - Python 3.12
   test-integration-matrix-3-12:
     name: Integration 3.12 / ${{ matrix.model }} / ${{ matrix.cmip-version }} / ${{ matrix.orchestrator-config.id }}
     needs: [build-3-12, discover-models, test-meta-3-12]
     runs-on: ubuntu-latest
     env:
-      *integration-env
+      GITHUB_ACTIONS: true
+      PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+      PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
+      PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR: ${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }}
+      PYCMOR_ENABLE_DASK: ${{ matrix.orchestrator-config.enable_dask }}
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.12-${{ needs.build-3-12.outputs.branch_name }}
-      credentials: *ghcr-credentials
-    strategy: *integration-strategy
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        model: ${{ fromJson(needs.discover-models.outputs.models) }}
+        cmip-version: ['cmip6', 'cmip7']
+        orchestrator-config: ${{ fromJson(needs.discover-models.outputs.orchestrators) }}
     steps:
-      - *checkout-step
-      - *cache-step
-      - *create-cache-dir-step
-      - *debug-cache-step
-      - *run-integration-test
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Cache test data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pycmor/test_data
+          key: pycmor-test-data-v3
+          restore-keys: |
+            pycmor-test-data-
+      - name: Create persistent cache directory
+        run: mkdir -p ~/.cache/pycmor/test_data
+      - name: Debug - Show cache directory contents
+        run: |
+          echo "=== Cache directory structure ==="
+          tree -h ~/.cache/pycmor/test_data/ || echo "Cache is empty"
+      - name: Run integration test for specific combination
+        run: |
+          echo '=== Running test ==='
+          pytest -vvv -s -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' tests/integration/test_model_runs.py::test_library_process
   # Doctest jobs - one per Python version
   test-doctest-3-9:
     name: Doctest Python 3.9
     needs: [build-3-9, doctest-sanity-check, test-meta-3-9]
     runs-on: ubuntu-latest
     env:
-      <<: *common-test-env
-      PYTHONPATH: src
-      PYTHONLOGLEVEL: CRITICAL
+      GITHUB_ACTIONS: true
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.9-${{ needs.build-3-9.outputs.branch_name }}
-      credentials: *ghcr-credentials
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - *checkout-step
-      - *cache-step
-      - *create-cache-dir-step
-      - *run-doctest
-      - name: Generate coverage report
-        run: python -m coverage xml -o coverage-doctest-3.9.xml
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Cache test data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pycmor/test_data
+          key: pycmor-test-data-v3
+          restore-keys: |
+            pycmor-test-data-
+      - name: Create persistent cache directory
+        run: mkdir -p ~/.cache/pycmor/test_data
+      - name: Test with doctest and generate coverage
+        run: |
+          PYTHONPATH=src PYTHONLOGLEVEL=CRITICAL pytest -v --doctest-modules --cov=src/pycmor src/
+          python -m coverage xml -o coverage-doctest-3.9.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -585,19 +825,31 @@ jobs:
     needs: [build-3-10, doctest-sanity-check, test-meta-3-10]
     runs-on: ubuntu-latest
     env:
-      <<: *common-test-env
-      PYTHONPATH: src
-      PYTHONLOGLEVEL: CRITICAL
+      GITHUB_ACTIONS: true
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.10-${{ needs.build-3-10.outputs.branch_name }}
-      credentials: *ghcr-credentials
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - *checkout-step
-      - *cache-step
-      - *create-cache-dir-step
-      - *run-doctest
-      - name: Generate coverage report
-        run: python -m coverage xml -o coverage-doctest-3.10.xml
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Cache test data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pycmor/test_data
+          key: pycmor-test-data-v3
+          restore-keys: |
+            pycmor-test-data-
+      - name: Create persistent cache directory
+        run: mkdir -p ~/.cache/pycmor/test_data
+      - name: Test with doctest and generate coverage
+        run: |
+          PYTHONPATH=src PYTHONLOGLEVEL=CRITICAL pytest -v --doctest-modules --cov=src/pycmor src/
+          python -m coverage xml -o coverage-doctest-3.10.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -609,19 +861,31 @@ jobs:
     needs: [build-3-11, doctest-sanity-check, test-meta-3-11]
     runs-on: ubuntu-latest
     env:
-      <<: *common-test-env
-      PYTHONPATH: src
-      PYTHONLOGLEVEL: CRITICAL
+      GITHUB_ACTIONS: true
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.11-${{ needs.build-3-11.outputs.branch_name }}
-      credentials: *ghcr-credentials
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - *checkout-step
-      - *cache-step
-      - *create-cache-dir-step
-      - *run-doctest
-      - name: Generate coverage report
-        run: python -m coverage xml -o coverage-doctest-3.11.xml
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Cache test data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pycmor/test_data
+          key: pycmor-test-data-v3
+          restore-keys: |
+            pycmor-test-data-
+      - name: Create persistent cache directory
+        run: mkdir -p ~/.cache/pycmor/test_data
+      - name: Test with doctest and generate coverage
+        run: |
+          PYTHONPATH=src PYTHONLOGLEVEL=CRITICAL pytest -v --doctest-modules --cov=src/pycmor src/
+          python -m coverage xml -o coverage-doctest-3.11.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -633,19 +897,31 @@ jobs:
     needs: [build-3-12, doctest-sanity-check, test-meta-3-12]
     runs-on: ubuntu-latest
     env:
-      <<: *common-test-env
-      PYTHONPATH: src
-      PYTHONLOGLEVEL: CRITICAL
+      GITHUB_ACTIONS: true
+      PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS: 300
     container:
       image: ghcr.io/esm-tools/pycmor-testground:py3.12-${{ needs.build-3-12.outputs.branch_name }}
-      credentials: *ghcr-credentials
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - *checkout-step
-      - *cache-step
-      - *create-cache-dir-step
-      - *run-doctest
-      - name: Generate coverage report
-        run: python -m coverage xml -o coverage-doctest-3.12.xml
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Cache test data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pycmor/test_data
+          key: pycmor-test-data-v3
+          restore-keys: |
+            pycmor-test-data-
+      - name: Create persistent cache directory
+        run: mkdir -p ~/.cache/pycmor/test_data
+      - name: Test with doctest and generate coverage
+        run: |
+          PYTHONPATH=src PYTHONLOGLEVEL=CRITICAL pytest -v --doctest-modules --cov=src/pycmor src/
+          python -m coverage xml -o coverage-doctest-3.12.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -796,7 +1072,7 @@ jobs:
     needs: [test-meta-3-9, test-meta-3-10, test-meta-3-11, test-meta-3-12, test-unit-3-9, test-unit-3-10, test-unit-3-11, test-unit-3-12, test-integration-matrix-3-9, test-integration-matrix-3-10, test-integration-matrix-3-11, test-integration-matrix-3-12, test-doctest-3-9, test-doctest-3-10, test-doctest-3-11, test-doctest-3-12]
     runs-on: ubuntu-latest
     steps:
-      - *checkout-step
+      - uses: actions/checkout@v4
       - name: Set up Python 3.9
         uses: actions/setup-python@v5
         with:
