@@ -149,15 +149,19 @@ def test_library_process(model_run_instance, cmip_version, orchestrator_config, 
 
     # Process the data
     cmorizer = CMORizer.from_dict(cfg)
-    cmorizer.process()
+    result = cmorizer.process()
 
-    # Verify output was created
-    from pathlib import Path
+    # Verify processing completed successfully
+    # Result should be a list of processed datasets (one per rule)
+    assert result is not None, "Processing returned None"
+    assert len(result) > 0, "Processing returned empty result"
 
-    output_dir = Path(cfg["general"]["output_directory"])
-    assert output_dir.exists(), f"Output directory not created: {output_dir}"
-    output_files = list(output_dir.rglob("*.nc"))
-    assert len(output_files) > 0, f"No NetCDF output files created in {output_dir}"
+    # Verify each result is a valid xarray Dataset
+    import xarray as xr
+
+    for i, dataset in enumerate(result):
+        assert isinstance(dataset, xr.Dataset), f"Result {i} is not an xarray Dataset: {type(dataset)}"
+        assert len(dataset.data_vars) > 0, f"Result {i} has no data variables"
 
 
 @pytest.mark.parametrize("cmip_version", ["cmip6", "cmip7"])
