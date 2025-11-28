@@ -604,7 +604,8 @@ jobs:
       - name: Install package to register entry points
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[fesom]" --no-deps
+          python -m pip install -e . --no-deps
+          python -m pip install "pycmor-test-data-fesom @ git+https://github.com/fesom/pycmor_test_data.git@main"
       - name: Discover models and orchestrators
         id: discover
         run: |
