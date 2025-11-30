@@ -177,9 +177,10 @@ def set_coordinate_attributes(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -
     {'standard_name': 'latitude', 'units': 'degrees_north', 'axis': 'Y'}
     """
     # Convert DataArray to Dataset for uniform processing
+    arr_name = getattr(ds, "name", "data")
     input_was_dataarray = isinstance(ds, xr.DataArray)
     if input_was_dataarray:
-        ds = ds.to_dataset()
+        ds = ds.to_dataset(name=arr_name)
 
     # Check if coordinate attribute setting is enabled
     if not rule._pycmor_cfg("xarray_set_coordinate_attributes"):
