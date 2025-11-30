@@ -334,9 +334,12 @@ def set_coordinate_attributes(data: Union[DataArray, Dataset], rule: Rule) -> Un
 
     Examples
     --------
-    >>> ds = xr.Dataset({
-    ...     'tas': (['time', 'lat', 'lon'], data),
-    ... }, coords={'lat': lats, 'lon': lons})
+   >>> ds = xr.Dataset(
+   ...    data={
+   ...        "tas": (["time", "lat", "lon"], data),
+   ...    },
+   ...    coords={"lat": lats, "lon": lons}
+   ...)
     >>> ds = set_coordinate_attributes(ds, rule)
     >>> print(ds['lat'].attrs)
     {'standard_name': 'latitude', 'units': 'degrees_north', 'axis': 'Y'}
