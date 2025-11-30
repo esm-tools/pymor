@@ -376,7 +376,7 @@ class PycmorConfig:
         xarray_validate_coordinate_attributes = Option(
             default="warn",
             doc="Validation mode for existing coordinate metadata. Options: ignore, warn, error, fix",
-            parser=str,
+            parser=ChoiceOf(str, choices=["warn", "error", "fix"]),
         )
         xarray_enable_dimension_mapping = Option(
             default="yes",
