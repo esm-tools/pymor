@@ -386,7 +386,7 @@ class PycmorConfig:
         dimension_mapping_validation = Option(
             default="warn",
             doc="Validation mode for dimension mapping. Options: ignore, warn, error",
-            parser=str,
+            parser=ChoiceOf(str, choices=["ignore", "warn", "error"]),
         )
         dimension_mapping_allow_override = Option(
             default="yes",
