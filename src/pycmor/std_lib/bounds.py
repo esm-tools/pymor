@@ -1,4 +1,3 @@
-# pycmor.std_lib.add_vertical_bounds
 """
 Calculate coordinate bounds for lat/lon and other coordinates.
 
