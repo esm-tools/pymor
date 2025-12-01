@@ -69,9 +69,7 @@ class TestGetCoordinateMetadata:
         """Test alevel atmosphere model level metadata."""
         metadata = _get_coordinate_metadata("alevel")
         assert metadata is not None
-        assert (
-            metadata["standard_name"] == "atmosphere_hybrid_sigma_pressure_coordinate"
-        )
+        assert metadata["standard_name"] == "atmosphere_hybrid_sigma_pressure_coordinate"
         assert metadata["axis"] == "Z"
         assert metadata["positive"] == "down"
 
@@ -365,9 +363,7 @@ class TestSetCoordinateAttributes:
             },
             coords={
                 "time": np.arange(10),
-                "plev8": np.array(
-                    [100000, 85000, 70000, 50000, 25000, 10000, 5000, 1000]
-                ),
+                "plev8": np.array([100000, 85000, 70000, 50000, 25000, 10000, 5000, 1000]),
                 "olevel": np.arange(0, 5000, 100),
                 "lat": np.arange(-89.5, 90, 2),
                 "lon": np.arange(0, 360, 2),

@@ -73,11 +73,7 @@ class TestDimensionDetection:
 
     def test_detect_by_standard_name(self):
         """Test detection using standard_name attribute"""
-        ds = xr.Dataset(
-            coords={
-                "y": (["y"], np.linspace(-90, 90, 180), {"standard_name": "latitude"})
-            }
-        )
+        ds = xr.Dataset(coords={"y": (["y"], np.linspace(-90, 90, 180), {"standard_name": "latitude"})})
         mapper = DimensionMapper()
 
         dim_type = mapper.detect_dimension_type(ds, "y")
@@ -189,9 +185,7 @@ class TestCreateMapping:
         ds = xr.Dataset(
             coords={
                 "time": np.arange(10),
-                "lev": np.array(
-                    [100000, 92500, 85000, 70000, 60000, 50000, 40000, 30000]
-                ),
+                "lev": np.array([100000, 92500, 85000, 70000, 60000, 50000, 40000, 30000]),
                 "lat": np.linspace(-90, 90, 180),
                 "lon": np.linspace(0, 360, 360),
             }
@@ -382,9 +376,7 @@ class TestValidateMapping:
         mapping = {"time": "time", "lat": "lat"}  # Missing lon
 
         # In strict mode, should error on missing dimensions
-        is_valid, errors = mapper.validate_mapping(
-            ds, mapping, drv, allow_override=False
-        )
+        is_valid, errors = mapper.validate_mapping(ds, mapping, drv, allow_override=False)
 
         assert not is_valid
         assert len(errors) > 0
@@ -573,9 +565,7 @@ class TestAllowOverride:
             "lon": "my_lon",  # Override lon
         }
 
-        mapping = mapper.create_mapping(
-            ds, drv, user_mapping=user_mapping, allow_override=True
-        )
+        mapping = mapper.create_mapping(ds, drv, user_mapping=user_mapping, allow_override=True)
 
         # Should accept custom names
         assert mapping["lev"] == "my_custom_level"
@@ -583,9 +573,7 @@ class TestAllowOverride:
         assert mapping["lon"] == "my_lon"
 
         # Validation should pass in flexible mode
-        is_valid, errors = mapper.validate_mapping(
-            ds, mapping, drv, allow_override=True
-        )
+        is_valid, errors = mapper.validate_mapping(ds, mapping, drv, allow_override=True)
         assert is_valid  # No errors in flexible mode
 
     def test_allow_override_disabled_rejects_custom_names(self):
@@ -612,14 +600,10 @@ class TestAllowOverride:
             "lon": "lon",
         }
 
-        mapping = mapper.create_mapping(
-            ds, drv, user_mapping=user_mapping, allow_override=False
-        )
+        mapping = mapper.create_mapping(ds, drv, user_mapping=user_mapping, allow_override=False)
 
         # Validation should fail in strict mode
-        is_valid, errors = mapper.validate_mapping(
-            ds, mapping, drv, allow_override=False
-        )
+        is_valid, errors = mapper.validate_mapping(ds, mapping, drv, allow_override=False)
 
         assert not is_valid
         assert len(errors) > 0
@@ -650,14 +634,10 @@ class TestAllowOverride:
             "lon": "lon",  # CMIP name
         }
 
-        mapping = mapper.create_mapping(
-            ds, drv, user_mapping=user_mapping, allow_override=False
-        )
+        mapping = mapper.create_mapping(ds, drv, user_mapping=user_mapping, allow_override=False)
 
         # Validation should pass - all CMIP names
-        is_valid, errors = mapper.validate_mapping(
-            ds, mapping, drv, allow_override=False
-        )
+        is_valid, errors = mapper.validate_mapping(ds, mapping, drv, allow_override=False)
 
         assert is_valid
         assert len(errors) == 0
@@ -684,9 +664,7 @@ class TestAllowOverride:
             # lat and lon will be auto-mapped
         }
 
-        mapping = mapper.create_mapping(
-            ds, drv, user_mapping=user_mapping, allow_override=True
-        )
+        mapping = mapper.create_mapping(ds, drv, user_mapping=user_mapping, allow_override=True)
 
         # Should have custom name for lev
         assert mapping["lev"] == "height"
@@ -754,13 +732,9 @@ class TestAllowOverride:
             "lon": "lon",
         }
 
-        mapping = mapper.create_mapping(
-            ds, drv, user_mapping=user_mapping, allow_override=False
-        )
+        mapping = mapper.create_mapping(ds, drv, user_mapping=user_mapping, allow_override=False)
 
-        is_valid, errors = mapper.validate_mapping(
-            ds, mapping, drv, allow_override=False
-        )
+        is_valid, errors = mapper.validate_mapping(ds, mapping, drv, allow_override=False)
 
         assert not is_valid
         assert len(errors) > 0
