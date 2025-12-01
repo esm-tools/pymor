@@ -108,7 +108,9 @@ class BaseModelRun(ABC):
         Generates filename from class name: Fesom2p6ModelRun -> fesom_2p6_registry.yaml
         """
         class_name = self.__class__.__name__.replace("ModelRun", "")
-        prefix = re.sub(r"(?<!^)(?=[A-Z])", "_", class_name).lower()
+        # Insert underscore before uppercase letters and before digits starting a version
+        # but not before digits within a version (e.g., p6 in 2p6)
+        prefix = re.sub(r"(?<!^)(?=[A-Z])|(?<=[a-z])(?<![0-9][a-z])(?=[0-9])", "_", class_name).lower()
         return self.fixtures_dir / f"{prefix}_registry.yaml"
 
     @property
@@ -118,7 +120,9 @@ class BaseModelRun(ABC):
         Generates filename from class name: Fesom2p6ModelRun -> fesom_2p6_stub_manifest.yaml
         """
         class_name = self.__class__.__name__.replace("ModelRun", "")
-        prefix = re.sub(r"(?<!^)(?=[A-Z])", "_", class_name).lower()
+        # Insert underscore before uppercase letters and before digits starting a version
+        # but not before digits within a version (e.g., p6 in 2p6)
+        prefix = re.sub(r"(?<!^)(?=[A-Z])|(?<=[a-z])(?<![0-9][a-z])(?=[0-9])", "_", class_name).lower()
         return self.fixtures_dir / f"{prefix}_stub_manifest.yaml"
 
     @property
