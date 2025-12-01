@@ -18,6 +18,7 @@ The base class handles:
 
 import logging
 import os
+import re
 from abc import ABC, abstractmethod
 from pathlib import Path
 
@@ -102,13 +103,23 @@ class BaseModelRun(ABC):
 
     @property
     def registry_path(self) -> Path:
-        """Path to the pooch registry YAML file."""
-        return self.fixtures_dir / "registry.yaml"
+        """Path to the pooch registry YAML file.
+
+        Generates filename from class name: Fesom2p6ModelRun -> fesom_2p6_registry.yaml
+        """
+        class_name = self.__class__.__name__.replace("ModelRun", "")
+        prefix = re.sub(r"(?<!^)(?=[A-Z])", "_", class_name).lower()
+        return self.fixtures_dir / f"{prefix}_registry.yaml"
 
     @property
     def stub_manifest_path(self) -> Path:
-        """Path to the stub data manifest YAML file."""
-        return self.fixtures_dir / "stub_manifest.yaml"
+        """Path to the stub data manifest YAML file.
+
+        Generates filename from class name: Fesom2p6ModelRun -> fesom_2p6_stub_manifest.yaml
+        """
+        class_name = self.__class__.__name__.replace("ModelRun", "")
+        prefix = re.sub(r"(?<!^)(?=[A-Z])", "_", class_name).lower()
+        return self.fixtures_dir / f"{prefix}_stub_manifest.yaml"
 
     @property
     def cache_dir(self) -> Path:
