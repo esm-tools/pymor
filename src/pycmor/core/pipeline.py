@@ -248,7 +248,7 @@ class DefaultPipeline(FrozenPipeline):
     -----
     The pipeline includes:
     - Automatic vertical bounds calculation for datasets with vertical coordinates (pressure levels, depth, height)
-    - Dimension mapping from source data to CMIP dimension names (e.g., ``'latitude'`` → ``'lat'``, ``'lev'`` → ``'plev19'``)
+    - Dimension mapping from source data to CMIP dimension names (e.g., `'latitude'` → `'lat'`, `'lev'` → `'plev19'`)
     - CF-compliant coordinate metadata setting (standard_name, axis, units, positive)
     - Global and variable attribute setting following CMIP6/CMIP7 conventions
     """

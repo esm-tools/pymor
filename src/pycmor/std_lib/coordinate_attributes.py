@@ -17,6 +17,19 @@ import yaml
 from ..core.logging import logger
 from ..core.rule import Rule
 
+SKIPPABLE_TIME_COORD_NAMES = [
+    "time",
+    "time1",
+    "time2",
+    "time3",
+    "time4",
+    "time-intv",
+    "time-point",
+    "time-fxc",
+    "climatology",
+    "diurnal-cycle",
+]
+
 
 def _load_coordinate_metadata() -> Dict[str, Dict[str, str]]:
     """
@@ -98,21 +111,9 @@ def _should_skip_coordinate(coord_name: str, rule: Rule) -> bool:
     bool
         True if coordinate should be skipped
     """
-    # Skip time coordinates (handled separately in files.py)
-    if coord_name in ["time", "time1", "time2", "time3", "time4"]:
+    if coord_name in SKIPPABLE_TIME_COORD_NAMES:
         return True
 
-    # Skip time-related CMIP7 dimensions (handled separately)
-    if coord_name in [
-        "time-intv",
-        "time-point",
-        "time-fxc",
-        "climatology",
-        "diurnal-cycle",
-    ]:
-        return True
-
-    # Skip bounds variables
     if coord_name.endswith("_bnds") or coord_name.endswith("_bounds"):
         return True
 
@@ -177,6 +178,7 @@ def set_coordinate_attributes(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -
     {'standard_name': 'latitude', 'units': 'degrees_north', 'axis': 'Y'}
     """
     # Convert DataArray to Dataset for uniform processing
+    original_array = ds.copy()
     arr_name = getattr(ds, "name", "data")
     input_was_dataarray = isinstance(ds, xr.DataArray)
     if input_was_dataarray:
@@ -185,7 +187,7 @@ def set_coordinate_attributes(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -
     # Check if coordinate attribute setting is enabled
     if not rule._pycmor_cfg("xarray_set_coordinate_attributes"):
         logger.info("Coordinate attribute setting is disabled in configuration")
-        return ds if not input_was_dataarray else ds[ds.data_vars.__iter__().__next__()]
+        return original_array if input_was_dataarray else ds
 
     logger.info("[Coordinate Attributes] Setting CF-compliant metadata")
 
@@ -261,7 +263,7 @@ def set_coordinate_attributes(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -
 
     # Return in original format
     if input_was_dataarray:
-        return ds[list(ds.data_vars)[0]]
+        return original_array
     return ds
 
 
