@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+from jinja2 import Template
 
 from tests.utils.entry_points import discover_model_runs
 
@@ -80,17 +81,12 @@ def test_cli_process(model_run_instance, cmip_version, orchestrator_config, tmp_
     # Get the appropriate config path
     config_path = model_run_instance.configs[cmip_version]
 
-    # Load and modify config
+    # Load config as Jinja2 template and render with datadir
     with open(config_path, "r") as f:
-        cfg = yaml.safe_load(f)
+        template = Template(f.read())
 
-    # Replace REPLACE_ME placeholders with actual data paths
-    for rule in cfg.get("rules", []):
-        for input_spec in rule.get("inputs", []):
-            if "path" in input_spec and "REPLACE_ME" in input_spec["path"]:
-                input_spec["path"] = input_spec["path"].replace("REPLACE_ME", str(model_run_instance.datadir))
-        if "mesh_path" in rule and "REPLACE_ME" in rule["mesh_path"]:
-            rule["mesh_path"] = rule["mesh_path"].replace("REPLACE_ME", str(model_run_instance.datadir))
+    rendered_config = template.render(datadir=str(model_run_instance.datadir))
+    cfg = yaml.safe_load(rendered_config)
 
     # Update output directory to tmp_path
     if "general" not in cfg:

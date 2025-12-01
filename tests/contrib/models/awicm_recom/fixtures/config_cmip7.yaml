@@ -26,11 +26,11 @@ rules:
     model_component: "ocean"
     compound_name: "ocean.thetao.mean.mon.gn"
     inputs:
-      - path: "REPLACE_ME/awi-esm-1-1-lr_kh800/piControl/outdata/fesom"
+      - path: "{{ datadir }}/awi-esm-1-1-lr_kh800/piControl/outdata/fesom"
         pattern: "thetao.fesom..*.nc"
     cmor_variable: "thetao"
     model_variable: "thetao"
-    mesh_path: "REPLACE_ME/awi-esm-1-1-lr_kh800/piControl/input/fesom/mesh"
+    mesh_path: "{{ datadir }}/awi-esm-1-1-lr_kh800/piControl/input/fesom/mesh"
     pipelines:
       - level_regridder
 pipelines:
