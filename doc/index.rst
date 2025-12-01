@@ -38,6 +38,7 @@ Contents
    developer_guide
    developer_setup
    test_infrastructure
+   adding_model_fixtures
    roadmap
    API
 
