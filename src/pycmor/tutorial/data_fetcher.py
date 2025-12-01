@@ -76,6 +76,7 @@ def fetch_and_extract(filename: str, registry_path=None) -> Path:
     import pooch
 
     registry = load_registry(registry_path)
+    logger.info(f"Loaded registry from: {registry_path or 'default test_data_registry.yaml'}")
 
     if filename not in registry:
         raise ValueError(f"Unknown test data file: {filename}. " f"Available files: {list(registry.keys())}")
@@ -85,31 +86,64 @@ def fetch_and_extract(filename: str, registry_path=None) -> Path:
     checksum = entry.get("sha256")
     extract_dir = entry.get("extract_dir", filename.replace(".tar", ""))
 
+    logger.info(f"Registry entry for '{filename}':")
+    logger.info(f"  url: {url}")
+    logger.info(f"  sha256: {checksum}")
+    logger.info(f"  extract_dir: {extract_dir}")
+
     if url is None:
         raise ValueError(f"URL not set for {filename}. " f"Please update test_data_registry.yaml")
 
     cache_dir = get_cache_dir()
     cache_dir.mkdir(parents=True, exist_ok=True)
+    logger.info(f"Cache directory: {cache_dir}")
 
     # Path where extracted data will be
     extracted_path = cache_dir / extract_dir
+    logger.info(f"Expected extraction path: {extracted_path}")
 
     # If already extracted, return it
     if extracted_path.exists():
         logger.info(f"Using cached extraction: {extracted_path}")
+        # List contents to verify
+        contents = list(extracted_path.iterdir())
+        logger.info(f"Cached directory contains {len(contents)} items:")
+        for item in contents[:10]:  # Show first 10 items
+            logger.info(f"  - {item.name} ({'dir' if item.is_dir() else 'file'})")
+        if len(contents) > 10:
+            logger.info(f"  ... and {len(contents) - 10} more items")
         return extracted_path
 
     # Download and extract
     logger.info(f"Downloading and extracting {filename}...")
+    logger.info(f"Pooch will download from: {url}")
+    logger.info(f"Pooch will extract to: {cache_dir / extract_dir}")
 
     # Use pooch.retrieve with Untar processor
-    pooch.retrieve(
+    result = pooch.retrieve(
         url=url,
         known_hash=f"sha256:{checksum}" if checksum else None,
         path=cache_dir,
         fname=filename,
         processor=pooch.Untar(extract_dir=extract_dir),
     )
+
+    logger.info(f"Pooch retrieve returned: {result}")
+    logger.info(f"Result type: {type(result)}")
+
+    # Check what actually exists
+    if extracted_path.exists():
+        contents = list(extracted_path.iterdir())
+        logger.info(f"After extraction, {extracted_path} contains {len(contents)} items:")
+        for item in contents[:10]:
+            logger.info(f"  - {item.name} ({'dir' if item.is_dir() else 'file'})")
+        if len(contents) > 10:
+            logger.info(f"  ... and {len(contents) - 10} more items")
+    else:
+        logger.warning(f"Expected extraction path {extracted_path} does not exist!")
+        # Check what's in cache_dir
+        cache_contents = list(cache_dir.iterdir())
+        logger.info(f"Cache directory contains: {[item.name for item in cache_contents]}")
 
     logger.info(f"Data extracted to: {extracted_path}")
     return extracted_path
