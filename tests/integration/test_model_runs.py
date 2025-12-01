@@ -61,11 +61,12 @@ def test_library_initialization(model_run_instance, cmip_version):
     cmip_version : str
         CMIP version to test (cmip6 or cmip7)
     """
+    # Mark as xfail if config is not available (will show XPASS when implemented)
+    if cmip_version not in model_run_instance.configs:
+        pytest.xfail(f"{cmip_version.upper()} config not available for this model")
+
     # Get the appropriate config path
-    if cmip_version == "cmip6":
-        config_path = model_run_instance.config_path_cmip6
-    else:
-        config_path = model_run_instance.config_path_cmip7
+    config_path = model_run_instance.configs[cmip_version]
 
     model_name = model_run_instance.__class__.__name__
     logger.info(f"Testing library initialization for {model_name} with {cmip_version.upper()}")
@@ -114,11 +115,12 @@ def test_library_process(model_run_instance, cmip_version, orchestrator_config, 
     tmp_path : Path
         Temporary directory for test artifacts
     """
+    # Mark as xfail if config is not available (will show XPASS when implemented)
+    if cmip_version not in model_run_instance.configs:
+        pytest.xfail(f"{cmip_version.upper()} config not available for this model")
+
     # Get the appropriate config path
-    if cmip_version == "cmip6":
-        config_path = model_run_instance.config_path_cmip6
-    else:
-        config_path = model_run_instance.config_path_cmip7
+    config_path = model_run_instance.configs[cmip_version]
 
     model_name = model_run_instance.__class__.__name__
     orch_type = orchestrator_config["pipeline_workflow_orchestrator"]

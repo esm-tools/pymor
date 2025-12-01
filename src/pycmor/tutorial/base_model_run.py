@@ -147,6 +147,33 @@ class BaseModelRun(ABC):
         """
         return self.fixtures_dir / "config_cmip7.yaml"
 
+    @property
+    def configs(self) -> dict:
+        """Available configuration files for this model.
+
+        Returns a dictionary of available config files. External packages
+        may not provide all config files, so tests should check if the
+        desired config key exists before using it.
+
+        Returns
+        -------
+        dict
+            Dictionary with keys like 'cmip6', 'cmip7' mapping to Path objects.
+            Only includes configs that actually exist.
+
+        Examples
+        --------
+        >>> if "cmip6" in model_run.configs:
+        ...     config_path = model_run.configs["cmip6"]
+        ...     # Use config_path
+        """
+        available_configs = {}
+        if self.config_path_cmip6.exists():
+            available_configs["cmip6"] = self.config_path_cmip6
+        if self.config_path_cmip7.exists():
+            available_configs["cmip7"] = self.config_path_cmip7
+        return available_configs
+
     @staticmethod
     def should_use_real_data(request=None) -> bool:
         """Determine whether to use real or stub data.

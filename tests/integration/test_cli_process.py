@@ -73,11 +73,12 @@ def test_cli_process(model_run_instance, cmip_version, orchestrator_config, tmp_
     tmp_path : Path
         Temporary directory for test artifacts
     """
+    # Mark as xfail if config is not available (will show XPASS when implemented)
+    if cmip_version not in model_run_instance.configs:
+        pytest.xfail(f"{cmip_version.upper()} config not available for this model")
+
     # Get the appropriate config path
-    if cmip_version == "cmip6":
-        config_path = model_run_instance.config_path_cmip6
-    else:
-        config_path = model_run_instance.config_path_cmip7
+    config_path = model_run_instance.configs[cmip_version]
 
     # Load and modify config
     with open(config_path, "r") as f:
