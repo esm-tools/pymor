@@ -100,14 +100,23 @@ def _get_model_fixture_plugins():
         module_path = ep.value.split(":")[0]  # Get module path before ":"
         base_path = ".".join(module_path.split(".")[:-1])  # Remove ".model"
 
-        # Add fixture modules for this model
-        plugins.extend(
-            [
-                f"{base_path}.config",
-                f"{base_path}.datadir",
-                f"{base_path}.datasets",
-            ]
-        )
+        # Try to add fixture modules for this model, but only if they exist
+        # External packages may not have config/datadir/datasets modules
+        import importlib.util
+        import warnings
+
+        for fixture_module in ["config", "datadir", "datasets"]:
+            full_module_name = f"{base_path}.{fixture_module}"
+            spec = importlib.util.find_spec(full_module_name)
+            if spec is not None:
+                plugins.append(full_module_name)
+            else:
+                warnings.warn(
+                    f"Model entry point '{ep.name}' missing fixture module '{fixture_module}' "
+                    f"at {full_module_name}. This may lead to some features of the testing suite "
+                    f"not being fully supported for this model fixture.",
+                    UserWarning,
+                )
 
     return plugins
 
