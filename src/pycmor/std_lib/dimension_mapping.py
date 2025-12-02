@@ -508,6 +508,187 @@ class DimensionMapper:
         is_valid = len(errors) == 0
         return is_valid, errors
 
+    def detect_all_types(self, ds: xr.Dataset) -> Dict[str, Optional[str]]:
+        """
+        Detect dimension types for all dimensions in dataset.
+
+        Parameters
+        ----------
+        ds : xr.Dataset
+            Dataset to analyze
+
+        Returns
+        -------
+        Dict[str, Optional[str]]
+            Mapping of {dim_name: dim_type} for all dimensions
+
+        Examples
+        --------
+        >>> mapper = DimensionMapper()
+        >>> types = mapper.detect_all_types(ds)
+        >>> print(types)
+        {'time': 'time', 'lev': 'pressure', 'latitude': 'latitude', 'longitude': 'longitude'}
+        """
+        dim_types = {}
+        for dim_name in ds.sizes.keys():
+            dim_type = self.detect_dimension_type(ds, dim_name)
+            dim_types[dim_name] = dim_type
+        return dim_types
+
+    def create_mapping_flexible(
+        self,
+        ds: xr.Dataset,
+        data_request_variable: Optional[DataRequestVariable] = None,
+        target_dimensions: Optional[List[str]] = None,
+        user_mapping: Optional[Dict[str, str]] = None,
+        allow_override: bool = True,
+    ) -> Dict[str, str]:
+        """
+        Create dimension mapping with flexible targeting.
+
+        This method works with or without DataRequestVariable:
+        - If data_request_variable provided: use its dimensions as target
+        - If target_dimensions provided: use manual dimension list
+        - If neither: perform smart type-based mapping with common CMIP names
+
+        Parameters
+        ----------
+        ds : xr.Dataset
+            Source dataset
+        data_request_variable : DataRequestVariable, optional
+            CMIP variable specification with required dimensions
+        target_dimensions : List[str], optional
+            Manual list of target dimension names
+        user_mapping : Dict[str, str], optional
+            User-specified mapping {source_dim: output_dim}
+        allow_override : bool
+            Allow user_mapping to override computed mappings (default: True)
+
+        Returns
+        -------
+        Dict[str, str]
+            Mapping from source dimension names to target dimension names
+
+        Examples
+        --------
+        >>> # With DataRequestVariable
+        >>> mapping = mapper.create_mapping_flexible(
+        ...     ds=ds, data_request_variable=drv
+        ... )
+        >>>
+        >>> # With manual target dimensions
+        >>> mapping = mapper.create_mapping_flexible(
+        ...     ds=ds, target_dimensions=['time', 'plev19', 'lat', 'lon']
+        ... )
+        >>>
+        >>> # Standalone smart mapping
+        >>> mapping = mapper.create_mapping_flexible(ds=ds)
+        """
+        # If DataRequestVariable provided, delegate to existing method
+        if data_request_variable is not None:
+            return self.create_mapping(
+                ds=ds,
+                data_request_variable=data_request_variable,
+                user_mapping=user_mapping,
+                allow_override=allow_override,
+            )
+
+        # Determine target dimensions
+        if target_dimensions is not None:
+            cmip_dims = target_dimensions
+            logger.info("Using manual target dimensions")
+        else:
+            # Standalone mode: use smart defaults based on detected types
+            cmip_dims = []
+            logger.info("Using smart dimension mapping (no CMIP table)")
+
+        source_dims = list(ds.sizes.keys())
+        logger.info(f"  Source dimensions: {source_dims}")
+        if cmip_dims:
+            logger.info(f"  Target dimensions: {cmip_dims}")
+
+        mapping = {}
+        mapped_source = set()
+        mapped_target = set()
+
+        # Step 1: Apply user-specified mappings
+        if user_mapping:
+            for source_dim, output_dim in user_mapping.items():
+                if source_dim not in source_dims:
+                    logger.warning(
+                        f"User mapping specifies source dimension '{source_dim}' " f"which doesn't exist in dataset"
+                    )
+                    continue
+
+                mapping[source_dim] = output_dim
+                mapped_source.add(source_dim)
+                if output_dim in cmip_dims:
+                    mapped_target.add(output_dim)
+                logger.info(f"  User mapping: {source_dim} → {output_dim}")
+
+        # Step 2: Auto-detect and map remaining dimensions
+        unmapped_source = [d for d in source_dims if d not in mapped_source]
+        unmapped_target = [d for d in cmip_dims if d not in mapped_target] if cmip_dims else []
+
+        # Standard mapping for common types (used when no target specified)
+        standard_type_to_cmip = {
+            "latitude": "lat",
+            "longitude": "lon",
+            "time": "time",
+            "pressure": "plev",
+            "depth": "olevel",
+            "height": "height",
+            "model_level": "alevel",
+        }
+
+        for source_dim in unmapped_source:
+            # Detect dimension type
+            dim_type = self.detect_dimension_type(ds, source_dim)
+            if not dim_type:
+                logger.debug(f"  Could not detect type for '{source_dim}'")
+                # If no type detected, keep original name
+                mapping[source_dim] = source_dim
+                continue
+
+            coord_size = ds.sizes[source_dim] if source_dim in ds.sizes else None
+
+            if unmapped_target:
+                # Have target dimensions - map to them
+                cmip_dim = self.map_to_cmip_dimension(dim_type, unmapped_target, coord_size)
+                if cmip_dim:
+                    mapping[source_dim] = cmip_dim
+                    mapped_source.add(source_dim)
+                    mapped_target.add(cmip_dim)
+                    unmapped_target.remove(cmip_dim)
+                    logger.info(f"  Auto-mapped: {source_dim} → {cmip_dim} (type: {dim_type})")
+                else:
+                    # No matching target, keep original
+                    mapping[source_dim] = source_dim
+                    logger.debug(f"  No target match for '{source_dim}', keeping original name")
+            else:
+                # No target dimensions - use standard CMIP names
+                standard_name = standard_type_to_cmip.get(dim_type, source_dim)
+
+                # For pressure, try to get specific level count
+                if dim_type == "pressure" and coord_size:
+                    # Common CMIP pressure level counts
+                    if coord_size in [3, 4, 7, 8, 19, 23, 27, 39]:
+                        standard_name = f"plev{coord_size}"
+
+                mapping[source_dim] = standard_name
+                mapped_source.add(source_dim)
+                logger.info(f"  Smart mapping: {source_dim} → {standard_name} (type: {dim_type})")
+
+        # Report unmapped
+        final_unmapped_source = [d for d in source_dims if d not in mapped_source]
+        if final_unmapped_source:
+            logger.warning(f"Unmapped source dimensions: {final_unmapped_source}")
+
+        if unmapped_target:
+            logger.warning(f"Unmapped target dimensions: {unmapped_target}")
+
+        return mapping
+
 
 def map_dimensions(ds: Union[xr.Dataset, xr.DataArray], rule) -> Union[xr.Dataset, xr.DataArray]:
     """

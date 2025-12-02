@@ -178,7 +178,7 @@ def set_coordinate_attributes(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -
     {'standard_name': 'latitude', 'units': 'degrees_north', 'axis': 'Y'}
     """
     # Convert DataArray to Dataset for uniform processing
-    original_array = ds.copy()
+    original_array = ds.copy()  # This makes a memory copy, so any modifications on ds are not going to be reflected
     arr_name = getattr(ds, "name", "data")
     input_was_dataarray = isinstance(ds, xr.DataArray)
     if input_was_dataarray:
@@ -263,7 +263,9 @@ def set_coordinate_attributes(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -
 
     # Return in original format
     if input_was_dataarray:
-        return original_array
+        # [FIXME] PG: This just circumvents the entire function??? I do not understand the idea here?
+        # return original_array
+        return ds[arr_name]
     return ds
 
 
