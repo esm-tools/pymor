@@ -100,7 +100,7 @@ If a coordinate has a CF ``standard_name`` attribute, the mapper uses it:
 
    # Coordinate with standard_name
    ds.coords['y'].attrs = {'standard_name': 'latitude'}
-   
+
    # Mapper detects: y → latitude type
 
 Strategy 3: Axis Attribute
@@ -112,7 +112,7 @@ If a coordinate has a CF ``axis`` attribute, the mapper uses it:
 
    # Coordinate with axis attribute
    ds.coords['y'].attrs = {'axis': 'Y'}
-   
+
    # Mapper detects: y → latitude type (Y axis)
 
 Strategy 4: Value Range Analysis
@@ -125,11 +125,11 @@ The mapper can detect dimension types from coordinate values:
    # Latitude detection (values in -90 to 90 range)
    ds.coords['y'] = np.linspace(-89.5, 89.5, 180)
    # Mapper detects: y → latitude type
-   
+
    # Longitude detection (values in 0 to 360 range)
    ds.coords['x'] = np.linspace(0.5, 359.5, 360)
    # Mapper detects: x → longitude type
-   
+
    # Pressure detection (values in Pa or hPa range)
    ds.coords['level'] = [100000, 92500, 85000, 70000]
    # Mapper detects: level → pressure type
@@ -156,7 +156,7 @@ The mapper uses coordinate size to select the correct ``plevN`` dimension:
 
    # Source has 19 pressure levels
    ds.coords['lev'] = np.arange(19)
-   
+
    # CMIP table requires plev19
    # Mapper selects: lev → plev19 (size matches)
 
@@ -192,7 +192,7 @@ The dimension mapping step is automatically included in the ``DefaultPipeline``:
 
    # The default pipeline includes dimension mapping automatically
    pipeline = DefaultPipeline()
-   
+
    # Process your data - dimensions mapped automatically
    result = pipeline.run(data, rule_spec)
 
@@ -260,10 +260,10 @@ You can also use dimension mapping directly:
    # Create mapper and mapping
    mapper = DimensionMapper()
    mapping = mapper.create_mapping(ds, data_request_variable)
-   
+
    # Apply mapping
    ds_mapped = mapper.apply_mapping(ds, mapping)
-   
+
    # Now dimensions have CMIP names
    print(ds_mapped.dims)
    # Frozen({'time': 10, 'plev19': 19, 'lat': 180, 'lon': 360})
@@ -388,10 +388,10 @@ Example 1: Simple Latitude/Longitude Mapping
 .. code-block:: python
 
    ds_mapped = map_dimensions(ds, rule)
-   
+
    print(ds_mapped.dims)
    # Frozen({'time': 10, 'lat': 180, 'lon': 360})
-   
+
    print(list(ds_mapped['tas'].dims))
    # ['time', 'lat', 'lon']
 
@@ -422,10 +422,10 @@ Example 2: Pressure Level Mapping
 .. code-block:: python
 
    ds_mapped = map_dimensions(ds, rule)
-   
+
    print(ds_mapped.dims)
    # Frozen({'time': 10, 'plev19': 19, 'lat': 180, 'lon': 360})
-   
+
    # 'lev' was automatically mapped to 'plev19' based on size
 
 Example 3: Ocean Data Mapping
@@ -455,10 +455,10 @@ Example 3: Ocean Data Mapping
 .. code-block:: python
 
    ds_mapped = map_dimensions(ds, rule)
-   
+
    print(ds_mapped.dims)
    # Frozen({'time': 10, 'olevel': 6, 'lat': 180, 'lon': 360})
-   
+
    # 'depth' was automatically mapped to 'olevel'
 
 Example 4: User-Specified Mapping
@@ -486,10 +486,10 @@ Example 4: User-Specified Mapping
 .. code-block:: python
 
    ds_mapped = map_dimensions(ds, rule)
-   
+
    print(ds_mapped.dims)
    # Frozen({'time': 10, 'plev19': 19, 'lat': 180, 'lon': 360})
-   
+
    # User mappings were applied:
    # level → plev19
    # y → lat
@@ -521,10 +521,10 @@ Example 5: Detection by Attributes
 .. code-block:: python
 
    ds_mapped = map_dimensions(ds, rule)
-   
+
    print(ds_mapped.dims)
    # Frozen({'time': 10, 'lat': 180, 'lon': 360})
-   
+
    # Detected from standard_name and axis attributes:
    # y → lat
    # x → lon
@@ -565,10 +565,10 @@ Example 6: Overriding CMIP Dimension Names
 .. code-block:: python
 
    ds_mapped = map_dimensions(ds, rule)
-   
+
    print(ds_mapped.dims)
    # Frozen({'time': 10, 'pressure_level': 19, 'grid_lat': 180, 'grid_lon': 360})
-   
+
    # Custom dimension names instead of CMIP names:
    # lev → pressure_level (not plev19)
    # latitude → grid_lat (not lat)
@@ -592,14 +592,14 @@ Example 7: Per-Rule Override Configuration
 
    # Global default: flexible mode
    dimension_mapping_allow_override: yes
-   
+
    rules:
      # Rule 1: CMIP-compliant output (strict mode)
      - model_variable: tas
        cmor_variable: tas
        dimension_mapping_allow_override: no
        # Output: time lat lon (CMIP standard)
-     
+
      # Rule 2: Custom output (flexible mode)
      - model_variable: temp_3d
        cmor_variable: ta
@@ -609,7 +609,7 @@ Example 7: Per-Rule Override Configuration
          latitude: y
          longitude: x
        # Output: time my_level y x (custom names)
-     
+
      # Rule 3: Partial override
      - model_variable: wind_u
        cmor_variable: ua
@@ -624,11 +624,11 @@ Example 7: Per-Rule Override Configuration
    # Variable 1: CMIP standard names
    ds_tas.dims
    # Frozen({'time': 10, 'lat': 180, 'lon': 360})
-   
+
    # Variable 2: Custom names
    ds_ta.dims
    # Frozen({'time': 10, 'my_level': 19, 'y': 180, 'x': 360})
-   
+
    # Variable 3: Mixed (partial override)
    ds_ua.dims
    # Frozen({'time': 10, 'height': 19, 'lat': 180, 'lon': 360})
@@ -645,7 +645,7 @@ Dimension mapping and coordinate attributes work together:
    # Before: source dimension names
    ds.dims
    # Frozen({'time': 10, 'lev': 19, 'latitude': 180, 'longitude': 360})
-   
+
    # After dimension mapping
    ds_mapped = map_dimensions(ds, rule)
    ds_mapped.dims
@@ -657,7 +657,7 @@ Dimension mapping and coordinate attributes work together:
 
    # After coordinate attributes
    ds_final = set_coordinate_attributes(ds_mapped, rule)
-   
+
    # Now coordinates have correct names AND metadata
    print(ds_final['plev19'].attrs)
    # {
@@ -666,7 +666,7 @@ Dimension mapping and coordinate attributes work together:
    #     'axis': 'Z',
    #     'positive': 'down'
    # }
-   
+
    print(ds_final['lat'].attrs)
    # {
    #     'standard_name': 'latitude',
@@ -683,15 +683,15 @@ Complete Transformation
    ds_source = xr.Dataset({
        'temp': (['time', 'lev', 'latitude', 'longitude'], data),
    })
-   
+
    # 2. Map dimensions (Part 2)
    ds_mapped = map_dimensions(ds_source, rule)
    # Result: Dimensions renamed to CMIP names
-   
+
    # 3. Set coordinate attributes (Part 1)
    ds_final = set_coordinate_attributes(ds_mapped, rule)
    # Result: CF-compliant metadata on all coordinates
-   
+
    # 4. Final output is fully CMIP-compliant
    # - Correct dimension names ✓
    # - Correct coordinate metadata ✓
@@ -746,23 +746,23 @@ Dimensions Not Detected
 If a dimension is not being detected:
 
 1. **Check dimension name**
-   
+
    - Does it match common patterns?
    - Try adding to user mapping
 
 2. **Add attributes**
-   
+
    .. code-block:: python
-   
+
       ds.coords['y'].attrs = {
           'standard_name': 'latitude',
           'axis': 'Y'
       }
 
 3. **Use user mapping**
-   
+
    .. code-block:: yaml
-   
+
       dimension_mapping:
         y: lat
         x: lon
@@ -773,14 +773,14 @@ Wrong CMIP Dimension Selected
 If the wrong CMIP dimension is selected:
 
 1. **Check coordinate size**
-   
+
    - For pressure: size must match (19 levels → plev19)
    - Verify your data has the correct number of levels
 
 2. **Use user mapping to override**
-   
+
    .. code-block:: yaml
-   
+
       dimension_mapping:
         lev: plev8  # Force plev8 instead of auto-detection
 
@@ -790,12 +790,12 @@ Validation Warnings
 If you see validation warnings:
 
 1. **Review unmapped dimensions**
-   
+
    - Are they needed by CMIP table?
    - Should they be mapped?
 
 2. **Adjust validation mode**
-   
+
    - ``ignore``: Suppress warnings
    - ``warn``: See warnings (default)
    - ``error``: Fail on issues
@@ -806,17 +806,17 @@ Mapping Not Applied
 If dimensions aren't being renamed:
 
 1. **Check configuration**
-   
+
    .. code-block:: yaml
-   
+
       xarray_enable_dimension_mapping: yes
 
 2. **Verify pipeline order**
-   
+
    - Dimension mapping should run before coordinate attributes
 
 3. **Check logs**
-   
+
    - Look for mapping messages
    - Check for errors or warnings
 
@@ -856,7 +856,7 @@ When a dimension is renamed, its coordinate variable is also renamed:
    # Before
    ds.coords['latitude']  # Coordinate variable
    ds.dims['latitude']    # Dimension
-   
+
    # After mapping
    ds.coords['lat']       # Renamed coordinate
    ds.dims['lat']         # Renamed dimension

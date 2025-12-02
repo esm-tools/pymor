@@ -98,7 +98,7 @@ The coordinate attributes step is automatically included in the ``DefaultPipelin
 
    # The default pipeline includes coordinate attributes automatically
    pipeline = DefaultPipeline()
-   
+
    # Process your data - coordinate attributes added automatically
    result = pipeline.run(data, rule_spec)
 
@@ -193,7 +193,7 @@ Available modes:
 
      # Source data has wrong metadata
      ds['lat'].attrs = {'standard_name': 'wrong_name', 'units': 'meters'}
-     
+
      # After processing (ignore mode)
      # - Keeps 'wrong_name' and 'meters' (no warnings)
      # - Adds missing 'axis': 'Y'
@@ -205,9 +205,9 @@ Available modes:
 
      # Source data has wrong metadata
      ds['lat'].attrs = {'standard_name': 'wrong_name'}
-     
+
      # After processing (warn mode)
-     # WARNING: Coordinate 'lat' has standard_name='wrong_name' 
+     # WARNING: Coordinate 'lat' has standard_name='wrong_name'
      #          but expected 'latitude' (keeping existing value)
      # - Keeps 'wrong_name'
      # - Adds 'units': 'degrees_north' and 'axis': 'Y'
@@ -219,9 +219,9 @@ Available modes:
 
      # Source data has wrong metadata
      ds['lat'].attrs = {'standard_name': 'wrong_name'}
-     
+
      # After processing (error mode)
-     # ValueError: Invalid standard_name for coordinate 'lat': 
+     # ValueError: Invalid standard_name for coordinate 'lat':
      #   got 'wrong_name', expected 'latitude'
 
 **fix** (Auto-correct)
@@ -231,7 +231,7 @@ Available modes:
 
      # Source data has wrong metadata
      ds['lat'].attrs = {'standard_name': 'wrong_name', 'units': 'meters'}
-     
+
      # After processing (fix mode)
      # INFO: standard_name corrected: 'wrong_name' → 'latitude'
      # INFO: units corrected: 'meters' → 'degrees_north'
@@ -343,10 +343,10 @@ Before Coordinate Attributes
        'lat': [-89.5, -88.5, ..., 89.5],
        'lon': [0.5, 1.5, ..., 359.5],
    })
-   
+
    print(ds['plev19'].attrs)
    # {}  # Empty!
-   
+
    print(ds['lat'].attrs)
    # {}  # Empty!
 
@@ -357,7 +357,7 @@ After Coordinate Attributes
 
    # After applying coordinate attributes
    ds = set_coordinate_attributes(ds, rule)
-   
+
    print(ds['plev19'].attrs)
    # {
    #     'standard_name': 'air_pressure',
@@ -365,21 +365,21 @@ After Coordinate Attributes
    #     'axis': 'Z',
    #     'positive': 'down'
    # }
-   
+
    print(ds['lat'].attrs)
    # {
    #     'standard_name': 'latitude',
    #     'units': 'degrees_north',
    #     'axis': 'Y'
    # }
-   
+
    print(ds['lon'].attrs)
    # {
    #     'standard_name': 'longitude',
    #     'units': 'degrees_east',
    #     'axis': 'X'
    # }
-   
+
    print(ds['ta'].attrs['coordinates'])
    # 'plev19 lat lon'
 
@@ -498,7 +498,7 @@ If you see validation warnings:
 1. Review source data metadata
 2. Decide if warnings are valid concerns
 3. Choose appropriate validation mode:
-   
+
    - ``ignore``: Trust source data
    - ``warn``: Monitor issues (default)
    - ``error``: Enforce strict compliance
