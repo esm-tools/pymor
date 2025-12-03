@@ -1,13 +1,9 @@
 """pycmor - Makes CMOR Simple"""
 
-# Import module that registers all xarray accessors
-from . import accessors  # noqa: F401
-from . import (
-    _version,
-)
+from . import _version
 
-# Import accessors to trigger xarray registration
-# This makes ds.pycmor.coords and ds.pycmor.dims available
+# Import unified accessor to trigger xarray registration
+# This makes ds.pycmor.coords, ds.pycmor.dims, and time frequency methods available
 from .xarray import accessor  # noqa: F401
 
 __author__ = "Paul Gierz <pgierz@awi.de>"

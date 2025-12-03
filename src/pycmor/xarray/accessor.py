@@ -717,6 +717,7 @@ class PycmorAccessor:
 
     Access coordinate operations via: ds.pycmor.coords
     Access dimension operations via: ds.pycmor.dims
+    Access time frequency operations via: ds.pycmor.resample_safe(), etc.
     """
 
     def __init__(self, xarray_obj):
@@ -731,6 +732,7 @@ class PycmorAccessor:
         self._obj = xarray_obj
         self._coords_accessor = None
         self._dims_accessor = None
+        self._timefreq = None
 
     @property
     def coords(self) -> CoordinateAccessor:
@@ -780,6 +782,40 @@ class PycmorAccessor:
             self._dims_accessor = DimensionAccessor(self._obj)
         return self._dims_accessor
 
+    # Time frequency methods - delegate to DatasetFrequencyAccessor
+    def resample_safe(self, *args, **kwargs):
+        """Resample dataset safely with temporal resolution validation.
+
+        See DatasetFrequencyAccessor.resample_safe for full documentation.
+        """
+        from ..core.infer_freq import DatasetFrequencyAccessor
+
+        if self._timefreq is None:
+            self._timefreq = DatasetFrequencyAccessor(self._obj)
+        return self._timefreq.resample_safe(*args, **kwargs)
+
+    def check_resolution(self, *args, **kwargs):
+        """Check if temporal resolution is sufficient for resampling.
+
+        See DatasetFrequencyAccessor.check_resolution for full documentation.
+        """
+        from ..core.infer_freq import DatasetFrequencyAccessor
+
+        if self._timefreq is None:
+            self._timefreq = DatasetFrequencyAccessor(self._obj)
+        return self._timefreq.check_resolution(*args, **kwargs)
+
+    def infer_frequency(self, *args, **kwargs):
+        """Infer frequency from time series data.
+
+        See DatasetFrequencyAccessor.infer_frequency for full documentation.
+        """
+        from ..core.infer_freq import DatasetFrequencyAccessor
+
+        if self._timefreq is None:
+            self._timefreq = DatasetFrequencyAccessor(self._obj)
+        return self._timefreq.infer_frequency(*args, **kwargs)
+
 
 @register_dataarray_accessor("pycmor")
 class PycmorDataArrayAccessor(PycmorAccessor):
@@ -788,6 +824,40 @@ class PycmorDataArrayAccessor(PycmorAccessor):
 
     Same interface as PycmorAccessor, automatically converts to Dataset
     for operations and converts back to DataArray for results.
+
+    Includes time frequency delegation methods specific to DataArray.
     """
 
-    pass
+    # Override time frequency methods to use TimeFrequencyAccessor for DataArrays
+    def resample_safe(self, *args, **kwargs):
+        """Resample data safely with temporal resolution validation.
+
+        See TimeFrequencyAccessor.resample_safe for full documentation.
+        """
+        from ..core.infer_freq import TimeFrequencyAccessor
+
+        if self._timefreq is None:
+            self._timefreq = TimeFrequencyAccessor(self._obj)
+        return self._timefreq.resample_safe(*args, **kwargs)
+
+    def check_resolution(self, *args, **kwargs):
+        """Check if temporal resolution is sufficient for resampling.
+
+        See TimeFrequencyAccessor.check_resolution for full documentation.
+        """
+        from ..core.infer_freq import TimeFrequencyAccessor
+
+        if self._timefreq is None:
+            self._timefreq = TimeFrequencyAccessor(self._obj)
+        return self._timefreq.check_resolution(*args, **kwargs)
+
+    def infer_frequency(self, *args, **kwargs):
+        """Infer frequency from time series data.
+
+        See TimeFrequencyAccessor.infer_frequency for full documentation.
+        """
+        from ..core.infer_freq import TimeFrequencyAccessor
+
+        if self._timefreq is None:
+            self._timefreq = TimeFrequencyAccessor(self._obj)
+        return self._timefreq.infer_frequency(*args, **kwargs)

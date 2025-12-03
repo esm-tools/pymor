@@ -40,8 +40,8 @@ Quick Start
    # Create sample data
    times = [cftime.Datetime360Day(2000, m, 15) for m in range(1, 13)]
    data = xr.DataArray(
-       range(12), 
-       coords={"time": times}, 
+       range(12),
+       coords={"time": times},
        dims="time",
        name="temperature"
    )
@@ -72,7 +72,7 @@ Quick Start
 
    # Use unified accessor on datasets
    freq_info = dataset.pymor.infer_frequency()
-   
+
    # Resample entire dataset
    resampled_ds = dataset.pymor.resample_safe(
        freq_str="3M",  # Quarterly
@@ -217,7 +217,7 @@ The unified accessor uses a delegation pattern for clean separation of concerns:
            self._obj = xarray_obj
            # Initialize specialized accessors
            self._timefreq = TimeFrequencyAccessor(xarray_obj)
-       
+
        def resample_safe(self, *args, **kwargs):
            # Delegate to specialized accessor
            return self._timefreq.resample_safe(*args, **kwargs)
@@ -259,17 +259,17 @@ Accessors are automatically registered when importing pymor:
 
 **Internal Registration:**
 
-The accessor registration is centralized in ``pymor.accessors`` module:
+The accessor registration is centralized in ``pycmor.xarray.accessor`` module:
 
 .. code-block:: python
 
-   # In pymor/accessors.py
+   # In pycmor/xarray/accessor.py
    from xarray import register_dataarray_accessor, register_dataset_accessor
-   from .core.infer_freq import TimeFrequencyAccessor, DatasetFrequencyAccessor
+   from ..core.infer_freq import TimeFrequencyAccessor, DatasetFrequencyAccessor
 
-   @register_dataarray_accessor("pymor")
-   class PymorDataArrayAccessor:
-       # Unified accessor implementation
+   @register_dataarray_accessor("pycmor")
+   class PycmorDataArrayAccessor:
+       # Unified accessor implementation with delegation
        pass
 
 Best Practices
@@ -291,21 +291,21 @@ Best Practices
 
    def process_climate_data(dataset):
        """Process climate dataset with unified pymor accessor."""
-       
+
        # Check temporal resolution
        resolution = dataset.pymor.check_resolution(
            target_approx_interval=30.0  # Monthly
        )
-       
+
        if not resolution['is_valid_for_resampling']:
            raise ValueError("Data resolution too coarse for monthly analysis")
-       
+
        # Resample to monthly means
        monthly_data = dataset.pymor.resample_safe(
            freq_str="M",
            method="mean"
        )
-       
+
        return monthly_data
 
 API Reference
