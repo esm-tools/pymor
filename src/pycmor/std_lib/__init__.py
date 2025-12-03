@@ -298,60 +298,60 @@ def set_variable_attributes(data: Union[DataArray, Dataset], rule: Rule) -> Unio
 
 def set_coordinate_attributes(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
-     Set CF-compliant metadata attributes on coordinate variables.
+    Set CF-compliant metadata attributes on coordinate variables.
 
-     This function applies standardized CF attributes (standard_name, axis,
-     units, positive) to coordinate variables (latitude, longitude, vertical
-     coordinates, etc.) to ensure proper interpretation by xarray and other
-     CF-aware tools.
+    This function applies standardized CF attributes (standard_name, axis,
+    units, positive) to coordinate variables (latitude, longitude, vertical
+    coordinates, etc.) to ensure proper interpretation by xarray and other
+    CF-aware tools.
 
-     Time coordinates are handled separately in the file saving step.
+    Time coordinates are handled separately in the file saving step.
 
-     Parameters
-     ----------
-     data : xarray.DataArray or xarray.Dataset
-         The data to which coordinate attributes will be added.
-     rule : Rule
-         The rule containing configuration for coordinate attribute setting.
+    Parameters
+    ----------
+    data : xarray.DataArray or xarray.Dataset
+        The data to which coordinate attributes will be added.
+    rule : Rule
+        The rule containing configuration for coordinate attribute setting.
 
-     Returns
-     -------
-     xarray.DataArray or xarray.Dataset
-         The data with updated coordinate attributes.
+    Returns
+    -------
+    xarray.DataArray or xarray.Dataset
+        The data with updated coordinate attributes.
 
-     Notes
-     -----
-     This function sets:
-     - standard_name: CF standard name for the coordinate
-     - axis: X, Y, Z, or T designation
-     - units: Physical units (degrees_east, degrees_north, Pa, m, etc.)
-     - positive: Direction for vertical coordinates (up or down)
-     - coordinates: Attribute on data variables listing their coordinates
+    Notes
+    -----
+    This function sets:
+    - standard_name: CF standard name for the coordinate
+    - axis: X, Y, Z, or T designation
+    - units: Physical units (degrees_east, degrees_north, Pa, m, etc.)
+    - positive: Direction for vertical coordinates (up or down)
+    - coordinates: Attribute on data variables listing their coordinates
 
-     Configuration options:
-     - xarray_set_coordinate_attributes: Enable/disable coordinate attrs
-     - xarray_set_coordinates_attribute: Enable/disable 'coordinates' attr
+    Configuration options:
+    - xarray_set_coordinate_attributes: Enable/disable coordinate attrs
+    - xarray_set_coordinates_attribute: Enable/disable 'coordinates' attr
 
-     Examples
-     --------
-     .. note::
-        These examples are illustrative and not verified by doctests.
+    Examples
+    --------
+    .. note::
+       These examples are illustrative and not verified by doctests.
 
-     .. code-block:: python
+    .. code-block:: python
 
-        import xarray as xr
-        from pycmor.core.rule import Rule
-        rule = Rule(cmor_variable='tas', model_variable='tas')
-        ds = xr.Dataset(
-           data={
-               "tas": (["time", "lat", "lon"], data),
-           },
-           coords={"lat": lats, "lon": lons}
-        )
+       import xarray as xr
+       from pycmor.core.rule import Rule
+       rule = Rule(cmor_variable='tas', model_variable='tas')
+       ds = xr.Dataset(
+          data={
+              "tas": (["time", "lat", "lon"], data),
+          },
+          coords={"lat": lats, "lon": lons}
+       )
 
-        ds = set_coordinate_attributes(ds, rule)
-        print(ds['lat'].attrs)
-        # {'standard_name': 'latitude', 'units': 'degrees_north', 'axis': 'Y'}
+       ds = set_coordinate_attributes(ds, rule)
+       print(ds['lat'].attrs)
+       # {'standard_name': 'latitude', 'units': 'degrees_north', 'axis': 'Y'}
     """
     return _set_coordinate_attributes(data, rule)
 
