@@ -28,6 +28,9 @@ Contents
    schemas
    standard_library
    coordinate_bounds
+   coordinate_attributes
+   dimension_mapping
+   xarray_accessors
    including_custom_steps
    including_subcommand_plugins
    pycmor_fesom

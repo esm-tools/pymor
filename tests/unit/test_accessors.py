@@ -270,14 +270,22 @@ class TestAccessorInteroperability:
         assert timefreq_check == pycmor_check
 
     def test_unified_accessor_initialization(self, sample_dataarray, sample_dataset):
-        """Test that unified accessors initialize their internal specialized accessors."""
-        # Check that internal _timefreq accessor is properly initialized
+        """Test that unified accessors lazily initialize their internal specialized accessors."""
+        # Check that internal _timefreq accessor starts as None (lazy initialization)
         da_pycmor = sample_dataarray.pycmor
         assert hasattr(da_pycmor, "_timefreq")
+        assert da_pycmor._timefreq is None  # Not yet initialized
+
+        # After calling a time frequency method, it should be initialized
+        da_pycmor.infer_frequency(log=False)
         assert da_pycmor._timefreq is not None
 
+        # Same for dataset accessor
         ds_pycmor = sample_dataset.pycmor
         assert hasattr(ds_pycmor, "_timefreq")
+        assert ds_pycmor._timefreq is None  # Not yet initialized
+
+        ds_pycmor.infer_frequency(log=False)
         assert ds_pycmor._timefreq is not None
 
     def test_accessor_independence(self, sample_dataarray):
