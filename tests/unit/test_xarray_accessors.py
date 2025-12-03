@@ -33,6 +33,11 @@ class TestAccessorRegistration:
         ds = xr.Dataset()
         assert hasattr(ds.pycmor, "dims")
 
+    def test_old_accessor_is_deprecated(self):
+        """Tests that old names no longer work"""
+        with pytest.raises(AttributeError):
+            xr.Dataset().pymor  # Yes, pymor (no C)
+
 
 class TestCoordinateAccessor:
     """Test coordinate accessor functionality."""
