@@ -236,8 +236,8 @@ class DefaultPipeline(FrozenPipeline):
     """
     The DefaultPipeline class is a subclass of the Pipeline class. It is designed to be a general-purpose pipeline
     for data processing. It includes steps for loading data, adding vertical bounds, handling unit conversion,
-    and setting CMIP-compliant attributes. The specific steps are fixed and cannot be customized, only the name
-    of the pipeline can be customized.
+    mapping dimensions to CMIP standards, and setting CMIP-compliant attributes (global, variable, and coordinate).
+    The specific steps are fixed and cannot be customized, only the name of the pipeline can be customized.
 
     Parameters
     ----------
@@ -246,8 +246,11 @@ class DefaultPipeline(FrozenPipeline):
 
     Notes
     -----
-    The pipeline includes automatic vertical bounds calculation for datasets with vertical coordinates
-    (pressure levels, depth, height), ensuring CMIP compliance.
+    The pipeline includes:
+    - Automatic vertical bounds calculation for datasets with vertical coordinates (pressure levels, depth, height)
+    - Dimension mapping from source data to CMIP dimension names (e.g., `'latitude'` → `'lat'`, `'lev'` → `'plev19'`)
+    - CF-compliant coordinate metadata setting (standard_name, axis, units, positive)
+    - Global and variable attribute setting following CMIP6/CMIP7 conventions
     """
 
     # FIXME(PG): This is not so nice. All things should come out of the std_lib,
@@ -258,8 +261,12 @@ class DefaultPipeline(FrozenPipeline):
         "pycmor.std_lib.add_vertical_bounds",
         "pycmor.std_lib.timeaverage.timeavg",
         "pycmor.std_lib.units.handle_unit_conversion",
-        "pycmor.std_lib.global_attributes.set_global_attributes",
-        "pycmor.std_lib.variable_attributes.set_variable_attributes",
+        # "pycmor.std_lib.time.average",
+        "pycmor.std_lib.units.convert",
+        "pycmor.std_lib.attributes.set_global",
+        "pycmor.std_lib.attributes.set_variable",
+        "pycmor.std_lib.attributes.set_coordinates",
+        "pycmor.std_lib.dimensions.map_dimensions",
         "pycmor.core.caching.manual_checkpoint",
         "pycmor.std_lib.generic.trigger_compute",
         "pycmor.std_lib.generic.show_data",

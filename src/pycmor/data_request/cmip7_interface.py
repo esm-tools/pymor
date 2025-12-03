@@ -16,8 +16,10 @@ Key Concepts:
 Usage:
 ------
 >>> from pycmor.data_request import CMIP7Interface
+>>> from pycmor.core.logging import logger
 >>> interface = CMIP7Interface()
->>> interface.load_metadata('v1.2.2.2')  # doctest: +ELLIPSIS
+>>> logger.disable("pycmor")  # Disable logging, it interferes with doctests
+>>> interface.load_metadata('v1.2.2.2')
 >>> len(interface.metadata.get('Compound Name', {})) > 0
 True
 >>>
@@ -79,6 +81,7 @@ class CMIP7Interface:
 
     Examples
     --------
+    >>> logger.disable("pycmor")
     >>> interface = CMIP7Interface()
     >>> interface.load_metadata('v1.2.2.2')
     >>> metadata = interface.get_variable_metadata('atmos.tas.tavg-h2m-hxy-u.mon.GLB')
@@ -534,9 +537,10 @@ def get_cmip7_interface(version: str = "v1.2.2.2", metadata_file: Optional[Union
 
     Examples
     --------
-    >>> interface = get_cmip7_interface()  # Downloads and loads v1.2.2.2
+    >>> logger.disable("pycmor")
+    >>> interface = get_cmip7_interface()
     >>> metadata = interface.get_variable_metadata('atmos.tas.tavg-h2m-hxy-u.mon.GLB')
-    >>> print(metadata['standard_name'])  # doctest: +ELLIPSIS
+    >>> print(metadata['standard_name'])
     air_temperature
     """
     interface = CMIP7Interface()

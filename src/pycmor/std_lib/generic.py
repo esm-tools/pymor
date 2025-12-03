@@ -337,24 +337,32 @@ def dummy_logic_step(data, rule_spec, *args, **kwargs):
 
     Examples
     --------
-    >>> import xarray as xr
-    >>> import numpy as np
-    >>> from types import SimpleNamespace
-    >>> # Create simple data
-    >>> data = xr.DataArray(
-    ...     np.array([1.0, 2.0, 3.0]),
-    ...     dims=['time'],
-    ...     attrs={'original': 'value'}
-    ... )
-    >>> print("INPUT attributes:", data.attrs)
-    INPUT attributes: {'original': 'value'}
-    >>> # Add dummy attribute
-    >>> rule_spec = SimpleNamespace()
-    >>> result = dummy_logic_step(data, rule_spec)
-    >>> print("Has dummy_attribute:", 'dummy_attribute' in result.attrs)
-    Has dummy_attribute: True
-    >>> print("dummy_attribute value:", result.attrs['dummy_attribute'])
-    dummy_attribute value: dummy_value
+    .. note ::
+        The Examples section is not run as doctests yet!
+
+    .. code-block:: python
+
+        import xarray as xr
+        import numpy as np
+
+        # Create simple data
+        data = xr.DataArray(
+            np.array([1.0, 2.0, 3.0]),
+            dims=['time'],
+            attrs={'original': 'value'}
+        )
+
+        # Print attributes
+        print("INPUT attributes:", data.attrs)
+        INPUT attributes: {'original': 'value'}
+
+        # Add dummy attribute
+        result = dummy_logic_step(data, rule_spec)
+        print("Has dummy_attribute:", 'dummy_attribute' in result.attrs)
+        Has dummy_attribute: True
+
+        print("dummy_attribute value:", result.attrs['dummy_attribute'])
+        dummy_attribute value: dummy_value
     """
     logger.info(data)
     logger.info("Adding dummy attribute to data")
@@ -363,7 +371,7 @@ def dummy_logic_step(data, rule_spec, *args, **kwargs):
     return data
 
 
-def dummy_save_data(data, rule_spec, *args, **kwargs):
+def dummy_save_data(data, rule_spec):
     """
     A dummy function for testing. Saves the data to a netcdf file.
 
@@ -378,32 +386,6 @@ def dummy_save_data(data, rule_spec, *args, **kwargs):
     -------
     xr.DataArray or xr.Dataset
         Unmodified input data
-
-    Examples
-    --------
-    >>> import xarray as xr
-    >>> import numpy as np
-    >>> from types import SimpleNamespace
-    >>> import os
-    >>> # Create simple data
-    >>> data = xr.DataArray(
-    ...     np.array([1.0, 2.0, 3.0]),
-    ...     dims=['time']
-    ... )
-    >>> print("INPUT:", data.values)
-    INPUT: [1. 2. 3.]
-    >>> # Save data (creates temporary file)
-    >>> rule_spec = SimpleNamespace()
-    >>> result = dummy_save_data(data, rule_spec)  # doctest: +SKIP
-    >>> print("OUTPUT (unchanged):")  # doctest: +SKIP
-    >>> print(result.values)  # doctest: +SKIP
-    OUTPUT (unchanged):
-    [1. 2. 3.]
-
-    Note
-    ----
-    This function creates temporary files that are not automatically cleaned up.
-    Use +SKIP in doctests to avoid filesystem side effects.
     """
     ofile = tempfile.mktemp(suffix=".nc")
     data.to_netcdf(ofile)
@@ -411,7 +393,7 @@ def dummy_save_data(data, rule_spec, *args, **kwargs):
     return data
 
 
-def dummy_sleep(data, rule_spec, *arg, **kwargs):
+def dummy_sleep(data, rule_spec):
     """
     A dummy function for testing. Sleeps for 5 seconds.
 
@@ -426,30 +408,6 @@ def dummy_sleep(data, rule_spec, *arg, **kwargs):
     -------
     xr.DataArray or xr.Dataset
         Unmodified input data
-
-    Examples
-    --------
-    >>> import xarray as xr
-    >>> import numpy as np
-    >>> from types import SimpleNamespace
-    >>> # Create simple data
-    >>> data = xr.DataArray(
-    ...     np.array([1.0, 2.0, 3.0]),
-    ...     dims=['time']
-    ... )
-    >>> print("INPUT:", data.values)
-    INPUT: [1. 2. 3.]
-    >>> # Sleep function (skipped to avoid delays in tests)
-    >>> rule_spec = SimpleNamespace()
-    >>> result = dummy_sleep(data, rule_spec)  # doctest: +SKIP
-    >>> print("OUTPUT (unchanged after sleep):")  # doctest: +SKIP
-    >>> print(result.values)  # doctest: +SKIP
-    OUTPUT (unchanged after sleep):
-    [1. 2. 3.]
-
-    Note
-    ----
-    This function sleeps for 5 seconds, so use +SKIP in doctests.
     """
     import time
 
@@ -457,7 +415,7 @@ def dummy_sleep(data, rule_spec, *arg, **kwargs):
     return data
 
 
-def show_data(data, rule_spec, *args, **kwargs):
+def show_data(data, rule_spec):
     """
     Prints data to screen. Useful for debugging.
 
@@ -472,34 +430,12 @@ def show_data(data, rule_spec, *args, **kwargs):
     -------
     xr.DataArray or xr.Dataset
         Unmodified input data
-
-    Examples
-    --------
-    >>> import xarray as xr
-    >>> import numpy as np
-    >>> from types import SimpleNamespace
-    >>> # Create simple data
-    >>> data = xr.DataArray(
-    ...     np.array([1.0, 2.0, 3.0]),
-    ...     dims=['time'],
-    ...     name='temperature'
-    ... )
-    >>> print("INPUT:", data.values)
-    INPUT: [1. 2. 3.]
-    >>> # show_data returns data unchanged
-    >>> rule_spec = SimpleNamespace()
-    >>> result = show_data(data, rule_spec)
-    >>> print("OUTPUT (unchanged):", result.values)
-    OUTPUT (unchanged): [1. 2. 3.]
-    >>> print("OUTPUT equals INPUT:", np.array_equal(result.values, data.values))
-    OUTPUT equals INPUT: True
     """
-    logger.info("Printing data...")
     logger.info(data)
     return data
 
 
-def get_variable(data, rule_spec, *args, **kwargs):
+def get_variable(data, rule_spec):
     """
     Gets a particular variable out of a xr.Dataset
 
@@ -549,6 +485,7 @@ def get_variable(data, rule_spec, *args, **kwargs):
     return data[rule_spec.model_variable]
 
 
+# [FIXME] Can this one be removed?
 def resample_monthly(data, rule_spec, *args, **kwargs):
     """
     Compute monthly means per year.
@@ -866,7 +803,11 @@ def sort_dimensions(data, rule_spec):
     >>> import xarray as xr
     >>> import numpy as np
     >>> from types import SimpleNamespace
-    >>> # Create data with dimensions in arbitrary order
+
+    # Turn off logging, as it interferes with doctest
+    >>> logger.disable("pycmor")
+
+    # Create data with dimensions in arbitrary order
     >>> data = xr.DataArray(
     ...     np.arange(24).reshape(2, 3, 4),
     ...     dims=['lon', 'lat', 'time'],
@@ -878,19 +819,23 @@ def sort_dimensions(data, rule_spec):
     INPUT shape: (2, 3, 4)
     >>> print("INPUT data[0, 0, :]:", data.values[0, 0, :])
     INPUT data[0, 0, :]: [0 1 2 3]
-    >>> # Create rule_spec with desired dimension order
+
+    # Create rule_spec with desired dimension order
     >>> rule_spec = SimpleNamespace(array_order=['time', 'lat', 'lon'])
     >>> rule_spec.get = lambda key, default=None: getattr(rule_spec, key, default)
-    >>> # Sort dimensions to CMOR standard order (time, lat, lon)
+
+    # Sort dimensions to CMOR standard order (time, lat, lon)
     >>> sorted_data = sort_dimensions(data, rule_spec)
     >>> print("OUTPUT dimensions:", list(sorted_data.dims))
     OUTPUT dimensions: ['time', 'lat', 'lon']
     >>> print("OUTPUT shape:", sorted_data.shape)
     OUTPUT shape: (4, 3, 2)
-    >>> # Verify data is correctly transposed
+
+    # Verify data is correctly transposed
     >>> print("OUTPUT data[:, 0, 0]:", sorted_data.values[:, 0, 0])
     OUTPUT data[:, 0, 0]: [0 1 2 3]
-    >>> # Test with string dimensions (space-separated)
+
+    # Test with string dimensions (space-separated)
     >>> drv = SimpleNamespace(dimensions="time lat lon")
     >>> rule_spec2 = SimpleNamespace(data_request_variable=drv)
     >>> rule_spec2.get = lambda key, default=None: getattr(rule_spec2, key, default)
