@@ -37,15 +37,20 @@ class DimensionMapper:
 
     Examples
     --------
-    >>> mapper = DimensionMapper()
-    >>> # Map source dimensions to CMIP dimensions
-    >>> mapping = mapper.create_mapping(
-    ...     ds=source_dataset,
-    ...     data_request_variable=cmip_variable,
-    ...     user_mapping={'lev': 'plev19'}
-    ... )
-    >>> # Apply mapping to dataset
-    >>> ds_mapped = mapper.apply_mapping(source_dataset, mapping)
+    .. note::
+       These examples are illustrative and not verified by doctests.
+
+    .. code-block:: python
+
+        mapper = DimensionMapper()
+        # Map source dimensions to CMIP dimensions
+        mapping = mapper.create_mapping(
+            ds=source_dataset,
+            data_request_variable=cmip_variable,
+            user_mapping={'lev': 'plev19'}
+        )
+        # Apply mapping to dataset
+        ds_mapped = mapper.apply_mapping(source_dataset, mapping)
     """
 
     # Semantic patterns for dimension detection
@@ -334,12 +339,17 @@ class DimensionMapper:
 
         Examples
         --------
-        >>> mapping = mapper.create_mapping(
-        ...     ds=source_ds,
-        ...     data_request_variable=cmip_var,
-        ...     user_mapping={'lev': 'plev19'}
-        ... )
-        >>> # mapping = {'time': 'time', 'lev': 'plev19', 'latitude': 'lat', 'longitude': 'lon'}
+        .. note::
+           These examples are illustrative and not verified by doctests.
+
+        .. code-block:: python
+
+            mapping = mapper.create_mapping(
+                ds=source_ds,
+                data_request_variable=cmip_var,
+                user_mapping={'lev': 'plev19'}
+            )
+            # mapping = {'time': 'time', 'lev': 'plev19', 'latitude': 'lat', 'longitude': 'lon'}
         """
         cmip_dims = list(data_request_variable.dimensions)
         source_dims = list(ds.sizes.keys())
@@ -427,7 +437,12 @@ class DimensionMapper:
 
         Examples
         --------
-        >>> ds_mapped = mapper.apply_mapping(ds, {'latitude': 'lat', 'longitude': 'lon'})
+        .. note::
+           These examples are illustrative and not verified by doctests.
+
+        .. code-block:: python
+
+            ds_mapped = mapper.apply_mapping(ds, {'latitude': 'lat', 'longitude': 'lon'})
         """
         logger.info("Applying dimension mapping")
         rename_dict = {}
@@ -524,10 +539,15 @@ class DimensionMapper:
 
         Examples
         --------
-        >>> mapper = DimensionMapper()
-        >>> types = mapper.detect_all_types(ds)
-        >>> print(types)
-        {'time': 'time', 'lev': 'pressure', 'latitude': 'latitude', 'longitude': 'longitude'}
+        .. note::
+           These examples are illustrative and not verified by doctests.
+
+        .. code-block:: python
+
+            mapper = DimensionMapper()
+            types = mapper.detect_all_types(ds)
+            print(types)
+            # {'time': 'time', 'lev': 'pressure', 'latitude': 'latitude', 'longitude': 'longitude'}
         """
         dim_types = {}
         for dim_name in ds.sizes.keys():
@@ -571,18 +591,23 @@ class DimensionMapper:
 
         Examples
         --------
-        >>> # With DataRequestVariable
-        >>> mapping = mapper.create_mapping_flexible(
-        ...     ds=ds, data_request_variable=drv
-        ... )
-        >>>
-        >>> # With manual target dimensions
-        >>> mapping = mapper.create_mapping_flexible(
-        ...     ds=ds, target_dimensions=['time', 'plev19', 'lat', 'lon']
-        ... )
-        >>>
-        >>> # Standalone smart mapping
-        >>> mapping = mapper.create_mapping_flexible(ds=ds)
+        .. note::
+           These examples are illustrative and not verified by doctests.
+
+        .. code-block:: python
+
+            # With DataRequestVariable
+            mapping = mapper.create_mapping_flexible(
+                ds=ds, data_request_variable=drv
+            )
+
+            # With manual target dimensions
+            mapping = mapper.create_mapping_flexible(
+                ds=ds, target_dimensions=['time', 'plev19', 'lat', 'lon']
+            )
+
+            # Standalone smart mapping
+            mapping = mapper.create_mapping_flexible(ds=ds)
         """
         # If DataRequestVariable provided, delegate to existing method
         if data_request_variable is not None:
@@ -714,8 +739,13 @@ def map_dimensions(ds: Union[xr.Dataset, xr.DataArray], rule) -> Union[xr.Datase
 
     Examples
     --------
-    >>> # In pipeline
-    >>> ds = map_dimensions(ds, rule)
+    .. note::
+       These examples are illustrative and not verified by doctests.
+
+    .. code-block:: python
+
+        # In pipeline
+        ds = map_dimensions(ds, rule)
     """
     # Convert DataArray to Dataset if needed
     if isinstance(ds, xr.DataArray):

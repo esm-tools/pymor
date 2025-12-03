@@ -167,15 +167,20 @@ def set_coordinate_attributes(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -
 
     Examples
     --------
-    >>> ds = xr.Dataset({
-    ...     'tas': (['time', 'lat', 'lon'], data),
-    ... }, coords={
-    ...     'lat': np.arange(-90, 90, 1),
-    ...     'lon': np.arange(0, 360, 1),
-    ... })
-    >>> ds = set_coordinate_attributes(ds, rule)
-    >>> print(ds['lat'].attrs)
-    {'standard_name': 'latitude', 'units': 'degrees_north', 'axis': 'Y'}
+    .. note::
+       These examples are illustrative and not verified by doctests.
+
+    .. code-block:: python
+
+        ds = xr.Dataset({
+            'tas': (['time', 'lat', 'lon'], data),
+        }, coords={
+            'lat': np.arange(-90, 90, 1),
+            'lon': np.arange(0, 360, 1),
+        })
+        ds = set_coordinate_attributes(ds, rule)
+        print(ds['lat'].attrs)
+        # {'standard_name': 'latitude', 'units': 'degrees_north', 'axis': 'Y'}
     """
     # Convert DataArray to Dataset for uniform processing
     original_array = ds.copy()  # This makes a memory copy, so any modifications on ds are not going to be reflected

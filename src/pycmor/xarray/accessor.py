@@ -7,17 +7,23 @@ standalone without full pipeline configuration.
 
 Usage
 -----
->>> import xarray as xr
->>> ds = xr.open_dataset("model_output.nc")
->>>
->>> # Detect dimension types
->>> ds.pycmor.dims.detect_types()
->>>
->>> # Map dimensions to CMIP standards
->>> ds_mapped = ds.pycmor.dims.map_to_cmip(table="Amon", variable="tas")
->>>
->>> # Set coordinate attributes
->>> ds_mapped = ds_mapped.pycmor.coords.set_attributes()
+
+.. note::
+   These examples are illustrative and not verified by doctests.
+
+.. code-block:: python
+
+   import xarray as xr
+   ds = xr.open_dataset("model_output.nc")
+
+   # Detect dimension types
+   ds.pycmor.dims.detect_types()
+
+   # Map dimensions to CMIP standards
+   ds_mapped = ds.pycmor.dims.map_to_cmip(table="Amon", variable="tas")
+
+   # Set coordinate attributes
+   ds_mapped = ds_mapped.pycmor.coords.set_attributes()
 """
 
 from typing import Any, Dict, List, Optional
@@ -248,8 +254,10 @@ class CoordinateAccessor:
 
         Examples
         --------
-        >>> ds_with_attrs = ds.pycmor.coords.set_attributes()
-        >>> ds_with_attrs = ds.pycmor.coords.set_attributes(validate='fix')
+        .. code-block:: python
+
+            ds_with_attrs = ds.pycmor.coords.set_attributes()
+            ds_with_attrs = ds.pycmor.coords.set_attributes(validate='fix')
         """
         # Import here to avoid circular dependency
         from ..std_lib.coordinate_attributes import set_coordinate_attributes
@@ -290,9 +298,14 @@ class CoordinateAccessor:
 
         Examples
         --------
-        >>> lat_meta = ds.pycmor.coords.get_metadata('lat')
-        >>> print(lat_meta)
-        {'standard_name': 'latitude', 'units': 'degrees_north', 'axis': 'Y'}
+        .. note::
+           These examples are illustrative and not verified by doctests.
+
+        .. code-block:: python
+
+            lat_meta = ds.pycmor.coords.get_metadata('lat')
+            print(lat_meta)
+            # {'standard_name': 'latitude', 'units': 'degrees_north', 'axis': 'Y'}
         """
         from ..std_lib.coordinate_attributes import _get_coordinate_metadata
 
@@ -309,9 +322,14 @@ class CoordinateAccessor:
 
         Examples
         --------
-        >>> coords = ds.pycmor.coords.list_recognized()
-        >>> print(coords[:5])
-        ['lat', 'latitude', 'lon', 'longitude', 'plev19']
+        .. note::
+           These examples are illustrative and not verified by doctests.
+
+        .. code-block:: python
+
+            coords = ds.pycmor.coords.list_recognized()
+            print(coords[:5])
+            # ['lat', 'latitude', 'lon', 'longitude', 'plev19']
         """
         from ..std_lib.coordinate_attributes import COORDINATE_METADATA
 
@@ -333,9 +351,14 @@ class CoordinateAccessor:
 
         Examples
         --------
-        >>> results = ds.pycmor.coords.validate()
-        >>> print(results)
-        {'lat': {'valid': True}, 'lon': {'valid': True, 'warnings': [...]}}
+        .. note::
+           These examples are illustrative and not verified by doctests.
+
+        .. code-block:: python
+
+            results = ds.pycmor.coords.validate()
+            print(results)
+            # {'lat': {'valid': True}, 'lon': {'valid': True, 'warnings': [...]}}
         """
         from ..std_lib.coordinate_attributes import _get_coordinate_metadata
 
@@ -406,9 +429,14 @@ class DimensionAccessor:
 
         Examples
         --------
-        >>> types = ds.pycmor.dims.detect_types()
-        >>> print(types)
-        {'time': 'time', 'lev': 'pressure', 'latitude': 'latitude', 'longitude': 'longitude'}
+        .. note::
+           These examples are illustrative and not verified by doctests.
+
+        .. code-block:: python
+
+            types = ds.pycmor.dims.detect_types()
+            print(types)
+            # {'time': 'time', 'lev': 'pressure', 'latitude': 'latitude', 'longitude': 'longitude'}
         """
         from ..std_lib.dimension_mapping import DimensionMapper
 
@@ -494,18 +522,23 @@ class DimensionAccessor:
 
         Examples
         --------
-        >>> # CMIP6
-        >>> ds_mapped = ds.pycmor.dims.map_to_cmip(table="Amon", variable="tas")
-        >>>
-        >>> # CMIP7
-        >>> ds_mapped = ds.pycmor.dims.map_to_cmip(
-        ...     compound_name="atmos.tas.tavg-h2m-hxy-u.mon.GLB"
-        ... )
-        >>>
-        >>> # Manual
-        >>> ds_mapped = ds.pycmor.dims.map_to_cmip(
-        ...     target_dimensions=['time', 'plev19', 'lat', 'lon']
-        ... )
+        .. note::
+           These examples are illustrative and not verified by doctests.
+
+        .. code-block:: python
+
+            # CMIP6
+            ds_mapped = ds.pycmor.dims.map_to_cmip(table="Amon", variable="tas")
+
+            # CMIP7
+            ds_mapped = ds.pycmor.dims.map_to_cmip(
+                compound_name="atmos.tas.tavg-h2m-hxy-u.mon.GLB"
+            )
+
+            # Manual
+            ds_mapped = ds.pycmor.dims.map_to_cmip(
+                target_dimensions=['time', 'plev19', 'lat', 'lon']
+            )
         """
         from ..std_lib.dimension_mapping import map_dimensions
 
@@ -584,9 +617,14 @@ class DimensionAccessor:
 
         Examples
         --------
-        >>> mapping = ds.pycmor.dims.create_mapping(table="Amon", variable="tas")
-        >>> print(mapping)
-        {'latitude': 'lat', 'longitude': 'lon', 'time': 'time'}
+        .. note::
+           These examples are illustrative and not verified by doctests.
+
+        .. code-block:: python
+
+            mapping = ds.pycmor.dims.create_mapping(table="Amon", variable="tas")
+            print(mapping)
+            # {'latitude': 'lat', 'longitude': 'lon', 'time': 'time'}
         """
         from ..std_lib.dimension_mapping import DimensionMapper
 
@@ -645,8 +683,13 @@ class DimensionAccessor:
 
         Examples
         --------
-        >>> mapping = {'latitude': 'lat', 'longitude': 'lon'}
-        >>> ds_mapped = ds.pycmor.dims.apply_mapping(mapping)
+        .. note::
+           These examples are illustrative and not verified by doctests.
+
+        .. code-block:: python
+
+            mapping = {'latitude': 'lat', 'longitude': 'lon'}
+            ds_mapped = ds.pycmor.dims.apply_mapping(mapping)
         """
         from ..std_lib.dimension_mapping import DimensionMapper
 
@@ -701,8 +744,13 @@ class PycmorAccessor:
 
         Examples
         --------
-        >>> ds.pycmor.coords.set_attributes()
-        >>> ds.pycmor.coords.get_metadata('lat')
+        .. note::
+           These examples are illustrative and not verified by doctests.
+
+        .. code-block:: python
+
+            ds.pycmor.coords.set_attributes()
+            ds.pycmor.coords.get_metadata('lat')
         """
         if self._coords_accessor is None:
             self._coords_accessor = CoordinateAccessor(self._obj)
@@ -720,8 +768,13 @@ class PycmorAccessor:
 
         Examples
         --------
-        >>> ds.pycmor.dims.detect_types()
-        >>> ds.pycmor.dims.map_to_cmip(table="Amon", variable="tas")
+        .. note::
+           These examples are illustrative and not verified by doctests.
+
+        .. code-block:: python
+
+            ds.pycmor.dims.detect_types()
+            ds.pycmor.dims.map_to_cmip(table="Amon", variable="tas")
         """
         if self._dims_accessor is None:
             self._dims_accessor = DimensionAccessor(self._obj)

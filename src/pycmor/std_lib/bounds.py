@@ -172,6 +172,7 @@ def add_bounds_from_coords(
     Dimensions without coordinates: time
     Data variables:
         temp     (time, lat, lon) float64 ...
+    >>> logger.disable("pycmor")
     >>> ds_with_bounds = add_bounds_from_coords(ds)
     >>> 'lat_bnds' in ds_with_bounds
     True
@@ -285,6 +286,7 @@ def add_vertical_bounds(
     Dimensions without coordinates: time
     Data variables:
         ta       (time, plev, lat, lon) float64 ...
+    >>> logger.disable("pycmor")
     >>> ds_with_bounds = add_vertical_bounds(ds)
     >>> 'plev_bnds' in ds_with_bounds
     True

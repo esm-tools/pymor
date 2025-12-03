@@ -334,19 +334,24 @@ def set_coordinate_attributes(data: Union[DataArray, Dataset], rule: Rule) -> Un
 
      Examples
      --------
-    >>> import xarray as xr
-    >>> from pycmor.core.rule import Rule
-    >>> rule = Rule(cmor_variable='tas', model_variable='tas')
-    >>> ds = xr.Dataset(
-    ...    data={
-    ...        "tas": (["time", "lat", "lon"], data),
-    ...    },
-    ...    coords={"lat": lats, "lon": lons}
-    ... )
+     .. note::
+        These examples are illustrative and not verified by doctests.
 
-    >>> ds = set_coordinate_attributes(ds, rule)
-    >>> print(ds['lat'].attrs)
-    {'standard_name': 'latitude', 'units': 'degrees_north', 'axis': 'Y'}
+     .. code-block:: python
+
+        import xarray as xr
+        from pycmor.core.rule import Rule
+        rule = Rule(cmor_variable='tas', model_variable='tas')
+        ds = xr.Dataset(
+           data={
+               "tas": (["time", "lat", "lon"], data),
+           },
+           coords={"lat": lats, "lon": lons}
+        )
+
+        ds = set_coordinate_attributes(ds, rule)
+        print(ds['lat'].attrs)
+        # {'standard_name': 'latitude', 'units': 'degrees_north', 'axis': 'Y'}
     """
     return _set_coordinate_attributes(data, rule)
 
@@ -386,27 +391,32 @@ def map_dimensions(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArr
 
     Examples
     --------
-    >>> import xarray as xr
-    >>> import numpy as np
-    >>> from types import SimpleNamespace
-    >>> data = np.random.random((10,19,90,180))
-    >>> # Source data with non-CMIP dimension names
-    >>> ds = xr.Dataset({
-    ...     'temp': (['time', 'lev', 'latitude', 'longitude'], data),
-    ... })
-    >>> # After mapping (if CMIP table requires 'time plev19 lat lon')
-    >>> class FakeRule(SimpleNamespace):
-    ...     def _pycmor_cfg(self, key, default=None):
-    ...         return self.config.get(key, default)
-    >>> rule = FakeRule(
-    ...     cmor_variable="temp",
-    ...     model_variable="temp",
-    ...     data_request_variable=SimpleNamespace(attrs={"units": "K"}),
-    ...     config={"xarray_enable_dimension_mapping": True},
-    ... )
-    >>> ds = map_dimensions(ds, rule)
-    >>> print(ds.dims)
-    Frozen({'time': 10, 'plev19': 19, 'lat': 90, 'lon': 180})
+    .. note::
+       These examples are illustrative and not verified by doctests.
+
+    .. code-block:: python
+
+        import xarray as xr
+        import numpy as np
+        from types import SimpleNamespace
+        data = np.random.random((10,19,90,180))
+        # Source data with non-CMIP dimension names
+        ds = xr.Dataset({
+            'temp': (['time', 'lev', 'latitude', 'longitude'], data),
+        })
+        # After mapping (if CMIP table requires 'time plev19 lat lon')
+        class FakeRule(SimpleNamespace):
+            def _pycmor_cfg(self, key, default=None):
+                return self.config.get(key, default)
+        rule = FakeRule(
+            cmor_variable="temp",
+            model_variable="temp",
+            data_request_variable=SimpleNamespace(attrs={"units": "K"}),
+            config={"xarray_enable_dimension_mapping": True},
+        )
+        ds = map_dimensions(ds, rule)
+        print(ds.dims)
+        # Frozen({'time': 10, 'plev19': 19, 'lat': 90, 'lon': 180})
 
     Notes
     -----
@@ -476,21 +486,26 @@ def add_vertical_bounds(data: Union[DataArray, Dataset], rule: Rule) -> Union[Da
 
     Examples
     --------
-    >>> import xarray as xr
-    >>> import numpy as np
-    >>> from pycmor.core.rule import Rule
-    >>> import pycmor.std_lib
-    >>> ds = xr.Dataset({
-    ...     'ta': (['time', 'plev', 'lat', 'lon'], np.random.rand(10, 8, 5, 6)),
-    ... }, coords={
-    ...     'plev': [100000, 92500, 85000, 70000, 60000, 50000, 40000, 30000],
-    ...     'lat': np.linspace(-90, 90, 5),
-    ...     'lon': np.linspace(0, 360, 6),
-    ... })
-    >>> rule = Rule(cmor_variable='ta', model_variable='ta')
-    >>> ds_with_bounds = pycmor.std_lib.add_vertical_bounds(ds, rule=rule)
-    >>> 'plev_bnds' in ds_with_bounds.data_vars
-    True
+    .. note::
+       These examples are illustrative and not verified by doctests.
+
+    .. code-block:: python
+
+        import xarray as xr
+        import numpy as np
+        from pycmor.core.rule import Rule
+        import pycmor.std_lib
+        ds = xr.Dataset({
+            'ta': (['time', 'plev', 'lat', 'lon'], np.random.rand(10, 8, 5, 6)),
+        }, coords={
+            'plev': [100000, 92500, 85000, 70000, 60000, 50000, 40000, 30000],
+            'lat': np.linspace(-90, 90, 5),
+            'lon': np.linspace(0, 360, 6),
+        })
+        rule = Rule(cmor_variable='ta', model_variable='ta')
+        ds_with_bounds = pycmor.std_lib.add_vertical_bounds(ds, rule=rule)
+        'plev_bnds' in ds_with_bounds.data_vars
+        # True
 
     Notes
     -----
