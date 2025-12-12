@@ -91,7 +91,7 @@ class CMORizer:
         logger.debug("---------------------")
         logger.debug(yaml.dump(self._general_cfg))
         logger.debug("--------------------")
-        logger.debug("PyCMOR Configuration:")
+        logger.debug("PyCMOR Configuration")
         logger.debug("--------------------")
         # This isn't actually the config, it's the "App" object. Everett is weird about this...
         pymor_config = PycmorConfig()
@@ -254,6 +254,17 @@ class CMORizer:
         else:
             logger.info("No Dask extras specified...")
 
+    def _locate_table_dir(self):
+        from .resource_locator import TableLocator
+
+        user_table_dir = self._general_cfg.get("CMIP_Tables_Dir")
+        table_version = self._general_cfg.get("CMIP_Tables_version")
+
+        TableLocatorClass = self._get_versioned_class(TableLocator)
+        locator = TableLocatorClass(version=table_version, user_path=user_table_dir)
+        table_dir = locator.locate()
+        return table_dir
+
     def _post_init_create_data_request_tables(self):
         """
         Loads all the tables from table directory using ResourceLocator priority chain.
@@ -268,14 +279,7 @@ class CMORizer:
         A shortened version of the filename (i.e., ``CMIP6_Omon.json`` -> ``Omon``) is used as the mapping key.
         The same key format is used in CMIP6_table_id.json
         """
-        from .resource_locator import TableLocator
-
-        user_table_dir = self._general_cfg.get("CMIP_Tables_Dir")
-        table_version = self._general_cfg.get("CMIP_Tables_version")
-
-        TableLocatorClass = self._get_versioned_class(TableLocator)
-        locator = TableLocatorClass(version=table_version, user_path=user_table_dir)
-        table_dir = locator.locate()
+        table_dir = self._locate_table_dir()
 
         if table_dir is None:
             raise FileNotFoundError(
@@ -294,14 +298,7 @@ class CMORizer:
 
         Uses TableLocator with 5-level priority chain to locate tables.
         """
-        from .resource_locator import TableLocator
-
-        user_table_dir = self._general_cfg.get("CMIP_Tables_Dir")
-        table_version = self._general_cfg.get("CMIP_Tables_version")
-
-        TableLocatorClass = self._get_versioned_class(TableLocator)
-        locator = TableLocatorClass(version=table_version, user_path=user_table_dir)
-        table_dir = locator.locate()
+        table_dir = self._locate_table_dir()
 
         DataRequestClass = self._get_versioned_class(DataRequest)
         self.data_request = DataRequestClass.from_directory(table_dir)
@@ -726,6 +723,7 @@ class CMORizer:
         logger.debug(f"Loaded {len(instance.pipelines)} pipelines from configuration")
         instance._post_init_populate_rules_with_tables()
         instance._post_init_create_data_request()
+        instance._post_init_create_cmip7_interface()
         instance._post_init_populate_rules_with_data_request_variables()
         instance._post_init_populate_rules_with_dimensionless_unit_mappings()
         instance._post_init_populate_rules_with_aux_files()
@@ -764,7 +762,7 @@ class CMORizer:
         logger.debug(f"Found {len(matching_rules)} rules to apply for {cmor_variable}")
         return matching_rules
 
-    def check_rules_for_table(self, table_name):
+    def _check_rules_for_table(self, table_name):
         missing_variables = []
         for cmor_variable in self._cmor_tables[table_name]["variable_entry"]:
             if self._rule_for_cmor_variable(cmor_variable) == []:
@@ -779,7 +777,7 @@ class CMORizer:
             logger.warning("This CMORizer may be incomplete or badly configured!")
             logger.warning(f"Missing rules for >> {len(missing_variables)} << variables.")
 
-    def check_rules_for_output_dir(self, output_dir):
+    def _check_rules_for_output_dir(self, output_dir):
         all_files_in_output_dir = [f for f in Path(output_dir).iterdir()]
         for rule in self.rules:
             # Remove files from list when matching a rule
