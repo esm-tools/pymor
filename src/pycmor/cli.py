@@ -320,6 +320,160 @@ def populate_cache(files: List):
 ################################################################################
 
 ################################################################################
+# CMIP7 Testing Commands
+################################################################################
+
+
+@cli.command()
+@click_loguru.init_logger()
+@click.argument("compound_name", type=click.STRING)
+@click.option(
+    "--version",
+    "-v",
+    default="v1.2.2.2",
+    help="CMIP7 data request version to test against",
+    show_default=True,
+)
+@click.option(
+    "--metadata-file",
+    "-m",
+    type=click.Path(exists=True),
+    help="Path to local metadata JSON file (optional)",
+)
+@click.option(
+    "--show-all-variants",
+    "-a",
+    is_flag=True,
+    help="Show all variants of the variable if found",
+)
+def cmip7_name_test(compound_name, version, metadata_file, show_all_variants):
+    """
+    Test a CMIP7 compound name against the data request.
+
+    Checks if the given compound name exists in the CMIP7 data request
+    and displays metadata information.
+
+    Example compound name format: realm.variable.branding.frequency.region
+    Example: atmos.tas.tavg-h2m-hxy-u.mon.GLB
+    """
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.table import Table
+
+    from .data_request.cmip7_interface import CMIP7Interface
+
+    console = Console()
+
+    try:
+        # Initialize interface
+        console.print("[bold]Loading CMIP7 Data Request...[/bold]")
+        interface = CMIP7Interface()
+        interface.load_metadata(version=version, metadata_file=metadata_file)
+        console.print(f"[green]✓[/green] Loaded metadata for version: {version}\n")
+
+        # Try to find the compound name
+        console.print(f"[bold]Testing compound name:[/bold] {compound_name}\n")
+        metadata = interface.get_variable_metadata(compound_name)
+
+        if metadata:
+            # Found it!
+            console.print(Panel("[bold green]✓ Compound name FOUND in data request[/bold green]", border_style="green"))
+
+            # Display metadata in a table
+            table = Table(title="Variable Metadata", show_header=True, header_style="bold magenta")
+            table.add_column("Property", style="cyan", no_wrap=True)
+            table.add_column("Value", style="white")
+
+            # Key properties to display
+            display_props = [
+                "variable_id",
+                "standard_name",
+                "long_name",
+                "units",
+                "frequency",
+                "modeling_realm",
+                "cmip6_compound_name",
+                "cell_methods",
+                "cell_measures",
+            ]
+
+            for prop in display_props:
+                if prop in metadata:
+                    value = str(metadata[prop])
+                    # Truncate very long values
+                    if len(value) > 80:
+                        value = value[:77] + "..."
+                    table.add_row(prop, value)
+
+            console.print(table)
+
+            # Show all variants if requested
+            if show_all_variants:
+                parts = compound_name.split(".")
+                if len(parts) == 5:
+                    realm, variable, branding, frequency, region = parts
+                    console.print(f"\n[bold]Finding all variants of variable '{variable}' in realm '{realm}'...[/bold]")
+                    variants = interface.find_variable_variants(variable, realm=realm)
+
+                    if len(variants) > 1:
+                        console.print(f"Found {len(variants)} total variants:\n")
+                        for var in variants:
+                            console.print(f"  • {var['cmip7_compound_name']}")
+                    else:
+                        console.print("No other variants found.")
+
+        else:
+            # Not found
+            console.print(Panel("[bold red]✗ Compound name NOT FOUND in data request[/bold red]", border_style="red"))
+
+            # Try to provide helpful information
+            parts = compound_name.split(".")
+            if len(parts) != 5:
+                console.print(
+                    f"\n[yellow]Warning:[/yellow] Compound name should have 5 parts "
+                    f"(realm.variable.branding.frequency.region), but got {len(parts)} parts."
+                )
+            else:
+                realm, variable, branding, frequency, region = parts
+                console.print("\n[bold]Searching for similar variables...[/bold]")
+
+                # Try to find variants of this variable
+                variants = interface.find_variable_variants(variable, realm=realm)
+                if variants:
+                    console.print(f"\nFound {len(variants)} variant(s) of '{variable}' in realm '{realm}':")
+                    for var in variants:
+                        console.print(f"  • {var['cmip7_compound_name']}")
+                    console.print("\n[yellow]Hint:[/yellow] Check if one of these matches what you're looking for.")
+                else:
+                    console.print(f"\n[yellow]No variants found for variable '{variable}' in realm '{realm}'.[/yellow]")
+                    console.print("\n[yellow]Suggestions:[/yellow]")
+                    console.print("  1. Check spelling of variable name")
+                    console.print("  2. Verify the realm is correct")
+                    console.print("  3. Use 'pycmor table-explorer' to browse available variables")
+
+        return 0
+
+    except ImportError as e:
+        console.print(
+            Panel(
+                "[bold red]Error: CMIP7 Data Request API not installed[/bold red]\n\n"
+                f"{str(e)}\n\n"
+                "Install with: pip install CMIP7-data-request-api",
+                border_style="red",
+            )
+        )
+        return 1
+    except Exception as e:
+        console.print(Panel(f"[bold red]Error:[/bold red] {str(e)}", border_style="red"))
+        logger.exception("Failed to test compound name")
+        return 1
+
+
+################################################################################
+################################################################################
+################################################################################
+
+################################################################################
 # Imported subcommands
 ################################################################################
 
