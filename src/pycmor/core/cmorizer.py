@@ -457,10 +457,21 @@ class CMORizer:
         for rule in self.rules:
             if getattr(rule, "debug_matching", False):
                 breakpoint()
+
+            compound_name_match_cmip6 = getattr(data_request_variable, "cmip6_compound_name") == getattr(
+                rule, "compound_name"
+            )
+            compound_name_match_cmip7 = getattr(data_request_variable, "cmip7_compound_name") == getattr(
+                rule, "compound_name"
+            )
+            compound_name_match = compound_name_match_cmip6 or compound_name_match_cmip7
+
             if all(
                 getattr(rule, r_attr) == getattr(data_request_variable, drv_attr)
                 for (r_attr, drv_attr) in attr_criteria
             ):
+                matches.append(rule)
+            elif compound_name_match:
                 matches.append(rule)
         if len(matches) == 0:
             msg = f"No rule found for {data_request_variable}"
