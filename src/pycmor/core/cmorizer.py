@@ -490,6 +490,21 @@ class CMORizer:
         for rule in self.rules:
             num_drvs = len(rule.data_request_variables)
             logger.debug(f"Rule '{rule.name}' has {num_drvs} data_request_variables")
+
+            # Handle zero DRVs - this is always an error
+            if len(rule.data_request_variables) == 0:
+                if self.cmor_version == "CMIP7":
+                    raise ValueError(
+                        f"Rule '{rule.name}' with compound_name='{getattr(rule, 'compound_name', 'NOT SET')}' "
+                        f"did not match any variables in the CMIP7 data request"
+                    )
+                else:
+                    # CMIP6
+                    raise ValueError(
+                        f"Rule '{rule.name}' with cmor_variable='{getattr(rule, 'cmor_variable', 'NOT SET')}' "
+                        f"did not match any variables in the data request"
+                    )
+
             if len(rule.data_request_variables) == 1:
                 new_rules.append(rule)
             else:
