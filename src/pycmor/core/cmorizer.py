@@ -455,6 +455,8 @@ class CMORizer:
         matches = []
         attr_criteria = [("cmor_variable", "variable_id")]
         for rule in self.rules:
+            if getattr(rule, "debug_matching", False):
+                breakpoint()
             if all(
                 getattr(rule, r_attr) == getattr(data_request_variable, drv_attr)
                 for (r_attr, drv_attr) in attr_criteria
