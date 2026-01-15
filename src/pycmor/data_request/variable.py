@@ -597,6 +597,13 @@ class CMIP7DataRequestVariable(DataRequestVariable):
         return self._name
 
     @property
+    def variable_id(self) -> str:
+        """For CMIP7, return compound name as variable identifier."""
+        if hasattr(self, "_cmip7_compound_name") and self._cmip7_compound_name:
+            return self._cmip7_compound_name
+        return self.name  # Fallback to short name
+
+    @property
     def ok_max_mean_abs(self) -> float:
         """Acceptable maximum mean absolute value (not defined in CMIP7)."""
         return float("inf")

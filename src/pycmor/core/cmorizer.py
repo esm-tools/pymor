@@ -360,9 +360,7 @@ class CMORizer:
                     "Make sure export_dreq_lists_json is installed or specify CMIP7_DReq_metadata."
                 )
             elif self.cmor_version == "CMIP7" and not CMIP7_API_AVAILABLE:
-                logger.warning(
-                    "CMIP7 Data Request API not available. " "Install with: pip install CMIP7-data-request-api"
-                )
+                logger.warning("CMIP7 Data Request API not available. Install with: pip install CMIP7-data-request-api")
 
     def _post_init_populate_rules_with_tables(self):
         """
@@ -453,12 +451,35 @@ class CMORizer:
 
     def find_matching_rule(self, data_request_variable: DataRequestVariable) -> Rule or None:
         matches = []
-        attr_criteria = [("cmor_variable", "variable_id")]
         for rule in self.rules:
-            if all(
-                getattr(rule, r_attr) == getattr(data_request_variable, drv_attr)
-                for (r_attr, drv_attr) in attr_criteria
-            ):
+            # Determine what to compare: prefer compound_name if available on rule
+            if hasattr(rule, "compound_name") and rule.compound_name is not None:
+                rule_value = rule.compound_name
+                drv_value = getattr(data_request_variable, "variable_id")
+                # For compound name matching, compare directly or extract variable names
+                if "." in rule_value and "." in str(drv_value):
+                    # Both are compound names, extract variable parts for comparison
+                    rule_parts = rule_value.split(".")
+                    drv_parts = str(drv_value).split(".")
+                    rule_var = rule_parts[1] if len(rule_parts) >= 2 else rule_value
+                    drv_var = drv_parts[1] if len(drv_parts) >= 2 else drv_value
+                else:
+                    # One or both are not compound names, compare as-is
+                    rule_var = rule_value
+                    drv_var = drv_value
+            else:
+                # Use cmor_variable with compound name extraction logic
+                rule_value = getattr(rule, "cmor_variable")
+                drv_value = getattr(data_request_variable, "variable_id")
+                # Handle compound names in data request variable
+                if "." in str(drv_value) and str(drv_value).count(".") >= 1:
+                    parts = str(drv_value).split(".")
+                    drv_var = parts[1] if len(parts) >= 2 else drv_value
+                else:
+                    drv_var = drv_value
+                rule_var = rule_value
+
+            if rule_var == drv_var:
                 matches.append(rule)
         if len(matches) == 0:
             msg = f"No rule found for {data_request_variable}"
