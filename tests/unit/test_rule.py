@@ -1,5 +1,6 @@
-import pytest
 import re
+
+import pytest
 
 from pycmor.core.pipeline import TestingPipeline
 from pycmor.core.rule import Rule
