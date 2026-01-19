@@ -39,7 +39,7 @@ from .pipeline import Pipeline
 # ResourceLocator classes imported locally in methods to avoid circular imports
 from .rule import Rule
 from .utils import wait_for_workers
-from .validate import GENERAL_VALIDATOR, PIPELINES_VALIDATOR, RULES_VALIDATOR
+from .validate import GENERAL_VALIDATOR, PIPELINES_VALIDATOR, RULES_SCHEMA, RuleSectionValidator
 
 DIMENSIONLESS_MAPPING_TABLE = files("pycmor.data").joinpath("dimensionless_mappings.yaml")
 """Path: The dimenionless unit mapping table, used to recreate meaningful units from
@@ -694,8 +694,11 @@ class CMORizer:
             rules_with_inherit.append(merged_rule)
 
         if rules_with_inherit:
-            if not RULES_VALIDATOR.validate({"rules": rules_with_inherit}):
-                raise ValueError(RULES_VALIDATOR.errors)
+            # Create a dynamic validator based on CMOR version
+            cmor_version = data.get("general", {}).get("cmor_version")
+            rules_validator = RuleSectionValidator(RULES_SCHEMA, cmor_version=cmor_version)
+            if not rules_validator.validate({"rules": rules_with_inherit}):
+                raise ValueError(rules_validator.errors)
 
         # Use original rules (without inherit merged) for creation
         # The inheritance will be applied later in _post_init_inherit_rules()

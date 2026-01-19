@@ -3,7 +3,7 @@
 import pytest
 import yaml
 
-from pycmor.core.validate import GENERAL_VALIDATOR, RULES_VALIDATOR
+from pycmor.core.validate import GENERAL_VALIDATOR, RULES_VALIDATOR, RuleSectionValidator, RULES_SCHEMA
 
 
 @pytest.fixture
@@ -330,3 +330,125 @@ rules:
 
     # Validate rules section
     assert RULES_VALIDATOR.validate({"rules": config["rules"]}), RULES_VALIDATOR.errors
+
+
+def test_cmip6_requires_cmor_variable():
+    """Test that CMIP6 validation requires cmor_variable."""
+    cmip6_validator = RuleSectionValidator(RULES_SCHEMA, cmor_version="CMIP6")
+
+    # Valid CMIP6 rule with cmor_variable
+    valid_cmip6 = {
+        "rules": [
+            {
+                "cmor_variable": "tas",
+                "inputs": [{"path": "/path", "pattern": "*.nc"}],
+                "variant_label": "r1i1p1f1",
+                "source_id": "test",
+                "experiment_id": "historical",
+                "grid_label": "gn",
+                "output_directory": "/tmp",
+            }
+        ]
+    }
+    assert cmip6_validator.validate(valid_cmip6)
+
+    # Invalid CMIP6 rule without cmor_variable
+    invalid_cmip6 = {
+        "rules": [
+            {
+                "compound_name": "atmos.tas.tavg-h2m-hxy-u.mon.GLB",
+                "inputs": [{"path": "/path", "pattern": "*.nc"}],
+                "variant_label": "r1i1p1f1",
+                "source_id": "test",
+                "experiment_id": "historical",
+                "grid_label": "gn",
+                "output_directory": "/tmp",
+            }
+        ]
+    }
+    assert not cmip6_validator.validate(invalid_cmip6)
+    assert "cmor_variable" in str(cmip6_validator.errors)
+    assert "required field" in str(cmip6_validator.errors)
+
+
+def test_cmip7_requires_compound_name():
+    """Test that CMIP7 validation requires compound_name."""
+    cmip7_validator = RuleSectionValidator(RULES_SCHEMA, cmor_version="CMIP7")
+
+    # Valid CMIP7 rule with compound_name
+    valid_cmip7 = {
+        "rules": [
+            {
+                "compound_name": "atmos.tas.tavg-h2m-hxy-u.mon.GLB",
+                "inputs": [{"path": "/path", "pattern": "*.nc"}],
+                "variant_label": "r1i1p1f1",
+                "source_id": "test",
+                "experiment_id": "historical",
+                "grid_label": "gn",
+                "output_directory": "/tmp",
+            }
+        ]
+    }
+    assert cmip7_validator.validate(valid_cmip7)
+
+    # Invalid CMIP7 rule without compound_name
+    invalid_cmip7 = {
+        "rules": [
+            {
+                "cmor_variable": "tas",
+                "inputs": [{"path": "/path", "pattern": "*.nc"}],
+                "variant_label": "r1i1p1f1",
+                "source_id": "test",
+                "experiment_id": "historical",
+                "grid_label": "gn",
+                "output_directory": "/tmp",
+            }
+        ]
+    }
+    assert not cmip7_validator.validate(invalid_cmip7)
+    assert "compound_name" in str(cmip7_validator.errors)
+    assert "required field" in str(cmip7_validator.errors)
+
+
+def test_cmip7_accepts_both_cmor_variable_and_compound_name():
+    """Test that CMIP7 validation accepts both cmor_variable and compound_name."""
+    cmip7_validator = RuleSectionValidator(RULES_SCHEMA, cmor_version="CMIP7")
+
+    # Valid CMIP7 rule with both (cmor_variable is optional)
+    valid_cmip7_both = {
+        "rules": [
+            {
+                "cmor_variable": "tas",
+                "compound_name": "atmos.tas.tavg-h2m-hxy-u.mon.GLB",
+                "inputs": [{"path": "/path", "pattern": "*.nc"}],
+                "variant_label": "r1i1p1f1",
+                "source_id": "test",
+                "experiment_id": "historical",
+                "grid_label": "gn",
+                "output_directory": "/tmp",
+            }
+        ]
+    }
+    assert cmip7_validator.validate(valid_cmip7_both)
+
+
+def test_cmip6_accepts_both_cmor_variable_and_compound_name():
+    """Test that CMIP6 validation accepts both cmor_variable and compound_name."""
+    cmip6_validator = RuleSectionValidator(RULES_SCHEMA, cmor_version="CMIP6")
+
+    # Valid CMIP6 rule with both (compound_name is optional)
+    valid_cmip6_both = {
+        "rules": [
+            {
+                "cmor_variable": "tas",
+                "compound_name": "atmos.tas.tavg-h2m-hxy-u.mon.GLB",
+                "inputs": [{"path": "/path", "pattern": "*.nc"}],
+                "variant_label": "r1i1p1f1",
+                "source_id": "test",
+                "experiment_id": "historical",
+                "grid_label": "gn",
+                "output_directory": "/tmp",
+            }
+        ]
+    }
+    assert cmip6_validator.validate(valid_cmip6_both)

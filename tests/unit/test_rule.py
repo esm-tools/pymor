@@ -103,6 +103,37 @@ def test_from_dict_both_cmor_variable_and_compound_name_inconsistent():
         Rule.from_dict(data)
 
 
+def test_from_dict_invalid_compound_name_format():
+    """Test that invalid compound_name format raises ValueError."""
+    data = {
+        "inputs": [
+            {
+                "path": "/some/files/containing/",
+                "pattern": "var1.*.nc",
+            },
+        ],
+        "compound_name": "invalid_format",
+        "pipelines": ["pycmor.core.pipeline.TestingPipeline"],
+    }
+    with pytest.raises(ValueError, match="Invalid compound_name format"):
+        Rule.from_dict(data)
+
+
+def test_from_dict_missing_required_fields():
+    """Test that missing cmor_variable or compound_name raises ValueError."""
+    data = {
+        "inputs": [
+            {
+                "path": "/some/files/containing/",
+                "pattern": "var1.*.nc",
+            },
+        ],
+        "pipelines": ["pycmor.core.pipeline.TestingPipeline"],
+    }
+    with pytest.raises(ValueError, match="Either cmor_variable or compound_name must be provided"):
+        Rule.from_dict(data)
+
+
 def test_from_yaml():
     yaml_str = """
     inputs:
