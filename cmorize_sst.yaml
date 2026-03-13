@@ -46,7 +46,7 @@ rules:
     cmor_variable: tos
     model_variable: sst
     table_id: Omon
-    output_directory: ./cmorized_output
+    output_directory: /work/ab0246/a270092/postprocessing/cmorize
     variant_label: r1i1p1f1
     experiment_id: piControl
     source_id: AWI-ESM3-VEG-LR
@@ -64,12 +64,12 @@ rules:
       - path: /work/bb1469/a270092/runtime/awiesm3-v3.4.1/human_tuning/outdata/fesom
         pattern: sst\.fesom\.1350\.nc
   
-  # - name: sst_tos_gr
+  - name: sst_tos_gr
     description: "Cmorize FESOM SST to CMIP7 tos on 0.25° regular grid"
     cmor_variable: tos
     model_variable: sst
     table_id: Omon
-    output_directory: ./cmorized_output
+    output_directory: /work/ab0246/a270092/postprocessing/cmorize
     variant_label: r1i1p1f1
     experiment_id: piControl
     source_id: AWI-ESM3-VEG-LR

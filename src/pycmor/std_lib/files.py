@@ -47,6 +47,10 @@ from xarray.core.utils import is_scalar
 from ..core.logging import logger
 from .dataset_helpers import get_time_label, has_time_axis
 
+# NetCDF4 compression and chunking settings
+NETCDF_COMPRESSION_LEVEL = 4  # Good balance of compression vs speed
+BOUNDARY_CHUNK_SIZE = 100000  # Chunk size for large boundary variables (lat_bnds, lon_bnds)
+
 
 def _filename_time_range(ds, rule) -> str:
     """
@@ -460,12 +464,10 @@ def save_dataset(da: xr.DataArray, rule):
     time_unlimited = rule._pycmor_cfg("xarray_time_unlimited")
     extra_kwargs = {}
     if time_unlimited:
-        extra_kwargs.update({"unlimited_dims": ["time"]})
+        extra_kwargs.update({"unlimited_dims": ['time']})
     time_encoding = {"dtype": time_dtype}
     time_encoding = {k: v for k, v in time_encoding.items() if v is not None}
     
-    # NetCDF4 compression settings (level 4 = good balance of compression vs speed)
-    compression_level = 4
     
     # Allow user to define time units and calendar in the rule object
     # Martina has a usecase where she wants to set time units to
@@ -582,11 +584,12 @@ def save_dataset(da: xr.DataArray, rule):
     # Apply compression encoding to all data variables (not coordinates)
     for var_name in da.data_vars:
         if var_name not in da.coords:
-            da[var_name].encoding.update({
+            encoding = {
                 'zlib': True,
-                'complevel': compression_level,
-                'shuffle': True,  # Improves compression ratio
-            })
+                'complevel': NETCDF_COMPRESSION_LEVEL,
+                'shuffle': True,
+            }
+            da[var_name].encoding.update(encoding)
 
     if not has_time_axis(da):
         filepath = create_filepath(da, rule)

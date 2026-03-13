@@ -297,13 +297,15 @@ class CMORizer:
 
     def _post_init_populate_rules_with_data_request_variables(self):
         for drv in self.data_request.variables.values():
-            rule_for_var = self.find_matching_rule(drv)
-            if rule_for_var is None:
+            matching_rules = self.find_matching_rules(drv)  # Changed to return list
+            if not matching_rules:
                 continue
-            if rule_for_var.data_request_variables == []:
-                rule_for_var.data_request_variables = [drv]
-            else:
-                rule_for_var.data_request_variables.append(drv)
+            # Assign the data_request_variable to ALL matching rules
+            for rule_for_var in matching_rules:
+                if rule_for_var.data_request_variables == []:
+                    rule_for_var.data_request_variables = [drv]
+                else:
+                    rule_for_var.data_request_variables.append(drv)
         # FIXME: This needs a better name...
         # Cluster might need to be copied:
         with DaskContext.set_cluster(self._cluster):
@@ -370,23 +372,59 @@ class CMORizer:
         for rule in self.rules:
             rule.match_pipelines(self.pipelines, force=force)
 
-    def find_matching_rule(
+    def find_matching_rules(
         self, data_request_variable: DataRequestVariable
-    ) -> Rule or None:
+    ) -> list:
+        """Find all rules that match the given data_request_variable.
+        
+        Returns a list of matching rules. For CMIP7, multiple rules can match
+        the same variable (e.g., gn and gr rules for the same variable).
+        """
         matches = []
         attr_criteria = [("cmor_variable", "variable_id")]
+        
+        # For CMIP7, also match on table_id since variables can appear in multiple tables
+        # (e.g., both Omon.tos and 3hr.tos exist)
+        if hasattr(data_request_variable, 'table_header'):
+            table_id_to_match = data_request_variable.table_header.table_id
+        else:
+            table_id_to_match = None
+        
         for rule in self.rules:
-            if all(
+            # Check if cmor_variable matches
+            if not all(
                 getattr(rule, r_attr) == getattr(data_request_variable, drv_attr)
                 for (r_attr, drv_attr) in attr_criteria
             ):
-                matches.append(rule)
+                continue
+            
+            # For CMIP7, also check table_id if specified in rule
+            if table_id_to_match and hasattr(rule, 'table_id') and rule.table_id:
+                if rule.table_id != table_id_to_match:
+                    continue  # table_id doesn't match, skip this rule
+            
+            # If we get here, it's a match
+            matches.append(rule)
+        
         if len(matches) == 0:
             msg = f"No rule found for {data_request_variable}"
             if self._pymor_cfg.get("raise_on_no_rule", False):
                 raise ValueError(msg)
             elif self._pymor_cfg.get("warn_on_no_rule", False):
                 logger.warning(msg)
+        
+        return matches
+    
+    def find_matching_rule(
+        self, data_request_variable: DataRequestVariable
+    ) -> Rule or None:
+        """Find a single matching rule (legacy method for compatibility).
+        
+        Returns the first match, or raises error if multiple matches found.
+        """
+        matches = self.find_matching_rules(data_request_variable)
+        
+        if len(matches) == 0:
             return None
         if len(matches) > 1:
             msg = f"Need only one rule to match to {data_request_variable}. Found {len(matches)}."

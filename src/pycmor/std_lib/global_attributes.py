@@ -67,9 +67,9 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         
         variable_id = self.rule_dict.get("cmor_variable", "")
         
-        # Get branding suffix from rule or data request
+        # Get branding suffix - prioritize rule config over data request
         branding_suffix = self.rule_dict.get('branding_suffix')
-        if branding_suffix is None:
+        if not branding_suffix:  # None or empty string
             branding_suffix = getattr(self.drv, 'branding_suffix', 'unknown-u-hxy-u')
         
         grid_label = self.rule_dict.get("grid_label", "")
