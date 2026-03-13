@@ -1,0 +1,311 @@
+04:30:48.480 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:30:48.483 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:30:48.484 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:30:48.484 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:30:48.484 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:30:48.485 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:30:48.485 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:30:48.485 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:30:48.486 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:30:48.486 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:30:48.487 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:30:48] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+Command line: "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/bin/pycmor --verbose process cmorize_sst.yaml"
+pycmor version 1.0.2+23.g6516618.dirty
+Run started at 2026-03-13 04:30:48
+Processing cmorize_sst.yaml
+################################################################################
+---------------------
+General Configuration
+---------------------
+CMIP_Tables_Dir: /work/ab0246/a270092/software/pycmor/src/pycmor/data/cmip7
+CV_Dir: /work/ab0246/a270077/SciComp/Projects/pycmor/cmip6-cmor-tables/CMIP6_CVs
+cmor_version: CMIP7
+description: CMIP7 CMORization of SST for AWI-ESM3-VEG-LR piControl experiment
+email: jan.streffing@awi.de
+maintainer: Jan Streffing
+mip: CMIP
+name: AWI-ESM3-VEG-LR PI Control SST
+
+--------------------
+PyCMOR Configuration:
+--------------------
+DASK_CLUSTER: local
+DASK_CLUSTER_SCALING_FIXED_JOBS: '5'
+DASK_CLUSTER_SCALING_MAXIMUM_JOBS: '10'
+DASK_CLUSTER_SCALING_MINIMUM_JOBS: '1'
+DASK_CLUSTER_SCALING_MODE: adapt
+DIMENSIONLESS_MAPPING_TABLE: /work/ab0246/a270092/software/pycmor/src/pycmor/data/dimensionless_mappings.yaml
+ENABLE_DASK: 'False'
+ENABLE_FLOX: 'yes'
+ENABLE_OUTPUT_SUBDIRS: 'no'
+FILE_TIMESPAN: 1YS
+PARALLEL: 'False'
+PARALLEL_BACKEND: dask
+PIPELINE_WORKFLOW_ORCHESTRATOR: native
+PREFECT_TASK_RUNNER: thread_pool
+QUIET: 'False'
+RAISE_ON_NO_RULE: 'no'
+WARN_ON_NO_RULE: 'False'
+XARRAY_DEFAULT_MISSING_VALUE: 1e+30
+XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+XARRAY_OPEN_MFDATASET_PARALLEL: 'False'
+XARRAY_SKIP_UNIT_ATTR_FROM_DRV: 'yes'
+XARRAY_TIME_DTYPE: float64
+XARRAY_TIME_ENABLE_SET_AXIS: 'yes'
+XARRAY_TIME_REMOVE_FILL_VALUE_ATTR: 'yes'
+XARRAY_TIME_SET_LONG_NAME: 'yes'
+XARRAY_TIME_SET_STANDARD_NAME: 'yes'
+XARRAY_TIME_TAXIS_STR: T
+XARRAY_TIME_UNLIMITED: 'yes'
+
+################################################################################
+Setting Dask cluster cluster=None in context!
+Removing Dask cluster from context!
+...post-init done!
+Importing module 'pycmor.core.gather_inputs' to get callable 'load_mfdataset'
+Importing module 'pycmor.std_lib' to get callable 'get_variable'
+Importing module 'pycmor.std_lib' to get callable 'convert_units'
+Importing module 'pycmor.std_lib.setgrid' to get callable 'setgrid'
+Importing module 'pycmor.std_lib' to get callable 'set_global_attributes'
+Importing module 'pycmor.std_lib' to get callable 'trigger_compute'
+Importing module 'pycmor.std_lib.files' to get callable 'save_dataset'
+Setting Dask cluster cluster=None in context!
+Removing Dask cluster from context!
+Object creation done!
+04:31:00.405 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.405 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.407 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.406 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.407 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.408 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.406 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.406 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.406 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.406 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.408 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.408 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.408 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.408 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.408 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.408 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.408 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.408 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.406 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.406 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.408 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.408 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.408 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.407 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.408 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.407 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.408 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.407 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.407 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.409 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.408 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.410 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.411 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.412 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.413 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:31:00.413 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.413 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:31:00.413 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:31:00.413 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.413 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.413 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.413 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.414 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.414 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:31:00.414 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:31:00] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:31:00] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:31:00] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:31:00] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:31:00] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:31:00] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:31:00] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:31:00] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:31:00] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:31:00] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:31:00] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:31:00] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:31:00.416 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.418 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.419 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.419 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+[03/13/26 04:31:00] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:31:00.420 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+[03/13/26 04:31:00] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:31:00.418 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.420 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.420 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.420 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.421 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.421 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.421 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.421 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.421 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.422 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.422 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.422 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:31:00.422 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.423 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.423 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.424 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:31:00.424 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:31:00] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:31:00] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+Process start!
+The following pipelines are known:
+default: Pipeline: default
+-----------------
+steps
+-----
+[1/7] load_mfdataset
+[2/7] get_variable
+[3/7] convert_units
+[4/7] setgrid
+[5/7] set_global_attributes
+[6/7] trigger_compute
+[7/7] save_dataset
+Working on: default
+Starting to process rule Rule for tos with input patterns [re.compile("/work/bb1469/a270092/runtime/awiesm3-v3.4.1/human_tuning/outdata/fesom/re.compile('sst\\\\.fesom\\\\.1350\\\\.nc')")] and pipelines [<pycmor.core.pipeline.Pipeline object at 0x7f4739bb65e0>]
+Running Pipeline: default
+-----------------
+steps
+-----
+[1/7] load_mfdataset
+[2/7] get_variable
+[3/7] convert_units
+[4/7] setgrid
+[5/7] set_global_attributes
+[6/7] trigger_compute
+[7/7] save_dataset
+Loading 1 files using netcdf4 backend on xarray...
+  * /work/bb1469/a270092/runtime/awiesm3-v3.4.1/human_tuning/outdata/fesom/sst.fesom.1350.nc
+[SetGrid] Starting grid merge operation
+  → Grid File          : /work/ab0246/a270092/input/fesom2/dars2/mesh.nc
+[Bounds] Checking for coordinate bounds in grid
+  → Bounds 'lat_bnds' already exist, skipping calculation
+  → Bounds 'lon_bnds' already exist, skipping calculation
+  → Required Dimensions: ['ncells']
+  → Dimension 'ncells' : ❌ Not found, checking for size matches...
+    • Found size match  : 'nod2' (3146761) → 'ncells' (3146761)
+  → Merge Status       : ✅ Possible
+  → Renaming Dims      : {'nod2': 'ncells'}
+  → Coordinate Vars    : ['lat', 'lon']
+  → Boundary Vars      : ['lat_bnds', 'lon_bnds']
+  → Grid Merge         : ✅ Completed
+--------------------------------------------------
+Processing rules ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:12
+Processing completed.

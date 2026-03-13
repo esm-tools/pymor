@@ -1,0 +1,403 @@
+04:36:45.509 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:45.511 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:45.511 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:45.512 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:45.512 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:45.512 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:45.513 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:45.513 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:45.514 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:45.514 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:45.514 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:36:45] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+Command line: "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/bin/pycmor --verbose process cmorize_sst.yaml"
+pycmor version 1.0.2+24.g63d48a0.dirty
+Run started at 2026-03-13 04:36:45
+Processing cmorize_sst.yaml
+################################################################################
+---------------------
+General Configuration
+---------------------
+CMIP_Tables_Dir: /work/ab0246/a270092/software/pycmor/src/pycmor/data/cmip7
+CV_Dir: /work/ab0246/a270077/SciComp/Projects/pycmor/cmip6-cmor-tables/CMIP6_CVs
+cmor_version: CMIP7
+description: CMIP7 CMORization of SST for AWI-ESM3-VEG-LR piControl experiment
+email: jan.streffing@awi.de
+maintainer: Jan Streffing
+mip: CMIP
+name: AWI-ESM3-VEG-LR PI Control SST
+
+--------------------
+PyCMOR Configuration:
+--------------------
+DASK_CLUSTER: local
+DASK_CLUSTER_SCALING_FIXED_JOBS: '5'
+DASK_CLUSTER_SCALING_MAXIMUM_JOBS: '10'
+DASK_CLUSTER_SCALING_MINIMUM_JOBS: '1'
+DASK_CLUSTER_SCALING_MODE: adapt
+DIMENSIONLESS_MAPPING_TABLE: /work/ab0246/a270092/software/pycmor/src/pycmor/data/dimensionless_mappings.yaml
+ENABLE_DASK: 'False'
+ENABLE_FLOX: 'yes'
+ENABLE_OUTPUT_SUBDIRS: 'no'
+FILE_TIMESPAN: 1YS
+PARALLEL: 'False'
+PARALLEL_BACKEND: dask
+PIPELINE_WORKFLOW_ORCHESTRATOR: native
+PREFECT_TASK_RUNNER: thread_pool
+QUIET: 'False'
+RAISE_ON_NO_RULE: 'no'
+WARN_ON_NO_RULE: 'False'
+XARRAY_DEFAULT_MISSING_VALUE: 1e+30
+XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+XARRAY_OPEN_MFDATASET_PARALLEL: 'False'
+XARRAY_SKIP_UNIT_ATTR_FROM_DRV: 'yes'
+XARRAY_TIME_DTYPE: float64
+XARRAY_TIME_ENABLE_SET_AXIS: 'yes'
+XARRAY_TIME_REMOVE_FILL_VALUE_ATTR: 'yes'
+XARRAY_TIME_SET_LONG_NAME: 'yes'
+XARRAY_TIME_SET_STANDARD_NAME: 'yes'
+XARRAY_TIME_TAXIS_STR: T
+XARRAY_TIME_UNLIMITED: 'yes'
+
+################################################################################
+Setting Dask cluster cluster=None in context!
+Removing Dask cluster from context!
+...post-init done!
+Importing module 'pycmor.core.gather_inputs' to get callable 'load_mfdataset'
+Importing module 'pycmor.std_lib' to get callable 'get_variable'
+Importing module 'pycmor.std_lib.variable_attributes' to get callable 'set_variable_attrs'
+Importing module 'pycmor.std_lib' to get callable 'convert_units'
+Importing module 'pycmor.std_lib.setgrid' to get callable 'setgrid'
+Importing module 'pycmor.std_lib' to get callable 'set_global_attributes'
+Importing module 'pycmor.std_lib' to get callable 'trigger_compute'
+Importing module 'pycmor.std_lib.files' to get callable 'save_dataset'
+Setting Dask cluster cluster=None in context!
+Removing Dask cluster from context!
+Object creation done!
+04:36:51.996 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.000 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.001 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.001 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.002 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.003 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.003 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.004 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.005 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.005 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.006 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:36:52] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:36:52.015 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.018 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.019 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.019 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.020 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.020 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.021 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.021 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.021 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.022 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.022 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:36:52] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:36:52.095 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.098 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.098 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.099 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.099 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.100 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.100 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.100 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.101 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.101 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.102 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:36:52] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:36:52.104 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.108 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.105 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.109 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.109 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.110 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.110 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.110 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.110 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.111 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.111 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.111 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.111 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.111 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.112 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.112 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.112 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.113 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.113 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:36:52.113 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.114 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.115 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:36:52] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:36:52] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:36:52.125 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.128 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.129 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.129 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.130 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.130 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.131 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.131 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.132 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.132 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.133 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:36:52] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:36:52.166 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.168 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.169 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.169 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.170 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.170 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.170 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.171 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.171 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.172 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.172 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:36:52] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:36:52.202 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.204 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.205 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.205 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.205 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.206 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.206 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.207 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.207 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.207 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.208 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:36:52.210 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.212 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+[03/13/26 04:36:52] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:36:52.213 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.213 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.214 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.214 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.215 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.215 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.216 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.216 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.217 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:36:52.215 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.217 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.218 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.218 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.219 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.219 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.220 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.220 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.221 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.221 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.222 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:36:52] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:36:52.222 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.224 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.222 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.225 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.225 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.225 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.225 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.226 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.226 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.226 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.226 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.226 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+[03/13/26 04:36:52] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:36:52.227 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.227 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.227 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.227 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.227 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.228 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.228 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:36:52.228 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.229 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.229 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:36:52] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:36:52] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:36:52.259 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.261 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.262 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.263 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.263 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.264 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.264 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.265 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.265 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.265 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.266 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:36:52] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:36:52.299 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.301 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.302 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.302 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.302 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.303 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.303 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.304 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.304 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.304 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.303 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.305 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:36:52.305 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.306 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.306 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.307 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.307 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.308 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.308 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.309 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.309 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+[03/13/26 04:36:52] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:36:52.310 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:36:52] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:36:52.336 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.338 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.338 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.338 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.339 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.339 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.340 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.340 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.340 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.341 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:36:52.341 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:36:52] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+Process start!
+The following pipelines are known:
+default: Pipeline: default
+-----------------
+steps
+-----
+[1/8] load_mfdataset
+[2/8] get_variable
+[3/8] set_variable_attrs
+[4/8] convert_units
+[5/8] setgrid
+[6/8] set_global_attributes
+[7/8] trigger_compute
+[8/8] save_dataset
+Working on: default
+Starting to process rule Rule for tos with input patterns [re.compile("/work/bb1469/a270092/runtime/awiesm3-v3.4.1/human_tuning/outdata/fesom/re.compile('sst\\\\.fesom\\\\.1350\\\\.nc')")] and pipelines [<pycmor.core.pipeline.Pipeline object at 0x7fc34841a490>]
+Running Pipeline: default
+-----------------
+steps
+-----
+[1/8] load_mfdataset
+[2/8] get_variable
+[3/8] set_variable_attrs
+[4/8] convert_units
+[5/8] setgrid
+[6/8] set_global_attributes
+[7/8] trigger_compute
+[8/8] save_dataset
+Loading 1 files using netcdf4 backend on xarray...
+  * /work/bb1469/a270092/runtime/awiesm3-v3.4.1/human_tuning/outdata/fesom/sst.fesom.1350.nc
+Processing rules                                            0% -:--:--
+╭─────────────────────────────── Traceback (most recent call last) ────────────────────────────────╮
+│ /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/bin/pycmor:7 in <module>                │
+│                                                                                                  │
+│   4 if __name__ == '__main__':                                                                   │
+│   5 │   if sys.argv[0].endswith('.exe'):                                                         │
+│   6 │   │   sys.argv[0] = sys.argv[0][:-4]                                                       │
+│ ❱ 7 │   sys.exit(main())                                                                         │
+│   8                                                                                              │
+│                                                                                                  │
+│ ╭──────────── locals ─────────────╮                                                              │
+│ │ sys = <module 'sys' (built-in)> │                                                              │
+│ ╰─────────────────────────────────╯                                                              │
+│                                                                                                  │
+│ /work/ab0246/a270092/software/pycmor/src/pycmor/cli.py:359 in main                               │
+│                                                                                                  │
+│   356 │   for entry_point_name, entry_point in find_subcommands().items():                       │
+│   357 │   │   cli.add_command(entry_point["callable"], name=entry_point_name)                    │
+│   358 │   # Prefer new env var prefix, but keep backward compatibility                           │
+│ ❱ 359 │   cli(auto_envvar_prefix="PYCMOR")                                                       │
+│   360                                                                                            │
+│   361                                                                                            │
+│   362 if __name__ == "__main__":                                                                 │
+│                                                                                                  │
+│ ╭─────────────────────────────────── locals ────────────────────────────────────╮                │
+│ │      entry_point = {'plugin_name': 'pycmor', 'callable': <RichGroup plugins>} │                │
+│ │ entry_point_name = 'plugins'                                                  │                │
+│ ╰───────────────────────────────────────────────────────────────────────────────╯                │
+│                                                                                                  │
+│                                     ... 13 frames hidden ...                                     │
+│                                                                                                  │
+│ /work/ab0246/a270092/software/pycmor/src/pycmor/std_lib/variable_attributes.py:32 in             │
+│ set_variable_attrs                                                                               │
+│                                                                                                  │
+│   29 │                                                                                           │
+│   30 │   # Use the associated data_request_variable to set the variable attributes               │
+│   31 │   missing_value = rule._pymor_cfg("xarray_default_missing_value")                         │
+│ ❱ 32 │   attrs = rule.data_request_variable.attrs.copy()  # avoid modifying original             │
+│   33 │                                                                                           │
+│   34 │   # Set missing value in attrs if not present                                             │
+│   35 │   for attr in ["missing_value", "_FillValue"]:                                            │
+│                                                                                                  │
+│ ╭─────────────────────────────────────────── locals ───────────────────────────────────────────╮ │
+│ │            da = <xarray.DataArray 'tos' (time: 12, nod2: 3146761)> Size: 151MB               │ │
+│ │                 dask.array<open_dataset-sst, shape=(12, 3146761), dtype=float32,             │ │
+│ │                 chunksize=(1, 786691), chunktype=numpy.ndarray>                              │ │
+│ │                 Coordinates:                                                                 │ │
+│ │                   * time     (time) object 96B 1350-01-31 23:54:00 ... 1350-12-31 23:54:00   │ │
+│ │                 Dimensions without coordinates: nod2                                         │ │
+│ │                 Attributes:                                                                  │ │
+│ │                 │   description:  sea surface temperature                                    │ │
+│ │                 │   long_name:    sea surface temperature                                    │ │
+│ │                 │   units:        C                                                          │ │
+│ │                 │   location:     node                                                       │ │
+│ │                 │   mesh:         fesom_mesh                                                 │ │
+│ │            ds = <xarray.DataArray 'sst' (time: 12, nod2: 3146761)> Size: 151MB               │ │
+│ │                 dask.array<open_dataset-sst, shape=(12, 3146761), dtype=float32,             │ │
+│ │                 chunksize=(1, 786691), chunktype=numpy.ndarray>                              │ │
+│ │                 Coordinates:                                                                 │ │
+│ │                   * time     (time) object 96B 1350-01-31 23:54:00 ... 1350-12-31 23:54:00   │ │
+│ │                 Dimensions without coordinates: nod2                                         │ │
+│ │                 Attributes:                                                                  │ │
+│ │                 │   description:  sea surface temperature                                    │ │
+│ │                 │   long_name:    sea surface temperature                                    │ │
+│ │                 │   units:        C                                                          │ │
+│ │                 │   location:     node                                                       │ │
+│ │                 │   mesh:         fesom_mesh                                                 │ │
+│ │ missing_value = 1e+30                                                                        │ │
+│ │          rule = <pycmor.core.rule.Rule object at 0x7fc34841a430>                             │ │
+│ ╰──────────────────────────────────────────────────────────────────────────────────────────────╯ │
+│                                                                                                  │
+│ /work/ab0246/a270092/software/pycmor/src/pycmor/data_request/variable.py:467 in attrs            │
+│                                                                                                  │
+│   464 │                                                                                          │
+│   465 │   @property                                                                              │
+│   466 │   def attrs(self) -> dict:                                                               │
+│ ❱ 467 │   │   raise NotImplementedError("CMI7 attributes are not yet finalized")                 │
+│   468 │                                                                                          │
+│   469 │   @property                                                                              │
+│   470 │   def cell_measures(self) -> str:                                                        │
+│                                                                                                  │
+│ ╭─────────────────────────────────────────── locals ───────────────────────────────────────────╮ │
+│ │ self = CMIP7DataRequestVariable(                                                             │ │
+│ │        │   _frequency='mon',                                                                 │ │
+│ │        │   _modeling_realm='ocean',                                                          │ │
+│ │        │   _standard_name='sea_surface_temperature',                                         │ │
+│ │        │   _units='degC',                                                                    │ │
+│ │        │   _cell_methods='area: mean where sea time: mean',                                  │ │
+│ │        │   _cell_measures='area: areacello',                                                 │ │
+│ │        │   _long_name='Sea Surface Temperature',                                             │ │
+│ │        │   _comment='This may differ from "surface temperature" in regions of sea ice or     │ │
+│ │        floating ice'+199,                                                                    │ │
+│ │        │   _dimensions=('longitude', 'latitude', 'time-intv'),                               │ │
+│ │        │   _out_name='tos',                                                                  │ │
+│ │        │   _typ=<class 'float'>,                                                             │ │
+│ │        │   _positive='',                                                                     │ │
+│ │        │   _spatial_shape='XY-na',                                                           │ │
+│ │        │   _temporal_shape='time-intv',                                                      │ │
+│ │        │   _cmip6_cmor_table='Omon',                                                         │ │
+│ │        │   _name='tos',                                                                      │ │
+│ │        │   _table_name='Omon'                                                                │ │
+│ │        )                                                                                     │ │
+│ ╰──────────────────────────────────────────────────────────────────────────────────────────────╯ │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+NotImplementedError: CMI7 attributes are not yet finalized

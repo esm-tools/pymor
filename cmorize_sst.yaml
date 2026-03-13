@@ -28,14 +28,17 @@ pipelines:
       - "pycmor.std_lib.trigger_compute"
       - "pycmor.std_lib.files.save_dataset"
   
-  # Regridded pipeline temporarily disabled - planner AI will handle gr
+  # Regridded pipeline - BLOCKED by pyfesom2 dependency conflicts
+  # Issue: pyfesom2 in user site-packages requires matplotlib, pyresample, etc
+  #        but conda env can't properly access user site-packages libraries
+  # Status: Planner AI will handle gr regridding separately
   # - name: regridded
   #   steps:
   #     - "pycmor.core.gather_inputs.load_mfdataset"
   #     - "pycmor.std_lib.get_variable"
   #     - "pycmor.std_lib.variable_attributes.set_variable_attrs"
   #     - "pycmor.std_lib.convert_units"
-  #     - "pycmor.fesom.regrid_to_regular"
+  #     - "pycmor.fesom_2p1.regridding.regrid_to_regular"
   #     - "pycmor.std_lib.set_global_attributes"
   #     - "pycmor.std_lib.trigger_compute"
   #     - "pycmor.std_lib.files.save_dataset"
@@ -58,7 +61,7 @@ rules:
       - path: /work/bb1469/a270092/runtime/awiesm3-v3.4.1/human_tuning/outdata/fesom
         pattern: sst\.fesom\.1350\.nc
   
-  # gr rule temporarily disabled - planner AI will handle regridding
+  # gr rule - BLOCKED by pyfesom2 dependency conflicts (planner AI will handle)
   # - name: sst_tos_gr
   #   description: "Cmorize FESOM SST to CMIP7 tos on 0.25° regular grid"
   #   cmor_variable: tos

@@ -1,0 +1,873 @@
+04:28:16.728 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:16.730 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:16.730 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:16.731 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:16.731 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:16.731 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:16.732 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:16.732 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:16.733 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:16.733 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:16.734 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:28:16] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+Command line: "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/bin/pycmor --verbose process cmorize_sst.yaml"
+pycmor version 1.0.2+23.g6516618.dirty
+Run started at 2026-03-13 04:28:17
+Processing cmorize_sst.yaml
+################################################################################
+---------------------
+General Configuration
+---------------------
+CMIP_Tables_Dir: /work/ab0246/a270092/software/pycmor/src/pycmor/data/cmip7
+CV_Dir: /work/ab0246/a270077/SciComp/Projects/pycmor/cmip6-cmor-tables/CMIP6_CVs
+cmor_version: CMIP7
+description: CMIP7 CMORization of SST for AWI-ESM3-VEG-LR piControl experiment
+email: jan.streffing@awi.de
+maintainer: Jan Streffing
+mip: CMIP
+name: AWI-ESM3-VEG-LR PI Control SST
+
+--------------------
+PyCMOR Configuration:
+--------------------
+DASK_CLUSTER: local
+DASK_CLUSTER_SCALING_FIXED_JOBS: '5'
+DASK_CLUSTER_SCALING_MAXIMUM_JOBS: '10'
+DASK_CLUSTER_SCALING_MINIMUM_JOBS: '1'
+DASK_CLUSTER_SCALING_MODE: adapt
+DIMENSIONLESS_MAPPING_TABLE: /work/ab0246/a270092/software/pycmor/src/pycmor/data/dimensionless_mappings.yaml
+ENABLE_DASK: 'False'
+ENABLE_FLOX: 'yes'
+ENABLE_OUTPUT_SUBDIRS: 'no'
+FILE_TIMESPAN: 1YS
+PARALLEL: 'False'
+PARALLEL_BACKEND: dask
+PIPELINE_WORKFLOW_ORCHESTRATOR: native
+PREFECT_TASK_RUNNER: thread_pool
+QUIET: 'False'
+RAISE_ON_NO_RULE: 'no'
+WARN_ON_NO_RULE: 'False'
+XARRAY_DEFAULT_MISSING_VALUE: 1e+30
+XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+XARRAY_OPEN_MFDATASET_PARALLEL: 'False'
+XARRAY_SKIP_UNIT_ATTR_FROM_DRV: 'yes'
+XARRAY_TIME_DTYPE: float64
+XARRAY_TIME_ENABLE_SET_AXIS: 'yes'
+XARRAY_TIME_REMOVE_FILL_VALUE_ATTR: 'yes'
+XARRAY_TIME_SET_LONG_NAME: 'yes'
+XARRAY_TIME_SET_STANDARD_NAME: 'yes'
+XARRAY_TIME_TAXIS_STR: T
+XARRAY_TIME_UNLIMITED: 'yes'
+
+################################################################################
+Setting Dask cluster cluster=None in context!
+Removing Dask cluster from context!
+...post-init done!
+Importing module 'pycmor.core.gather_inputs' to get callable 'load_mfdataset'
+Importing module 'pycmor.std_lib' to get callable 'get_variable'
+Importing module 'pycmor.std_lib' to get callable 'time_average'
+Importing module 'pycmor.std_lib' to get callable 'convert_units'
+Importing module 'pycmor.std_lib.setgrid' to get callable 'setgrid'
+Importing module 'pycmor.std_lib' to get callable 'set_global_attributes'
+Importing module 'pycmor.std_lib' to get callable 'trigger_compute'
+Importing module 'pycmor.std_lib.files' to get callable 'save_dataset'
+Setting Dask cluster cluster=None in context!
+Removing Dask cluster from context!
+Object creation done!
+04:28:24.364 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.366 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.367 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.367 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.368 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.368 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.369 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.369 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.369 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.370 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.370 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:28:24.371 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.374 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.374 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.375 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.375 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.375 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+[03/13/26 04:28:24] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:28:24.376 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.376 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.377 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.377 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.377 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:28:24] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:28:24.517 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.520 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.520 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.521 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.521 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.522 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.522 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.523 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.523 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.523 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.524 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:28:24] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:28:24.550 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.553 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.554 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.554 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.554 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.555 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.555 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.555 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.556 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.556 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.557 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:28:24] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:28:24.561 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.563 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.564 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.564 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.565 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.565 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.565 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.566 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.566 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.567 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.567 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:28:24] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:28:24.604 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.606 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.607 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.607 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.607 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.608 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.608 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.608 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.609 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.609 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.610 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:28:24] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:28:24.630 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.632 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.633 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.633 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.634 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.632 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.634 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.634 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.634 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.635 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.635 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.635 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.635 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.635 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.636 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.636 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.636 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:28:24.636 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.637 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.637 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.638 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.638 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:28:24] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:28:24] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:28:24.659 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.662 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.662 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.663 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.663 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.664 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.664 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.665 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.665 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.665 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.666 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:28:24.669 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.671 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.671 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.672 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+[03/13/26 04:28:24] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:28:24.672 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.673 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.673 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.673 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.674 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.674 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.675 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:28:24] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:28:24.694 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.696 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.696 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.697 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.697 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.698 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.698 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.698 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.699 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.699 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.700 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:28:24.701 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.703 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.703 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.704 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.704 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.702 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.704 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.705 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.705 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+[03/13/26 04:28:24] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:28:24.705 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.705 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.706 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.706 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.706 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.706 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.706 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.706 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:28:24.707 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.707 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.706 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.708 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.708 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.708 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.708 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.708 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:28:24.709 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.709 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.710 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.710 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.710 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.711 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.711 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+[03/13/26 04:28:24] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:28:24.712 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:28:24] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:28:24] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:28:24.719 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.721 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.722 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.722 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.723 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.723 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.723 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.724 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.724 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.725 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.725 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:28:24] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+04:28:24.743 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.745 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.746 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.746 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.747 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.747 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.748 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.748 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.748 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.749 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:28:24.749 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:28:24] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+Process start!
+The following pipelines are known:
+default: Pipeline: default
+-----------------
+steps
+-----
+[1/8] load_mfdataset
+[2/8] get_variable
+[3/8] time_average
+[4/8] convert_units
+[5/8] setgrid
+[6/8] set_global_attributes
+[7/8] trigger_compute
+[8/8] save_dataset
+Working on: default
+Starting to process rule Rule for tos with input patterns [re.compile("/work/bb1469/a270092/runtime/awiesm3-v3.4.1/human_tuning/outdata/fesom/re.compile('sst\\\\.fesom\\\\.1350\\\\.nc')")] and pipelines [<pycmor.core.pipeline.Pipeline object at 0x7fc5b018c490>]
+Running Pipeline: default
+-----------------
+steps
+-----
+[1/8] load_mfdataset
+[2/8] get_variable
+[3/8] time_average
+[4/8] convert_units
+[5/8] setgrid
+[6/8] set_global_attributes
+[7/8] trigger_compute
+[8/8] save_dataset
+Loading 1 files using netcdf4 backend on xarray...
+  * /work/bb1469/a270092/runtime/awiesm3-v3.4.1/human_tuning/outdata/fesom/sst.fesom.1350.nc
+approx_interval=0.125 frequency_str='3h'
+[SetGrid] Starting grid merge operation
+  → Grid File          : /work/ab0246/a270092/input/fesom2/dars2/mesh.nc
+[Bounds] Checking for coordinate bounds in grid
+  → Bounds 'lat_bnds' already exist, skipping calculation
+  → Bounds 'lon_bnds' already exist, skipping calculation
+  → Required Dimensions: ['ncells']
+  → Dimension 'ncells' : ❌ Not found, checking for size matches...
+    • Found size match  : 'nod2' (3146761) → 'ncells' (3146761)
+  → Merge Status       : ✅ Possible
+  → Renaming Dims      : {'nod2': 'ncells'}
+  → Coordinate Vars    : ['lat', 'lon']
+  → Boundary Vars      : ['lat_bnds', 'lon_bnds']
+  → Grid Merge         : ✅ Completed
+--------------------------------------------------
+
+libgomp: Thread creation failed: Resource temporarily unavailable
+
+libgomp: Thread creation failed: Resource temporarily unavailable
+
+libgomp: Thread creation failed: Resource temporarily unavailable
+
+libgomp: Thread creation failed: Resource temporarily unavailable
+
+libgomp: Thread creation failed: Resource temporarily unavailable
+
+libgomp: Thread creation failed: Resource temporarily unavailable
+
+libgomp: Thread creation failed: Resource temporarily unavailable
+2026-03-13 04:29:05,173 - distributed.scheduler - WARNING - Removing worker 'tcp://127.0.0.1:42375' caused the cluster to lose already computed task(s), which will be recomputed elsewhere: {('array-3cc5b46a3b1edd8db76c11627224f579', 7)} (stimulus_id='handle-worker-cleanup-1773372545.1734307')
+2026-03-13 04:29:05,185 - distributed.scheduler - WARNING - Removing worker 'tcp://127.0.0.1:39631' caused the cluster to lose already computed task(s), which will be recomputed elsewhere: {('array-3cc5b46a3b1edd8db76c11627224f579', 2)} (stimulus_id='handle-worker-cleanup-1773372545.1856241')
+2026-03-13 04:29:05,186 - distributed.scheduler - WARNING - Removing worker 'tcp://127.0.0.1:44593' caused the cluster to lose already computed task(s), which will be recomputed elsewhere: {('array-3cc5b46a3b1edd8db76c11627224f579', 0)} (stimulus_id='handle-worker-cleanup-1773372545.1861312')
+2026-03-13 04:29:05,187 - distributed.scheduler - WARNING - Removing worker 'tcp://127.0.0.1:41301' caused the cluster to lose already computed task(s), which will be recomputed elsewhere: {('array-3cc5b46a3b1edd8db76c11627224f579', 8)} (stimulus_id='handle-worker-cleanup-1773372545.1877136')
+
+libgomp: Thread creation failed: Resource temporarily unavailable
+2026-03-13 04:29:05,202 - distributed.scheduler - WARNING - Removing worker 'tcp://127.0.0.1:40999' caused the cluster to lose already computed task(s), which will be recomputed elsewhere: {('array-3cc5b46a3b1edd8db76c11627224f579', 9)} (stimulus_id='handle-worker-cleanup-1773372545.2028084')
+2026-03-13 04:29:05,204 - distributed.nanny - WARNING - Restarting worker
+2026-03-13 04:29:05,228 - distributed.nanny - WARNING - Restarting worker
+2026-03-13 04:29:05,252 - distributed.nanny - WARNING - Restarting worker
+2026-03-13 04:29:05,254 - distributed.nanny - WARNING - Restarting worker
+
+libgomp: Thread creation failed: Resource temporarily unavailable
+2026-03-13 04:29:05,283 - distributed.scheduler - WARNING - Removing worker 'tcp://127.0.0.1:42913' caused the cluster to lose already computed task(s), which will be recomputed elsewhere: {('array-3cc5b46a3b1edd8db76c11627224f579', 6)} (stimulus_id='handle-worker-cleanup-1773372545.2834609')
+2026-03-13 04:29:05,290 - distributed.nanny - WARNING - Restarting worker
+2026-03-13 04:29:05,294 - distributed.scheduler - WARNING - Removing worker 'tcp://127.0.0.1:43607' caused the cluster to lose already computed task(s), which will be recomputed elsewhere: {('array-3cc5b46a3b1edd8db76c11627224f579', 5)} (stimulus_id='handle-worker-cleanup-1773372545.2944007')
+
+libgomp: Thread creation failed: Resource temporarily unavailable
+
+libgomp: Thread creation failed: Resource temporarily unavailable
+2026-03-13 04:29:05,297 - distributed.nanny - ERROR - Nanny failed to start process
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/nanny.py", line 748, in start
+    await self.process.start()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/process.py", line 55, in _call_and_set_future
+    res = func(*args, **kwargs)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/process.py", line 215, in _start
+    process.start()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/multiprocessing/process.py", line 121, in start
+    self._popen = self._Popen(self)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/multiprocessing/context.py", line 284, in _Popen
+    return Popen(process_obj)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/multiprocessing/popen_spawn_posix.py", line 32, in __init__
+    super().__init__(process_obj)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/multiprocessing/popen_fork.py", line 19, in __init__
+    self._launch(process_obj)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/multiprocessing/popen_spawn_posix.py", line 58, in _launch
+    self.pid = util.spawnv_passfds(spawn.get_executable(),
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/multiprocessing/util.py", line 452, in spawnv_passfds
+    return _posixsubprocess.fork_exec(
+BlockingIOError: [Errno 11] Resource temporarily unavailable
+2026-03-13 04:29:05,368 - distributed.nanny - ERROR - Failed to start process
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/nanny.py", line 748, in start
+    await self.process.start()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/process.py", line 55, in _call_and_set_future
+    res = func(*args, **kwargs)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/process.py", line 215, in _start
+    process.start()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/multiprocessing/process.py", line 121, in start
+    self._popen = self._Popen(self)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/multiprocessing/context.py", line 284, in _Popen
+    return Popen(process_obj)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/multiprocessing/popen_spawn_posix.py", line 32, in __init__
+    super().__init__(process_obj)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/multiprocessing/popen_fork.py", line 19, in __init__
+    self._launch(process_obj)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/multiprocessing/popen_spawn_posix.py", line 58, in _launch
+    self.pid = util.spawnv_passfds(spawn.get_executable(),
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/multiprocessing/util.py", line 452, in spawnv_passfds
+    return _posixsubprocess.fork_exec(
+BlockingIOError: [Errno 11] Resource temporarily unavailable
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/nanny.py", line 452, in instantiate
+    result = await self.process.start()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/nanny.py", line 752, in start
+    await self.process.terminate()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/process.py", line 55, in _call_and_set_future
+    res = func(*args, **kwargs)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/multiprocessing/process.py", line 133, in terminate
+    self._popen.terminate()
+AttributeError: 'NoneType' object has no attribute 'terminate'
+2026-03-13 04:29:05,369 - distributed.scheduler - WARNING - Removing worker 'tcp://127.0.0.1:37661' caused the cluster to lose already computed task(s), which will be recomputed elsewhere: {('array-3cc5b46a3b1edd8db76c11627224f579', 3)} (stimulus_id='handle-worker-cleanup-1773372545.3688717')
+2026-03-13 04:29:05,378 - distributed.nanny - WARNING - Restarting worker
+2026-03-13 04:29:05,380 - distributed.nanny - WARNING - Restarting worker
+2026-03-13 04:29:05,422 - distributed.nanny - WARNING - Restarting worker
+2026-03-13 04:29:05,456 - distributed.scheduler - WARNING - Removing worker 'tcp://127.0.0.1:36583' caused the cluster to lose already computed task(s), which will be recomputed elsewhere: {('array-3cc5b46a3b1edd8db76c11627224f579', 4), ('array-3cc5b46a3b1edd8db76c11627224f579', 11)} (stimulus_id='handle-worker-cleanup-1773372545.456262')
+2026-03-13 04:29:05,465 - distributed.nanny - WARNING - Restarting worker
+2026-03-13 04:29:05,492 - distributed.nanny - WARNING - Restarting worker
+2026-03-13 04:29:05,494 - distributed.nanny - WARNING - Restarting worker
+
+libgomp: Thread creation failed: Resource temporarily unavailable
+
+libgomp: Thread creation failed: Resource temporarily unavailable
+2026-03-13 04:29:05,616 - distributed.scheduler - WARNING - Removing worker 'tcp://127.0.0.1:39825' caused the cluster to lose already computed task(s), which will be recomputed elsewhere: {('array-3cc5b46a3b1edd8db76c11627224f579', 10)} (stimulus_id='handle-worker-cleanup-1773372545.616627')
+2026-03-13 04:29:05,644 - distributed.scheduler - ERROR - Task ('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 2184, 2) marked as failed because 4 workers died while trying to run it
+2026-03-13 04:29:05,646 - distributed.scheduler - ERROR - Task ('groupby_nanmean-b25a44a828f7a3e1a86e48ede8b77fd3', 0, 11) marked as failed because 4 workers died while trying to run it
+2026-03-13 04:29:05,646 - distributed.scheduler - WARNING - Removing worker 'tcp://127.0.0.1:40571' caused the cluster to lose already computed task(s), which will be recomputed elsewhere: {('array-3cc5b46a3b1edd8db76c11627224f579', 9), ('array-3cc5b46a3b1edd8db76c11627224f579', 1)} (stimulus_id='handle-worker-cleanup-1773372545.6440315')
+2026-03-13 04:29:05,789 - distributed.worker - ERROR - Worker stream died during communication: tcp://127.0.0.1:40571
+ConnectionRefusedError: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/comm/core.py", line 342, in connect
+    comm = await wait_for(
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/utils.py", line 1957, in wait_for
+    return await asyncio.wait_for(fut, timeout)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/asyncio/tasks.py", line 479, in wait_for
+    return fut.result()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/comm/tcp.py", line 559, in connect
+    convert_stream_closed_error(self, e)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/comm/tcp.py", line 140, in convert_stream_closed_error
+    raise CommClosedError(f"in {obj}: {exc.__class__.__name__}: {exc}") from exc
+distributed.comm.core.CommClosedError: in <distributed.comm.tcp.TCPConnector object at 0x7f3cf1accf40>: ConnectionRefusedError: [Errno 111] Connection refused
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/core.py", line 1423, in _connect
+    comm = await connect(
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/comm/core.py", line 366, in connect
+    await asyncio.sleep(backoff)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/asyncio/tasks.py", line 652, in sleep
+    return await future
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/core.py", line 1533, in connect
+    return connect_attempt.result()
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker.py", line 2056, in gather_dep
+    response = await get_data_from_worker(
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker.py", line 2863, in get_data_from_worker
+    comm = await rpc.connect(worker)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/core.py", line 1535, in connect
+    raise CommClosedError(reason)
+distributed.comm.core.CommClosedError: Address removed.
+2026-03-13 04:29:05,795 - distributed.worker - ERROR - Worker stream died during communication: tcp://127.0.0.1:40571
+ConnectionRefusedError: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/comm/core.py", line 342, in connect
+    comm = await wait_for(
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/utils.py", line 1957, in wait_for
+    return await asyncio.wait_for(fut, timeout)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/asyncio/tasks.py", line 479, in wait_for
+    return fut.result()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/comm/tcp.py", line 559, in connect
+    convert_stream_closed_error(self, e)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/comm/tcp.py", line 140, in convert_stream_closed_error
+    raise CommClosedError(f"in {obj}: {exc.__class__.__name__}: {exc}") from exc
+distributed.comm.core.CommClosedError: in <distributed.comm.tcp.TCPConnector object at 0x7fd4a93417c0>: ConnectionRefusedError: [Errno 111] Connection refused
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/core.py", line 1423, in _connect
+    comm = await connect(
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/comm/core.py", line 366, in connect
+    await asyncio.sleep(backoff)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/asyncio/tasks.py", line 652, in sleep
+    return await future
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/core.py", line 1533, in connect
+    return connect_attempt.result()
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker.py", line 2056, in gather_dep
+    response = await get_data_from_worker(
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker.py", line 2863, in get_data_from_worker
+    comm = await rpc.connect(worker)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/core.py", line 1535, in connect
+    raise CommClosedError(reason)
+distributed.comm.core.CommClosedError: Address removed.
+Processing rules                                            0% -:--:--
+2026-03-13 04:29:06,664 - distributed.nanny - WARNING - Restarting worker
+╭─────────────────────────────── Traceback (most recent call last) ────────────────────────────────╮
+│ /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/bin/pycmor:7 in <module>                │
+│                                                                                                  │
+│   4 if __name__ == '__main__':                                                                   │
+│   5 │   if sys.argv[0].endswith('.exe'):                                                         │
+│   6 │   │   sys.argv[0] = sys.argv[0][:-4]                                                       │
+│ ❱ 7 │   sys.exit(main())                                                                         │
+│   8                                                                                              │
+│                                                                                                  │
+│ ╭──────────── locals ─────────────╮                                                              │
+│ │ sys = <module 'sys' (built-in)> │                                                              │
+│ ╰─────────────────────────────────╯                                                              │
+│                                                                                                  │
+│ /work/ab0246/a270092/software/pycmor/src/pycmor/cli.py:359 in main                               │
+│                                                                                                  │
+│   356 │   for entry_point_name, entry_point in find_subcommands().items():                       │
+│   357 │   │   cli.add_command(entry_point["callable"], name=entry_point_name)                    │
+│   358 │   # Prefer new env var prefix, but keep backward compatibility                           │
+│ ❱ 359 │   cli(auto_envvar_prefix="PYCMOR")                                                       │
+│   360                                                                                            │
+│   361                                                                                            │
+│   362 if __name__ == "__main__":                                                                 │
+│                                                                                                  │
+│ ╭─────────────────────────────────── locals ────────────────────────────────────╮                │
+│ │      entry_point = {'plugin_name': 'pycmor', 'callable': <RichGroup plugins>} │                │
+│ │ entry_point_name = 'plugins'                                                  │                │
+│ ╰───────────────────────────────────────────────────────────────────────────────╯                │
+│                                                                                                  │
+│                                     ... 21 frames hidden ...                                     │
+│                                                                                                  │
+│ /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed │
+│ /client.py:2567 in gather                                                                        │
+│                                                                                                  │
+│   2564 │   │   │   local_worker = None                                                           │
+│   2565 │   │                                                                                     │
+│   2566 │   │   with shorten_traceback():                                                         │
+│ ❱ 2567 │   │   │   return self.sync(                                                             │
+│   2568 │   │   │   │   self._gather,                                                             │
+│   2569 │   │   │   │   futures,                                                                  │
+│   2570 │   │   │   │   errors=errors,                                                            │
+│                                                                                                  │
+│ ╭─────────────────────────────────────────── locals ───────────────────────────────────────────╮ │
+│ │ asynchronous = None                                                                          │ │
+│ │       direct = None                                                                          │ │
+│ │       errors = 'raise'                                                                       │ │
+│ │      futures = [                                                                             │ │
+│ │                │   <Future: pending, key: ('store-map-1bb6df75f09c3238985fad3931dc71bc', 0,  │ │
+│ │                0)>,                                                                          │ │
+│ │                │   <Future: cancelled, key: ('store-map-1bb6df75f09c3238985fad3931dc71bc',   │ │
+│ │                0, 1)>,                                                                       │ │
+│ │                │   <Future: cancelled, key: ('store-map-1bb6df75f09c3238985fad3931dc71bc',   │ │
+│ │                0, 2)>,                                                                       │ │
+│ │                │   <Future: cancelled, key: ('store-map-1bb6df75f09c3238985fad3931dc71bc',   │ │
+│ │                0, 3)>,                                                                       │ │
+│ │                │   <Future: error, key: ('store-map-1bb6df75f09c3238985fad3931dc71bc', 1,    │ │
+│ │                0)>,                                                                          │ │
+│ │                │   <Future: cancelled, key: ('store-map-1bb6df75f09c3238985fad3931dc71bc',   │ │
+│ │                1, 1)>,                                                                       │ │
+│ │                │   <Future: pending, key: ('store-map-1bb6df75f09c3238985fad3931dc71bc', 1,  │ │
+│ │                2)>,                                                                          │ │
+│ │                │   <Future: cancelled, key: ('store-map-1bb6df75f09c3238985fad3931dc71bc',   │ │
+│ │                1, 3)>,                                                                       │ │
+│ │                │   <Future: cancelled, key: ('store-map-1bb6df75f09c3238985fad3931dc71bc',   │ │
+│ │                2, 0)>,                                                                       │ │
+│ │                │   <Future: cancelled, key: ('store-map-1bb6df75f09c3238985fad3931dc71bc',   │ │
+│ │                2, 1)>,                                                                       │ │
+│ │                │   ... +10682                                                                │ │
+│ │                ]                                                                             │ │
+│ │ local_worker = None                                                                          │ │
+│ │         self = <Client: 'tcp://127.0.0.1:46503' processes=16 threads=256, memory=501.87 GiB> │ │
+│ ╰──────────────────────────────────────────────────────────────────────────────────────────────╯ │
+│                                                                                                  │
+│ /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed │
+│ /client.py:2428 in _gather                                                                       │
+│                                                                                                  │
+│   2425 │   │   │   │   │   │   st = future._state                                                │
+│   2426 │   │   │   │   │   │   exception = st.exception                                          │
+│   2427 │   │   │   │   │   │   traceback = st.traceback                                          │
+│ ❱ 2428 │   │   │   │   │   │   raise exception.with_traceback(traceback)                         │
+│   2429 │   │   │   │   │   if errors == "skip":                                                  │
+│   2430 │   │   │   │   │   │   bad_keys.add(key)                                                 │
+│   2431 │   │   │   │   │   │   bad_data[key] = None                                              │
+│                                                                                                  │
+│ ╭─────────────────────────────────────────── locals ───────────────────────────────────────────╮ │
+│ │           bad_data = {}                                                                      │ │
+│ │           bad_keys = set()                                                                   │ │
+│ │               data = {}                                                                      │ │
+│ │             direct = False                                                                   │ │
+│ │             errors = 'raise'                                                                 │ │
+│ │          exception = KilledWorker(('groupby_nanmean-b25a44a828f7a3e1a86e48ede8b77fd3', 0,    │ │
+│ │                      11), <WorkerState 'tcp://127.0.0.1:40571', name: 14, status: closed,    │ │
+│ │                      memory: 0, processing: 0>, 3)                                           │ │
+│ │         exceptions = {('store-map-1bb6df75f09c3238985fad3931dc71bc', 1115, 0)}               │ │
+│ │             failed = ('error', 'cancelled')                                                  │ │
+│ │             future = <Future: cancelled, key: ('store-map-1bb6df75f09c3238985fad3931dc71bc', │ │
+│ │                      1115, 0)>                                                               │ │
+│ │         future_set = {                                                                       │ │
+│ │                      │   <Future: cancelled, key:                                            │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 169, 1)>,                │ │
+│ │                      │   <Future: cancelled, key:                                            │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 606, 2)>,                │ │
+│ │                      │   <Future: cancelled, key:                                            │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 1002, 2)>,               │ │
+│ │                      │   <Future: cancelled, key:                                            │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 303, 1)>,                │ │
+│ │                      │   <Future: cancelled, key:                                            │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 86, 3)>,                 │ │
+│ │                      │   <Future: cancelled, key:                                            │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 1081, 2)>,               │ │
+│ │                      │   <Future: cancelled, key:                                            │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 1215, 2)>,               │ │
+│ │                      │   <Future: cancelled, key:                                            │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 382, 1)>,                │ │
+│ │                      │   <Future: cancelled, key:                                            │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 819, 2)>,                │ │
+│ │                      │   <Future: cancelled, key:                                            │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 516, 1)>,                │ │
+│ │                      │   ... +10682                                                          │ │
+│ │                      }                                                                       │ │
+│ │            futures = [                                                                       │ │
+│ │                      │   <Future: pending, key:                                              │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 0, 0)>,                  │ │
+│ │                      │   <Future: cancelled, key:                                            │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 0, 1)>,                  │ │
+│ │                      │   <Future: cancelled, key:                                            │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 0, 2)>,                  │ │
+│ │                      │   <Future: cancelled, key:                                            │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 0, 3)>,                  │ │
+│ │                      │   <Future: error, key: ('store-map-1bb6df75f09c3238985fad3931dc71bc', │ │
+│ │                      1, 0)>,                                                                 │ │
+│ │                      │   <Future: cancelled, key:                                            │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 1, 1)>,                  │ │
+│ │                      │   <Future: pending, key:                                              │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 1, 2)>,                  │ │
+│ │                      │   <Future: cancelled, key:                                            │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 1, 3)>,                  │ │
+│ │                      │   <Future: cancelled, key:                                            │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 2, 0)>,                  │ │
+│ │                      │   <Future: cancelled, key:                                            │ │
+│ │                      ('store-map-1bb6df75f09c3238985fad3931dc71bc', 2, 1)>,                  │ │
+│ │                      │   ... +10682                                                          │ │
+│ │                      ]                                                                       │ │
+│ │                key = ('store-map-1bb6df75f09c3238985fad3931dc71bc', 1115, 0)                 │ │
+│ │               keys = [                                                                       │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 169, 1),             │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 606, 2),             │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 1002, 2),            │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 303, 1),             │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 86, 3),              │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 1081, 2),            │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 1215, 2),            │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 382, 1),             │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 819, 2),             │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 516, 1),             │ │
+│ │                      │   ... +10682                                                          │ │
+│ │                      ]                                                                       │ │
+│ │       local_worker = None                                                                    │ │
+│ │ mismatched_futures = []                                                                      │ │
+│ │               self = <Client: 'tcp://127.0.0.1:46503' processes=16 threads=256,              │ │
+│ │                      memory=501.87 GiB>                                                      │ │
+│ │                 st = <FutureState: cancelled>                                                │ │
+│ │          traceback = None                                                                    │ │
+│ │           unpacked = [                                                                       │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 0, 0),               │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 0, 1),               │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 0, 2),               │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 0, 3),               │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 1, 0),               │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 1, 1),               │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 1, 2),               │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 1, 3),               │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 2, 0),               │ │
+│ │                      │   ('store-map-1bb6df75f09c3238985fad3931dc71bc', 2, 1),               │ │
+│ │                      │   ... +10682                                                          │ │
+│ │                      ]                                                                       │ │
+│ ╰──────────────────────────────────────────────────────────────────────────────────────────────╯ │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+KilledWorker: Attempted to run task ('groupby_nanmean-b25a44a828f7a3e1a86e48ede8b77fd3', 0, 11) on 4 different workers, but all those workers died while running it. The last worker that attempt to run the task was tcp://127.0.0.1:40571. 
+Inspecting worker logs is often a good next step to diagnose what went wrong. For more information see https://distributed.dask.org/en/stable/killed.html.
+2026-03-13 04:29:07,206 - distributed.nanny - WARNING - Restarting worker
+2026-03-13 04:29:08,260 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 224, 3))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,260 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 1200, 3))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,260 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('groupby_nanmean-b25a44a828f7a3e1a86e48ede8b77fd3', 3, 11))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,260 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 2424, 2))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,260 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 1200, 2))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,260 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('groupby_nanmean-b25a44a828f7a3e1a86e48ede8b77fd3', 2, 11))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,260 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 224, 0))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,260 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 472, 3))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,260 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 1448, 2))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,260 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 1200, 1))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,260 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 2184, 0))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,260 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 472, 2))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,260 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 472, 1))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,260 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 1200, 0))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,260 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 960, 2))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,260 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 472, 0))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,261 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 2424, 1))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,261 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 960, 3))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,261 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 1936, 0))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,261 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('groupby_nanmean-b25a44a828f7a3e1a86e48ede8b77fd3', 1, 11))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,262 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 1696, 2))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,262 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 1448, 0))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,262 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 1696, 1))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,262 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 1696, 3))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,262 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 2184, 3))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,262 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 1696, 0))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,262 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 1448, 3))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,262 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 1936, 1))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,262 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 1936, 3))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,262 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 1936, 2))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,262 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 224, 2))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,264 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 712, 0))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,264 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 960, 0))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,264 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 2424, 3))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,264 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 0, 1))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,264 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 0, 2))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,264 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 2184, 1))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,264 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 1448, 1))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,264 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 960, 1))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,264 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 712, 3))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,264 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 0, 0))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,264 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 712, 2))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,264 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 2424, 0))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,264 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 224, 1))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,264 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 712, 1))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:08,264 - distributed.worker.state_machine - WARNING - Async instruction for <Task cancelled name="execute(('getitem-transpose-store-map-1bb6df75f09c3238985fad3931dc71bc', 0, 3))" coro=<Worker.execute() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker_state_machine.py:3615>> ended with CancelledError
+2026-03-13 04:29:12,258 - distributed.nanny - WARNING - Worker process still alive after 4.0 seconds, killing
+2026-03-13 04:29:12,258 - distributed.nanny - WARNING - Worker process still alive after 4.0 seconds, killing
+2026-03-13 04:29:12,260 - distributed.nanny - WARNING - Worker process still alive after 4.0 seconds, killing
+04:29:15.256 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.256 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.256 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.256 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.256 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.256 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.256 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.256 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.256 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.256 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.256 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.267 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.267 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.267 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.267 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.267 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.267 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.267 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.267 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.267 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.267 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.267 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.268 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.269 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.270 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+04:29:15.271 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 04:29:15] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:29:15] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:29:15] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:29:15] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:29:15] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:29:15] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:29:15] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:29:15] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:29:15] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:29:15] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+[03/13/26 04:29:15] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10

@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/bin/pycmor", line 3, in <module>
+    from pycmor.cli import main
+  File "/work/ab0246/a270092/software/pycmor/src/pycmor/__init__.py", line 12, in <module>
+    from . import fesom_2p1
+  File "/work/ab0246/a270092/software/pycmor/src/pycmor/fesom_2p1/__init__.py", line 1, in <module>
+    from .regridding import regrid_to_regular
+  File "/work/ab0246/a270092/software/pycmor/src/pycmor/fesom_2p1/regridding.py", line 9, in <module>
+    from pyfesom2.load_mesh_data import load_mesh
+  File "/home/a/a270092/.local/lib/python3.9/site-packages/pyfesom2/__init__.py", line 13, in <module>
+    from .load_mesh_data import *
+  File "/home/a/a270092/.local/lib/python3.9/site-packages/pyfesom2/load_mesh_data.py", line 17, in <module>
+    import pyresample
+ModuleNotFoundError: No module named 'pyresample'
