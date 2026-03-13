@@ -6,6 +6,7 @@ from abc import abstractmethod
 import xarray as xr
 
 from ..core.factory import MetaFactory
+from ..core.logging import logger
 
 
 class GlobalAttributes(metaclass=MetaFactory):
@@ -19,11 +20,74 @@ class GlobalAttributes(metaclass=MetaFactory):
 
 
 class CMIP7GlobalAttributes(GlobalAttributes):
+    """Global attributes for CMIP7
+    
+    Note: CMIP7 uses similar structure to CMIP6 but with unified all_var_info.json
+    """
+    
+    def __init__(self, drv, cv, rule_dict):
+        self.drv = drv
+        self.cv = cv
+        self.rule_dict = rule_dict
+    
     def global_attributes(self):
-        raise NotImplementedError()
+        """Return global attributes for CMIP7
+        
+        For now, return minimal attributes. This can be extended as CMIP7 
+        specifications are finalized.
+        """
+        return {
+            "creation_date": self.rule_dict.get("creation_date", datetime.datetime.now().isoformat()),
+            "tracking_id": self.get_tracking_id(),
+            "variable_id": self.rule_dict.get("cmor_variable", ""),
+            "experiment_id": self.rule_dict.get("experiment_id", ""),
+            "source_id": self.rule_dict.get("source_id", ""),
+            "variant_label": self.rule_dict.get("variant_label", ""),
+            "grid_label": self.rule_dict.get("grid_label", ""),
+        }
 
     def subdir_path(self):
-        raise NotImplementedError()
+        """Return subdirectory path for CMIP7 output per official specification
+        
+        Template (DOI: 10.5281/zenodo.17250297):
+        <drs_specs>/<mip_era>/<activity_id>/<institution_id>/<source_id>/
+        <experiment_id>/<variant_label>/<region>/<frequency>/<variable_id>/
+        <branding_suffix>/<grid_label>/<directoryDate>
+        """
+        drs_specs = "MIP-DRS7"
+        mip_era = "CMIP7"
+        activity_id = self.rule_dict.get("activity_id", "CMIP")
+        institution_id = self.rule_dict.get("institution_id", "AWI")
+        source_id = self.rule_dict.get("source_id", "")
+        experiment_id = self.rule_dict.get("experiment_id", "")
+        variant_label = self.rule_dict.get("variant_label", "")
+        region = self.rule_dict.get("region", "glb")
+        
+        # Get frequency from data request (NOT table_id!)
+        frequency = self.drv.frequency if hasattr(self.drv, 'frequency') else "mon"
+        
+        variable_id = self.rule_dict.get("cmor_variable", "")
+        
+        # Get branding suffix - prioritize rule config over data request
+        branding_suffix = self.rule_dict.get('branding_suffix')
+        if not branding_suffix:  # None or empty string
+            branding_suffix = getattr(self.drv, 'branding_suffix', 'unknown-u-hxy-u')
+        
+        grid_label = self.rule_dict.get("grid_label", "")
+        version = f"v{datetime.datetime.today().strftime('%Y%m%d')}"
+        
+        directory_path = (
+            f"{drs_specs}/{mip_era}/{activity_id}/{institution_id}/"
+            f"{source_id}/{experiment_id}/{variant_label}/"
+            f"{region}/{frequency}/{variable_id}/{branding_suffix}/"
+            f"{grid_label}/{version}"
+        )
+        
+        return directory_path
+    
+    def get_tracking_id(self):
+        """Generate a unique tracking ID"""
+        return "hdl:21.14100/" + str(uuid.uuid4())
 
 
 class CMIP6GlobalAttributes(GlobalAttributes):

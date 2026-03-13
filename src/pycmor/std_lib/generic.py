@@ -249,6 +249,11 @@ def multiyear_monthly_mean(data, rule_spec, *args, **kwargs):
 
 
 def trigger_compute(data, rule_spec, *args, **kwargs):
+    # Skip compute if dask is disabled - data already loaded in memory
+    enable_dask = rule_spec._pymor_cfg("enable_dask")
+    if not enable_dask:
+        return data
+    
     if hasattr(data, "compute"):
         return data.compute()
     # Data doesn't have a compute method, do nothing

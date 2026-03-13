@@ -4,6 +4,13 @@
 # C extensions
 *.so
 
+# Pycmor specific
+*.nc
+!tests/data/*.nc
+*.log
+MESH_cache/
+cmorized_output/
+
 # Packages
 *.egg
 *.egg-info

@@ -104,22 +104,13 @@ def setgrid(
             logger.info(f"  → Renaming Dims      : {dict(to_rename)}")
             da = da.rename(to_rename)
 
-        # Keep coordinate variables and boundary variables (lat_bnds, lon_bnds)
+        # Keep coordinate variables only (exclude boundary variables for now)
+        # TODO: Fix NetCDF write issue with large boundary variables (lat_bnds, lon_bnds)
         required_vars = list(grid.coords.keys())  # Always include coordinate variables
         logger.info(f"  → Coordinate Vars    : {sorted(required_vars)}")
-
-        # Add boundary variables if they exist
-        boundary_vars = ["lat_bnds", "lon_bnds"]
-        boundary_found = []
-        for var in boundary_vars:
-            if var in grid.variables:
-                required_vars.append(var)
-                boundary_found.append(var)
-
-        if boundary_found:
-            logger.info(f"  → Boundary Vars      : {sorted(boundary_found)}")
-        else:
-            logger.info("  → Boundary Vars      : None found")
+        
+        # Temporarily skip boundary variables to avoid NetCDF write error
+        logger.info("  → Boundary Vars      : Skipped (NetCDF write issue with large unstructured grids)")
 
         new_grid = grid[required_vars]
         da = new_grid.merge(da)

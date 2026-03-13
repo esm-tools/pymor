@@ -1,0 +1,90 @@
+general:
+  name: "AWI-ESM3-VEG-LR PI Control SST"
+  description: "CMIP7 CMORization of SST for AWI-ESM3-VEG-LR piControl experiment"
+  maintainer: "Jan Streffing"
+  email: "jan.streffing@awi.de"
+  cmor_version: "CMIP7"
+  mip: "CMIP"
+  CV_Dir: "/work/ab0246/a270077/SciComp/Projects/pycmor/cmip6-cmor-tables/CMIP6_CVs"
+  CMIP_Tables_Dir: "/work/ab0246/a270092/software/pycmor/src/pycmor/data/cmip7"
+
+pycmor:
+  warn_on_no_rule: False
+  use_flox: False
+  parallel: False
+  enable_dask: False
+  xarray_open_mfdataset_parallel: False
+  pipeline_workflow_orchestrator: "native"
+  enable_output_subdirs: True
+
+pipelines:
+  - name: default
+    steps:
+      - "pycmor.core.gather_inputs.load_mfdataset"
+      - "pycmor.std_lib.get_variable"
+      - "pycmor.std_lib.variable_attributes.set_variable_attrs"
+      - "pycmor.std_lib.convert_units"
+      - "pycmor.std_lib.setgrid.setgrid"
+      - "pycmor.std_lib.set_global_attributes"
+      - "pycmor.std_lib.trigger_compute"
+      - "pycmor.std_lib.files.save_dataset"
+  
+  - name: regridded
+    steps:
+      - "pycmor.core.gather_inputs.load_mfdataset"
+      - "pycmor.std_lib.get_variable"
+      - "pycmor.std_lib.variable_attributes.set_variable_attrs"
+      - "pycmor.std_lib.convert_units"
+      - "pycmor.fesom_2p1.regridding.regrid_to_regular"
+      - "pycmor.std_lib.set_global_attributes"
+      - "pycmor.std_lib.trigger_compute"
+      - "pycmor.std_lib.files.save_dataset"
+
+rules:
+  - name: sst_tos_gn
+    description: "Cmorize FESOM SST to CMIP7 tos on native grid"
+    cmor_variable: tos
+    model_variable: sst
+    table_id: Omon
+    output_directory: /work/ab0246/a270092/postprocessing/cmorize
+    variant_label: r1i1p1f1
+    experiment_id: piControl
+    source_id: AWI-ESM3-VEG-LR
+    model_component: ocean
+    grid_label: gn
+    grid_file: /work/ab0246/a270092/input/fesom2/dars2/mesh.nc
+    # CMIP7 required parameters
+    activity_id: CMIP
+    institution_id: AWI
+    region: glb
+    branding_suffix: "tavg-u-hxy-sea"
+    pipelines:
+      - default
+    inputs:
+      - path: /work/bb1469/a270092/runtime/awiesm3-v3.4.1/human_tuning/outdata/fesom
+        pattern: sst\.fesom\.1350\.nc
+  
+  - name: sst_tos_gr
+    description: "Cmorize FESOM SST to CMIP7 tos on 0.25° regular grid"
+    cmor_variable: tos
+    model_variable: sst
+    table_id: Omon
+    output_directory: /work/ab0246/a270092/postprocessing/cmorize
+    variant_label: r1i1p1f1
+    experiment_id: piControl
+    source_id: AWI-ESM3-VEG-LR
+    model_component: ocean
+    grid_label: gr
+    mesh_path: /work/ab0246/a270092/input/fesom2/dars2
+    box: "-180, 180, -90, 90"
+    target_resolution: "0.25"
+    # CMIP7 required parameters
+    activity_id: CMIP
+    institution_id: AWI
+    region: glb
+    branding_suffix: "tavg-u-hxy-sea"
+    pipelines:
+      - regridded
+    inputs:
+      - path: /work/bb1469/a270092/runtime/awiesm3-v3.4.1/human_tuning/outdata/fesom
+        pattern: sst\.fesom\.1350\.nc

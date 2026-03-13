@@ -271,6 +271,8 @@ class Rule:
             "institution_id",  # optional
             "model_component",  # optional
             "further_info_url",  # optional
+            "branding_suffix",  # CMIP7
+            "region",  # CMIP7
         )
         # attribute `creation_date` is the time-stamp of inputs directory
         try:

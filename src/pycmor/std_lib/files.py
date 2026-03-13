@@ -47,6 +47,10 @@ from xarray.core.utils import is_scalar
 from ..core.logging import logger
 from .dataset_helpers import get_time_label, has_time_axis
 
+# NetCDF4 compression and chunking settings
+NETCDF_COMPRESSION_LEVEL = 4  # Good balance of compression vs speed
+BOUNDARY_CHUNK_SIZE = 100000  # Chunk size for large boundary variables (lat_bnds, lon_bnds)
+
 
 def _filename_time_range(ds, rule) -> str:
     """
@@ -156,9 +160,11 @@ def create_filepath(ds, rule):
     Generate a filepath when given an xarray dataset and a rule.
 
     This function generates a filepath for the output file based on
-    the given dataset and rule.  The filepath includes the name,
-    table_id, institution, source_id, experiment_id, label, grid, and
-    optionally the start and end time.
+    the given dataset and rule. The filepath format depends on the
+    CMOR version (CMIP6 or CMIP7).
+
+    CMIP6 format: {variable}_{table}_{institution}-{source}_{experiment}_{variant}_{grid}_{timerange}.nc
+    CMIP7 format: {variable}_{table}_{source}_{experiment}_{variant}_{grid}_{timerange}.nc
 
     Parameters
     ----------
@@ -189,7 +195,10 @@ def create_filepath(ds, rule):
     grid = rule.grid_label  # grid_type
     time_range = _filename_time_range(ds, rule)
 
-    # Sanitize components to comply with CMIP6 specification
+    # Get CMOR version from table header
+    mip_era = rule.data_request_variable.table_header.mip_era  # "CMIP6" or "CMIP7"
+
+    # Sanitize components to comply with CMIP specification
     name = _sanitize_component(name)
     table_id = _sanitize_component(table_id)
     source_id = _sanitize_component(source_id)
@@ -207,19 +216,55 @@ def create_filepath(ds, rule):
         subdirs = rule.ga.subdir_path()
         out_dir = f"{out_dir}/{subdirs}"
 
-    # Build filename according to CMIP6 spec
+    # Build filename according to CMIP6 or CMIP7 spec
     # For fx (time-invariant) fields, omit time_range
     frequency_str = rule.data_request_variable.frequency
-    if frequency_str == "fx" or not time_range:
-        filepath = (
-            f"{out_dir}/{name}_{table_id}_{institution}-{source_id}_"
-            f"{experiment_id}_{label}_{grid}{clim_suffix}.nc"
-        )
+    
+    if mip_era == "CMIP7":
+        # CMIP7 format per official specification (DOI: 10.5281/zenodo.17250297):
+        # <variable_id>_<branding_suffix>_<frequency>_<region>_<grid_label>_
+        # <source_id>_<experiment_id>_<variant_label>[_<timeRange>].nc
+        
+        # Get branding suffix from rule or data request
+        branding_suffix = getattr(rule, 'branding_suffix', None)
+        if not branding_suffix:
+            branding_suffix = getattr(
+                rule.data_request_variable, 'branding_suffix', 'unknown-u-hxy-u'
+            )
+        branding_suffix = _sanitize_component(branding_suffix)
+        
+        # Get region from rule (default to global)
+        region = getattr(rule, 'region', 'glb')
+        region = _sanitize_component(region)
+        
+        # Use frequency, not table_id
+        frequency = _sanitize_component(frequency_str)
+        
+        # Build CMIP7 filename
+        if frequency == "fx" or not time_range:
+            # Fixed (time-independent) variable - no timeRange
+            filepath = (
+                f"{out_dir}/{name}_{branding_suffix}_{frequency}_{region}_{grid}_"
+                f"{source_id}_{experiment_id}_{label}{clim_suffix}.nc"
+            )
+        else:
+            # Time-dependent variable - include timeRange
+            filepath = (
+                f"{out_dir}/{name}_{branding_suffix}_{frequency}_{region}_{grid}_"
+                f"{source_id}_{experiment_id}_{label}_{time_range}{clim_suffix}.nc"
+            )
     else:
-        filepath = (
-            f"{out_dir}/{name}_{table_id}_{institution}-{source_id}_"
-            f"{experiment_id}_{label}_{grid}_{time_range}{clim_suffix}.nc"
-        )
+        # CMIP6: Include institution prefix
+        if frequency_str == "fx" or not time_range:
+            filepath = (
+                f"{out_dir}/{name}_{table_id}_{institution}-{source_id}_"
+                f"{experiment_id}_{label}_{grid}{clim_suffix}.nc"
+            )
+        else:
+            filepath = (
+                f"{out_dir}/{name}_{table_id}_{institution}-{source_id}_"
+                f"{experiment_id}_{label}_{grid}_{time_range}{clim_suffix}.nc"
+            )
 
     Path(filepath).parent.mkdir(parents=True, exist_ok=True)
     return filepath
@@ -419,9 +464,11 @@ def save_dataset(da: xr.DataArray, rule):
     time_unlimited = rule._pycmor_cfg("xarray_time_unlimited")
     extra_kwargs = {}
     if time_unlimited:
-        extra_kwargs.update({"unlimited_dims": ["time"]})
+        extra_kwargs.update({"unlimited_dims": ['time']})
     time_encoding = {"dtype": time_dtype}
     time_encoding = {k: v for k, v in time_encoding.items() if v is not None}
+    
+    
     # Allow user to define time units and calendar in the rule object
     # Martina has a usecase where she wants to set time units to
     # `days since 1850-01-01` and calendar to `proleptic_gregorian` for
@@ -438,6 +485,16 @@ def save_dataset(da: xr.DataArray, rule):
         time_encoding["calendar"] = "standard"
     if not has_time_axis(da):
         filepath = create_filepath(da, rule)
+        # Apply compression to data variables
+        if isinstance(da, xr.DataArray):
+            da = da.to_dataset()
+        for var_name in da.data_vars:
+            if var_name not in da.coords:
+                da[var_name].encoding.update({
+                    'zlib': True,
+                    'complevel': compression_level,
+                    'shuffle': True,
+                })
         return da.to_netcdf(
             filepath,
             mode="w",
@@ -446,6 +503,16 @@ def save_dataset(da: xr.DataArray, rule):
     time_label = get_time_label(da)
     if is_scalar(da[time_label]):
         filepath = create_filepath(da, rule)
+        # Apply compression to data variables
+        if isinstance(da, xr.DataArray):
+            da = da.to_dataset()
+        for var_name in da.data_vars:
+            if var_name not in da.coords:
+                da[var_name].encoding.update({
+                    'zlib': True,
+                    'complevel': compression_level,
+                    'shuffle': True,
+                })
         return da.to_netcdf(
             filepath,
             mode="w",
@@ -513,6 +580,16 @@ def save_dataset(da: xr.DataArray, rule):
     if isinstance(da, xr.DataArray):
         da = da.to_dataset()
     da[time_label].encoding.update(time_encoding)
+    
+    # Apply compression encoding to all data variables (not coordinates)
+    for var_name in da.data_vars:
+        if var_name not in da.coords:
+            encoding = {
+                'zlib': True,
+                'complevel': NETCDF_COMPRESSION_LEVEL,
+                'shuffle': True,
+            }
+            da[var_name].encoding.update(encoding)
 
     if not has_time_axis(da):
         filepath = create_filepath(da, rule)

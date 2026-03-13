@@ -76,7 +76,10 @@ class CMIP7DataRequest(DataRequest):
             tables[table_id] = table
             for variable in table.variables:
                 variable.table_header = table.header
-                variables[variable.variable_id] = variable
+                # Use compound key (table.variable) to avoid conflicts
+                # e.g., "Omon.tos" instead of just "tos"
+                compound_key = f"{table_id}.{variable.variable_id}"
+                variables[compound_key] = variable
         return cls(tables, variables)
 
     @classmethod

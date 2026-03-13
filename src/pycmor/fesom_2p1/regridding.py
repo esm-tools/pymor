@@ -224,7 +224,8 @@ def fesom2regular(
         data_interpolated = data[inds]
         data_interpolated[distances >= radius_of_influence] = np.nan
         data_interpolated = data_interpolated.reshape(lons.shape)
-        data_interpolated = np.ma.masked_invalid(data_interpolated)
+        # Return regular numpy array with NaN for invalid values (not MaskedArray)
+        # map_blocks expects numpy array, not MaskedArray
         return data_interpolated
 
     elif how == "idist":
@@ -348,20 +349,44 @@ def regrid_to_regular(data, rule):
     mesh = load_mesh(rule.mesh_path)
     box = rule.get("box", "-180, 180, -90, 90")
     x_min, x_max, y_min, y_max = map(float, box.split(","))
-    x = np.linspace(x_min, x_max, int(x_max - x_min))
-    y = np.linspace(y_min, y_max, int(y_max - y_min))
+    
+    # Get target resolution (default 1.0 degree)
+    resolution = float(rule.get("target_resolution", "1.0"))
+    
+    # Calculate number of grid points based on resolution
+    n_lon = int((x_max - x_min) / resolution) + 1
+    n_lat = int((y_max - y_min) / resolution) + 1
+    
+    x = np.linspace(x_min, x_max, n_lon)
+    y = np.linspace(y_min, y_max, n_lat)
     lon, lat = np.meshgrid(x, y)
-    # This works on a timestep-by-timestep basis, so we need to
-    # run an apply here...
-    # Apply `fesom2regular` function to each time step
-    # breakpoint()
-    interpolated = data.chunk({"time": 1}).map_blocks(
-        fesom2regular,
-        kwargs={"mesh": mesh, "lons": lon, "lats": lat},
-        template=xr.DataArray(
-            np.empty((len(data["time"]), 360, 180)), dims=["time", "lon", "lat"]
-        ).chunk({"time": 1}),
+    
+    # Process each time step individually to avoid Dask/xarray wrapper complexity
+    # fesom2regular returns numpy arrays, simpler to loop than use map_blocks
+    time_steps = []
+    for t in range(len(data["time"])):
+        # Get single timestep data as numpy array
+        data_t = data.isel(time=t).values
+        # Regrid this timestep
+        regridded_t = fesom2regular(data_t, mesh=mesh, lons=lon, lats=lat)
+        time_steps.append(regridded_t)
+    
+    # Stack into 3D array
+    regridded_array = np.stack(time_steps, axis=0)
+    
+    # Create xarray DataArray with proper coordinates
+    interpolated = xr.DataArray(
+        regridded_array,
+        dims=["time", "lat", "lon"],
+        coords={
+            "time": data["time"],
+            "lat": y,
+            "lon": x,
+        },
+        name=data.name,
+        attrs=data.attrs.copy(),  # Preserve variable attributes
     )
+    
     return interpolated
 
 

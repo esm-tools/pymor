@@ -464,7 +464,19 @@ class CMIP7DataRequestVariable(DataRequestVariable):
 
     @property
     def attrs(self) -> dict:
-        raise NotImplementedError("CMI7 attributes are not yet finalized")
+        """Return variable attributes for CMIP7"""
+        attrs_dict = {
+            "standard_name": self._standard_name,
+            "long_name": self._long_name,
+            "units": self._units,
+            "cell_methods": self._cell_methods,
+            "_FillValue": getattr(self, "_FillValue", None),
+            "missing_value": getattr(self, "missing_value", None),
+        }
+        # Add comment if available
+        if self._comment:
+            attrs_dict["comment"] = self._comment
+        return attrs_dict
 
     @property
     def cell_measures(self) -> str:

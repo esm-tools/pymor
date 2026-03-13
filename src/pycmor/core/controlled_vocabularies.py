@@ -148,4 +148,23 @@ class CMIP6ControlledVocabularies(ControlledVocabularies):
 
 
 class CMIP7ControlledVocabularies(ControlledVocabularies):
-    pass
+    """Controlled vocabularies for CMIP7
+    
+    Note: CMIP7 uses a unified all_var_info.json file instead of 
+    separate controlled vocabulary files like CMIP6.
+    """
+    
+    @classmethod
+    def load(cls, table_dir=None):
+        """Load controlled vocabularies for CMIP7
+        
+        CMIP7 doesn't use the same CV structure as CMIP6, so we return
+        an empty instance. Variable information comes from all_var_info.json.
+        """
+        obj = cls([])
+        return obj
+    
+    def __init__(self, json_files=None):
+        """Create a CMIP7ControlledVocabularies instance"""
+        super().__init__()
+
