@@ -40,7 +40,6 @@ pipelines:
       - "pycmor.std_lib.files.save_dataset"
 
 rules:
-  # Processed separately to avoid rule matching conflict
   # - name: sst_tos_gn
   #   description: "Cmorize FESOM SST to CMIP7 tos on native grid"
   #   cmor_variable: tos

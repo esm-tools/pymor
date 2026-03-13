@@ -384,6 +384,7 @@ def regrid_to_regular(data, rule):
             "lon": x,
         },
         name=data.name,
+        attrs=data.attrs.copy(),  # Preserve variable attributes
     )
     
     return interpolated
