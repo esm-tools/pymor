@@ -10,8 +10,10 @@ general:
 
 pycmor:
   warn_on_no_rule: False
-  use_flox: True
-  dask_cluster: "local"
+  use_flox: False
+  parallel: False
+  enable_dask: False
+  pipeline_workflow_orchestrator: "native"
 
 pipelines:
   - name: default
@@ -36,6 +38,7 @@ rules:
     source_id: AWI-ESM3-VEG-LR
     model_component: ocean
     grid_label: gn
+    grid_file: /work/ab0246/a270092/input/fesom2/core2/fesom.mesh.diag.nc
     pipelines:
       - default
     inputs:

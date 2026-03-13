@@ -11,9 +11,45 @@ import xarray as xr  # noqa: F401
 import yaml
 from dask.distributed import Client
 from everett.manager import generate_uppercase_key, get_runtime_config
-from prefect import flow, get_run_logger, task
-from prefect.futures import wait
 from rich.progress import track
+
+# Import Prefect conditionally to avoid server startup when not needed
+try:
+    import os
+    _use_prefect = os.environ.get("PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR", "prefect") == "prefect"
+except:
+    _use_prefect = True
+
+if _use_prefect:
+    from prefect import flow, get_run_logger, task
+    from prefect.futures import wait
+else:
+    # Provide dummy implementations when not using Prefect
+    def flow(*args, **kwargs):
+        """Dummy flow decorator that returns function unchanged"""
+        if len(args) == 1 and callable(args[0]) and not kwargs:
+            # Called without parentheses: @flow
+            return args[0]
+        else:
+            # Called with parentheses: @flow() or @flow(name="...")
+            return lambda f: f
+    
+    def task(*args, **kwargs):
+        """Dummy task decorator that returns function unchanged"""
+        if len(args) == 1 and callable(args[0]) and not kwargs:
+            # Called without parentheses: @task
+            return args[0]
+        else:
+            # Called with parentheses: @task() or @task(name="...")
+            return lambda f: f
+    
+    def get_run_logger():
+        """Dummy logger that returns None"""
+        return logger
+    
+    def wait(*args, **kwargs):
+        """Dummy wait function"""
+        return None
 
 from ..data_request.collection import DataRequest
 from ..data_request.table import DataRequestTable
