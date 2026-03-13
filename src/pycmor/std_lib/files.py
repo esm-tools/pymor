@@ -156,9 +156,11 @@ def create_filepath(ds, rule):
     Generate a filepath when given an xarray dataset and a rule.
 
     This function generates a filepath for the output file based on
-    the given dataset and rule.  The filepath includes the name,
-    table_id, institution, source_id, experiment_id, label, grid, and
-    optionally the start and end time.
+    the given dataset and rule. The filepath format depends on the
+    CMOR version (CMIP6 or CMIP7).
+
+    CMIP6 format: {variable}_{table}_{institution}-{source}_{experiment}_{variant}_{grid}_{timerange}.nc
+    CMIP7 format: {variable}_{table}_{source}_{experiment}_{variant}_{grid}_{timerange}.nc
 
     Parameters
     ----------
@@ -189,7 +191,10 @@ def create_filepath(ds, rule):
     grid = rule.grid_label  # grid_type
     time_range = _filename_time_range(ds, rule)
 
-    # Sanitize components to comply with CMIP6 specification
+    # Get CMOR version from table header
+    mip_era = rule.data_request_variable.table_header.mip_era  # "CMIP6" or "CMIP7"
+
+    # Sanitize components to comply with CMIP specification
     name = _sanitize_component(name)
     table_id = _sanitize_component(table_id)
     source_id = _sanitize_component(source_id)
@@ -207,19 +212,34 @@ def create_filepath(ds, rule):
         subdirs = rule.ga.subdir_path()
         out_dir = f"{out_dir}/{subdirs}"
 
-    # Build filename according to CMIP6 spec
+    # Build filename according to CMIP6 or CMIP7 spec
     # For fx (time-invariant) fields, omit time_range
     frequency_str = rule.data_request_variable.frequency
-    if frequency_str == "fx" or not time_range:
-        filepath = (
-            f"{out_dir}/{name}_{table_id}_{institution}-{source_id}_"
-            f"{experiment_id}_{label}_{grid}{clim_suffix}.nc"
-        )
+    
+    if mip_era == "CMIP7":
+        # CMIP7: No institution prefix, simpler format
+        if frequency_str == "fx" or not time_range:
+            filepath = (
+                f"{out_dir}/{name}_{table_id}_{source_id}_"
+                f"{experiment_id}_{label}_{grid}{clim_suffix}.nc"
+            )
+        else:
+            filepath = (
+                f"{out_dir}/{name}_{table_id}_{source_id}_"
+                f"{experiment_id}_{label}_{grid}_{time_range}{clim_suffix}.nc"
+            )
     else:
-        filepath = (
-            f"{out_dir}/{name}_{table_id}_{institution}-{source_id}_"
-            f"{experiment_id}_{label}_{grid}_{time_range}{clim_suffix}.nc"
-        )
+        # CMIP6: Include institution prefix
+        if frequency_str == "fx" or not time_range:
+            filepath = (
+                f"{out_dir}/{name}_{table_id}_{institution}-{source_id}_"
+                f"{experiment_id}_{label}_{grid}{clim_suffix}.nc"
+            )
+        else:
+            filepath = (
+                f"{out_dir}/{name}_{table_id}_{institution}-{source_id}_"
+                f"{experiment_id}_{label}_{grid}_{time_range}{clim_suffix}.nc"
+            )
 
     Path(filepath).parent.mkdir(parents=True, exist_ok=True)
     return filepath

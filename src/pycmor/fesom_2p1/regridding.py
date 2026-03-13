@@ -348,9 +348,18 @@ def regrid_to_regular(data, rule):
     mesh = load_mesh(rule.mesh_path)
     box = rule.get("box", "-180, 180, -90, 90")
     x_min, x_max, y_min, y_max = map(float, box.split(","))
-    x = np.linspace(x_min, x_max, int(x_max - x_min))
-    y = np.linspace(y_min, y_max, int(y_max - y_min))
+    
+    # Get target resolution (default 1.0 degree)
+    resolution = float(rule.get("target_resolution", "1.0"))
+    
+    # Calculate number of grid points based on resolution
+    n_lon = int((x_max - x_min) / resolution) + 1
+    n_lat = int((y_max - y_min) / resolution) + 1
+    
+    x = np.linspace(x_min, x_max, n_lon)
+    y = np.linspace(y_min, y_max, n_lat)
     lon, lat = np.meshgrid(x, y)
+    
     # This works on a timestep-by-timestep basis, so we need to
     # run an apply here...
     # Apply `fesom2regular` function to each time step
@@ -359,7 +368,7 @@ def regrid_to_regular(data, rule):
         fesom2regular,
         kwargs={"mesh": mesh, "lons": lon, "lats": lat},
         template=xr.DataArray(
-            np.empty((len(data["time"]), 360, 180)), dims=["time", "lon", "lat"]
+            np.empty((len(data["time"]), n_lon, n_lat)), dims=["time", "lon", "lat"]
         ).chunk({"time": 1}),
     )
     return interpolated
