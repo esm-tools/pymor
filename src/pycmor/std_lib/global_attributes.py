@@ -6,6 +6,7 @@ from abc import abstractmethod
 import xarray as xr
 
 from ..core.factory import MetaFactory
+from ..core.logging import logger
 
 
 class GlobalAttributes(metaclass=MetaFactory):
