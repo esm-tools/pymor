@@ -57,25 +57,21 @@ rules:
       - path: /work/bb1469/a270092/runtime/awiesm3-v3.4.1/human_tuning/outdata/fesom
         pattern: sst\.fesom\.1350\.nc
   
-  # gr rule - BLOCKED by IndexError in fesom2regular function
-  # Error: index 3126828 is out of bounds for axis 0 with size 786688
-  # Issue: fesom2regular.py:224 - mesh indices don't match data dimensions
-  # Status: Planner AI should handle gr regridding debugging
-  # - name: sst_tos_gr
-  #   description: "Cmorize FESOM SST to CMIP7 tos on 0.25° regular grid"
-  #   cmor_variable: tos
-  #   model_variable: sst
-  #   output_directory: ./cmorized_output
-  #   variant_label: r1i1p1f1
-  #   experiment_id: piControl
-  #   source_id: AWI-ESM3-VEG-LR
-  #   model_component: ocean
-  #   grid_label: gr
-  #   mesh_path: /work/ab0246/a270092/input/fesom2/dars2
-  #   box: "-180, 180, -90, 90"
-  #   target_resolution: "0.25"
-  #   pipelines:
-  #     - regridded
-  #   inputs:
-  #     - path: /work/bb1469/a270092/runtime/awiesm3-v3.4.1/human_tuning/outdata/fesom
-  #       pattern: sst\.fesom\.1350\.nc
+  - name: sst_tos_gr
+    description: "Cmorize FESOM SST to CMIP7 tos on 0.25° regular grid"
+    cmor_variable: tos
+    model_variable: sst
+    output_directory: ./cmorized_output
+    variant_label: r1i1p1f1
+    experiment_id: piControl
+    source_id: AWI-ESM3-VEG-LR
+    model_component: ocean
+    grid_label: gr
+    mesh_path: /work/ab0246/a270092/input/fesom2/dars2
+    box: "-180, 180, -90, 90"
+    target_resolution: "0.25"
+    pipelines:
+      - regridded
+    inputs:
+      - path: /work/bb1469/a270092/runtime/awiesm3-v3.4.1/human_tuning/outdata/fesom
+        pattern: sst\.fesom\.1350\.nc

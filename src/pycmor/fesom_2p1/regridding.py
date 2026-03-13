@@ -224,7 +224,8 @@ def fesom2regular(
         data_interpolated = data[inds]
         data_interpolated[distances >= radius_of_influence] = np.nan
         data_interpolated = data_interpolated.reshape(lons.shape)
-        data_interpolated = np.ma.masked_invalid(data_interpolated)
+        # Return regular numpy array with NaN for invalid values (not MaskedArray)
+        # map_blocks expects numpy array, not MaskedArray
         return data_interpolated
 
     elif how == "idist":
@@ -360,19 +361,31 @@ def regrid_to_regular(data, rule):
     y = np.linspace(y_min, y_max, n_lat)
     lon, lat = np.meshgrid(x, y)
     
-    # This works on a timestep-by-timestep basis, so we need to
-    # run an apply here...
-    # Apply `fesom2regular` function to each time step
-    # breakpoint()
-    interpolated = data.chunk({"time": 1}).map_blocks(
-        fesom2regular,
-        kwargs={"mesh": mesh, "lons": lon, "lats": lat},
-        template=xr.DataArray(
-            np.empty((len(data["time"]), n_lon, n_lat)), dims=["time", "lon", "lat"]
-        ).chunk({"time": 1}),
+    # Process each time step individually to avoid Dask/xarray wrapper complexity
+    # fesom2regular returns numpy arrays, simpler to loop than use map_blocks
+    time_steps = []
+    for t in range(len(data["time"])):
+        # Get single timestep data as numpy array
+        data_t = data.isel(time=t).values
+        # Regrid this timestep
+        regridded_t = fesom2regular(data_t, mesh=mesh, lons=lon, lats=lat)
+        time_steps.append(regridded_t)
+    
+    # Stack into 3D array
+    regridded_array = np.stack(time_steps, axis=0)
+    
+    # Create xarray DataArray with proper coordinates
+    interpolated = xr.DataArray(
+        regridded_array,
+        dims=["time", "lat", "lon"],
+        coords={
+            "time": data["time"],
+            "lat": y,
+            "lon": x,
+        },
+        name=data.name,
     )
-    # Preserve variable name from input
-    interpolated.name = data.name
+    
     return interpolated
 
 
