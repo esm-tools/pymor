@@ -21,6 +21,7 @@ pipelines:
     steps:
       - "pycmor.core.gather_inputs.load_mfdataset"
       - "pycmor.std_lib.get_variable"
+      - "pycmor.std_lib.variable_attributes.set_variable_attrs"
       - "pycmor.std_lib.convert_units"
       - "pycmor.std_lib.setgrid.setgrid"
       - "pycmor.std_lib.set_global_attributes"
