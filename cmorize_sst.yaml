@@ -1,8 +1,8 @@
 general:
   name: "AWI-ESM3-VEG-LR PI Control SST"
   description: "CMIP7 CMORization of SST for AWI-ESM3-VEG-LR piControl experiment"
-  maintainer: "Your Name"
-  email: "your.email@awi.de"
+  maintainer: "Jan Streffing"
+  email: "jan.streffing@awi.de"
   cmor_version: "CMIP7"
   mip: "CMIP"
   CV_Dir: "/work/ab0246/a270077/SciComp/Projects/pycmor/cmip6-cmor-tables/CMIP6_CVs"
