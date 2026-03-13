@@ -294,6 +294,7 @@ def load_mfdataset(data, rule_spec):
     """
     engine = rule_spec._pymor_cfg("xarray_open_mfdataset_engine")
     parallel = rule_spec._pymor_cfg("xarray_open_mfdataset_parallel")
+    enable_dask = rule_spec._pymor_cfg("enable_dask")
     all_files = []
     for file_collection in rule_spec.inputs:
         for f in file_collection.files:
@@ -302,8 +303,12 @@ def load_mfdataset(data, rule_spec):
     logger.info(f"Loading {len(all_files)} files using {engine} backend on xarray...")
     for f in all_files:
         logger.info(f"  * {f}")
+    
+    # Prevent dask array creation when enable_dask is False
+    chunks = None if not enable_dask else "auto"
+    
     mf_ds = xr.open_mfdataset(
-        all_files, parallel=parallel, use_cftime=True, engine=engine
+        all_files, parallel=parallel, use_cftime=True, engine=engine, chunks=chunks
     )
     return mf_ds
 

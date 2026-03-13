@@ -1,0 +1,566 @@
+01:37:13.944 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:13.947 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:13.947 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:13.947 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:13.948 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:13.948 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:13.949 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:13.949 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:13.950 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:13.950 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:13.950 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 01:37:13] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                          logging.py:10
+Command line: "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/bin/pycmor --verbose process cmorize_sst.yaml"
+pycmor version 1.0.2+19.g2937629.dirty
+Run started at 2026-03-13 01:37:14
+Processing cmorize_sst.yaml
+################################################################################
+---------------------
+General Configuration
+---------------------
+CMIP_Tables_Dir: /work/ab0246/a270092/software/pycmor/src/pycmor/data/cmip7
+CV_Dir: /work/ab0246/a270077/SciComp/Projects/pycmor/cmip6-cmor-tables/CMIP6_CVs
+cmor_version: CMIP7
+description: CMIP7 CMORization of SST for AWI-ESM3-VEG-LR piControl experiment
+email: your.email@awi.de
+maintainer: Your Name
+mip: CMIP
+name: AWI-ESM3-VEG-LR PI Control SST
+
+--------------------
+PyCMOR Configuration:
+--------------------
+DASK_CLUSTER: local
+DASK_CLUSTER_SCALING_FIXED_JOBS: '5'
+DASK_CLUSTER_SCALING_MAXIMUM_JOBS: '10'
+DASK_CLUSTER_SCALING_MINIMUM_JOBS: '1'
+DASK_CLUSTER_SCALING_MODE: adapt
+DIMENSIONLESS_MAPPING_TABLE: /work/ab0246/a270092/software/pycmor/src/pycmor/data/dimensionless_mappings.yaml
+ENABLE_DASK: 'yes'
+ENABLE_FLOX: 'yes'
+ENABLE_OUTPUT_SUBDIRS: 'no'
+FILE_TIMESPAN: 1YS
+PARALLEL: 'yes'
+PARALLEL_BACKEND: dask
+PIPELINE_WORKFLOW_ORCHESTRATOR: prefect
+PREFECT_TASK_RUNNER: thread_pool
+QUIET: 'False'
+RAISE_ON_NO_RULE: 'no'
+WARN_ON_NO_RULE: 'False'
+XARRAY_DEFAULT_MISSING_VALUE: 1e+30
+XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
+XARRAY_OPEN_MFDATASET_PARALLEL: 'yes'
+XARRAY_SKIP_UNIT_ATTR_FROM_DRV: 'yes'
+XARRAY_TIME_DTYPE: float64
+XARRAY_TIME_ENABLE_SET_AXIS: 'yes'
+XARRAY_TIME_REMOVE_FILL_VALUE_ATTR: 'yes'
+XARRAY_TIME_SET_LONG_NAME: 'yes'
+XARRAY_TIME_SET_STANDARD_NAME: 'yes'
+XARRAY_TIME_TAXIS_STR: T
+XARRAY_TIME_UNLIMITED: 'yes'
+
+################################################################################
+Setting up dask configuration...
+Updating Dask configuration. Changed values will be:
+distributed: {}
+jobqueue: {}
+
+Dask configuration updated!
+...done!
+Creating dask cluster...
+Setting up dask cluster...
+01:37:21.245 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.247 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.248 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.248 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.248 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.249 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.249 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.250 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.250 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.250 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.251 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+01:37:21.253 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.255 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+[03/13/26 01:37:21] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                          logging.py:10
+01:37:21.256 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.256 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.257 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.257 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.258 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.258 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.258 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.259 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.259 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 01:37:21] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                          logging.py:10
+01:37:21.295 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.297 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.298 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.298 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.298 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.299 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.299 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.299 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.300 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.300 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.301 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 01:37:21] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                          logging.py:10
+01:37:21.324 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.326 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.327 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.327 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.327 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.328 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.326 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.328 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.328 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.329 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.329 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.329 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.329 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.330 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.330 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.330 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+01:37:21.330 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.330 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.331 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.331 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.332 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.332 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 01:37:21] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                          logging.py:10
+[03/13/26 01:37:21] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                          logging.py:10
+01:37:21.452 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.454 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.455 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.455 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.455 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.456 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.456 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.456 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.457 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.457 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.458 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 01:37:21] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                          logging.py:10
+01:37:21.463 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.466 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.466 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.466 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.467 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.467 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.468 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.468 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.468 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.469 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.469 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 01:37:21] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                          logging.py:10
+01:37:21.484 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.486 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.487 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.487 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.488 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.488 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.488 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.489 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.489 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.490 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.490 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+01:37:21.491 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.493 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.492 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.494 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.494 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.494 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.494 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.494 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.495 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.495 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.495 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.495 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+[03/13/26 01:37:21] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                          logging.py:10
+01:37:21.496 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.496 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.496 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.496 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.496 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.496 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.497 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.497 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+01:37:21.497 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.498 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 01:37:21] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                          logging.py:10
+[03/13/26 01:37:21] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                          logging.py:10
+01:37:21.505 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.507 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.508 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.508 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.508 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.509 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.509 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.510 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.510 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.510 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.511 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+01:37:21.511 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.514 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.514 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.515 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.515 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.515 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.516 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.516 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+[03/13/26 01:37:21] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                          logging.py:10
+01:37:21.514 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.516 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.517 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.517 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.517 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.517 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.517 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+01:37:21.518 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.518 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.519 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.519 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.520 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.520 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.520 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+01:37:21.520 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.520 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.522 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.522 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.521 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.523 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.523 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.523 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.523 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.523 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+[03/13/26 01:37:21] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                          logging.py:10
+01:37:21.523 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.523 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.524 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.524 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.524 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.524 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.524 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.524 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.524 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.525 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.525 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.525 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.525 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.525 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.525 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.526 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.526 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.526 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+[03/13/26 01:37:21] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                          logging.py:10
+01:37:21.526 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+01:37:21.526 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+01:37:21.526 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.526 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+01:37:21.527 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 01:37:21] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                          logging.py:10
+[03/13/26 01:37:21] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                          logging.py:10
+[03/13/26 01:37:21] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                          logging.py:10
+WARNING: LocalCluster(41eda691, 'tcp://127.0.0.1:43945', workers=16, threads=256, memory=501.87 GiB) does not support adaptive scaling!
+Cluster can be found at: self._cluster=LocalCluster(41eda691, 'tcp://127.0.0.1:43945', workers=16, threads=256, memory=501.87 GiB)
+Dashboard http://127.0.0.1:8787/status
+To see the dashboards run the following command in your computer's terminal:
+	pycmor ssh-tunnel --username a270092 --compute-node levante1.lvt.dkrz.de
+Importing Dask Extras...
+...flox...
+...done! Imported 1 libraries.
+...done!
+Setting Dask cluster cluster=LocalCluster(41eda691, 'tcp://127.0.0.1:43945', workers=16, threads=256, memory=501.87 GiB) in context!
+Removing Dask cluster from context!
+...post-init done!
+Importing module 'pycmor.core.gather_inputs' to get callable 'load_mfdataset'
+Importing module 'pycmor.std_lib' to get callable 'get_variable'
+Importing module 'pycmor.std_lib' to get callable 'time_average'
+Importing module 'pycmor.std_lib' to get callable 'convert_units'
+Importing module 'pycmor.std_lib.setgrid' to get callable 'setgrid'
+Importing module 'pycmor.std_lib' to get callable 'set_global_attributes'
+Importing module 'pycmor.std_lib' to get callable 'trigger_compute'
+Importing module 'pycmor.std_lib.files' to get callable 'save_dataset'
+[1/8] Converting step load_mfdataset to Prefect task.
+[2/8] Converting step get_variable to Prefect task.
+[3/8] Converting step time_average to Prefect task.
+[4/8] Converting step convert_units to Prefect task.
+[5/8] Converting step setgrid to Prefect task.
+[6/8] Converting step set_global_attributes to Prefect task.
+[7/8] Converting step trigger_compute to Prefect task.
+[8/8] Converting step save_dataset to Prefect task.
+Assigning cluster to this pipeline
+Setting Dask cluster cluster=LocalCluster(41eda691, 'tcp://127.0.0.1:43945', workers=16, threads=256, memory=501.87 GiB) in context!
+Removing Dask cluster from context!
+Object creation done!
+Process start!
+The following pipelines are known:
+default: Pipeline: default
+-----------------
+steps
+-----
+[1/8] load_mfdataset
+[2/8] get_variable
+[3/8] time_average
+[4/8] convert_units
+[5/8] setgrid
+[6/8] set_global_attributes
+[7/8] trigger_compute
+[8/8] save_dataset
+Working on: default
+Parallel processing...
+...with prefect...
+About to submit _parallel_process_prefect()
+Defining dynamically generated prefect workflow...
+...done!
+About to return dynamic_flow()...
+Setting Dask cluster cluster=LocalCluster(41eda691, 'tcp://127.0.0.1:43945', workers=16, threads=256, memory=501.87 GiB) in context!
+01:37:25.006 | INFO    | prefect - Starting temporary server on http://127.0.0.1:8206
+See https://docs.prefect.io/v3/concepts/server#how-to-guides for more information on running a dedicated Prefect server.
+01:37:31.670 | INFO    | Flow run 'arrogant-elephant' - Beginning flow run 'arrogant-elephant' for flow 'CMORizer Process'
+Starting to process rule Rule for tos with input patterns [re.compile("/work/bb1469/a270092/runtime/awiesm3-v3.4.1/human_tuning/outdata/fesom/re.compile('sst\\\\.fesom\\\\.1350\\\\.nc')")] and pipelines [<pycmor.core.pipeline.Pipeline object at 0x7fb254885c10>]
+Running Pipeline: default
+-----------------
+steps
+-----
+[1/8] load_mfdataset
+[2/8] get_variable
+[3/8] time_average
+[4/8] convert_units
+[5/8] setgrid
+[6/8] set_global_attributes
+[7/8] trigger_compute
+[8/8] save_dataset
+Dynamically creating workflow with DaskTaskRunner...
+01:37:33.636 | INFO    | Task run 'Process rule-6c2' - Beginning subflow run 'default - sst_tos_rule' for flow 'dynamic-flow'
+Loading 1 files using netcdf4 backend on xarray...
+  * /work/bb1469/a270092/runtime/awiesm3-v3.4.1/human_tuning/outdata/fesom/sst.fesom.1350.nc
+01:37:34.141 | INFO    | Task run 'load_mfdataset-f1c' - Finished in state Completed()
+01:37:34.159 | INFO    | Task run 'get_variable-160' - Finished in state Completed()
+approx_interval=1.0 frequency_str='1D'
+01:37:34.254 | INFO    | Task run 'time_average-b03' - Finished in state Completed()
+01:37:34.287 | INFO    | Task run 'convert_units-809' - Finished in state Completed()
+[SetGrid] Starting grid merge operation
+  → Grid File          : None
+01:37:34.317 | ERROR   | Task run 'setgrid-6c9' - Task run failed with exception: ValueError("Missing grid file. Please set 'grid_file' in the rule.")
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/task_engine.py", line 872, in run_context
+    yield self
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/task_engine.py", line 1514, in run_task_sync
+    engine.call_task_fn(txn)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/task_engine.py", line 889, in call_task_fn
+    result = call_with_parameters(self.task.fn, parameters)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/utilities/callables.py", line 210, in call_with_parameters
+    return fn(*args, **kwargs)
+  File "/work/ab0246/a270092/software/pycmor/src/pycmor/std_lib/setgrid.py", line 68, in setgrid
+    raise ValueError("Missing grid file. Please set 'grid_file' in the rule.")
+ValueError: Missing grid file. Please set 'grid_file' in the rule.
+01:37:34.329 | ERROR   | Task run 'setgrid-6c9' - Finished in state Failed("Task run encountered an exception ValueError: Missing grid file. Please set 'grid_file' in the rule.")
+01:37:34.329 | ERROR   | Flow run 'default - sst_tos_rule' - Encountered exception during execution: ValueError("Missing grid file. Please set 'grid_file' in the rule.")
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/flow_engine.py", line 788, in run_context
+    yield self
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/flow_engine.py", line 1409, in run_flow_sync
+    engine.call_flow_fn()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/flow_engine.py", line 808, in call_flow_fn
+    result = call_with_parameters(self.flow.fn, self.parameters)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/utilities/callables.py", line 210, in call_with_parameters
+    return fn(*args, **kwargs)
+  File "/work/ab0246/a270092/software/pycmor/src/pycmor/core/pipeline.py", line 149, in dynamic_flow
+    return self._run_native(data, rule_spec)
+  File "/work/ab0246/a270092/software/pycmor/src/pycmor/core/pipeline.py", line 126, in _run_native
+    data = step(data, rule_spec)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/tasks.py", line 1138, in __call__
+    return run_task(
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/task_engine.py", line 1741, in run_task
+    return run_task_sync(**kwargs)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/task_engine.py", line 1516, in run_task_sync
+    return engine.state if return_type == "state" else engine.result()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/task_engine.py", line 493, in result
+    raise self._raised
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/task_engine.py", line 872, in run_context
+    yield self
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/task_engine.py", line 1514, in run_task_sync
+    engine.call_task_fn(txn)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/task_engine.py", line 889, in call_task_fn
+    result = call_with_parameters(self.task.fn, parameters)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/utilities/callables.py", line 210, in call_with_parameters
+    return fn(*args, **kwargs)
+  File "/work/ab0246/a270092/software/pycmor/src/pycmor/std_lib/setgrid.py", line 68, in setgrid
+    raise ValueError("Missing grid file. Please set 'grid_file' in the rule.")
+ValueError: Missing grid file. Please set 'grid_file' in the rule.
+01:37:34.406 | INFO    | Flow run 'default - sst_tos_rule' - Running hook 'on_failure' in response to entering state 'Failed'
+ERROR: Failure...
+
+ERROR: flow=<prefect.flows.Flow object at 0x7fb0c34cc8e0>
+
+ERROR: flowrun=FlowRun(id=UUID('ec29f553-fc13-4e45-a0ba-f7d0b20e4fd5'), name='default - sst_tos_rule', flow_id=UUID('9c9417f4-4850-4a0f-9f5f-bc1f582791de'), state_id=UUID('019ce4a0-8f15-75fd-9a04-c58b44df7591'), deployment_id=None, deployment_version=None, work_queue_name=None, flow_version='f34552809e0202034783b1e470ba2a9a', parameters={'data': None, 'rule_spec': '<Rule>'}, idempotency_key=None, context={}, empirical_policy=FlowRunPolicy(max_retries=0, retry_delay_seconds=0.0, retries=0, retry_delay=0, pause_keys=set(), resuming=False, retry_type=None), tags=[], labels={'prefect.flow.id': '9c9417f4-4850-4a0f-9f5f-bc1f582791de'}, parent_task_run_id=UUID('95a74a0e-c1f9-4377-89ad-49f804921d0c'), run_count=1, expected_start_time=DateTime(2026, 3, 13, 0, 37, 33, 553971, tzinfo=Timezone('UTC')), next_scheduled_start_time=None, start_time=DateTime(2026, 3, 13, 0, 37, 33, 589104, tzinfo=Timezone('UTC')), end_time=None, total_run_time=datetime.timedelta(0), estimated_run_time=datetime.timedelta(microseconds=33156), estimated_start_time_delta=datetime.timedelta(microseconds=35133), auto_scheduled=False, infrastructure_document_id=None, infrastructure_pid=None, created_by=None, work_queue_id=None, work_pool_id=None, work_pool_name=None, state=Failed(message="Flow run encountered an exception: ValueError: Missing grid file. Please set 'grid_file' in the rule.", type=FAILED, result=ResultRecord(metadata=ResultRecordMetadata(storage_key='/home/a/a270092/.prefect/storage/da79c9f1fa7944239f85a4fe8167e070', expiration=None, serializer=PickleSerializer(type='pickle', picklelib='cloudpickle', picklelib_version=None), prefect_version='3.4.25', storage_block_id=None), result=ValueError("Missing grid file. Please set 'grid_file' in the rule."))), job_variables={}, state_type=StateType.FAILED, state_name='Failed')
+
+ERROR: state=Failed(message="Flow run encountered an exception: ValueError: Missing grid file. Please set 'grid_file' in the rule.", type=FAILED, result=ResultRecord(metadata=ResultRecordMetadata(storage_key='/home/a/a270092/.prefect/storage/da79c9f1fa7944239f85a4fe8167e070', expiration=None, serializer=PickleSerializer(type='pickle', picklelib='cloudpickle', picklelib_version=None), prefect_version='3.4.25', storage_block_id=None), result=ValueError("Missing grid file. Please set 'grid_file' in the rule.")))
+
+ERROR: Better luck next time :-( 
+
+01:37:34.408 | INFO    | Flow run 'default - sst_tos_rule' - Hook 'on_failure' finished running successfully
+01:37:34.409 | INFO    | Flow run 'default - sst_tos_rule' - Finished in state Failed("Flow run encountered an exception: ValueError: Missing grid file. Please set 'grid_file' in the rule.")
+01:37:34.409 | ERROR   | Task run 'Process rule-6c2' - Task run failed with exception: ValueError("Missing grid file. Please set 'grid_file' in the rule.")
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/task_engine.py", line 872, in run_context
+    yield self
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/task_engine.py", line 1514, in run_task_sync
+    engine.call_task_fn(txn)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/task_engine.py", line 889, in call_task_fn
+    result = call_with_parameters(self.task.fn, parameters)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/utilities/callables.py", line 210, in call_with_parameters
+    return fn(*args, **kwargs)
+  File "/work/ab0246/a270092/software/pycmor/src/pycmor/core/cmorizer.py", line 750, in _process_rule
+    data = pipeline.run(data, rule)
+  File "/work/ab0246/a270092/software/pycmor/src/pycmor/core/pipeline.py", line 120, in run
+    return self._run_prefect(data, rule_spec)
+  File "/work/ab0246/a270092/software/pycmor/src/pycmor/core/pipeline.py", line 151, in _run_prefect
+    return dynamic_flow(data, rule_spec)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/flows.py", line 1708, in __call__
+    return run_flow(
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/flow_engine.py", line 1566, in run_flow
+    ret_val = run_flow_sync(**kwargs)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/flow_engine.py", line 1411, in run_flow_sync
+    return engine.state if return_type == "state" else engine.result()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/flow_engine.py", line 361, in result
+    raise self._raised
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/flow_engine.py", line 788, in run_context
+    yield self
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/flow_engine.py", line 1409, in run_flow_sync
+    engine.call_flow_fn()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/flow_engine.py", line 808, in call_flow_fn
+    result = call_with_parameters(self.flow.fn, self.parameters)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/utilities/callables.py", line 210, in call_with_parameters
+    return fn(*args, **kwargs)
+  File "/work/ab0246/a270092/software/pycmor/src/pycmor/core/pipeline.py", line 149, in dynamic_flow
+    return self._run_native(data, rule_spec)
+  File "/work/ab0246/a270092/software/pycmor/src/pycmor/core/pipeline.py", line 126, in _run_native
+    data = step(data, rule_spec)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/tasks.py", line 1138, in __call__
+    return run_task(
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/task_engine.py", line 1741, in run_task
+    return run_task_sync(**kwargs)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/task_engine.py", line 1516, in run_task_sync
+    return engine.state if return_type == "state" else engine.result()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/task_engine.py", line 493, in result
+    raise self._raised
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/task_engine.py", line 872, in run_context
+    yield self
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/task_engine.py", line 1514, in run_task_sync
+    engine.call_task_fn(txn)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/task_engine.py", line 889, in call_task_fn
+    result = call_with_parameters(self.task.fn, parameters)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/utilities/callables.py", line 210, in call_with_parameters
+    return fn(*args, **kwargs)
+  File "/work/ab0246/a270092/software/pycmor/src/pycmor/std_lib/setgrid.py", line 68, in setgrid
+    raise ValueError("Missing grid file. Please set 'grid_file' in the rule.")
+ValueError: Missing grid file. Please set 'grid_file' in the rule.
+01:37:34.418 | ERROR   | Task run 'Process rule-6c2' - Finished in state Failed("Task run encountered an exception ValueError: Missing grid file. Please set 'grid_file' in the rule.")
+01:37:36.378 | INFO    | Flow run 'arrogant-elephant' - Finished in state Failed('1/1 states failed.')
+Removing Dask cluster from context!
+01:37:51.762 | INFO    | prefect - Stopping temporary server on http://127.0.0.1:8206
+01:37:51.926 | ERROR   | sqlalchemy.pool.impl.AsyncAdaptedQueuePool - Exception terminating connection <AdaptedConnection <aiosqlite.core.Connection object at 0x7febf66b86d0>>
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/pool/base.py", line 373, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/dialects/sqlite/aiosqlite.py", line 479, in do_terminate
+    dbapi_connection.terminate()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/connectors/asyncio.py", line 402, in terminate
+    self.await_(asyncio.shield(self._terminate_graceful_close()))  # type: ignore[attr-defined] # noqa: E501
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+asyncio.exceptions.CancelledError: Cancelled via cancel scope 7febfc0cdd00 by <Task pending name='Task-13' coro=<Consumer.run() running at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/prefect/server/utilities/messaging/memory.py:353> cb=[<TaskWakeupMethWrapper object at 0x7fec17024370>(), <TaskWakeupMethWrapper object at 0x7febfc0cd130>()]>
+01:37:51.945 | ERROR   | asyncio - Task exception was never retrieved
+future: <Task finished name='Task-120' coro=<AsyncSession.close() done, defined at /work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/ext/asyncio/session.py:1002> exception=OperationalError('(sqlite3.OperationalError) no active connection')>
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/dialects/sqlite/aiosqlite.py", line 307, in rollback
+    self.await_(self._connection.rollback())
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/aiosqlite/core.py", line 197, in rollback
+    await self._execute(self._conn.rollback)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/aiosqlite/core.py", line 137, in _conn
+    raise ValueError("no active connection")
+ValueError: no active connection
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/engine/base.py", line 1128, in _rollback_impl
+    self.engine.dialect.do_rollback(self.connection)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/engine/default.py", line 712, in do_rollback
+    dbapi_connection.rollback()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/dialects/sqlite/aiosqlite.py", line 309, in rollback
+    self._handle_exception(error)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/dialects/sqlite/aiosqlite.py", line 338, in _handle_exception
+    raise self.dbapi.sqlite.OperationalError(
+sqlite3.OperationalError: no active connection
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/ext/asyncio/session.py", line 1016, in close
+    await greenlet_spawn(self.sync_session.close)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 203, in greenlet_spawn
+    result = context.switch(value)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/orm/session.py", line 2507, in close
+    self._close_impl(invalidate=False)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/orm/session.py", line 2576, in _close_impl
+    transaction.close(invalidate)
+  File "<string>", line 2, in close
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/orm/session.py", line 1417, in close
+    transaction.close()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/engine/base.py", line 2597, in close
+    self._do_close()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/engine/base.py", line 2735, in _do_close
+    self._close_impl()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/engine/base.py", line 2721, in _close_impl
+    self._connection_rollback_impl()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/engine/base.py", line 2713, in _connection_rollback_impl
+    self.connection._rollback_impl()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/engine/base.py", line 1130, in _rollback_impl
+    self._handle_dbapi_exception(e, None, None, None, None)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/engine/base.py", line 1128, in _rollback_impl
+    self.engine.dialect.do_rollback(self.connection)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/engine/default.py", line 712, in do_rollback
+    dbapi_connection.rollback()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/dialects/sqlite/aiosqlite.py", line 309, in rollback
+    self._handle_exception(error)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/sqlalchemy/dialects/sqlite/aiosqlite.py", line 338, in _handle_exception
+    raise self.dbapi.sqlite.OperationalError(
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no active connection
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-03-13 01:37:52,887 - distributed.worker - ERROR - Failed to communicate with scheduler during heartbeat.
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/comm/tcp.py", line 225, in read
+    frames_nosplit_nbytes_bin = await stream.read_bytes(fmt_size)
+tornado.iostream.StreamClosedError: Stream is closed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/worker.py", line 1250, in heartbeat
+    response = await retry_operation(
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/utils_comm.py", line 459, in retry_operation
+    return await retry(
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/utils_comm.py", line 438, in retry
+    return await coro()
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/core.py", line 1254, in send_recv_from_rpc
+    return await send_recv(comm=comm, op=key, **kwargs)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/core.py", line 1013, in send_recv
+    response = await comm.read(deserializers=deserializers)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/comm/tcp.py", line 236, in read
+    convert_stream_closed_error(self, e)
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/lib/python3.9/site-packages/distributed/comm/tcp.py", line 142, in convert_stream_closed_error
+    raise CommClosedError(f"in {obj}: {exc}") from exc
+distributed.comm.core.CommClosedError: in <TCP (closed) ConnectionPool.heartbeat_worker local=tcp://127.0.0.1:60992 remote=tcp://127.0.0.1:43945>: Stream is closed

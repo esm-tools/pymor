@@ -1,0 +1,22 @@
+03:58:10.271 | WARNING | pint.util - Redefining 'percent' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+03:58:10.273 | WARNING | pint.util - Redefining '%' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+03:58:10.273 | WARNING | pint.util - Redefining 'year' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+03:58:10.274 | WARNING | pint.util - Redefining 'yr' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+03:58:10.274 | WARNING | pint.util - Redefining 'C' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+03:58:10.275 | WARNING | pint.util - Redefining 'd' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+03:58:10.275 | WARNING | pint.util - Redefining 'h' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+03:58:10.275 | WARNING | pint.util - Redefining 'degrees_north' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+03:58:10.276 | WARNING | pint.util - Redefining 'degrees_east' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+03:58:10.276 | WARNING | pint.util - Redefining 'degrees' (<class 'pint.delegates.txt_defparser.plain.UnitDefinition'>)
+03:58:10.277 | WARNING | pint.util - Redefining '[speed]' (<class 'pint.delegates.txt_defparser.plain.DerivedDimensionDefinition'>)
+[03/13/26 03:58:10] WARNING  Import(s) unavailable to set up matplotlib support...skipping this portion of the setup.                                                                                                                    logging.py:10
+Traceback (most recent call last):
+  File "/work/ab0246/a270092/software/miniforge3/envs/pycmor_env/bin/pycmor", line 3, in <module>
+    from pycmor.cli import main
+  File "/work/ab0246/a270092/software/pycmor/src/pycmor/cli.py", line 16, in <module>
+    from .core.cmorizer import CMORizer
+  File "/work/ab0246/a270092/software/pycmor/src/pycmor/core/cmorizer.py", line 63, in <module>
+    class CMORizer:
+  File "/work/ab0246/a270092/software/pycmor/src/pycmor/core/cmorizer.py", line 732, in CMORizer
+    def check_prefect(self):
+TypeError: <lambda>() takes 0 positional arguments but 1 was given

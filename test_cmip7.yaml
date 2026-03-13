@@ -1,0 +1,24 @@
+general:
+  name: "AWI-ESM3-VEG-LR PI Control SST"
+  description: "CMIP7 CMORization for AWI-ESM3-VEG-LR"
+  maintainer: "builder"
+  email: "builder@example.com"
+  cmor_version: "CMIP7"
+  mip: "CMIP"
+  CV_Dir: "/work/ab0246/a270092/software/pycmor/cmip6-cmor-tables/CMIP6_CVs"
+  CMIP_Tables_Dir: "/work/ab0246/a270092/software/pycmor/src/pycmor/data/cmip7"
+
+rules:
+  - name: sst_rule
+    description: "Rule for SST (tos)"
+    cmor_variable: tos
+    model_variable: sst
+    output_directory: ./cmorized
+    variant_label: r1i1p1f1
+    experiment_id: piControl
+    source_id: AWI-ESM3-VEG-LR
+    model_component: ocean
+    grid_label: gn
+    inputs:
+      - path: /work/bb1469/a270092/runtime/awiesm3-v3.4.1/human_tuning/outdata/fesom
+        pattern: sst\.fesom\.1350\.nc

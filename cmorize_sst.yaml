@@ -13,6 +13,7 @@ pycmor:
   use_flox: False
   parallel: False
   enable_dask: False
+  xarray_open_mfdataset_parallel: False
   pipeline_workflow_orchestrator: "native"
 
 pipelines:
@@ -38,7 +39,7 @@ rules:
     source_id: AWI-ESM3-VEG-LR
     model_component: ocean
     grid_label: gn
-    grid_file: /work/ab0246/a270092/input/fesom2/core2/fesom.mesh.diag.nc
+    grid_file: /work/ab0246/a270092/input/fesom2/core2/mesh.nc
     pipelines:
       - default
     inputs:
