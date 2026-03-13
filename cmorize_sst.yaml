@@ -21,7 +21,6 @@ pipelines:
     steps:
       - "pycmor.core.gather_inputs.load_mfdataset"
       - "pycmor.std_lib.get_variable"
-      - "pycmor.std_lib.time_average"
       - "pycmor.std_lib.convert_units"
       - "pycmor.std_lib.setgrid.setgrid"
       - "pycmor.std_lib.set_global_attributes"
@@ -39,7 +38,7 @@ rules:
     source_id: AWI-ESM3-VEG-LR
     model_component: ocean
     grid_label: gn
-    grid_file: /work/ab0246/a270092/input/fesom2/core2/mesh.nc
+    grid_file: /work/ab0246/a270092/input/fesom2/dars2/mesh.nc
     pipelines:
       - default
     inputs:
