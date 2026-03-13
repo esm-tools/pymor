@@ -371,6 +371,8 @@ def regrid_to_regular(data, rule):
             np.empty((len(data["time"]), n_lon, n_lat)), dims=["time", "lon", "lat"]
         ).chunk({"time": 1}),
     )
+    # Preserve variable name from input
+    interpolated.name = data.name
     return interpolated
 
 
