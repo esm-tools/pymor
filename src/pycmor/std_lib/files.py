@@ -217,16 +217,37 @@ def create_filepath(ds, rule):
     frequency_str = rule.data_request_variable.frequency
     
     if mip_era == "CMIP7":
-        # CMIP7: No institution prefix, simpler format
-        if frequency_str == "fx" or not time_range:
+        # CMIP7 format per official specification (DOI: 10.5281/zenodo.17250297):
+        # <variable_id>_<branding_suffix>_<frequency>_<region>_<grid_label>_
+        # <source_id>_<experiment_id>_<variant_label>[_<timeRange>].nc
+        
+        # Get branding suffix from rule or data request
+        branding_suffix = getattr(rule, 'branding_suffix', None)
+        if not branding_suffix:
+            branding_suffix = getattr(
+                rule.data_request_variable, 'branding_suffix', 'unknown-u-hxy-u'
+            )
+        branding_suffix = _sanitize_component(branding_suffix)
+        
+        # Get region from rule (default to global)
+        region = getattr(rule, 'region', 'glb')
+        region = _sanitize_component(region)
+        
+        # Use frequency, not table_id
+        frequency = _sanitize_component(frequency_str)
+        
+        # Build CMIP7 filename
+        if frequency == "fx" or not time_range:
+            # Fixed (time-independent) variable - no timeRange
             filepath = (
-                f"{out_dir}/{name}_{table_id}_{source_id}_"
-                f"{experiment_id}_{label}_{grid}{clim_suffix}.nc"
+                f"{out_dir}/{name}_{branding_suffix}_{frequency}_{region}_{grid}_"
+                f"{source_id}_{experiment_id}_{label}{clim_suffix}.nc"
             )
         else:
+            # Time-dependent variable - include timeRange
             filepath = (
-                f"{out_dir}/{name}_{table_id}_{source_id}_"
-                f"{experiment_id}_{label}_{grid}_{time_range}{clim_suffix}.nc"
+                f"{out_dir}/{name}_{branding_suffix}_{frequency}_{region}_{grid}_"
+                f"{source_id}_{experiment_id}_{label}_{time_range}{clim_suffix}.nc"
             )
     else:
         # CMIP6: Include institution prefix
