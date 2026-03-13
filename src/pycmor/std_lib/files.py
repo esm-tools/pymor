@@ -442,6 +442,10 @@ def save_dataset(da: xr.DataArray, rule):
         extra_kwargs.update({"unlimited_dims": ["time"]})
     time_encoding = {"dtype": time_dtype}
     time_encoding = {k: v for k, v in time_encoding.items() if v is not None}
+    
+    # NetCDF4 compression settings (level 4 = good balance of compression vs speed)
+    compression_level = 4
+    
     # Allow user to define time units and calendar in the rule object
     # Martina has a usecase where she wants to set time units to
     # `days since 1850-01-01` and calendar to `proleptic_gregorian` for
@@ -458,6 +462,16 @@ def save_dataset(da: xr.DataArray, rule):
         time_encoding["calendar"] = "standard"
     if not has_time_axis(da):
         filepath = create_filepath(da, rule)
+        # Apply compression to data variables
+        if isinstance(da, xr.DataArray):
+            da = da.to_dataset()
+        for var_name in da.data_vars:
+            if var_name not in da.coords:
+                da[var_name].encoding.update({
+                    'zlib': True,
+                    'complevel': compression_level,
+                    'shuffle': True,
+                })
         return da.to_netcdf(
             filepath,
             mode="w",
@@ -466,6 +480,16 @@ def save_dataset(da: xr.DataArray, rule):
     time_label = get_time_label(da)
     if is_scalar(da[time_label]):
         filepath = create_filepath(da, rule)
+        # Apply compression to data variables
+        if isinstance(da, xr.DataArray):
+            da = da.to_dataset()
+        for var_name in da.data_vars:
+            if var_name not in da.coords:
+                da[var_name].encoding.update({
+                    'zlib': True,
+                    'complevel': compression_level,
+                    'shuffle': True,
+                })
         return da.to_netcdf(
             filepath,
             mode="w",
@@ -533,6 +557,15 @@ def save_dataset(da: xr.DataArray, rule):
     if isinstance(da, xr.DataArray):
         da = da.to_dataset()
     da[time_label].encoding.update(time_encoding)
+    
+    # Apply compression encoding to all data variables (not coordinates)
+    for var_name in da.data_vars:
+        if var_name not in da.coords:
+            da[var_name].encoding.update({
+                'zlib': True,
+                'complevel': compression_level,
+                'shuffle': True,  # Improves compression ratio
+            })
 
     if not has_time_axis(da):
         filepath = create_filepath(da, rule)
