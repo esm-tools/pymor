@@ -19,11 +19,48 @@ class GlobalAttributes(metaclass=MetaFactory):
 
 
 class CMIP7GlobalAttributes(GlobalAttributes):
+    """Global attributes for CMIP7
+    
+    Note: CMIP7 uses similar structure to CMIP6 but with unified all_var_info.json
+    """
+    
+    def __init__(self, drv, cv, rule_dict):
+        self.drv = drv
+        self.cv = cv
+        self.rule_dict = rule_dict
+    
     def global_attributes(self):
-        raise NotImplementedError()
+        """Return global attributes for CMIP7
+        
+        For now, return minimal attributes. This can be extended as CMIP7 
+        specifications are finalized.
+        """
+        return {
+            "creation_date": self.rule_dict.get("creation_date", datetime.datetime.now().isoformat()),
+            "tracking_id": self.get_tracking_id(),
+            "variable_id": self.rule_dict.get("cmor_variable", ""),
+            "experiment_id": self.rule_dict.get("experiment_id", ""),
+            "source_id": self.rule_dict.get("source_id", ""),
+            "variant_label": self.rule_dict.get("variant_label", ""),
+            "grid_label": self.rule_dict.get("grid_label", ""),
+        }
 
     def subdir_path(self):
-        raise NotImplementedError()
+        """Return subdirectory path for CMIP7 output"""
+        mip_era = "CMIP7"
+        source_id = self.rule_dict.get("source_id", "")
+        experiment_id = self.rule_dict.get("experiment_id", "")
+        variant_label = self.rule_dict.get("variant_label", "")
+        table_id = self.drv.table_header.table_id if hasattr(self.drv, 'table_header') else "Omon"
+        variable_id = self.rule_dict.get("cmor_variable", "")
+        grid_label = self.rule_dict.get("grid_label", "")
+        version = f"v{datetime.datetime.today().strftime('%Y%m%d')}"
+        directory_path = f"{mip_era}/{source_id}/{experiment_id}/{variant_label}/{table_id}/{variable_id}/{grid_label}/{version}"
+        return directory_path
+    
+    def get_tracking_id(self):
+        """Generate a unique tracking ID"""
+        return "hdl:21.14100/" + str(uuid.uuid4())
 
 
 class CMIP6GlobalAttributes(GlobalAttributes):
