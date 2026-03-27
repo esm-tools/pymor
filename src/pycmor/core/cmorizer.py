@@ -877,14 +877,22 @@ class CMORizer:
                     raise exc
                 raise RuntimeError(f"CMORizer parallel processing failed: {exc}")
             # Check individual rule results for failures
-            for future in result.result():
-                state = future.state
-                if state.is_failed():
-                    exc = state.result(raise_on_failure=False)
-                    if isinstance(exc, BaseException):
-                        raise exc
-                    raise RuntimeError(f"Rule processing failed: {exc}")
-            return result.result()
+            rule_results = result.result()
+            for item in rule_results:
+                # Items may be PrefectFuture or State objects depending on Prefect version
+                if hasattr(item, "result") and hasattr(item, "is_failed"):
+                    if item.is_failed():
+                        exc = item.result(raise_on_failure=False)
+                        if isinstance(exc, BaseException):
+                            raise exc
+                        raise RuntimeError(f"Rule processing failed: {exc}")
+                elif hasattr(item, "state"):
+                    if item.state.is_failed():
+                        exc = item.state.result(raise_on_failure=False)
+                        if isinstance(exc, BaseException):
+                            raise exc
+                        raise RuntimeError(f"Rule processing failed: {exc}")
+            return rule_results
 
     def _parallel_process_dask(self, external_client=None):
         if external_client:
