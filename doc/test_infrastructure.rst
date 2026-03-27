@@ -249,6 +249,114 @@ If still old, clear local cache:
     docker rmi ghcr.io/esm-tools/pycmor-testground:py3.10-prep-release
     docker pull ghcr.io/esm-tools/pycmor-testground:py3.10-prep-release
 
+Fixture Naming Conventions
+---------------------------
+
+The pycmor test suite uses semantic fixture naming to clearly indicate what type of object each fixture returns.
+
+Naming Convention
+^^^^^^^^^^^^^^^^^
+
+Fixtures follow these suffixes to indicate their return type:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 40 40
+
+   * - Suffix
+     - Returns
+     - Example
+   * - ``*_datadir``
+     - Path to directory with data files
+     - ``awicm_recom_datadir``
+   * - ``*_meshdir``
+     - Path to directory with mesh files
+     - ``fesom_pi_meshdir``
+   * - ``*_file``
+     - Path to single file
+     - ``fesom_sst_file``
+   * - ``*_ds``
+     - Opened xarray.Dataset
+     - ``fesom_sst_ds``
+   * - ``*_da``
+     - Opened xarray.DataArray
+     - ``fesom_temp_da``
+   * - ``*_cfg``
+     - Configuration dict
+     - ``awicm_recom_cfg``
+   * - ``*_cfgfile``
+     - Path to config file
+     - ``awicm_recom_cfgfile``
+   * - ``*_rule``
+     - Rule object
+     - ``fesom_temp_rule``
+
+Data Fixture Variants
+^^^^^^^^^^^^^^^^^^^^^^
+
+Test data fixtures come in three variants:
+
+1. **Router fixture** (no suffix): Returns stub by default, real if ``PYCMOR_USE_REAL_TEST_DATA=1``
+2. **Real variant** (``*_real_*``): Always downloads real data via pooch
+3. **Stub variant** (``*_stub_*``): Always generates lightweight stub data
+
+Example:
+
+.. code-block:: python
+
+   # Use the router (stub by default)
+   def test_something(awicm_recom_datadir):
+       data_path = awicm_recom_datadir / "output"
+
+   # Force real data with marker
+   @pytest.mark.real_data
+   def test_with_real_data(awicm_recom_datadir):
+       # awicm_recom_datadir now returns real data
+       pass
+
+   # Or explicitly request real/stub
+   def test_explicit(awicm_recom_real_datadir):
+       # Always gets real data
+       pass
+
+Migration Strategy
+^^^^^^^^^^^^^^^^^^
+
+The test suite is gradually migrating to these conventions:
+
+* **Old fixture names are deprecated** but still work with warnings
+* **New tests should use new naming conventions**
+* **When modifying existing tests**, migrate fixtures to new names
+* **Deprecation warnings** guide you to the new names
+
+Example deprecation:
+
+.. code-block:: python
+
+   # Old (deprecated but works)
+   def test_old(fesom_2p6_pimesh_esm_tools_data):
+       pass
+
+   # New (preferred)
+   def test_new(fesom_2p6_pimesh_datadir):
+       pass
+
+Finding Fixtures
+^^^^^^^^^^^^^^^^
+
+All fixtures are organized in ``tests/fixtures/``:
+
+.. code-block:: text
+
+   tests/fixtures/
+   ├── example_data/       # Real data download fixtures (pooch)
+   ├── stub_data/          # Stub data generation fixtures
+   ├── fake_data/          # Programmatic fake data
+   ├── datasets.py         # Opened xarray.Dataset fixtures
+   ├── sample_rules.py     # Rule object fixtures
+   ├── configs.py          # Config dict fixtures
+   └── config_files.py     # Config file path fixtures
+
 Related Documentation
 ---------------------
 
