@@ -760,10 +760,15 @@ def map_dimensions(ds: Union[xr.Dataset, xr.DataArray], rule) -> Union[xr.Datase
         logger.debug("Dimension mapping is disabled")
         return ds if not was_dataarray else ds[da_name]
 
-    # Get user-specified mapping from rule (rule attribute, not config)
-    user_mapping = getattr(rule, "dimension_mapping", {})
+    # Get user-specified mapping: try rule attribute first, then config
+    user_mapping = getattr(rule, "dimension_mapping", None)
     if not isinstance(user_mapping, dict):
-        user_mapping = {}
+        try:
+            user_mapping = rule._pycmor_cfg("dimension_mapping", default="")
+            if not isinstance(user_mapping, dict):
+                user_mapping = {}
+        except Exception:
+            user_mapping = {}
 
     # Get allow_override setting
     allow_override = rule._pycmor_cfg("dimension_mapping_allow_override")
