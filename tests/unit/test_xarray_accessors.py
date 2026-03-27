@@ -6,8 +6,10 @@ import numpy as np
 import pytest
 import xarray as xr
 
-# Import pycmor to register accessors
+# Import pycmor and enable accessor registration
 import pycmor  # noqa: F401
+
+pycmor.enable_xarray_accessor()
 
 
 class TestAccessorRegistration:

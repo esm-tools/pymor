@@ -50,6 +50,7 @@ class CMORizer:
     _SUPPORTED_CMOR_VERSIONS = ("CMIP6", "CMIP7")
     """tuple : Supported CMOR versions."""
 
+    # [FIXME] I'd like to deprecate the pymor_cfg constructor option, but still keep it around
     def __init__(
         self,
         pymor_cfg=None,
