@@ -4,7 +4,11 @@ import pytest
 import xarray as xr
 
 import pycmor
-import pycmor.fesom_2p1.regridding
+
+try:
+    import pycmor.fesom_2p1.regridding
+except ImportError:
+    pass
 
 
 @pytest.mark.skipif(
