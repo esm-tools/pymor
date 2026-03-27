@@ -21,7 +21,7 @@ rules:
       - path: "REPLACE_ME"
         pattern: "temp.fesom..*.nc"
     cmor_variable: "thetao"
-    compound_name: "ocean.thetao.mean.mon.gn"
+    compound_name: "Omon.thetao"
     model_variable: "temp"
     model_component: ocean
     grid_label: gn

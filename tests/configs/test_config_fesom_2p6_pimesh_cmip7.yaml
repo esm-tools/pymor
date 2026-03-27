@@ -24,7 +24,7 @@ rules:
       - path: "REPLACE_ME/outdata/fesom"
         pattern: "temp.fesom..*.nc"
     cmor_variable: "thetao"
-    compound_name: "ocean.thetao.mean.mon.gn"
+    compound_name: "Omon.thetao"
     model_variable: "temp"
     sort_dimensions_missing_dims: "warn"
     model_dim:
