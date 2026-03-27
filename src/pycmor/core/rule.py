@@ -171,15 +171,48 @@ class Rule:
         should contain a list of dictionaries that can be used to build Pipeline objects, and
         the ``cmor_variable`` is just a string.
 
+        If cmor_variable is not provided but compound_name is, the variable name
+        will be extracted from the compound_name.
+
         Parameters
         ----------
         data : dict
             A dictionary containing the rule data.
         """
+        # Handle cmor_variable extraction from compound_name if needed
+        if "cmor_variable" in data and "compound_name" in data:
+            # Both provided - validate they are consistent
+            provided_cmor_variable = data["cmor_variable"]
+            compound_name = data["compound_name"]
+            parts = compound_name.split(".")
+            if len(parts) >= 2:
+                extracted_variable = parts[1]  # variable is the second part
+                if provided_cmor_variable != extracted_variable:
+                    raise ValueError(
+                        f"cmor_variable '{provided_cmor_variable}' does not match "
+                        f"variable extracted from compound_name '{compound_name}' ('{extracted_variable}')"
+                    )
+                cmor_variable = data.pop("cmor_variable")  # Remove from data
+            else:
+                raise ValueError(f"Invalid compound_name format: {compound_name}")
+        elif "cmor_variable" in data:
+            # Only cmor_variable provided
+            cmor_variable = data.pop("cmor_variable")
+        elif "compound_name" in data:
+            # Only compound_name provided - extract cmor_variable from it
+            compound_name = data["compound_name"]
+            parts = compound_name.split(".")
+            if len(parts) >= 2:
+                cmor_variable = parts[1]  # variable is the second part
+            else:
+                raise ValueError(f"Invalid compound_name format: {compound_name}")
+        else:
+            raise ValueError("Either cmor_variable or compound_name must be provided")
+
         return cls(
             name=data.pop("name", None),
             inputs=data.pop("inputs"),
-            cmor_variable=data.pop("cmor_variable"),
+            cmor_variable=cmor_variable,
             pipelines=data.pop("pipelines", []),
             **data,
         )

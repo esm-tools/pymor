@@ -84,6 +84,146 @@ class PipelineSectionValidator(Validator):
 class RuleSectionValidator(DirectoryAwareValidator):
     """Validator for rules configuration."""
 
+    def __init__(self, schema=None, cmor_version=None, **kwargs):
+        # Handle the case where cerberus calls this with allow_unknown, etc.
+        if schema is None:
+            schema = RULES_SCHEMA
+        super().__init__(schema, **kwargs)
+        self.cmor_version = cmor_version
+        # If we have a cmor_version, create a dynamic schema
+        if cmor_version:
+            self.schema = self._create_dynamic_rules_schema(cmor_version)
+
+    def _create_dynamic_rules_schema(self, cmor_version):
+        """Create a rules schema that's conditional on CMOR version."""
+        base_rule_schema = {
+            "name": {"type": "string", "required": False},
+            "cmor_variable": {
+                "type": "string",
+                "required": cmor_version == "CMIP6",  # Required for CMIP6
+            },
+            "compound_name": {
+                "type": "string",
+                "required": cmor_version == "CMIP7",  # Required for CMIP7
+            },
+            "model_variable": {"type": "string", "required": False},
+            "input_type": {
+                "type": "string",
+                "required": False,
+                "allowed": [
+                    "xr.DataArray",
+                    "xr.Dataset",
+                ],
+            },
+            "input_source": {
+                "type": "string",
+                "required": False,
+                "allowed": [
+                    "xr_tutorial",
+                ],
+            },
+            "inputs": {
+                "type": "list",
+                "schema": {
+                    "type": "dict",
+                    "schema": {
+                        "path": {"type": "string", "required": True},
+                        "pattern": {"type": "string", "required": True},
+                    },
+                },
+                "required": True,
+            },
+            "enabled": {"type": "boolean", "required": False},
+            "description": {"type": "string", "required": False},
+            "pipelines": {
+                "type": "list",
+                "schema": {"type": "string"},
+            },
+            "cmor_unit": {"type": "string", "required": False},
+            "model_unit": {"type": "string", "required": False},
+            "file_timespan": {"type": "string", "required": False},
+            "variant_label": {
+                "type": "string",
+                "required": True,
+                "regex": r"^r\d+i\d+p\d+f\d+$",
+            },
+            "source_id": {"type": "string", "required": True},
+            "output_directory": {
+                "type": "string",
+                "required": True,
+                "is_directory": True,
+            },
+            "institution_id": {
+                "type": "string",
+                "required": False,
+            },
+            "instition_id": {  # Keep for backward compatibility (typo)
+                "type": "string",
+                "required": False,
+            },
+            "experiment_id": {"type": "string", "required": True},
+            "adjust_timestamp": {"type": "string", "required": False},
+            "further_info_url": {"type": "string", "required": False},
+            "model_component": {
+                "type": "string",
+                "required": False,
+            },
+            "realm": {
+                "type": "string",
+                "required": False,
+            },
+            "grid_label": {"type": "string", "required": True},
+            "array_order": {"type": "list", "required": False},
+            "frequency": {
+                "type": "string",
+                "required": False,
+            },
+            "table_id": {
+                "type": "string",
+                "required": False,
+            },
+            "grid": {"type": "string", "required": False},
+            "nominal_resolution": {
+                "type": "string",
+                "required": False,
+            },
+            "time_units": {
+                "type": "string",
+                "required": False,
+                "regex": (
+                    r"^\s*(days|hours|minutes|seconds|milliseconds|microseconds|nanoseconds)"
+                    r"\s+since\s+\d{4}-\d{2}-\d{2}(\s+\d{2}:\d{2}:\d{2}(.\d+)?)?\s*$"
+                ),
+            },
+            "time_calendar": {
+                "type": "string",
+                "required": False,
+                "allowed": [
+                    "standard",
+                    "gregorian",
+                    "proleptic_gregorian",
+                    "noleap",
+                    "365_day",
+                    "all_leap",
+                    "366_day",
+                    "360_day",
+                    "julian",
+                    "none",
+                ],
+            },
+        }
+
+        return {
+            "rules": {
+                "type": "list",
+                "schema": {
+                    "type": "dict",
+                    "allow_unknown": True,
+                    "schema": base_rule_schema,
+                },
+            },
+        }
+
 
 GENERAL_SCHEMA = {
     "general": {
