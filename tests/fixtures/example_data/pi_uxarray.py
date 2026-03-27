@@ -11,7 +11,7 @@ import requests
 
 from tests.fixtures.stub_generator import generate_stub_files
 
-URL = "https://nextcloud.awi.de/s/swqyFgbL2jjgjRo/download/pi_uxarray.tar"
+URL = "https://nextcloud.awi.de/s/o2YQy2i9BR97Rge/download/pi_uxarray.tar"
 """str : URL to download the example data from."""
 
 MESH_GIT_REPO = "https://gitlab.awi.de/fesom/pi"
