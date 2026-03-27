@@ -1,0 +1,10 @@
+# Test data registry for AWI-CM 1.0 RECOM model
+#
+# This file defines remote test data files that can be downloaded
+# and cached by the test suite using pooch.
+
+awicm_1p0_recom.tar:
+  url: https://nextcloud.awi.de/s/DaQjtTS9xB7o7pL/download/awicm_1p0_recom.tar
+  sha256: null  # TODO: Add checksum for validation
+  description: AWI-CM 1.0 RECOM biogeochemistry test data
+  extract_dir: awicm_1p0_recom

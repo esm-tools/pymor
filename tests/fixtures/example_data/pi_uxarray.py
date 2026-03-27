@@ -1,80 +1,61 @@
-"""Example data for the FESOM model."""
+"""Example data for PI control UXarray tests.
 
+This module provides fixtures for both real downloaded data and lightweight
+stub data for testing, including both data files and mesh files.
+"""
+
+import logging
 import os
 import shutil
 import subprocess
-import tarfile
 from pathlib import Path
 
 import pytest
-import requests
 
-from tests.fixtures.stub_generator import generate_stub_files
-
-URL = "https://nextcloud.awi.de/s/o2YQy2i9BR97Rge/download/pi_uxarray.tar"
-"""str : URL to download the example data from."""
+logger = logging.getLogger(__name__)
 
 MESH_GIT_REPO = "https://gitlab.awi.de/fesom/pi"
 """str : Git repository URL for the FESOM PI mesh data."""
 
-PYCMOR_TEST_DATA_CACHE_DIR = Path(
-    os.getenv("PYCMOR_TEST_DATA_CACHE_DIR")
-    or Path(os.getenv("XDG_CACHE_HOME") or Path.home() / ".cache") / "pycmor" / "test_data"
-)
+
+@pytest.fixture(scope="session")
+def pi_uxarray_real_datadir():
+    """
+    Download and extract real PI control UXarray data using pooch.
+
+    Returns
+    -------
+    Path
+        Path to the extracted data directory
+    """
+    # Lazy import to avoid loading pooch during test collection
+    from tests.fixtures.example_data.data_fetcher import fetch_and_extract
+
+    return fetch_and_extract("pi_uxarray.tar")
 
 
 @pytest.fixture(scope="session")
-def pi_uxarray_download_data(tmp_path_factory):
-    # Use persistent cache in $HOME/.cache/pycmor instead of ephemeral /tmp
-    cache_dir = PYCMOR_TEST_DATA_CACHE_DIR
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    data_path = cache_dir / "pi_uxarray.tar"
+def pi_uxarray_real_data(pi_uxarray_real_datadir):
+    """Deprecated: Use pi_uxarray_real_datadir instead."""
+    import warnings
 
-    if not data_path.exists():
-        print(f"Downloading test data from {URL}...")
-        try:
-            response = requests.get(URL, timeout=30)
-            response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            error_msg = (
-                f"Failed to download test data from {URL}\n"
-                f"Error type: {type(e).__name__}\n"
-                f"Error details: {str(e)}\n"
-            )
-            if hasattr(e, "response") and e.response is not None:
-                error_msg += (
-                    f"HTTP Status Code: {e.response.status_code}\n"
-                    f"Response Headers: {dict(e.response.headers)}\n"
-                    f"Response Content (first 500 chars): {e.response.text[:500]}\n"
-                )
-            print(error_msg)
-            raise RuntimeError(error_msg) from e
-
-        with open(data_path, "wb") as f:
-            f.write(response.content)
-        print(f"Data downloaded: {data_path}.")
-    else:
-        print(f"Using cached data: {data_path}.")
-
-    return data_path
+    warnings.warn(
+        "pi_uxarray_real_data is deprecated, use pi_uxarray_real_datadir",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return pi_uxarray_real_datadir
 
 
 @pytest.fixture(scope="session")
-def pi_uxarray_real_data(pi_uxarray_download_data):
-
-    data_dir = Path(pi_uxarray_download_data).parent
-    with tarfile.open(pi_uxarray_download_data, "r") as tar:
-        tar.extractall(data_dir)
-
-    return data_dir / "pi_uxarray"
-
-
-@pytest.fixture(scope="session")
-def pi_uxarray_stub_data(tmp_path_factory):
+def pi_uxarray_stub_datadir(tmp_path_factory):
     """
     Generate stub data for pi_uxarray from YAML manifest.
     Returns the data directory containing generated NetCDF files.
     """
+    # Lazy import to avoid loading numpy/xarray during test collection
+    from tests.fixtures.stub_generator import generate_stub_files
+
     # Create temporary directory for stub data
     stub_dir = tmp_path_factory.mktemp("pi_uxarray_stub")
 
@@ -88,7 +69,20 @@ def pi_uxarray_stub_data(tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
-def pi_uxarray_data(request):
+def pi_uxarray_stub_data(pi_uxarray_stub_datadir):
+    """Deprecated: Use pi_uxarray_stub_datadir instead."""
+    import warnings
+
+    warnings.warn(
+        "pi_uxarray_stub_data is deprecated, use pi_uxarray_stub_datadir",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return pi_uxarray_stub_datadir
+
+
+@pytest.fixture(scope="session")
+def pi_uxarray_datadir(request):
     """
     Router fixture that returns stub data by default, or real data if:
     1. The PYCMOR_USE_REAL_TEST_DATA environment variable is set
@@ -102,11 +96,24 @@ def pi_uxarray_data(request):
         use_real = True
 
     if use_real:
-        print("Using REAL data for pi_uxarray")
-        return request.getfixturevalue("pi_uxarray_real_data")
+        logger.info("Using real data for pi_uxarray")
+        return request.getfixturevalue("pi_uxarray_real_datadir")
     else:
-        print("Using STUB data for pi_uxarray")
-        return request.getfixturevalue("pi_uxarray_stub_data")
+        logger.info("Using stub data for pi_uxarray")
+        return request.getfixturevalue("pi_uxarray_stub_datadir")
+
+
+@pytest.fixture(scope="session")
+def pi_uxarray_data(pi_uxarray_datadir):
+    """Deprecated: Use pi_uxarray_datadir instead."""
+    import warnings
+
+    warnings.warn(
+        "pi_uxarray_data is deprecated, use pi_uxarray_datadir",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return pi_uxarray_datadir
 
 
 @pytest.fixture(scope="session")
@@ -115,17 +122,19 @@ def pi_uxarray_download_mesh(tmp_path_factory):
     Clone FESOM PI mesh from GitLab using git-lfs.
     Uses persistent cache in $HOME/.cache/pycmor instead of ephemeral /tmp.
     """
+    from tests.fixtures.example_data.data_fetcher import get_cache_dir
+
     # Use persistent cache in $HOME/.cache/pycmor instead of ephemeral /tmp
-    cache_dir = PYCMOR_TEST_DATA_CACHE_DIR
+    cache_dir = get_cache_dir()
     cache_dir.mkdir(parents=True, exist_ok=True)
     mesh_dir = cache_dir / "pi_mesh_git"
 
     if mesh_dir.exists() and (mesh_dir / ".git").exists():
-        print(f"Using cached git mesh repository: {mesh_dir}")
+        logger.info(f"Using cached git mesh repository: {mesh_dir}")
         return mesh_dir
 
     # Clone the repository with git-lfs
-    print(f"Cloning FESOM PI mesh from {MESH_GIT_REPO}...")
+    logger.info(f"Cloning FESOM PI mesh from {MESH_GIT_REPO}...")
     try:
         # Check if git-lfs is available
         result = subprocess.run(["git", "lfs", "version"], capture_output=True, text=True, timeout=10, check=False)
@@ -153,10 +162,10 @@ def pi_uxarray_download_mesh(tmp_path_factory):
                 f"Git error: {result.stderr}\n"
                 f"Git output: {result.stdout}\n"
             )
-            print(error_msg)
+            logger.error(error_msg)
             raise RuntimeError(error_msg)
 
-        print(f"Mesh repository cloned to: {mesh_dir}")
+        logger.info(f"Mesh repository cloned to: {mesh_dir}")
     except subprocess.TimeoutExpired as e:
         raise RuntimeError(f"Git clone timed out after {e.timeout} seconds") from e
     except FileNotFoundError as e:
@@ -166,17 +175,33 @@ def pi_uxarray_download_mesh(tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
-def pi_uxarray_real_mesh(pi_uxarray_download_mesh):
+def pi_uxarray_real_meshdir(pi_uxarray_download_mesh):
     """Return the cloned git repository directory containing FESOM PI mesh files."""
     return pi_uxarray_download_mesh
 
 
 @pytest.fixture(scope="session")
-def pi_uxarray_stub_mesh(tmp_path_factory):
+def pi_uxarray_real_mesh(pi_uxarray_real_meshdir):
+    """Deprecated: Use pi_uxarray_real_meshdir instead."""
+    import warnings
+
+    warnings.warn(
+        "pi_uxarray_real_mesh is deprecated, use pi_uxarray_real_meshdir",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return pi_uxarray_real_meshdir
+
+
+@pytest.fixture(scope="session")
+def pi_uxarray_stub_meshdir(tmp_path_factory):
     """
     Generate stub mesh for pi_uxarray from YAML manifest.
     Returns the mesh directory containing fesom.mesh.diag.nc.
     """
+    # Lazy import to avoid loading numpy/xarray during test collection
+    from tests.fixtures.stub_generator import generate_stub_files
+
     # Create temporary directory for stub mesh
     stub_dir = tmp_path_factory.mktemp("pi_uxarray_stub_mesh")
 
@@ -191,6 +216,19 @@ def pi_uxarray_stub_mesh(tmp_path_factory):
     _create_minimal_mesh_files(stub_dir)
 
     return stub_dir
+
+
+@pytest.fixture(scope="session")
+def pi_uxarray_stub_mesh(pi_uxarray_stub_meshdir):
+    """Deprecated: Use pi_uxarray_stub_meshdir instead."""
+    import warnings
+
+    warnings.warn(
+        "pi_uxarray_stub_mesh is deprecated, use pi_uxarray_stub_meshdir",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return pi_uxarray_stub_meshdir
 
 
 def _create_minimal_mesh_files(mesh_dir: Path):
@@ -242,7 +280,7 @@ def _create_minimal_mesh_files(mesh_dir: Path):
 
 
 @pytest.fixture(scope="session")
-def pi_uxarray_mesh(request):
+def pi_uxarray_meshdir(request):
     """
     Router fixture that returns stub mesh by default, or real mesh if:
     1. The PYCMOR_USE_REAL_TEST_DATA environment variable is set
@@ -256,8 +294,21 @@ def pi_uxarray_mesh(request):
         use_real = True
 
     if use_real:
-        print("Using REAL mesh for pi_uxarray")
-        return request.getfixturevalue("pi_uxarray_real_mesh")
+        logger.info("Using real mesh for pi_uxarray")
+        return request.getfixturevalue("pi_uxarray_real_meshdir")
     else:
-        print("Using STUB mesh for pi_uxarray")
-        return request.getfixturevalue("pi_uxarray_stub_mesh")
+        logger.info("Using stub mesh for pi_uxarray")
+        return request.getfixturevalue("pi_uxarray_stub_meshdir")
+
+
+@pytest.fixture(scope="session")
+def pi_uxarray_mesh(pi_uxarray_meshdir):
+    """Deprecated: Use pi_uxarray_meshdir instead."""
+    import warnings
+
+    warnings.warn(
+        "pi_uxarray_mesh is deprecated, use pi_uxarray_meshdir",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return pi_uxarray_meshdir
