@@ -32,6 +32,7 @@ def test_aux_files_attach_simple_file(pi_uxarray_temp_rule, tmp_path):
     assert rule.aux == {"aux1": "Hello, pytest!"}
 
 
+@pytest.mark.skipif(fesom_mesh is None, reason="pyfesom2 not available (pkg_resources missing)")
 @pytest.mark.skipif(
     not os.getenv("PYCMOR_USE_REAL_TEST_DATA"),
     reason="FESOM mesh loading requires real mesh data (set PYCMOR_USE_REAL_TEST_DATA=1)",

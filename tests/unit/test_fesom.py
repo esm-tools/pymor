@@ -7,10 +7,16 @@ import pycmor
 
 try:
     import pycmor.fesom_2p1.regridding
+
+    _has_pyfesom2 = True
 except ImportError:
-    pass
+    _has_pyfesom2 = False
 
 
+_skip_no_pyfesom2 = pytest.mark.skipif(not _has_pyfesom2, reason="pyfesom2 not available (pkg_resources missing)")
+
+
+@_skip_no_pyfesom2
 @pytest.mark.skipif(
     not os.getenv("PYCMOR_USE_REAL_TEST_DATA"),
     reason="FESOM regridding requires real mesh data (set PYCMOR_USE_REAL_TEST_DATA=1)",
@@ -28,6 +34,7 @@ def test_regridding(fesom_pi_mesh_config, fesom_2p6_pimesh_esm_tools_data, pi_ux
     assert da.shape == (3, 360, 180)
 
 
+@_skip_no_pyfesom2
 @pytest.mark.skipif(
     not os.getenv("PYCMOR_USE_REAL_TEST_DATA"),
     reason="FESOM mesh attachment requires real mesh data (set PYCMOR_USE_REAL_TEST_DATA=1)",
