@@ -144,7 +144,13 @@ class Pipeline:
         def dynamic_flow(data, rule_spec):
             return self._run_native(data, rule_spec)
 
-        return dynamic_flow(data, rule_spec)
+        result = dynamic_flow(data, rule_spec, return_state=True)
+        if result.is_failed():
+            exc = result.result(raise_on_failure=False)
+            if isinstance(exc, BaseException):
+                raise exc
+            raise RuntimeError(f"Pipeline '{self.name}' failed for rule '{rule_name}': {exc}")
+        return result.result()
 
     @staticmethod
     @add_to_report_log

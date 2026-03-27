@@ -870,7 +870,21 @@ class CMORizer:
             # We encapsulate the flow in a context manager to ensure that the
             # Dask cluster is available in the singleton, which could be used
             # during unpickling to reattach it to a Pipeline.
-            return dynamic_flow()
+            result = dynamic_flow(return_state=True)
+            if result.is_failed():
+                exc = result.result(raise_on_failure=False)
+                if isinstance(exc, BaseException):
+                    raise exc
+                raise RuntimeError(f"CMORizer parallel processing failed: {exc}")
+            # Check individual rule results for failures
+            for future in result.result():
+                state = future.state
+                if state.is_failed():
+                    exc = state.result(raise_on_failure=False)
+                    if isinstance(exc, BaseException):
+                        raise exc
+                    raise RuntimeError(f"Rule processing failed: {exc}")
+            return result.result()
 
     def _parallel_process_dask(self, external_client=None):
         if external_client:
