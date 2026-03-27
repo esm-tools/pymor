@@ -455,17 +455,23 @@ class CMORizer:
             if hasattr(rule, "compound_name") and rule.compound_name is not None:
                 rule_value = rule.compound_name
                 drv_value = getattr(data_request_variable, "variable_id")
-                # For compound name matching, compare directly or extract variable names
-                if "." in rule_value and "." in str(drv_value):
-                    # Both are compound names, extract variable parts for comparison
+                drv_name = getattr(data_request_variable, "name", drv_value)
+
+                # Extract the variable short name from the rule's compound name
+                if "." in rule_value:
                     rule_parts = rule_value.split(".")
-                    drv_parts = str(drv_value).split(".")
                     rule_var = rule_parts[1] if len(rule_parts) >= 2 else rule_value
+                else:
+                    rule_var = rule_value
+
+                # Extract the variable short name from the DRV
+                if "." in str(drv_value):
+                    drv_parts = str(drv_value).split(".")
                     drv_var = drv_parts[1] if len(drv_parts) >= 2 else drv_value
                 else:
-                    # One or both are not compound names, compare as-is
-                    rule_var = rule_value
+                    # DRV has a plain short name (e.g., "tas") -- compare directly
                     drv_var = drv_value
+
                 # Also check full compound name match for CMIP6/CMIP7
                 compound_name_match_cmip6 = (
                     getattr(data_request_variable, "cmip6_compound_name", None) == rule.compound_name
@@ -473,7 +479,9 @@ class CMORizer:
                 compound_name_match_cmip7 = (
                     getattr(data_request_variable, "cmip7_compound_name", None) == rule.compound_name
                 )
-                compound_name_match = compound_name_match_cmip6 or compound_name_match_cmip7
+                # Also match rule compound_name directly against drv name
+                compound_name_match_name = drv_name == rule_var
+                compound_name_match = compound_name_match_cmip6 or compound_name_match_cmip7 or compound_name_match_name
             else:
                 # Use cmor_variable with compound name extraction logic
                 rule_value = getattr(rule, "cmor_variable")

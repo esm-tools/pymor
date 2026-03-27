@@ -1,6 +1,6 @@
 import pytest
 
-from pycmor.data_request.variable import DataRequestVariable
+from pycmor.data_request.variable import CMIP7DataRequestVariable, DataRequestVariable
 
 
 @pytest.fixture
@@ -17,3 +17,23 @@ def dr_sos():
         cell_methods="area: mean where sea",
         cell_measures="area: areacello",
     )
+
+
+@pytest.fixture
+def dr_cmip7_tas():
+    """CMIP7 DataRequestVariable for tas (near-surface air temperature).
+
+    Loaded from the vendored all_var_info.json using the CMIP6-style
+    compound name key 'Amon.tas'.
+    """
+    return CMIP7DataRequestVariable.from_all_var_info_json("Amon.tas")
+
+
+@pytest.fixture
+def dr_cmip7_thetao():
+    """CMIP7 DataRequestVariable for thetao (sea water potential temperature).
+
+    Loaded from the vendored all_var_info.json using the CMIP6-style
+    compound name key 'Omon.thetao'.
+    """
+    return CMIP7DataRequestVariable.from_all_var_info_json("Omon.thetao")
