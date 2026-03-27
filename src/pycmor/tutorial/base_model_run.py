@@ -178,9 +178,10 @@ class BaseModelRun(ABC):
 
         Examples
         --------
-        >>> if "cmip6" in model_run.configs:
-        ...     config_path = model_run.configs["cmip6"]
-        ...     # Use config_path
+        .. code-block:: python
+
+            if "cmip6" in model_run.configs:
+                config_path = model_run.configs["cmip6"]
         """
         available_configs = {}
         if self.config_path_cmip6.exists():
