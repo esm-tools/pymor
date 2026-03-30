@@ -26,7 +26,7 @@ awicm_1p0_recom.tar:
   extract_dir: awicm_1p0_recom
 
 pi_uxarray.tar:
-  url: https://nextcloud.awi.de/s/swqyFgbL2jjgjRo/download/pi_uxarray.tar
+  url: https://nextcloud.awi.de/s/o2YQy2i9BR97Rge/download/pi_uxarray.tar
   sha256: null
   description: PI control UXarray test data
   extract_dir: pi_uxarray

@@ -47,9 +47,11 @@ def available_datasets() -> list[str]:
 
     Examples
     --------
-    >>> import pycmor.tutorial as tutorial
-    >>> tutorial.available_datasets()
-    ['awicm_recom', 'fesom_2p6', 'fesom_dev']
+    .. code-block:: python
+
+        import pycmor.tutorial as tutorial
+        tutorial.available_datasets()
+        # ['awicm_recom', 'fesom_2p6', ...]
     """
     model_runs = _discover_model_runs()
     return sorted(model_runs.keys())
@@ -75,9 +77,10 @@ def info(name: str) -> str:
 
     Examples
     --------
-    >>> import pycmor.tutorial as tutorial
-    >>> tutorial.info("fesom_2p6")
-    'FESOM 2.6 PI mesh model run...'
+    .. code-block:: python
+
+        import pycmor.tutorial as tutorial
+        tutorial.info("fesom_2p6")
     """
     model_runs = _discover_model_runs()
     if name not in model_runs:
@@ -143,21 +146,16 @@ def open_dataset(
 
     Examples
     --------
-    Open a tutorial dataset with stub data (fast, no download):
+    .. code-block:: python
 
-    >>> import pycmor.tutorial as tutorial
-    >>> ds = tutorial.open_dataset("fesom_2p6")
-    >>> ds
-    <xarray.Dataset>
-    ...
+        import pycmor.tutorial as tutorial
+        ds = tutorial.open_dataset("fesom_2p6")
 
-    Open with real data (downloads if not cached):
+        # Open with real data (downloads if not cached):
+        ds = tutorial.open_dataset("fesom_2p6", use_real=True)
 
-    >>> ds = tutorial.open_dataset("fesom_2p6", use_real=True)
-
-    Pass additional xarray options:
-
-    >>> ds = tutorial.open_dataset("fesom_2p6", chunks={"time": 1})
+        # Pass additional xarray options:
+        ds = tutorial.open_dataset("fesom_2p6", chunks={"time": 1})
 
     See Also
     --------
