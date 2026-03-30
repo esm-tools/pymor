@@ -6,6 +6,19 @@ general:
 
 pycmor:
   warn_on_no_rule: False
+  dask_cluster: "slurm"
+  dask_cluster_scaling_mode: "adapt"
+  dask_cluster_scaling_minimum_jobs: 1
+  dask_cluster_scaling_maximum_jobs: 16
+
+jobqueue:
+  slurm:
+    name: pycmor-worker
+    queue: compute
+    account: bb1469
+    cores: 16
+    memory: 256GB
+    walltime: '00:30:00'
 
 rules:
   - name: tos_1350
