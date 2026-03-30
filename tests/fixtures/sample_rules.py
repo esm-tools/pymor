@@ -48,7 +48,7 @@ def fesom_2p6_esmtools_temp_rule_without_data():
             "name": "temp",
             "experiment_id": "piControl",
             "output_directory": "./output",
-            "source_id": "FESOM",
+            "source_id": "AWI-ESM-1-1-LR",
             "variant_label": "r1i1p1f1",
             "inputs": [
                 {

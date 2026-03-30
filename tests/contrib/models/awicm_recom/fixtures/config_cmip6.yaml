@@ -19,7 +19,7 @@ rules:
     experiment_id: "piControl"
     activity_id: "CMIP"
     output_directory: "./output"
-    source_id: "FESOM"
+    source_id: "AWI-ESM-1-1-LR"
     grid_label: gn
     variant_label: "r1i1p1f1"
     model_component: "ocean"
