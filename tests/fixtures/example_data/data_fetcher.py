@@ -3,10 +3,18 @@ Centralized test data fetcher using pooch.
 
 This module provides utilities to download and cache test data files
 defined in test_data_registry.yaml.
+
+Environment variables:
+    PYCMOR_TEST_DATA_CACHE_DIR: Override the cache directory location.
+    PYCMOR_FORCE_REEXTRACT: Set to "1" to force re-extraction of cached
+        tarballs (useful when tarball contents or extraction logic change).
 """
 
 import logging
 import os
+import shutil
+import sys
+import tarfile
 from pathlib import Path
 
 import yaml
@@ -40,6 +48,11 @@ def load_registry(registry_path=None):
         return yaml.safe_load(f)
 
 
+def _should_force_reextract() -> bool:
+    """Check if forced re-extraction is requested via environment variable."""
+    return os.getenv("PYCMOR_FORCE_REEXTRACT", "").lower() in ("1", "true", "yes")
+
+
 def fetch_and_extract(filename: str, registry_path=None) -> Path:
     """
     Fetch and extract a test data tarball.
@@ -50,27 +63,19 @@ def fetch_and_extract(filename: str, registry_path=None) -> Path:
     Parameters
     ----------
     filename : str
-        Name of the file in the registry (e.g., "fesom_2p6_pimesh.tar")
+        Name of the tarball file (must exist in the registry)
     registry_path : Path or str, optional
-        Path to a model-specific registry file. If not provided, uses the
-        default central registry.
+        Path to a model-specific registry YAML file
 
     Returns
     -------
     Path
-        Path to the extracted directory
-
-    Raises
-    ------
-    ValueError
-        If filename not found in registry or URL is not set
-    RuntimeError
-        If download or extraction fails
+        Path to the extracted data directory
 
     Examples
     --------
-    >>> data_dir = fetch_and_extract("fesom_2p6_pimesh.tar")  # doctest: +SKIP
-    >>> print(data_dir)  # doctest: +SKIP
+    >>> data_dir = fetch_and_extract("fesom_2p6_pimesh.tar")
+    >>> data_dir
     /home/user/.cache/pycmor/test_data/fesom_2p6_pimesh
     """
     import pooch
@@ -94,6 +99,11 @@ def fetch_and_extract(filename: str, registry_path=None) -> Path:
     # Path where extracted data will be
     extracted_path = cache_dir / extract_dir
 
+    # Force re-extraction if requested
+    if _should_force_reextract() and extracted_path.exists():
+        logger.info(f"PYCMOR_FORCE_REEXTRACT set, removing cached extraction: {extracted_path}")
+        shutil.rmtree(extracted_path)
+
     # If already extracted, return it
     if extracted_path.exists():
         logger.info(f"Using cached extraction: {extracted_path}")
@@ -113,9 +123,6 @@ def fetch_and_extract(filename: str, registry_path=None) -> Path:
     # Extract manually to handle absolute symlinks in tarballs.
     # Python 3.12+ default "data" filter rejects absolute symlink targets,
     # so we use filter="tar" where available, otherwise no filter (pre-3.12).
-    import sys
-    import tarfile
-
     extract_kwargs = {}
     if sys.version_info >= (3, 12):
         extract_kwargs["filter"] = "tar"
@@ -131,43 +138,37 @@ def fetch_and_extract(filename: str, registry_path=None) -> Path:
 
 def fetch_tarball(filename: str, registry_path=None) -> Path:
     """
-    Fetch a test data tarball without extracting.
+    Fetch a tarball without extracting it.
 
     Parameters
     ----------
     filename : str
-        Name of the file in the registry
+        Name of the tarball file (must exist in the registry)
     registry_path : Path or str, optional
-        Path to a model-specific registry file. If not provided, uses the
-        default central registry.
+        Path to a model-specific registry YAML file
 
     Returns
     -------
     Path
         Path to the downloaded tarball
-
-    Examples
-    --------
-    >>> tarball = fetch_tarball("fesom_2p6_pimesh.tar")  # doctest: +SKIP
     """
     import pooch
 
     registry = load_registry(registry_path)
 
     if filename not in registry:
-        raise ValueError(f"Unknown test data file: {filename}")
+        raise ValueError(f"Unknown test data file: {filename}. " f"Available files: {list(registry.keys())}")
 
     entry = registry[filename]
     url = entry.get("url")
     checksum = entry.get("sha256")
 
     if url is None:
-        raise ValueError(f"URL not set for {filename}")
+        raise ValueError(f"URL not set for {filename}. " f"Please update test_data_registry.yaml")
 
     cache_dir = get_cache_dir()
     cache_dir.mkdir(parents=True, exist_ok=True)
 
-    # Download without processing
     downloaded_path = pooch.retrieve(
         url=url,
         known_hash=f"sha256:{checksum}" if checksum else None,
