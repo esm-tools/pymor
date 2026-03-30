@@ -478,11 +478,16 @@ class CMIP7GlobalAttributes(GlobalAttributes):
             compound_name = self.rule_dict.get("compound_name", None)
             logger.debug(f"Attempting to derive table_id from compound_name: {compound_name}")
             if compound_name:
-                # compound_name format: component.variable.cell_methods.frequency.grid
-                # Example: ocnBgchem.fgco2.tavg-u-hxy-sea.mon.GLB
+                # compound_name formats:
+                # CMIP6-style: Table.variable (e.g., Amon.tas, Omon.thetao)
+                # CMIP7-style: component.variable.cell_methods.frequency.grid
                 parts = compound_name.split(".")
                 logger.debug(f"compound_name split into {len(parts)} parts: {parts}")
-                if len(parts) >= 5:
+                if len(parts) == 2:
+                    # CMIP6-style compound name: table_id is the first part
+                    table_id = parts[0]
+                    logger.debug(f"Derived table_id from CMIP6-style compound_name: {table_id}")
+                elif len(parts) >= 5:
                     component = parts[0]  # e.g., ocnBgchem
                     frequency = parts[3]  # e.g., mon
 
