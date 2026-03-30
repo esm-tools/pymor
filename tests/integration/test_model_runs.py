@@ -185,10 +185,10 @@ def test_library_accessor(model_run_instance, cmip_version):
     logger.info(f"Testing accessor API for {model_name} with {cmip_version.upper()}")
 
     # Get the appropriate config to extract a variable name
-    if cmip_version == "cmip6":
-        config_path = model_run_instance.config_path_cmip6
-    else:
-        config_path = model_run_instance.config_path_cmip7
+    if cmip_version not in model_run_instance.configs:
+        pytest.xfail(f"{cmip_version.upper()} config not available for this model")
+
+    config_path = model_run_instance.configs[cmip_version]
 
     with open(config_path, "r") as f:
         cfg = yaml.safe_load(f)
