@@ -761,14 +761,10 @@ def map_dimensions(ds: Union[xr.Dataset, xr.DataArray], rule) -> Union[xr.Datase
         return ds if not was_dataarray else ds[da_name]
 
     # Get user-specified mapping from rule
-    user_mapping = rule._pycmor_cfg("dimension_mapping", default=None)
-    if user_mapping is None:
-        user_mapping = {}
+    user_mapping = rule.get("dimension_mapping", {})
 
-    # Get allow_override setting
-    allow_override = rule._pycmor_cfg("dimension_mapping_allow_override", default="True")
-    if isinstance(allow_override, str):
-        allow_override = allow_override.lower() in ("true", "yes", "1")
+    # Get allow_override setting  
+    allow_override = rule.get("dimension_mapping_allow_override", True)
 
     # Create mapper
     mapper = DimensionMapper()
@@ -788,9 +784,7 @@ def map_dimensions(ds: Union[xr.Dataset, xr.DataArray], rule) -> Union[xr.Datase
         )
 
         if not is_valid:
-            validation_mode = rule._pycmor_cfg("dimension_mapping_validation", default="warn")
-            if not isinstance(validation_mode, str):
-                validation_mode = str(validation_mode)
+            validation_mode = rule.get("dimension_mapping_validation", "warn")
             error_msg = "Dimension mapping validation failed:\n" + "\n".join(f"  - {e}" for e in errors)
 
             if validation_mode == "error":
