@@ -550,10 +550,8 @@ class CMORizer:
             if hasattr(rule, "compound_name") and rule.compound_name:
                 # Exact compound name matching for CMIP7
                 if rule.compound_name == drv_compound_name:
-                    logger.debug(f"  Rule '{rule.name}' matches: {rule.compound_name} == {drv_compound_name}")
+                    logger.debug(f"  ✓ Rule '{rule.name}' matches: {rule.compound_name}")
                     matches.append(rule)
-                else:
-                    logger.debug(f"  Rule '{rule.name}' does not match: {rule.compound_name} != {drv_compound_name}")
         
         if len(matches) == 0:
             msg = f"No rule found for CMIP7 variable {drv_compound_name}"
