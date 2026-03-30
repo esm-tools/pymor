@@ -113,28 +113,96 @@ else:
 
 ## Reproduction
 
-### Current Behavior (Broken)
+### Step-by-Step Failure Scenario (main branch, commit 8e3d6e4)
+
+1. **Create minimal CMIP7 config with user-specified metadata**
 
 ```yaml
 # awiesm3_minimal_tos.yaml
 general:
+  name: "awiesm3-minimal-tos"
   cmor_version: "CMIP7"
-  CMIP7_DReq_metadata: "/path/to/metadata.json"
+  mip: "CMIP"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
 
 rules:
   - name: tos_1350
+    inputs:
+      - path: /path/to/fesom/outdata
+        pattern: sst.fesom.1350.nc
     compound_name: ocean.tos.tavg-u-hxy-sea.mon.GLB
-    # ... other config
+    model_variable: sst
+    source_id: AWI-ESM-3
+    institution_id: AWI
+    # ... mesh config, etc.
 ```
 
-**Without `cmip6_table` in metadata**:
-- DataRequest loads 0 variables
-- Rule silently dropped
-- No output produced
+2. **Run cmorization**
 
-**With `cmip6_table` in metadata**:
-- Works, but only because of CMIP6 backward compatibility
-- Still loses branding/frequency/region context in matching
+```bash
+$ pycmor process awiesm3_minimal_tos.yaml
+```
+
+3. **Observe silent failure**
+
+```
+Using packaged cmip7-tables: /path/to/pycmor/src/pycmor/data/cmip7
+Using user-specified cmip7_metadata: /home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json
+Loaded metadata for 1974 variables
+
+# ... later in processing ...
+
+Beginning flow run 'daft-seriema' for flow 'CMORizer Process'
+Finished in state Completed()
+```
+
+**Result**: Completes in ~1 second with no output files. Rule silently dropped.
+
+### Root Cause Discovery
+
+**Log inspection reveals**:
+```
+Data request has 1134 variables  # Using packaged tables!
+```
+
+But user specified metadata with **1974 variables**.
+
+**Issue 1**: `CMIP7_DReq_metadata` config ignored, loads from packaged tables instead.
+
+**After fixing DataRequest loading** (use `CMIP7_DReq_metadata` path):
+```
+Data request has 0 variables
+```
+
+**Issue 2**: Changed `cmip6_cmor_table` → `cmip6_table` (key mismatch in code).
+
+**After fixing key name**:
+```
+Data request has 0 variables  # Still broken!
+```
+
+**Issue 3**: Table IDs extracted from compound name prefix (`ocean`, `atmos`) but metadata uses actual table names (`Omon`, `Amon`, `3hr`). Mismatch → no variables loaded.
+
+**After fixing table ID extraction**:
+```
+Data request has 1974 variables
+Rule 'tos_1350' has 1 data_request_variables
+Processing 1 rules
+Beginning flow run...
+```
+
+**Finally processes** (though hits different error in pipeline - unrelated to this issue).
+
+### Key Symptoms
+
+1. **Silent failure**: Rules dropped with no warning (fixed in this PR)
+2. **Config ignored**: `CMIP7_DReq_metadata` not used for DataRequest loading
+3. **Zero variables**: Multiple bugs cause DataRequest to have 0 variables despite valid metadata
+4. **CMIP6 dependency**: Requires `cmip6_table` field that doesn't conceptually exist in pure CMIP7
+
+### Current Workaround
+
+Metadata **must** include `cmip6_table` field with CMIP6 table names (e.g., `Omon`, `3hr`) for every variable, even though CMIP7 doesn't use this concept natively.
 
 ## Proposed Solution
 
