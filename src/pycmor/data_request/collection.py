@@ -70,7 +70,10 @@ class CMIP7DataRequest(DataRequest):
     def from_all_var_info(cls, data):
         tables = {}
         variables = {}
-        table_ids = set(k.split(".")[0] for k in data["Compound Name"].keys())
+        # Extract table IDs from cmip6_table field, not compound name first part
+        table_ids = set(
+            v.get("cmip6_table") for v in data["Compound Name"].values() if v.get("cmip6_table")
+        )
         for table_id in table_ids:
             table = CMIP7DataRequestTable.from_all_var_info(table_id, data)
             tables[table_id] = table

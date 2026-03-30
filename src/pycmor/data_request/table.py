@@ -675,7 +675,8 @@ class CMIP7DataRequestTable(DataRequestTable):
         header = CMIP7DataRequestTableHeader.from_all_var_info(table_name, all_var_info)
         variables = []
         for var_name, var_dict in all_var_info["Compound Name"].items():
-            if var_dict.get("cmip6_cmor_table") == table_name:
+            # Use cmip6_table (not cmip6_cmor_table) to match metadata format
+            if var_dict.get("cmip6_table") == table_name:
                 variables.append(CMIP7DataRequestVariable.from_dict(var_dict))
         return cls(header, variables)
 
@@ -703,7 +704,7 @@ class CMIP7DataRequestTable(DataRequestTable):
             all_var_info = json.load(f)
 
         table_ids = set(
-            v.get("cmip6_cmor_table") for v in all_var_info["Compound Name"].values() if v.get("cmip6_cmor_table")
+            v.get("cmip6_table") for v in all_var_info["Compound Name"].values() if v.get("cmip6_table")
         )
 
         for table_id in table_ids:

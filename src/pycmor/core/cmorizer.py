@@ -293,9 +293,22 @@ class CMORizer:
         Creates a DataRequest object from the tables directory using ResourceLocator.
 
         Uses TableLocator with 5-level priority chain to locate tables.
+        For CMIP7, if CMIP7_DReq_metadata is specified, uses that instead.
         """
         from .resource_locator import TableLocator
 
+        DataRequestClass = self._get_versioned_class(DataRequest)
+        
+        # For CMIP7, prefer user-specified metadata file
+        if self.cmor_version == "CMIP7":
+            user_metadata_path = self._general_cfg.get("CMIP7_DReq_metadata")
+            if user_metadata_path:
+                logger.info(f"Using user-specified CMIP7 metadata: {user_metadata_path}")
+                self.data_request = DataRequestClass.from_json_file(user_metadata_path)
+                logger.debug(f"Created DataRequest from {user_metadata_path}")
+                return
+        
+        # Fallback to tables directory
         user_table_dir = self._general_cfg.get("CMIP_Tables_Dir")
         table_version = self._general_cfg.get("CMIP_Tables_version")
 
@@ -303,7 +316,6 @@ class CMORizer:
         locator = TableLocatorClass(version=table_version, user_path=user_table_dir)
         table_dir = locator.locate()
 
-        DataRequestClass = self._get_versioned_class(DataRequest)
         self.data_request = DataRequestClass.from_directory(table_dir)
         logger.debug(f"Created DataRequest from {table_dir}")
 
@@ -451,11 +463,14 @@ class CMORizer:
 
     def find_matching_rule(self, data_request_variable: DataRequestVariable) -> Rule or None:
         matches = []
+        drv_id = getattr(data_request_variable, "variable_id", "UNKNOWN")
+        logger.debug(f"Looking for rule matching data_request_variable: {drv_id}")
         for rule in self.rules:
             # Determine what to compare: prefer compound_name if available on rule
             if hasattr(rule, "compound_name") and rule.compound_name is not None:
                 rule_value = rule.compound_name
                 drv_value = getattr(data_request_variable, "variable_id")
+                logger.debug(f"  Checking rule '{rule.name}': compound_name='{rule_value}' vs drv variable_id='{drv_value}'")
                 # For compound name matching, compare directly or extract variable names
                 if "." in rule_value and "." in str(drv_value):
                     # Both are compound names, extract variable parts for comparison
@@ -463,10 +478,12 @@ class CMORizer:
                     drv_parts = str(drv_value).split(".")
                     rule_var = rule_parts[1] if len(rule_parts) >= 2 else rule_value
                     drv_var = drv_parts[1] if len(drv_parts) >= 2 else drv_value
+                    logger.debug(f"    Comparing extracted variables: rule_var='{rule_var}' vs drv_var='{drv_var}'")
                 else:
                     # One or both are not compound names, compare as-is
                     rule_var = rule_value
                     drv_var = drv_value
+                    logger.debug(f"    Comparing as-is: rule_var='{rule_var}' vs drv_var='{drv_var}'")
             else:
                 # Use cmor_variable with compound name extraction logic
                 rule_value = getattr(rule, "cmor_variable")
@@ -511,7 +528,13 @@ class CMORizer:
         for rule in self.rules:
             num_drvs = len(rule.data_request_variables)
             logger.debug(f"Rule '{rule.name}' has {num_drvs} data_request_variables")
-            if len(rule.data_request_variables) == 1:
+            if len(rule.data_request_variables) == 0:
+                logger.warning(
+                    f"Rule '{rule.name}' has no matching data_request_variables. "
+                    f"This rule will be skipped. Check that compound_name or cmor_variable "
+                    f"matches a variable in the CMIP7 data request."
+                )
+            elif len(rule.data_request_variables) == 1:
                 new_rules.append(rule)
             else:
                 cloned_rules = rule.expand_drvs()
