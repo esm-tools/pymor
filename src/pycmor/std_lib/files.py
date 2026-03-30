@@ -373,11 +373,12 @@ def _save_dataset_with_native_timespan(
 
     # Don't pass encoding to save_mfdataset since we've already encoded the time values
     # and set the attributes - let xarray use what we've provided
-    return xr.save_mfdataset(
+    xr.save_mfdataset(
         datasets,
         paths,
         **extra_kwargs,
     )
+    return da
 
 
 def _calculate_netcdf_chunks(ds: xr.Dataset, rule) -> dict:
@@ -626,13 +627,14 @@ def save_dataset(da: xr.DataArray, rule):
         else:
             ds_temp = da
         chunk_encoding = _calculate_netcdf_chunks(ds_temp, rule)
-        return da.to_netcdf(
+        da.to_netcdf(
             filepath,
             mode="w",
             format="NETCDF4",
             encoding=chunk_encoding if chunk_encoding else None,
             **extra_kwargs,
         )
+        return da
 
     default_file_timespan = rule._pycmor_cfg("file_timespan")
     file_timespan = getattr(rule, "file_timespan", default_file_timespan)
@@ -674,9 +676,10 @@ def save_dataset(da: xr.DataArray, rule):
             final_encoding = {time_label: time_encoding}
             if chunk_encoding:
                 final_encoding.update(chunk_encoding)
-            return xr.save_mfdataset(
+            xr.save_mfdataset(
                 datasets,
                 paths,
                 encoding=final_encoding,
                 **extra_kwargs,
             )
+            return da
