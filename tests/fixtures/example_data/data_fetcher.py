@@ -102,14 +102,26 @@ def fetch_and_extract(filename: str, registry_path=None) -> Path:
     # Download and extract
     logger.info(f"Downloading and extracting {filename}...")
 
-    # Use pooch.retrieve with Untar processor
-    pooch.retrieve(
+    # Download the tarball with pooch (no extraction yet)
+    downloaded_path = pooch.retrieve(
         url=url,
         known_hash=f"sha256:{checksum}" if checksum else None,
         path=cache_dir,
         fname=filename,
-        processor=pooch.Untar(extract_dir=extract_dir),
     )
+
+    # Extract manually to handle absolute symlinks in tarballs.
+    # Python 3.12+ default "data" filter rejects absolute symlink targets,
+    # so we use filter="tar" where available, otherwise no filter (pre-3.12).
+    import sys
+    import tarfile
+
+    extract_kwargs = {}
+    if sys.version_info >= (3, 12):
+        extract_kwargs["filter"] = "tar"
+
+    with tarfile.open(downloaded_path) as tar:
+        tar.extractall(path=cache_dir / extract_dir, **extract_kwargs)
 
     logger.info(f"Data extracted to: {extracted_path}")
     return extracted_path
