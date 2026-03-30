@@ -262,7 +262,7 @@ class DefaultPipeline(FrozenPipeline):
         "pycmor.std_lib.timeaverage.timeavg",
         "pycmor.std_lib.units.handle_unit_conversion",
         # "pycmor.std_lib.time.average",
-        "pycmor.std_lib.units.convert",
+        # "pycmor.std_lib.units.convert",  # Removed: duplicate of handle_unit_conversion (wrong signature for pipeline)
         "pycmor.std_lib.attributes.set_global",
         "pycmor.std_lib.attributes.set_variable",
         "pycmor.std_lib.attributes.set_coordinates",
