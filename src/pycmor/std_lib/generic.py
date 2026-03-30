@@ -482,13 +482,6 @@ def get_variable(data, rule_spec):
     >>> print("OUTPUT (extracted 'pressure'):", result2.values)
     OUTPUT (extracted 'pressure'): [1013. 1015. 1012.]
     """
-    from ..core.logging import logger as _logger
-
-    _mv = getattr(rule_spec, "model_variable", "ATTR_MISSING")
-    _cv = getattr(rule_spec, "cmor_variable", "ATTR_MISSING")
-    _logger.debug(f"get_variable: model_variable={_mv!r}, cmor_variable={_cv!r}")
-    _logger.debug(f"get_variable: rule __dict__ keys: {list(rule_spec.__dict__.keys())}")
-    _logger.debug(f"get_variable: dataset vars: {list(data.data_vars)}")
     return data[rule_spec.model_variable]
 
 
