@@ -94,6 +94,7 @@ dev = [
 ]
 
 doc = [
+    "sphinx>=7.4.7,<9",
     "sphinx-book-theme>=1.1.4",
     "sphinx-click>=6.0.0",
     "sphinx-copybutton>=0.5.2",

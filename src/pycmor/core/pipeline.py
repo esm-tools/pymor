@@ -128,7 +128,7 @@ class Pipeline:
         logger.debug("Dynamically creating workflow with DaskTaskRunner...")
         cmor_name = rule_spec.get("cmor_name")
         rule_name = rule_spec.get("name", cmor_name)
-        if self._cluster is None:
+        if getattr(self, "_cluster", None) is None:
             logger.warning("No cluster assigned to this pipeline. Using local Dask cluster.")
             dask_scheduler_address = None
         else:
@@ -144,7 +144,13 @@ class Pipeline:
         def dynamic_flow(data, rule_spec):
             return self._run_native(data, rule_spec)
 
-        return dynamic_flow(data, rule_spec)
+        result = dynamic_flow(data, rule_spec, return_state=True)
+        if result.is_failed():
+            exc = result.result(raise_on_failure=False)
+            if isinstance(exc, BaseException):
+                raise exc
+            raise RuntimeError(f"Pipeline '{self.name}' failed for rule '{rule_name}': {exc}")
+        return result.result()
 
     @staticmethod
     @add_to_report_log
@@ -261,8 +267,6 @@ class DefaultPipeline(FrozenPipeline):
         "pycmor.std_lib.add_vertical_bounds",
         "pycmor.std_lib.timeaverage.timeavg",
         "pycmor.std_lib.units.handle_unit_conversion",
-        # "pycmor.std_lib.time.average",
-        "pycmor.std_lib.units.convert",
         "pycmor.std_lib.attributes.set_global",
         "pycmor.std_lib.attributes.set_variable",
         "pycmor.std_lib.attributes.set_coordinates",

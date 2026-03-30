@@ -14,6 +14,7 @@ general:
 rules:
   - name: "temp"
     experiment_id: "piControl"
+    activity_id: "CMIP"
     output_directory: "./output"
     source_id: "AWI-CM-1-1-HR"
     variant_label: "r1i1p1f1"
@@ -21,6 +22,7 @@ rules:
       - path: "REPLACE_ME"
         pattern: "temp.fesom..*.nc"
     cmor_variable: "thetao"
+    compound_name: "Omon.thetao"
     model_variable: "temp"
     model_component: ocean
     grid_label: gn

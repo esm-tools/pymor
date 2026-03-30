@@ -14,6 +14,7 @@ general:
 rules:
   - name: "temp"
     experiment_id: "piControl"
+    activity_id: "CMIP"
     output_directory: "./output"
     source_id: "AWI-CM-1-1-HR"
     institution_id: "AWI"
@@ -24,6 +25,7 @@ rules:
       - path: "REPLACE_ME/outdata/fesom"
         pattern: "temp.fesom..*.nc"
     cmor_variable: "thetao"
+    compound_name: "Omon.thetao"
     model_variable: "temp"
     sort_dimensions_missing_dims: "warn"
     model_dim:

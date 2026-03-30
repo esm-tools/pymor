@@ -10,8 +10,10 @@ import cftime
 import pytest
 import xarray as xr
 
-# Import pycmor to register all accessors
+# Import pycmor and enable accessor registration
 import pycmor  # noqa: F401
+
+pycmor.enable_xarray_accessor()
 
 
 @pytest.fixture

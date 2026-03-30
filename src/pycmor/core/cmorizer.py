@@ -50,6 +50,7 @@ class CMORizer:
     _SUPPORTED_CMOR_VERSIONS = ("CMIP6", "CMIP7")
     """tuple : Supported CMOR versions."""
 
+    # [FIXME] I'd like to deprecate the pymor_cfg constructor option, but still keep it around
     def __init__(
         self,
         pymor_cfg=None,
@@ -91,7 +92,7 @@ class CMORizer:
         logger.debug("---------------------")
         logger.debug(yaml.dump(self._general_cfg))
         logger.debug("--------------------")
-        logger.debug("PyCMOR Configuration:")
+        logger.debug("PyCMOR Configuration")
         logger.debug("--------------------")
         # This isn't actually the config, it's the "App" object. Everett is weird about this...
         pymor_config = PycmorConfig()
@@ -254,6 +255,17 @@ class CMORizer:
         else:
             logger.info("No Dask extras specified...")
 
+    def _locate_table_dir(self):
+        from .resource_locator import TableLocator
+
+        user_table_dir = self._general_cfg.get("CMIP_Tables_Dir")
+        table_version = self._general_cfg.get("CMIP_Tables_version")
+
+        TableLocatorClass = self._get_versioned_class(TableLocator)
+        locator = TableLocatorClass(version=table_version, user_path=user_table_dir)
+        table_dir = locator.locate()
+        return table_dir
+
     def _post_init_create_data_request_tables(self):
         """
         Loads all the tables from table directory using ResourceLocator priority chain.
@@ -268,14 +280,7 @@ class CMORizer:
         A shortened version of the filename (i.e., ``CMIP6_Omon.json`` -> ``Omon``) is used as the mapping key.
         The same key format is used in CMIP6_table_id.json
         """
-        from .resource_locator import TableLocator
-
-        user_table_dir = self._general_cfg.get("CMIP_Tables_Dir")
-        table_version = self._general_cfg.get("CMIP_Tables_version")
-
-        TableLocatorClass = self._get_versioned_class(TableLocator)
-        locator = TableLocatorClass(version=table_version, user_path=user_table_dir)
-        table_dir = locator.locate()
+        table_dir = self._locate_table_dir()
 
         if table_dir is None:
             raise FileNotFoundError(
@@ -294,14 +299,7 @@ class CMORizer:
 
         Uses TableLocator with 5-level priority chain to locate tables.
         """
-        from .resource_locator import TableLocator
-
-        user_table_dir = self._general_cfg.get("CMIP_Tables_Dir")
-        table_version = self._general_cfg.get("CMIP_Tables_version")
-
-        TableLocatorClass = self._get_versioned_class(TableLocator)
-        locator = TableLocatorClass(version=table_version, user_path=user_table_dir)
-        table_dir = locator.locate()
+        table_dir = self._locate_table_dir()
 
         DataRequestClass = self._get_versioned_class(DataRequest)
         self.data_request = DataRequestClass.from_directory(table_dir)
@@ -453,20 +451,37 @@ class CMORizer:
         matches = []
         for rule in self.rules:
             # Determine what to compare: prefer compound_name if available on rule
+            compound_name_match = False
             if hasattr(rule, "compound_name") and rule.compound_name is not None:
                 rule_value = rule.compound_name
                 drv_value = getattr(data_request_variable, "variable_id")
-                # For compound name matching, compare directly or extract variable names
-                if "." in rule_value and "." in str(drv_value):
-                    # Both are compound names, extract variable parts for comparison
+                drv_name = getattr(data_request_variable, "name", drv_value)
+
+                # Extract the variable short name from the rule's compound name
+                if "." in rule_value:
                     rule_parts = rule_value.split(".")
-                    drv_parts = str(drv_value).split(".")
                     rule_var = rule_parts[1] if len(rule_parts) >= 2 else rule_value
+                else:
+                    rule_var = rule_value
+
+                # Extract the variable short name from the DRV
+                if "." in str(drv_value):
+                    drv_parts = str(drv_value).split(".")
                     drv_var = drv_parts[1] if len(drv_parts) >= 2 else drv_value
                 else:
-                    # One or both are not compound names, compare as-is
-                    rule_var = rule_value
+                    # DRV has a plain short name (e.g., "tas") -- compare directly
                     drv_var = drv_value
+
+                # Also check full compound name match for CMIP6/CMIP7
+                compound_name_match_cmip6 = (
+                    getattr(data_request_variable, "cmip6_compound_name", None) == rule.compound_name
+                )
+                compound_name_match_cmip7 = (
+                    getattr(data_request_variable, "cmip7_compound_name", None) == rule.compound_name
+                )
+                # Also match rule compound_name directly against drv name
+                compound_name_match_name = drv_name == rule_var
+                compound_name_match = compound_name_match_cmip6 or compound_name_match_cmip7 or compound_name_match_name
             else:
                 # Use cmor_variable with compound name extraction logic
                 rule_value = getattr(rule, "cmor_variable")
@@ -480,6 +495,8 @@ class CMORizer:
                 rule_var = rule_value
 
             if rule_var == drv_var:
+                matches.append(rule)
+            elif compound_name_match:
                 matches.append(rule)
         if len(matches) == 0:
             msg = f"No rule found for {data_request_variable}"
@@ -511,6 +528,21 @@ class CMORizer:
         for rule in self.rules:
             num_drvs = len(rule.data_request_variables)
             logger.debug(f"Rule '{rule.name}' has {num_drvs} data_request_variables")
+
+            # Handle zero DRVs - this is always an error
+            if len(rule.data_request_variables) == 0:
+                if self.cmor_version == "CMIP7":
+                    raise ValueError(
+                        f"Rule '{rule.name}' with compound_name='{getattr(rule, 'compound_name', 'NOT SET')}' "
+                        f"did not match any variables in the CMIP7 data request"
+                    )
+                else:
+                    # CMIP6
+                    raise ValueError(
+                        f"Rule '{rule.name}' with cmor_variable='{getattr(rule, 'cmor_variable', 'NOT SET')}' "
+                        f"did not match any variables in the data request"
+                    )
+
             if len(rule.data_request_variables) == 1:
                 new_rules.append(rule)
             else:
@@ -722,6 +754,7 @@ class CMORizer:
         logger.debug(f"Loaded {len(instance.pipelines)} pipelines from configuration")
         instance._post_init_populate_rules_with_tables()
         instance._post_init_create_data_request()
+        instance._post_init_create_cmip7_interface()
         instance._post_init_populate_rules_with_data_request_variables()
         instance._post_init_populate_rules_with_dimensionless_unit_mappings()
         instance._post_init_populate_rules_with_aux_files()
@@ -760,7 +793,7 @@ class CMORizer:
         logger.debug(f"Found {len(matching_rules)} rules to apply for {cmor_variable}")
         return matching_rules
 
-    def check_rules_for_table(self, table_name):
+    def _check_rules_for_table(self, table_name):
         missing_variables = []
         for cmor_variable in self._cmor_tables[table_name]["variable_entry"]:
             if self._rule_for_cmor_variable(cmor_variable) == []:
@@ -775,7 +808,7 @@ class CMORizer:
             logger.warning("This CMORizer may be incomplete or badly configured!")
             logger.warning(f"Missing rules for >> {len(missing_variables)} << variables.")
 
-    def check_rules_for_output_dir(self, output_dir):
+    def _check_rules_for_output_dir(self, output_dir):
         all_files_in_output_dir = [f for f in Path(output_dir).iterdir()]
         for rule in self.rules:
             # Remove files from list when matching a rule
@@ -837,7 +870,29 @@ class CMORizer:
             # We encapsulate the flow in a context manager to ensure that the
             # Dask cluster is available in the singleton, which could be used
             # during unpickling to reattach it to a Pipeline.
-            return dynamic_flow()
+            result = dynamic_flow(return_state=True)
+            if result.is_failed():
+                exc = result.result(raise_on_failure=False)
+                if isinstance(exc, BaseException):
+                    raise exc
+                raise RuntimeError(f"CMORizer parallel processing failed: {exc}")
+            # Check individual rule results for failures
+            rule_results = result.result()
+            for item in rule_results:
+                # Items may be PrefectFuture or State objects depending on Prefect version
+                if hasattr(item, "result") and hasattr(item, "is_failed"):
+                    if item.is_failed():
+                        exc = item.result(raise_on_failure=False)
+                        if isinstance(exc, BaseException):
+                            raise exc
+                        raise RuntimeError(f"Rule processing failed: {exc}")
+                elif hasattr(item, "state"):
+                    if item.state.is_failed():
+                        exc = item.state.result(raise_on_failure=False)
+                        if isinstance(exc, BaseException):
+                            raise exc
+                        raise RuntimeError(f"Rule processing failed: {exc}")
+            return rule_results
 
     def _parallel_process_dask(self, external_client=None):
         if external_client:

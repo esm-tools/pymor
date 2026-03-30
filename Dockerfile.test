@@ -40,6 +40,7 @@ RUN micromamba install -y -n base -c conda-forge \
     h5netcdf \
     h5py \
     pip \
+    setuptools \
     && micromamba clean --all --yes
 
 # Activate the base environment for subsequent commands

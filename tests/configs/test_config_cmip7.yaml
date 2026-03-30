@@ -31,6 +31,7 @@ rules:
     enabled: true
     description: "This is a test rule"
     cmor_variable: "tas"
+    compound_name: "Amon.tas"
     input_type: "xr.DataArray"
     input_source: "xr_tutorial"
     output_directory: .
@@ -50,6 +51,7 @@ rules:
       - path: "/a/b/c"
         pattern: ".*"
     cmor_variable: "so"
+    compound_name: "Omon.so"
     output_directory: .
     variant_label: r1i1p1f1
     experiment_id: piControl
@@ -58,6 +60,7 @@ rules:
     grid_label: gn
   - name: test_rule4
     cmor_variable: "thetao"
+    compound_name: "Omon.thetao"
     pipelines: ["sleeper_pipeline"]
     output_directory: .
     variant_label: r1i1p1f1
