@@ -177,7 +177,9 @@ def test_library_accessor(model_run_instance, cmip_version):
     """
     import xarray as xr
 
-    import pycmor.accessors  # noqa: F401 - registers accessors
+    import pycmor
+
+    pycmor.enable_xarray_accessor()
 
     model_name = model_run_instance.__class__.__name__
     logger.info(f"Testing accessor API for {model_name} with {cmip_version.upper()}")
