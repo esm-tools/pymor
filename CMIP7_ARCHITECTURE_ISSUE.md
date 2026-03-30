@@ -113,7 +113,21 @@ else:
 
 ## Reproduction
 
-### Step-by-Step Failure Scenario (main branch, commit 8e3d6e4)
+### What's Fixed in This Branch vs. What Remains
+
+**This branch (`fix/cmip7-use-metadata-not-cmip6-tables`) fixes**:
+- ✅ Silent failure (now warns when rules have no matching variables)
+- ✅ `CMIP7_DReq_metadata` config being ignored
+- ✅ `cmip6_cmor_table` key mismatch causing 0 variables
+- ✅ Table ID extraction mismatch
+
+**Architectural issues that REMAIN**:
+- ❌ Still requires `cmip6_table` field in metadata (CMIP6 dependency)
+- ❌ Still organizes variables by CMIP6 tables (not compound names)
+- ❌ Still extracts only variable name for matching (loses branding/frequency/region)
+- ❌ Still forces CMIP7 into CMIP6's table architecture
+
+### How the Bug Manifested (on `main` branch, commit 8e3d6e4)
 
 1. **Create minimal CMIP7 config with user-specified metadata**
 
