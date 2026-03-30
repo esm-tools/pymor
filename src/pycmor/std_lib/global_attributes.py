@@ -860,5 +860,9 @@ def set_global_attributes(ds, rule):
     """Set global attributes for the dataset"""
     if isinstance(ds, xr.DataArray):
         ds = ds.to_dataset()
-    ds.attrs.update(rule.ga.global_attributes())
+    global_attrs = rule.ga.global_attributes()
+    # Filter out None values -- xarray accepts them in memory but
+    # netCDF serialization rejects non-string/non-numeric attributes
+    global_attrs = {k: v for k, v in global_attrs.items() if v is not None}
+    ds.attrs.update(global_attrs)
     return ds
