@@ -116,34 +116,27 @@ def fetch_and_extract(filename: str, registry_path=None) -> Path:
 
     # Download and extract
     logger.info(f"Downloading and extracting {filename}...")
-    logger.info(f"Pooch will download from: {url}")
-    logger.info(f"Pooch will extract to: {cache_dir / extract_dir}")
 
-    # Use pooch.retrieve with Untar processor
-    result = pooch.retrieve(
+    # Download the tarball with pooch (no extraction yet)
+    downloaded_path = pooch.retrieve(
         url=url,
         known_hash=f"sha256:{checksum}" if checksum else None,
         path=cache_dir,
         fname=filename,
-        processor=pooch.Untar(extract_dir=extract_dir),
     )
 
-    logger.info(f"Pooch retrieve returned: {result}")
-    logger.info(f"Result type: {type(result)}")
+    # Extract manually into cache_dir directly -- tarballs already contain
+    # the extract_dir as their top-level directory prefix.
+    # Also handles absolute symlinks (Python 3.12+ rejects them with default filter).
+    import sys
+    import tarfile
 
-    # Check what actually exists
-    if extracted_path.exists():
-        contents = list(extracted_path.iterdir())
-        logger.info(f"After extraction, {extracted_path} contains {len(contents)} items:")
-        for item in contents[:10]:
-            logger.info(f"  - {item.name} ({'dir' if item.is_dir() else 'file'})")
-        if len(contents) > 10:
-            logger.info(f"  ... and {len(contents) - 10} more items")
-    else:
-        logger.warning(f"Expected extraction path {extracted_path} does not exist!")
-        # Check what's in cache_dir
-        cache_contents = list(cache_dir.iterdir())
-        logger.info(f"Cache directory contains: {[item.name for item in cache_contents]}")
+    extract_kwargs = {}
+    if sys.version_info >= (3, 12):
+        extract_kwargs["filter"] = "tar"
+
+    with tarfile.open(downloaded_path) as tar:
+        tar.extractall(path=cache_dir, **extract_kwargs)
 
     logger.info(f"Data extracted to: {extracted_path}")
     return extracted_path
