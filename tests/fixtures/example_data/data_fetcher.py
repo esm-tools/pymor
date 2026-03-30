@@ -121,7 +121,9 @@ def fetch_and_extract(filename: str, registry_path=None) -> Path:
         extract_kwargs["filter"] = "tar"
 
     with tarfile.open(downloaded_path) as tar:
-        tar.extractall(path=cache_dir / extract_dir, **extract_kwargs)
+        # Extract into cache_dir directly -- tarballs already contain
+        # the extract_dir as their top-level directory prefix
+        tar.extractall(path=cache_dir, **extract_kwargs)
 
     logger.info(f"Data extracted to: {extracted_path}")
     return extracted_path
