@@ -67,15 +67,17 @@ class CMORizer:
         # Use pycmor_cfg if provided, otherwise fall back to pymor_cfg for backward compatibility
         pycmor_cfg = pycmor_cfg or pymor_cfg or {}
         self._pycmor_cfg = PycmorConfigManager.from_pycmor_cfg(pycmor_cfg)
+        # [FIXME] This should be a deprecated property!
         self._pymor_cfg = self._pycmor_cfg  # For backward compatibility
         self._dask_cfg = dask_cfg or {}
         self._inherit_cfg = inherit_cfg or {}
         self.rules = rules_cfg or []
         self.pipelines = pipelines_cfg or []
-        self._cluster = None  # ask Cluster, might be set up later
+        self._cluster = None  # Dask Cluster, might be set up later
         ################################################################################
         # CMOR Version Settings:
 
+        # [FIXME] This should be done in the validator
         if self._general_cfg.get("cmor_version") is None:
             raise ValueError("cmor_version must be set in the general configuration.")
         self.cmor_version = self._general_cfg["cmor_version"]
@@ -172,7 +174,8 @@ class CMORizer:
         return factory.get(self.cmor_version)
 
     @staticmethod
-    def _ensure_dask_slurm_account(jobqueue_cfg):
+    def _ensure_dask_slurm_account(jobqueue_cfg) -> dict:
+        """Ensures that the slurm.account setting for Dask configuration matches the environment if not already set"""
         slurm_jobqueue_cfg = jobqueue_cfg.get("slurm", {})
         if slurm_jobqueue_cfg.get("account") is None:
             slurm_jobqueue_cfg["account"] = os.environ.get("SLURM_JOB_ACCOUNT")
@@ -204,7 +207,7 @@ class CMORizer:
         logger.info("Dask configuration updated!")
 
     def _post_init_create_dask_cluster(self):
-        # FIXME: In the future, we can support PBS, too.
+        # [FIXME] In the future, we can support PBS, too.
         logger.info("Setting up dask cluster...")
         cluster_name = self._pymor_cfg("dask_cluster")
         ClusterClass = CLUSTER_MAPPINGS[cluster_name]
@@ -380,7 +383,7 @@ class CMORizer:
                 rule_for_var.data_request_variables = [drv]
             else:
                 rule_for_var.data_request_variables.append(drv)
-        # FIXME: This needs a better name...
+        # [FIXME] This needs a better name...
         # Cluster might need to be copied:
         with DaskContext.set_cluster(self._cluster):
             self._rules_expand_drvs()
@@ -876,23 +879,21 @@ class CMORizer:
                 if isinstance(exc, BaseException):
                     raise exc
                 raise RuntimeError(f"CMORizer parallel processing failed: {exc}")
-            # Check individual rule results for failures
+            # Unwrap individual rule results -- they may be State objects
+            # from Prefect's submit() calls
             rule_results = result.result()
+            unwrapped = []
             for item in rule_results:
-                # Items may be PrefectFuture or State objects depending on Prefect version
-                if hasattr(item, "result") and hasattr(item, "is_failed"):
+                if hasattr(item, "is_failed") and callable(item.is_failed):
                     if item.is_failed():
                         exc = item.result(raise_on_failure=False)
                         if isinstance(exc, BaseException):
                             raise exc
                         raise RuntimeError(f"Rule processing failed: {exc}")
-                elif hasattr(item, "state"):
-                    if item.state.is_failed():
-                        exc = item.state.result(raise_on_failure=False)
-                        if isinstance(exc, BaseException):
-                            raise exc
-                        raise RuntimeError(f"Rule processing failed: {exc}")
-            return rule_results
+                    unwrapped.append(item.result())
+                else:
+                    unwrapped.append(item)
+            return unwrapped
 
     def _parallel_process_dask(self, external_client=None):
         if external_client:
