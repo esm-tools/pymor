@@ -291,6 +291,10 @@ def load_mfdataset(data, rule_spec):
     for f in all_files:
         logger.info(f"  * {f}")
     mf_ds = xr.open_mfdataset(all_files, parallel=parallel, use_cftime=True, engine=engine)
+    # Rename non-standard time dimension if specified in rule (e.g., OpenIFS uses different names)
+    time_dimname = rule_spec.get("time_dimname")
+    if time_dimname and time_dimname in mf_ds.dims and "time" not in mf_ds.dims:
+        mf_ds = mf_ds.rename({time_dimname: "time"})
     return mf_ds
 
 
