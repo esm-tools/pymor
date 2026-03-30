@@ -454,65 +454,60 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         """
         Get table ID.
 
+        For CMIP7: table_id is not a core concept. We derive it from compound name
+        or return None. The cmip6_table field is only used for backward compatibility.
+        
         Priority:
-        1. cmip6_table field from variable metadata (CMIP7 compatibility)
-        2. table_id from rule configuration
-        3. Derive from compound_name if available (CMIP7 standard, useful for CMIP6 too)
+        1. table_id from rule configuration (user override)
+        2. Derive from compound_name if available (CMIP7 standard)
+        3. cmip6_table field from variable metadata (backward compatibility only)
         """
         from ..core.logging import logger
 
-        # Check if drv is a dict or object
+        # Priority 1: User-provided table_id
+        table_id = self.rule_dict.get("table_id", None)
+        if table_id:
+            logger.debug(f"table_id from rule_dict: {table_id}")
+            return table_id
+
+        # Priority 2: Derive from compound_name (CMIP7 native approach)
+        compound_name = self.rule_dict.get("compound_name", None)
+        if compound_name:
+            logger.debug(f"Attempting to derive table_id from compound_name: {compound_name}")
+            parts = compound_name.split(".")
+            logger.debug(f"compound_name split into {len(parts)} parts: {parts}")
+            if len(parts) >= 5:
+                component = parts[0]  # e.g., ocean, atmos
+                frequency = parts[3]  # e.g., mon, day
+                
+                # Map component to realm letter
+                realm_map = {
+                    "atmos": "A",
+                    "ocean": "O",
+                    "ocn": "O",
+                    "ocnBgchem": "O",
+                    "seaIce": "SI",
+                    "land": "L",
+                    "landIce": "LI",
+                }
+                realm_letter = realm_map.get(component, component[0].upper())
+                table_id = f"{realm_letter}{frequency}"
+                logger.debug(f"Derived table_id: {table_id} (realm={realm_letter}, freq={frequency})")
+                return table_id
+
+        # Priority 3: Check for cmip6_table (backward compatibility only)
         if isinstance(self.drv, dict):
             table_id = self.drv.get("cmip6_table", None)
         else:
             table_id = getattr(self.drv, "cmip6_table", None)
-        logger.debug(f"table_id from variable metadata (cmip6_table): {table_id}")
-
-        if table_id is None:
-            # Fallback to user-provided
-            table_id = self.rule_dict.get("table_id", None)
-            logger.debug(f"table_id from rule_dict: {table_id}")
-
-        # If still not found, try to derive from compound_name (works for both CMIP6 and CMIP7)
-        if table_id is None:
-            compound_name = self.rule_dict.get("compound_name", None)
-            logger.debug(f"Attempting to derive table_id from compound_name: {compound_name}")
-            if compound_name:
-                # compound_name format: component.variable.cell_methods.frequency.grid
-                # Example: ocnBgchem.fgco2.tavg-u-hxy-sea.mon.GLB
-                parts = compound_name.split(".")
-                logger.debug(f"compound_name split into {len(parts)} parts: {parts}")
-                if len(parts) >= 5:
-                    component = parts[0]  # e.g., ocnBgchem
-                    frequency = parts[3]  # e.g., mon
-
-                    # Map component prefix to realm letter
-                    realm_map = {
-                        "atmos": "A",
-                        "ocean": "O",
-                        "ocn": "O",
-                        "ocnBgchem": "O",
-                        "seaIce": "SI",
-                        "land": "L",
-                        "landIce": "LI",
-                    }
-
-                    # Get realm letter (default to first letter if not in map)
-                    realm_letter = realm_map.get(component, component[0].upper())
-
-                    # Capitalize frequency and combine with realm
-                    # mon -> Omon, day -> Oday, etc.
-                    table_id = f"{realm_letter}{frequency}"
-                    logger.debug(f"Derived table_id: {table_id} (realm={realm_letter}, freq={frequency})")
-                else:
-                    logger.warning(f"compound_name has {len(parts)} parts, expected at least 5")
-
-        if table_id is None:
-            logger.error(f"Could not determine table_id. rule_dict keys: {list(self.rule_dict.keys())}")
-            raise ValueError("table_id not found in variable metadata or rule_dict")
-
-        logger.debug(f"Final table_id: {table_id}")
-        return table_id
+        
+        if table_id:
+            logger.debug(f"table_id from variable metadata (cmip6_table - backward compat): {table_id}")
+            return table_id
+        
+        # CMIP7 doesn't strictly require table_id, so returning None is acceptable
+        logger.debug(f"table_id could not be determined (CMIP7 doesn't require table_id)")
+        return None
 
     def get_mip_era(self):
         """Get MIP era (CMIP7)"""

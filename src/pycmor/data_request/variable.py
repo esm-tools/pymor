@@ -444,7 +444,7 @@ class CMIP7DataRequestVariable(DataRequestVariable):
     _table_name: Optional[str] = None
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data, compound_name=None):
         """Create a CMIP7DataRequestVariable from a dictionary.
 
         Parameters
@@ -453,6 +453,9 @@ class CMIP7DataRequestVariable(DataRequestVariable):
             Dictionary containing variable metadata from CMIP7 data request.
             Expected keys include all standard metadata fields plus CMIP7-specific
             fields like 'cmip7_compound_name', 'branding_label', 'region', etc.
+        compound_name : str, optional
+            CMIP7 compound name (realm.variable.branding.frequency.region).
+            If provided, takes precedence over value in data dict.
 
         Returns
         -------
@@ -477,7 +480,7 @@ class CMIP7DataRequestVariable(DataRequestVariable):
             _spatial_shape=data["spatial_shape"],
             _temporal_shape=data["temporal_shape"],
             # CMIP7-specific fields
-            _cmip7_compound_name=data.get("cmip7_compound_name"),
+            _cmip7_compound_name=compound_name or data.get("cmip7_compound_name"),
             _branding_label=data.get("branding_label"),
             _region=data.get("region"),
             # CMIP6 backward compatibility

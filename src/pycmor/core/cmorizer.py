@@ -387,7 +387,12 @@ class CMORizer:
     def _post_init_populate_rules_with_data_request_variables(self):
         logger.debug(f"Data request has {len(self.data_request.variables)} variables")
         for drv in self.data_request.variables.values():
-            rule_for_var = self.find_matching_rule(drv)
+            # Route to CMIP7-specific matching for exact compound name comparison
+            if self.cmor_version == "CMIP7":
+                rule_for_var = self.find_matching_rule_cmip7(drv)
+            else:
+                rule_for_var = self.find_matching_rule(drv)
+            
             if rule_for_var is None:
                 continue
             if rule_for_var.data_request_variables == []:
@@ -507,6 +512,58 @@ class CMORizer:
             return None
         if len(matches) > 1:
             msg = f"Need only one rule to match to {data_request_variable}. Found {len(matches)}."
+            if self._pymor_cfg.get("raise_on_multiple_rules", True):
+                raise ValueError(msg)
+            else:
+                logger.critical(msg)
+                logger.critical(
+                    """
+                    This should lead to a program crash! Exception due to:
+
+                    >> pymor_cfg['raise_on_multiple_rules'] = False <<
+                    """
+                )
+                logger.warning("Returning the first match.")
+        return matches[0]
+
+    def find_matching_rule_cmip7(self, data_request_variable: DataRequestVariable) -> Rule or None:
+        """Match rules by exact compound name for CMIP7.
+        
+        This method compares full CMIP7 compound names without any extraction,
+        preserving branding, frequency, and region information.
+        
+        Parameters
+        ----------
+        data_request_variable : DataRequestVariable
+            The CMIP7 data request variable to match.
+            
+        Returns
+        -------
+        Rule or None
+            Matched rule or None if no match found.
+        """
+        matches = []
+        drv_compound_name = data_request_variable.variable_id  # Should be full compound name
+        logger.debug(f"Looking for rule matching CMIP7 compound name: {drv_compound_name}")
+        
+        for rule in self.rules:
+            if hasattr(rule, "compound_name") and rule.compound_name:
+                # Exact compound name matching for CMIP7
+                if rule.compound_name == drv_compound_name:
+                    logger.debug(f"  Rule '{rule.name}' matches: {rule.compound_name} == {drv_compound_name}")
+                    matches.append(rule)
+                else:
+                    logger.debug(f"  Rule '{rule.name}' does not match: {rule.compound_name} != {drv_compound_name}")
+        
+        if len(matches) == 0:
+            msg = f"No rule found for CMIP7 variable {drv_compound_name}"
+            if self._pymor_cfg.get("raise_on_no_rule", False):
+                raise ValueError(msg)
+            elif self._pymor_cfg.get("warn_on_no_rule", False):
+                logger.warning(msg)
+            return None
+        if len(matches) > 1:
+            msg = f"Need only one rule to match to {drv_compound_name}. Found {len(matches)}."
             if self._pymor_cfg.get("raise_on_multiple_rules", True):
                 raise ValueError(msg)
             else:
