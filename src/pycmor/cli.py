@@ -63,7 +63,12 @@ def find_subcommands():
     groups = ["pycmor.cli_subcommands", "pymor.cli_subcommands"]
     discovered_subcommands = {}
     for group in groups:
-        eps = entry_points(group=group) if hasattr(entry_points(), "__getitem__") else entry_points().get(group, [])
+        try:
+            # Python 3.10+ - use keyword argument
+            eps = entry_points(group=group)
+        except TypeError:
+            # Python 3.9 - returns dict-like object
+            eps = entry_points().get(group, [])
         for entry_point in eps:
             discovered_subcommands[entry_point.name] = {
                 "plugin_name": entry_point.value.split(":")[0].split(".")[0],
