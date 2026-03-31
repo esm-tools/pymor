@@ -617,6 +617,7 @@ jobs:
         run: |
           docker run --rm \
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
+            -e PYCMOR_FORCE_REEXTRACT=1 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
             -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
@@ -663,6 +664,7 @@ jobs:
         run: |
           docker run --rm \
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
+            -e PYCMOR_FORCE_REEXTRACT=1 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
             -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
@@ -709,6 +711,7 @@ jobs:
         run: |
           docker run --rm \
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
+            -e PYCMOR_FORCE_REEXTRACT=1 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
             -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
@@ -755,6 +758,7 @@ jobs:
         run: |
           docker run --rm \
             -e PYCMOR_USE_REAL_TEST_DATA=1 \
+            -e PYCMOR_FORCE_REEXTRACT=1 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
             -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
             -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
