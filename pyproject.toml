@@ -115,7 +115,7 @@ fesom = [
     #             $ gh pr view 215 --repo fesom/pyfesom2
     "pyfesom2",
     # FESOM test datasets (external package)
-    "pycmor-test-data-fesom @ git+https://github.com/fesom/pycmor_test_data.git",
+    "pycmor-test-data-fesom @ git+https://github.com/fesom/pycmor_test_data.git@v0.2.0",
 ]
 
 cmip7 = [
