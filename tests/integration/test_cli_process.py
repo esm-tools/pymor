@@ -88,10 +88,13 @@ def test_cli_process(model_run_instance, cmip_version, orchestrator_config, tmp_
     rendered_config = template.render(datadir=str(model_run_instance.datadir))
     cfg = yaml.safe_load(rendered_config)
 
-    # Update output directory to tmp_path
+    # Update output directory to tmp_path (both general and per-rule)
+    output_dir = str(tmp_path / "output")
     if "general" not in cfg:
         cfg["general"] = {}
-    cfg["general"]["output_directory"] = str(tmp_path / "output")
+    cfg["general"]["output_directory"] = output_dir
+    for rule in cfg.get("rules", []):
+        rule["output_directory"] = output_dir
 
     # Apply orchestrator configuration
     if "pycmor" not in cfg:
