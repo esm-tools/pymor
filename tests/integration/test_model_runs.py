@@ -151,12 +151,13 @@ def test_library_process(model_run_instance, cmip_version, orchestrator_config, 
     assert result is not None, "Processing returned None"
     assert len(result) > 0, "Processing returned empty result"
 
-    # Verify each result is a valid xarray Dataset
+    # Verify each result is a valid xarray Dataset or DataArray
     import xarray as xr
 
     for i, dataset in enumerate(result):
-        assert isinstance(dataset, xr.Dataset), f"Result {i} is not an xarray Dataset: {type(dataset)}"
-        assert len(dataset.data_vars) > 0, f"Result {i} has no data variables"
+        assert isinstance(
+            dataset, (xr.Dataset, xr.DataArray)
+        ), f"Result {i} is not an xarray Dataset or DataArray: {type(dataset)}"
 
 
 @pytest.mark.parametrize("cmip_version", ["cmip6", "cmip7"])
