@@ -298,7 +298,7 @@ def approx_interval_to_frequency_str(approx_interval, tolerance=0.1):
     Returns
     -------
     str or None
-        Pandas-style frequency string (e.g., 'D', 'M', '3M', 'Y') or None for
+        Pandas-style frequency string (e.g., 'D', 'ME', '3ME', 'Y') or None for
         time-invariant data (0.0 days)
 
     Examples
@@ -306,13 +306,13 @@ def approx_interval_to_frequency_str(approx_interval, tolerance=0.1):
     >>> approx_interval_to_frequency_str(1.0)  # Daily
     'D'
     >>> approx_interval_to_frequency_str(30.0)  # Monthly
-    'M'
+    'ME'
     >>> approx_interval_to_frequency_str(91.3)  # 3-Monthly (approx)
-    '3M'
+    '3ME'
     >>> approx_interval_to_frequency_str(365.0)  # Yearly
     'Y'
     >>> approx_interval_to_frequency_str(0.041667)  # Hourly
-    'H'
+    'h'
     """
     # Handle special case: time-invariant/fixed data
     if approx_interval == 0.0:
