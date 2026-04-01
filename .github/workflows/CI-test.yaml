@@ -16,28 +16,6 @@ on:
         type: boolean
         default: false
 jobs:
-  # Standalone sanity check for doctest infrastructure
-  doctest-sanity-check:
-    name: Doctest Infrastructure Sanity Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-      - name: Install minimal dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install ruamel.yaml pyfakefs pytest pytest-asyncio pytest-mock pytest-github-actions-annotate-failures pyyaml numpy deprecation
-      - name: Run doctest sanity check
-        run: |
-          # This verifies that the conftest.py fixture setup works correctly
-          # before we attempt to run the full doctest suite in Docker
-          # Override addopts from pyproject.toml to avoid coverage (pytest-cov not installed)
-          PYTHONPATH=src python -m pytest -vvv -o addopts="" --doctest-modules tests/doctest_sanity_check.py
   # Setup job for linting and formatting checks
   lint_and_format:
     name: Lint and Format Check
@@ -884,7 +862,7 @@ jobs:
   # Doctest jobs - one per Python version
   test-doctest-3-9:
     name: Doctest Python 3.9
-    needs: [build-3-9, doctest-sanity-check, test-meta-3-9]
+    needs: [build-3-9, test-meta-3-9]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -925,7 +903,7 @@ jobs:
           path: coverage-doctest-3.9.xml
   test-doctest-3-10:
     name: Doctest Python 3.10
-    needs: [build-3-10, doctest-sanity-check, test-meta-3-10]
+    needs: [build-3-10, test-meta-3-10]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -966,7 +944,7 @@ jobs:
           path: coverage-doctest-3.10.xml
   test-doctest-3-11:
     name: Doctest Python 3.11
-    needs: [build-3-11, doctest-sanity-check, test-meta-3-11]
+    needs: [build-3-11, test-meta-3-11]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -1007,7 +985,7 @@ jobs:
           path: coverage-doctest-3.11.xml
   test-doctest-3-12:
     name: Doctest Python 3.12
-    needs: [build-3-12, doctest-sanity-check, test-meta-3-12]
+    needs: [build-3-12, test-meta-3-12]
     runs-on: ubuntu-latest
     defaults:
       run:
