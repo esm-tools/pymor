@@ -1,0 +1,32 @@
+# Test data registry for pycmor
+#
+# This file defines all remote test data files that can be downloaded
+# and cached by the test suite using pooch.
+#
+# Each entry represents a tarball containing directory structures
+# exactly as they appear on the HPC systems.
+#
+# Format:
+#   filename:
+#     url: <download URL>
+#     sha256: <checksum or null>
+#     description: <human-readable description>
+#     extract_dir: <directory name after extraction>
+
+fesom_2p6_pimesh.tar:
+  url: https://nextcloud.awi.de/s/AL2cFQx5xGE473S/download/fesom_2p6_pimesh.tar
+  sha256: null  # TODO: Add checksum for validation
+  description: FESOM 2.6 PI mesh test data with ocean output
+  extract_dir: fesom_2p6_pimesh
+
+awicm_1p0_recom.tar:
+  url: https://nextcloud.awi.de/s/DaQjtTS9xB7o7pL/download/awicm_1p0_recom.tar
+  sha256: null  # TODO: Add checksum for validation
+  description: AWI-CM 1.0 RECOM biogeochemistry test data
+  extract_dir: awicm_1p0_recom
+
+pi_uxarray.tar:
+  url: https://nextcloud.awi.de/s/o2YQy2i9BR97Rge/download/pi_uxarray.tar
+  sha256: null
+  description: PI control UXarray test data
+  extract_dir: pi_uxarray
