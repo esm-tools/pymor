@@ -23,7 +23,10 @@ def generate_cache_key(task, inputs):
 def manual_checkpoint(data, rule):
     """Manually insert a checkpoint in the flow"""
     logger.info("Manually inserting checkpoint")
-    return Completed(message="Checkpoint reached", data=data)
+    for pipeline in rule.pipelines:
+        if getattr(pipeline, "_workflow_backend", None) == "prefect":
+            return Completed(message="Checkpoint reached", data=data)
+    return data
 
 
 def inspect_cache(cache_dir="~/.prefect/storage"):

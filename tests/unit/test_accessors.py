@@ -65,7 +65,7 @@ class TestPycmorDataArrayAccessor:
 
         # Results should be identical
         assert pycmor_result == timefreq_result
-        assert pycmor_result.frequency == "M"
+        assert pycmor_result.frequency == "ME"
         assert pycmor_result.status == "valid"
 
     def test_pycmor_check_resolution_delegation(self, sample_dataarray):
@@ -103,7 +103,7 @@ class TestPycmorDataArrayAccessor:
 
     def test_pycmor_resample_safe_with_freq_str(self, sample_dataarray):
         """Test pycmor.resample_safe with frequency string parameter."""
-        result = sample_dataarray.pycmor.resample_safe(freq_str="M", calendar="360_day")
+        result = sample_dataarray.pycmor.resample_safe(freq_str="ME", calendar="360_day")
 
         assert isinstance(result, xr.DataArray)
         assert "time" in result.dims
@@ -115,10 +115,10 @@ class TestPycmorDataArrayAccessor:
         result1 = sample_dataarray.pycmor.resample_safe(target_approx_interval=30.0, calendar="360_day")
 
         # Test with freq_str only
-        result2 = sample_dataarray.pycmor.resample_safe(freq_str="M", calendar="360_day")
+        result2 = sample_dataarray.pycmor.resample_safe(freq_str="ME", calendar="360_day")
 
         # Test with both parameters
-        result3 = sample_dataarray.pycmor.resample_safe(target_approx_interval=30.0, freq_str="M", calendar="360_day")
+        result3 = sample_dataarray.pycmor.resample_safe(target_approx_interval=30.0, freq_str="ME", calendar="360_day")
 
         # All should produce valid results
         for result in [result1, result2, result3]:
@@ -172,7 +172,7 @@ class TestPycmorDatasetAccessor:
 
         # Results should be identical
         assert pycmor_result == timefreq_result
-        assert pycmor_result.frequency == "M"
+        assert pycmor_result.frequency == "ME"
         assert pycmor_result.status == "valid"
 
     def test_pycmor_check_resolution_delegation(self, sample_dataset):
@@ -209,7 +209,7 @@ class TestPycmorDatasetAccessor:
 
     def test_pycmor_resample_safe_preserves_variables(self, sample_dataset):
         """Test that dataset pycmor.resample_safe preserves all data variables."""
-        result = sample_dataset.pycmor.resample_safe(freq_str="M", calendar="360_day")
+        result = sample_dataset.pycmor.resample_safe(freq_str="ME", calendar="360_day")
 
         assert isinstance(result, xr.Dataset)
         assert set(result.data_vars) == set(sample_dataset.data_vars)
