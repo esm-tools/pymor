@@ -132,8 +132,8 @@ def _create_mean_bounds(time_values, approx_interval):
     time_diff_seconds = np.median(np.diff(time_values.astype("datetime64[s]").astype(float)))
     data_freq_days = time_diff_seconds / (24 * 3600)
 
-    # If approx_interval matches data frequency and looks monthly, use month-aware bounds
-    if approx_interval is not None and abs(data_freq_days - approx_interval) < 0.1 and 28 <= approx_interval <= 32:
+    # If approx_interval looks monthly and data frequency is in the monthly range, use month-aware bounds
+    if approx_interval is not None and 28 <= approx_interval <= 32 and 27 <= data_freq_days <= 32:
         logger.info("  detected monthly data, using month-start bounds")
         return _create_monthly_bounds(time_values)
 
