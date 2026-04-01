@@ -7,6 +7,7 @@ import json
 import pickle
 from pathlib import Path
 
+from prefect.context import get_run_context
 from prefect.states import Completed
 
 from .logging import logger
@@ -23,7 +24,11 @@ def generate_cache_key(task, inputs):
 def manual_checkpoint(data, rule):
     """Manually insert a checkpoint in the flow"""
     logger.info("Manually inserting checkpoint")
-    return Completed(message="Checkpoint reached", data=data)
+    try:
+        get_run_context()
+        return Completed(message="Checkpoint reached", data=data)
+    except RuntimeError:
+        return data
 
 
 def inspect_cache(cache_dir="~/.prefect/storage"):
