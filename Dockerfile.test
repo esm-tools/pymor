@@ -1,5 +1,10 @@
 # Dockerfile for pycmor testing environment
 # Uses micromamba for compatible HDF5/NetCDF/netcdf4-python stack
+#
+# This image provides only the dependency environment. Source code is NOT baked
+# in -- CI test jobs check out the repo and run `pip install -e .` at runtime.
+# This means the image only needs rebuilding when dependencies change, not on
+# every commit.
 
 ARG PYTHON_VERSION=3.11
 FROM mambaorg/micromamba:1.5.10
@@ -44,12 +49,13 @@ RUN micromamba install -y -n base -c conda-forge \
 # Activate the base environment for subsequent commands
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
 
-# Copy project files
+# Copy only dependency metadata -- this layer is cached until pyproject.toml changes
 COPY --chown=$MAMBA_USER:$MAMBA_USER pyproject.toml versioneer.py ./
 COPY --chown=$MAMBA_USER:$MAMBA_USER src/pycmor/_version.py src/pycmor/_version.py
-COPY --chown=$MAMBA_USER:$MAMBA_USER . .
+# Create minimal __init__.py so pip can resolve the package
+RUN touch src/pycmor/__init__.py
 
-# Install pycmor and dev dependencies via pip (uses conda's Python/libs)
+# Install dependencies only (pycmor itself will be installed at runtime via pip install -e .)
 RUN pip install --no-cache-dir ".[dev,fesom,cmip7]"
 
 # Pre-generate CMIP7 variable metadata for doctests (v1.2.2.2)
