@@ -378,7 +378,7 @@ def approx_interval_to_frequency_str(approx_interval, tolerance=0.1):
         # First check if it's close to a year (prioritize yearly over 12M)
         years = approx_interval / DAYS_PER_YEAR
         if is_close(years, 1, tolerance):
-            return "YE"
+            return "Y"
 
         months = approx_interval / DAYS_PER_MONTH
 
@@ -403,12 +403,12 @@ def approx_interval_to_frequency_str(approx_interval, tolerance=0.1):
         # Check for common yearly frequencies
         for y in [1, 2, 5, 10, 20, 50, 100]:
             if is_close(years, y, tolerance):
-                return "YE" if y == 1 else f"{y}YE"
+                return "Y" if y == 1 else f"{y}Y"
 
         # Fall back to rounded years
         years_rounded = int(round(years))
         if years_rounded >= 1:
-            return "YE" if years_rounded == 1 else f"{years_rounded}YE"
+            return "Y" if years_rounded == 1 else f"{years_rounded}Y"
         else:
             # Less than a year but more than 400 days - use days
             days = int(round(approx_interval))
