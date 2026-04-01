@@ -120,7 +120,8 @@ class Pipeline:
             raise ValueError("Invalid workflow backend!")
 
     def _run_native(self, data, rule_spec):
-        for step in self.steps:
+        steps = getattr(self, "_raw_steps", self._steps)
+        for step in steps:
             data = step(data, rule_spec)
         return data
 
