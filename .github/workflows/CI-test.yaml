@@ -31,7 +31,7 @@ jobs:
       - name: Install minimal dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install ruamel.yaml pyfakefs pytest pytest-asyncio pytest-mock pytest-github-actions-annotate-failures pyyaml
+          python -m pip install ruamel.yaml pyfakefs pytest pytest-asyncio pytest-mock pytest-github-actions-annotate-failures pyyaml numpy
       - name: Run doctest sanity check
         run: |
           # This verifies that the conftest.py fixture setup works correctly
@@ -632,6 +632,7 @@ jobs:
     env:
       GITHUB_ACTIONS: true
       PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_FORCE_REEXTRACT: 1
       PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
       PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
       PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR: ${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }}
@@ -668,22 +669,15 @@ jobs:
           tree -h ~/.cache/pycmor/test_data/ || echo "Cache is empty"
       - name: Run integration test for specific combination
         run: |
-          docker run --rm \
-            -e PYCMOR_USE_REAL_TEST_DATA=1 \
-            -e PYCMOR_FORCE_REEXTRACT=1 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
-            -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
-            -v ${{ github.workspace }}:/workspace \
-            -v ~/.cache/pycmor:/home/mambauser/.cache/pycmor \
-            --user root \
-            ghcr.io/esm-tools/pycmor-testground:py3.9-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "pytest -vvv -s --cov=src/pycmor tests/integration/**.py && python -m coverage xml -o /workspace/coverage-integration-3.9.xml"
+          pytest -vvv -s --cov=src/pycmor \
+            -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' \
+            tests/integration/test_model_runs.py::test_library_process
+          python -m coverage xml -o coverage-integration-3.9.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-reports-integration-3.9
+          name: coverage-reports-integration-3.9-${{ matrix.model }}-${{ matrix.cmip-version }}-${{ matrix.orchestrator-config.id }}
           path: coverage-integration-3.9.xml
 
   # Integration test matrix - Python 3.10
@@ -697,6 +691,7 @@ jobs:
     env:
       GITHUB_ACTIONS: true
       PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_FORCE_REEXTRACT: 1
       PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
       PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
       PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR: ${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }}
@@ -733,22 +728,15 @@ jobs:
           tree -h ~/.cache/pycmor/test_data/ || echo "Cache is empty"
       - name: Run integration test for specific combination
         run: |
-          docker run --rm \
-            -e PYCMOR_USE_REAL_TEST_DATA=1 \
-            -e PYCMOR_FORCE_REEXTRACT=1 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
-            -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
-            -v ${{ github.workspace }}:/workspace \
-            -v ~/.cache/pycmor:/home/mambauser/.cache/pycmor \
-            --user root \
-            ghcr.io/esm-tools/pycmor-testground:py3.10-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "pytest -vvv -s --cov=src/pycmor tests/integration/**.py && python -m coverage xml -o /workspace/coverage-integration-3.10.xml"
+          pytest -vvv -s --cov=src/pycmor \
+            -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' \
+            tests/integration/test_model_runs.py::test_library_process
+          python -m coverage xml -o coverage-integration-3.10.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-reports-integration-3.10
+          name: coverage-reports-integration-3.10-${{ matrix.model }}-${{ matrix.cmip-version }}-${{ matrix.orchestrator-config.id }}
           path: coverage-integration-3.10.xml
 
   # Integration test matrix - Python 3.11
@@ -762,6 +750,7 @@ jobs:
     env:
       GITHUB_ACTIONS: true
       PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_FORCE_REEXTRACT: 1
       PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
       PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
       PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR: ${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }}
@@ -798,22 +787,15 @@ jobs:
           tree -h ~/.cache/pycmor/test_data/ || echo "Cache is empty"
       - name: Run integration test for specific combination
         run: |
-          docker run --rm \
-            -e PYCMOR_USE_REAL_TEST_DATA=1 \
-            -e PYCMOR_FORCE_REEXTRACT=1 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
-            -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
-            -v ${{ github.workspace }}:/workspace \
-            -v ~/.cache/pycmor:/home/mambauser/.cache/pycmor \
-            --user root \
-            ghcr.io/esm-tools/pycmor-testground:py3.11-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "pytest -vvv -s --cov=src/pycmor tests/integration/**.py && python -m coverage xml -o /workspace/coverage-integration-3.11.xml"
+          pytest -vvv -s --cov=src/pycmor \
+            -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' \
+            tests/integration/test_model_runs.py::test_library_process
+          python -m coverage xml -o coverage-integration-3.11.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-reports-integration-3.11
+          name: coverage-reports-integration-3.11-${{ matrix.model }}-${{ matrix.cmip-version }}-${{ matrix.orchestrator-config.id }}
           path: coverage-integration-3.11.xml
 
   # Integration test matrix - Python 3.12
@@ -827,6 +809,7 @@ jobs:
     env:
       GITHUB_ACTIONS: true
       PYCMOR_USE_REAL_TEST_DATA: 1
+      PYCMOR_FORCE_REEXTRACT: 1
       PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE: netcdf4
       PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL: no
       PYCMOR_PIPELINE_WORKFLOW_ORCHESTRATOR: ${{ matrix.orchestrator-config.pipeline_workflow_orchestrator }}
@@ -863,22 +846,15 @@ jobs:
           tree -h ~/.cache/pycmor/test_data/ || echo "Cache is empty"
       - name: Run integration test for specific combination
         run: |
-          docker run --rm \
-            -e PYCMOR_USE_REAL_TEST_DATA=1 \
-            -e PYCMOR_FORCE_REEXTRACT=1 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_ENGINE=netcdf4 \
-            -e PYCMOR_XARRAY_OPEN_MFDATASET_PARALLEL=no \
-            -e PREFECT_SERVER_EPHEMERAL_STARTUP_TIMEOUT_SECONDS=300 \
-            -v ${{ github.workspace }}:/workspace \
-            -v ~/.cache/pycmor:/home/mambauser/.cache/pycmor \
-            --user root \
-            ghcr.io/esm-tools/pycmor-testground:py3.12-$(echo "${{ github.head_ref || github.ref_name }}" | sed "s#/#_#g") \
-            bash -c "pytest -vvv -s --cov=src/pycmor tests/integration/**.py && python -m coverage xml -o /workspace/coverage-integration-3.12.xml"
+          pytest -vvv -s --cov=src/pycmor \
+            -k '${{ matrix.model }} and ${{ matrix.cmip-version }} and ${{ matrix.orchestrator-config.id }}' \
+            tests/integration/test_model_runs.py::test_library_process
+          python -m coverage xml -o coverage-integration-3.12.xml
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-reports-integration-3.12
+          name: coverage-reports-integration-3.12-${{ matrix.model }}-${{ matrix.cmip-version }}-${{ matrix.orchestrator-config.id }}
           path: coverage-integration-3.12.xml
 
   # Doctest jobs - one per Python version
