@@ -199,7 +199,7 @@ def test_same_freq_is_not_coarser(daily_dataset):
 
 
 def test_year_is_coarser_than_day(daily_dataset):
-    assert freq_is_coarser_than_data("Y", daily_dataset) is True
+    assert freq_is_coarser_than_data("YE", daily_dataset) is True
 
 
 def test_unknown_frequency_raises():
