@@ -240,7 +240,7 @@ def freq_is_coarser_than_data(
     Parameters
     ----------
     freq : str
-        The frequency to compare (e.g. 'M', 'D', '6H').
+        The frequency to compare (e.g. 'ME', 'D', '6h').
     ds : xr.Dataset
         The dataset containing a time coordinate.
     ref_time : pd.Timestamp, optional
@@ -266,12 +266,12 @@ def freq_is_coarser_than_data(
     True
     >>> # INPUT: Same daily data, checking if hourly frequency is coarser
     >>> # OUTPUT: Hourly is finer than daily (not coarser)
-    >>> print(freq_is_coarser_than_data('H', ds_daily))
+    >>> print(freq_is_coarser_than_data('h', ds_daily))
     False
     >>> # INPUT: Hourly data, checking if daily frequency is coarser
     >>> ds_hourly = xr.Dataset(
     ...     {'temp': ('time', range(48))},
-    ...     coords={'time': pd.date_range('2000-01-01', periods=48, freq='H')}
+    ...     coords={'time': pd.date_range('2000-01-01', periods=48, freq='h')}
     ... )
     >>> # OUTPUT: Daily is coarser than hourly
     >>> print(freq_is_coarser_than_data('D', ds_hourly))

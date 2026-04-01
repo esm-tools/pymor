@@ -187,11 +187,11 @@ def daily_dataset():
 
 
 def test_month_is_coarser_than_day(daily_dataset):
-    assert freq_is_coarser_than_data("M", daily_dataset) is True
+    assert freq_is_coarser_than_data("ME", daily_dataset) is True
 
 
 def test_hour_is_not_coarser_than_day(daily_dataset):
-    assert freq_is_coarser_than_data("6H", daily_dataset) is False
+    assert freq_is_coarser_than_data("6h", daily_dataset) is False
 
 
 def test_same_freq_is_not_coarser(daily_dataset):
@@ -199,7 +199,7 @@ def test_same_freq_is_not_coarser(daily_dataset):
 
 
 def test_year_is_coarser_than_day(daily_dataset):
-    assert freq_is_coarser_than_data("A", daily_dataset) is True
+    assert freq_is_coarser_than_data("Y", daily_dataset) is True
 
 
 def test_unknown_frequency_raises():
