@@ -298,7 +298,7 @@ class CMORizer:
         from .resource_locator import TableLocator
 
         DataRequestClass = self._get_versioned_class(DataRequest)
-        
+
         # For CMIP7, prefer user-specified metadata file
         if self.cmor_version == "CMIP7":
             user_metadata_path = self._general_cfg.get("CMIP7_DReq_metadata")
@@ -307,7 +307,7 @@ class CMORizer:
                 self.data_request = DataRequestClass.from_json_file(user_metadata_path)
                 logger.debug(f"Created DataRequest from {user_metadata_path}")
                 return
-        
+
         # Fallback to tables directory
         user_table_dir = self._general_cfg.get("CMIP_Tables_Dir")
         table_version = self._general_cfg.get("CMIP_Tables_version")
@@ -392,7 +392,7 @@ class CMORizer:
                 rule_for_var = self.find_matching_rule_cmip7(drv)
             else:
                 rule_for_var = self.find_matching_rule(drv)
-            
+
             if rule_for_var is None:
                 continue
             if rule_for_var.data_request_variables == []:
@@ -475,7 +475,9 @@ class CMORizer:
             if hasattr(rule, "compound_name") and rule.compound_name is not None:
                 rule_value = rule.compound_name
                 drv_value = getattr(data_request_variable, "variable_id")
-                logger.debug(f"  Checking rule '{rule.name}': compound_name='{rule_value}' vs drv variable_id='{drv_value}'")
+                logger.debug(
+                    f"  Checking rule '{rule.name}': compound_name='{rule_value}' vs drv variable_id='{drv_value}'"
+                )
                 # For compound name matching, compare directly or extract variable names
                 if "." in rule_value and "." in str(drv_value):
                     # Both are compound names, extract variable parts for comparison
@@ -516,27 +518,25 @@ class CMORizer:
                 raise ValueError(msg)
             else:
                 logger.critical(msg)
-                logger.critical(
-                    """
+                logger.critical("""
                     This should lead to a program crash! Exception due to:
 
                     >> pymor_cfg['raise_on_multiple_rules'] = False <<
-                    """
-                )
+                    """)
                 logger.warning("Returning the first match.")
         return matches[0]
 
     def find_matching_rule_cmip7(self, data_request_variable: DataRequestVariable) -> Rule or None:
         """Match rules by exact compound name for CMIP7.
-        
+
         This method compares full CMIP7 compound names without any extraction,
         preserving branding, frequency, and region information.
-        
+
         Parameters
         ----------
         data_request_variable : DataRequestVariable
             The CMIP7 data request variable to match.
-            
+
         Returns
         -------
         Rule or None
@@ -545,7 +545,7 @@ class CMORizer:
         matches = []
         drv_compound_name = data_request_variable.variable_id  # Should be full compound name
         logger.debug(f"Looking for rule matching CMIP7 compound name: {drv_compound_name}")
-        
+
         for rule in self.rules:
             if hasattr(rule, "compound_name") and rule.compound_name:
                 # Exact compound name matching for CMIP7
@@ -554,7 +554,7 @@ class CMORizer:
                     matches.append(rule)
                 else:
                     logger.debug(f"  Rule '{rule.name}' does not match: {rule.compound_name} != {drv_compound_name}")
-        
+
         if len(matches) == 0:
             msg = f"No rule found for CMIP7 variable {drv_compound_name}"
             if self._pymor_cfg.get("raise_on_no_rule", False):
@@ -568,13 +568,11 @@ class CMORizer:
                 raise ValueError(msg)
             else:
                 logger.critical(msg)
-                logger.critical(
-                    """
+                logger.critical("""
                     This should lead to a program crash! Exception due to:
 
                     >> pymor_cfg['raise_on_multiple_rules'] = False <<
-                    """
-                )
+                    """)
                 logger.warning("Returning the first match.")
         return matches[0]
 

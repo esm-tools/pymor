@@ -1,0 +1,34 @@
+================================================================================
+RUNAWAY SLURM CLUSTER ISSUE
+================================================================================
+Date: 2026-03-31
+
+PROBLEM:
+When pycmor process crashes or hangs, the Dask SLURMCluster with adaptive 
+scaling continues spawning workers in infinite loop:
+  - Cluster requests workers → Workers start → No work available → Canceled
+  - Repeat indefinitely (30+ jobs spawned in 10 minutes)
+
+ROOT CAUSE:
+Process crashes but SLURMCluster adaptive scaling thread doesn't stop.
+
+IMMEDIATE FIX:
+  $ pkill -9 -f "pycmor process"
+  $ scancel -u $USER
+
+PREVENTION:
+1. Set worker walltime limit in YAML:
+     jobqueue:
+       slurm:
+         walltime: '00:10:00'  # Auto-terminate after 10 min
+
+2. Use fixed scaling instead of adaptive:
+     dask_cluster_scaling_mode: "scale"
+     dask_cluster_scaling_jobs: 4
+
+3. Run with timeout wrapper:
+     $ timeout 3600 pycmor process config.yaml || scancel -u $USER
+
+LONG-TERM FIX:
+Add proper cluster cleanup on error in pycmor code (signal handlers, 
+try/finally blocks, atexit cleanup).

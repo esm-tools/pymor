@@ -456,7 +456,7 @@ class CMIP7GlobalAttributes(GlobalAttributes):
 
         For CMIP7: table_id is not a core concept. We derive it from compound name
         or return None. The cmip6_table field is only used for backward compatibility.
-        
+
         Priority:
         1. table_id from rule configuration (user override)
         2. Derive from compound_name if available (CMIP7 standard)
@@ -479,7 +479,7 @@ class CMIP7GlobalAttributes(GlobalAttributes):
             if len(parts) >= 5:
                 component = parts[0]  # e.g., ocean, atmos
                 frequency = parts[3]  # e.g., mon, day
-                
+
                 # Map component to realm letter
                 realm_map = {
                     "atmos": "A",
@@ -500,13 +500,13 @@ class CMIP7GlobalAttributes(GlobalAttributes):
             table_id = self.drv.get("cmip6_table", None)
         else:
             table_id = getattr(self.drv, "cmip6_table", None)
-        
+
         if table_id:
             logger.debug(f"table_id from variable metadata (cmip6_table - backward compat): {table_id}")
             return table_id
-        
+
         # CMIP7 doesn't strictly require table_id, so returning None is acceptable
-        logger.debug(f"table_id could not be determined (CMIP7 doesn't require table_id)")
+        logger.debug("table_id could not be determined (CMIP7 doesn't require table_id)")
         return None
 
     def get_mip_era(self):

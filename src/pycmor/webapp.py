@@ -297,13 +297,11 @@ if table_source == "Local":
 
 
 if table_source:
-    st.markdown(
-        """
+    st.markdown("""
     # Tables - Frequencies - Variables
 
     ## Metrics
-    """
-    )
+    """)
 
     cols = st.columns(3)
 
