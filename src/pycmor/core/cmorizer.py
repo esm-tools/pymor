@@ -533,11 +533,13 @@ class CMORizer:
                 raise ValueError(msg)
             else:
                 logger.critical(msg)
-                logger.critical("""
+                logger.critical(
+                    """
                     This should lead to a program crash! Exception due to:
 
                     >> pymor_cfg['raise_on_multiple_rules'] = False <<
-                    """)
+                    """
+                )
                 logger.warning("Returning the first match.")
         return matches[0]
 
@@ -583,11 +585,13 @@ class CMORizer:
                 raise ValueError(msg)
             else:
                 logger.critical(msg)
-                logger.critical("""
+                logger.critical(
+                    """
                     This should lead to a program crash! Exception due to:
 
                     >> pymor_cfg['raise_on_multiple_rules'] = False <<
-                    """)
+                    """
+                )
                 logger.warning("Returning the first match.")
         return matches[0]
 
