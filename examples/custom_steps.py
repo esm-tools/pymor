@@ -2,9 +2,10 @@
 Custom processing steps for pycmor pipelines.
 """
 
-import xarray as xr
-from typing import Optional
 import logging
+from typing import Optional
+
+import xarray as xr
 
 logger = logging.getLogger(__name__)
 
