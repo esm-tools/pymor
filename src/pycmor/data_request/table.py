@@ -268,16 +268,16 @@ class CMIP7DataRequestTableHeader(DataRequestTableHeader):
     @classmethod
     def from_variable_metadata(cls, var_dict: dict) -> "CMIP7DataRequestTableHeader":
         """Create synthetic table header from a single variable's metadata.
-        
+
         This method creates a minimal table header for CMIP7 variables loaded
         by compound name, ensuring downstream code that expects table_header
         doesn't break.
-        
+
         Parameters
         ----------
         var_dict : dict
             Variable metadata dictionary containing frequency, modeling_realm, etc.
-            
+
         Returns
         -------
         CMIP7DataRequestTableHeader
@@ -288,17 +288,19 @@ class CMIP7DataRequestTableHeader(DataRequestTableHeader):
         if not table_id:
             realm = var_dict.get("modeling_realm", "unknown")
             frequency = var_dict.get("frequency", "")
-            realm_letter = {"ocean": "O", "atmos": "A", "land": "L", "seaIce": "SI"}.get(realm, realm[0].upper() if realm else "X")
+            realm_letter = {"ocean": "O", "atmos": "A", "land": "L", "seaIce": "SI"}.get(
+                realm, realm[0].upper() if realm else "X"
+            )
             table_id = f"{realm_letter}{frequency}" if frequency else realm_letter
-        
+
         # Get realm as list
         realm = var_dict.get("modeling_realm", "unknown")
         realm_list = [realm] if isinstance(realm, str) else realm
-        
+
         # Calculate approx_interval from frequency
         frequency = var_dict.get("frequency", "")
         approx_interval = cls._approx_interval_from_frequency(frequency)
-        
+
         return cls(
             _table_id=table_id,
             _realm=realm_list,
