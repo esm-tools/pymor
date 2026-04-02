@@ -551,9 +551,14 @@ class PycmorConfigManager(ConfigManager):
         list
             List of environment objects in priority order (first has highest priority).
         """
+        # Prefix dict keys with namespace so they match the namespaced lookup.
+        # The YAML 'pycmor:' section provides keys like 'dask_cluster', but the
+        # manager looks for 'pycmor_dask_cluster' due to the namespace.
+        raw = run_specific_cfg or {}
+        prefixed = {f"{cls._NAMESPACE}_{k}": v for k, v in raw.items()}
         return [
             ConfigOSEnv(),  # Highest: Environment variables
-            ConfigDictEnv(run_specific_cfg or {}),  # Run-specific configuration
+            ConfigDictEnv(prefixed),  # Run-specific configuration (namespace-prefixed)
             ConfigYamlEnv(cls._CONFIG_FILES),  # Lowest: User config file
         ]
 
