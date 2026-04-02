@@ -87,7 +87,7 @@ class CMIP7DataRequest(DataRequest):
         # Optional: Build tables for backward compatibility with code that expects them
         # Group by cmip6_table if available (for legacy support)
         table_ids = set(
-            v.get("cmip6_table") for v in data["Compound Name"].values() if v.get("cmip6_table")
+            v.get("cmip6_cmor_table") for v in data["Compound Name"].values() if v.get("cmip6_cmor_table")
         )
         if table_ids:
             for table_id in table_ids:

@@ -66,7 +66,9 @@ def generate_random_data(shape: tuple, dtype: np.dtype, fill_value: Any = None) 
             data[mask] = fill_value
         return data
     elif dtype.kind in ("i", "u"):  # Integer
-        return np.random.randint(0, 100, size=shape, dtype=dtype)
+        # Use sequential values (not random) so coordinate dimensions like nz1
+        # are monotonically increasing and consistent across files
+        return np.arange(np.prod(shape), dtype=dtype).reshape(shape)
     elif dtype.kind == "b":  # Boolean
         return np.random.rand(*shape) > 0.5
     else:
@@ -74,7 +76,7 @@ def generate_random_data(shape: tuple, dtype: np.dtype, fill_value: Any = None) 
         return np.zeros(shape, dtype=dtype)
 
 
-def create_coordinate(coord_meta: Dict[str, Any], file_index: int = 0) -> xr.DataArray:
+def create_coordinate(coord_meta: Dict[str, Any], file_index: int = 0, coord_name: str = "") -> xr.DataArray:
     """
     Create a coordinate DataArray from metadata.
 
@@ -120,8 +122,14 @@ def create_coordinate(coord_meta: Dict[str, Any], file_index: int = 0) -> xr.Dat
             start = base + pd.Timedelta(days=day_offset)
             data = pd.date_range(start, periods=shape[0], freq="D").values
     else:
-        # Generate random data
-        data = generate_random_data(shape, dtype)
+        dims = coord_meta["dims"]
+        # For dimension coordinates (coord is its own dimension), use monotonic values
+        # so multiple files can be combined by xarray without errors
+        is_dim_coord = len(dims) == 1 and dims[0] == coord_name
+        if is_dim_coord and dtype.kind in ("f", "c"):
+            data = np.arange(shape[0], dtype=dtype)
+        else:
+            data = generate_random_data(shape, dtype)
 
     coord = xr.DataArray(
         data,
@@ -190,7 +198,7 @@ def create_dataset_from_metadata(metadata: Dict[str, Any], file_index: int = 0) 
     # Create coordinates
     coords = {}
     for coord_name, coord_meta in metadata.get("coordinates", {}).items():
-        coords[coord_name] = create_coordinate(coord_meta, file_index)
+        coords[coord_name] = create_coordinate(coord_meta, file_index, coord_name=coord_name)
 
     # Create variables
     data_vars = {}
