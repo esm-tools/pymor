@@ -393,7 +393,7 @@ class CMORizer:
                 rule_for_var = self.find_matching_rule_cmip7(drv)
             else:
                 rule_for_var = self.find_matching_rule(drv)
-            
+
             if rule_for_var is None:
                 continue
             if rule_for_var.data_request_variables == []:
@@ -533,27 +533,25 @@ class CMORizer:
                 raise ValueError(msg)
             else:
                 logger.critical(msg)
-                logger.critical(
-                    """
+                logger.critical("""
                     This should lead to a program crash! Exception due to:
 
                     >> pymor_cfg['raise_on_multiple_rules'] = False <<
-                    """
-                )
+                    """)
                 logger.warning("Returning the first match.")
         return matches[0]
 
     def find_matching_rule_cmip7(self, data_request_variable: DataRequestVariable) -> Rule or None:
         """Match rules by exact compound name for CMIP7.
-        
+
         This method compares full CMIP7 compound names without any extraction,
         preserving branding, frequency, and region information.
-        
+
         Parameters
         ----------
         data_request_variable : DataRequestVariable
             The CMIP7 data request variable to match.
-            
+
         Returns
         -------
         Rule or None
@@ -562,14 +560,14 @@ class CMORizer:
         matches = []
         drv_compound_name = data_request_variable.variable_id  # Should be full compound name
         logger.debug(f"Looking for rule matching CMIP7 compound name: {drv_compound_name}")
-        
+
         for rule in self.rules:
             if hasattr(rule, "compound_name") and rule.compound_name:
                 # Exact compound name matching for CMIP7
                 if rule.compound_name == drv_compound_name:
                     logger.debug(f"  ✓ Rule '{rule.name}' matches: {rule.compound_name}")
                     matches.append(rule)
-        
+
         if len(matches) == 0:
             msg = f"No rule found for CMIP7 variable {drv_compound_name}"
             if self._pymor_cfg.get("raise_on_no_rule", False):
@@ -583,13 +581,11 @@ class CMORizer:
                 raise ValueError(msg)
             else:
                 logger.critical(msg)
-                logger.critical(
-                    """
+                logger.critical("""
                     This should lead to a program crash! Exception due to:
 
                     >> pymor_cfg['raise_on_multiple_rules'] = False <<
-                    """
-                )
+                    """)
                 logger.warning("Returning the first match.")
         return matches[0]
 

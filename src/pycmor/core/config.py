@@ -556,8 +556,8 @@ class PycmorConfigManager(ConfigManager):
         uppercased_cfg = {}
         if run_specific_cfg:
             for key, value in run_specific_cfg.items():
-                uppercased_cfg[f'{cls._NAMESPACE.upper()}_{key.upper()}'] = value
-        
+                uppercased_cfg[f"{cls._NAMESPACE.upper()}_{key.upper()}"] = value
+
         return [
             ConfigOSEnv(),  # Highest: Environment variables
             ConfigDictEnv(uppercased_cfg),  # Run-specific configuration

@@ -1,8 +1,6 @@
 """Tests for CMIP7 compound name matching and architecture."""
 
-import json
 import pytest
-from pathlib import Path
 
 from pycmor.data_request.collection import CMIP7DataRequest
 from pycmor.data_request.variable import CMIP7DataRequestVariable

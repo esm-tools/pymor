@@ -456,7 +456,7 @@ class CMIP7GlobalAttributes(GlobalAttributes):
 
         For CMIP7: table_id is not a core concept. We derive it from compound name
         or return None. The cmip6_table field is only used for backward compatibility.
-        
+
         Priority:
         1. table_id from rule configuration (user override)
         2. Derive from compound_name if available (CMIP7 standard)
@@ -479,7 +479,7 @@ class CMIP7GlobalAttributes(GlobalAttributes):
             if len(parts) >= 5:
                 component = parts[0]  # e.g., ocean, atmos
                 frequency = parts[3]  # e.g., mon, day
-                
+
                 # Map component to realm letter
                 realm_map = {
                     "atmos": "A",
