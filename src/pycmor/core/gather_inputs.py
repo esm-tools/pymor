@@ -37,6 +37,7 @@ _PATTERN_ENV_VAR_VALUE_DEFAULT = ".*"  # Default: match anything
 class InputFileCollection:
     def __init__(self, path, pattern, frequency=None, time_dim_name=None):
         self.path = pathlib.Path(path)
+        self.pattern_str = pattern  # Store original pattern string
         self.pattern = re.compile(pattern)  # Compile the regex pattern
         self.frequency = frequency
         self.time_dim_name = time_dim_name
@@ -291,6 +292,10 @@ def load_mfdataset(data, rule_spec):
     for f in all_files:
         logger.info(f"  * {f}")
     mf_ds = xr.open_mfdataset(all_files, parallel=parallel, use_cftime=True, engine=engine)
+    # Rename non-standard time dimension if specified in rule (e.g., OpenIFS uses different names)
+    time_dimname = rule_spec.get("time_dimname")
+    if time_dimname and time_dimname in mf_ds.dims and "time" not in mf_ds.dims:
+        mf_ds = mf_ds.rename({time_dimname: "time"})
     return mf_ds
 
 

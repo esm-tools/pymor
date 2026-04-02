@@ -205,6 +205,102 @@ def _lookup_data_request_variable(
     return None
 
 
+def _build_rule(**kwargs):
+    """Build a Rule object from keyword arguments for interactive accessor use.
+
+    Parameters
+    ----------
+    **kwargs
+        Must include ``cmor_variable``. Optional: ``cmor_version``, ``table``,
+        ``compound_name``, ``variable_spec``, ``pipeline``, and any additional
+        attributes to attach to the Rule.
+
+    Returns
+    -------
+    Rule
+        A fully constructed Rule with ``_pycmor_cfg`` attached and
+        ``workflow_backend="native"`` on its pipeline.
+    """
+    from ..core.config import PycmorConfigManager
+    from ..core.pipeline import DefaultPipeline, Pipeline
+    from ..core.rule import Rule
+
+    cmor_variable = kwargs.pop("cmor_variable", None)
+    if cmor_variable is None:
+        raise ValueError("cmor_variable is required")
+
+    cmor_version = kwargs.pop("cmor_version", "CMIP6")
+    table = kwargs.pop("table", None)
+    compound_name = kwargs.pop("compound_name", None)
+    variable_spec = kwargs.pop("variable_spec", None)
+    pipeline = kwargs.pop("pipeline", None)
+
+    # Resolve data request variable
+    drv = _lookup_data_request_variable(
+        table=table,
+        variable=cmor_variable if table else None,
+        compound_name=compound_name,
+        variable_spec=variable_spec,
+        cmor_version=cmor_version,
+    )
+    data_request_variables = [drv] if drv is not None else []
+
+    # Build pipeline with native backend
+    if pipeline is None:
+        pipeline = DefaultPipeline(workflow_backend="native")
+    elif isinstance(pipeline, Pipeline):
+        pipeline._workflow_backend = "native"
+
+    rule = Rule(
+        cmor_variable=cmor_variable,
+        data_request_variables=data_request_variables,
+        pipelines=[pipeline],
+        **kwargs,
+    )
+
+    # Attach config manager so std_lib steps can call rule._pycmor_cfg("key")
+    rule._pycmor_cfg = PycmorConfigManager.from_pycmor_cfg()
+
+    return rule
+
+
+class StdLibAccessor:
+    """Accessor providing tab-completable access to pycmor.std_lib steps.
+
+    Access via: ``ds.pycmor.stdlib.<step_name>(**kwargs)``
+
+    Each step is called as ``step_fn(self._obj, rule)`` where the rule is
+    built from the provided kwargs via ``_build_rule()``.
+    """
+
+    def __init__(self, xarray_obj):
+        self._obj = xarray_obj
+
+    def __dir__(self):
+        from .. import std_lib
+
+        return [name for name in std_lib.__all__ if not name.startswith("_")]
+
+    def __getattr__(self, name):
+        if name.startswith("_"):
+            raise AttributeError(name)
+
+        from .. import std_lib
+
+        if name not in std_lib.__all__:
+            raise AttributeError(f"pycmor.std_lib has no step named '{name}'")
+
+        step_fn = getattr(std_lib, name)
+
+        def bound_step(**kwargs):
+            rule = _build_rule(**kwargs)
+            return step_fn(self._obj, rule)
+
+        bound_step.__name__ = name
+        bound_step.__doc__ = step_fn.__doc__
+        return bound_step
+
+
 class CoordinateAccessor:
     """
     Accessor for coordinate attribute operations.
@@ -732,6 +828,7 @@ class PycmorAccessor:
         self._obj = xarray_obj
         self._coords_accessor = None
         self._dims_accessor = None
+        self._stdlib_accessor = None
         self._timefreq = None
 
     @property
@@ -781,6 +878,75 @@ class PycmorAccessor:
         if self._dims_accessor is None:
             self._dims_accessor = DimensionAccessor(self._obj)
         return self._dims_accessor
+
+    @property
+    def stdlib(self) -> StdLibAccessor:
+        """Access pycmor standard library steps interactively.
+
+        Returns
+        -------
+        StdLibAccessor
+            Accessor with tab-completable std_lib steps.
+
+        Examples
+        --------
+        .. code-block:: python
+
+            result = ds.pycmor.stdlib.convert_units(cmor_variable="tas")
+        """
+        if self._stdlib_accessor is None:
+            self._stdlib_accessor = StdLibAccessor(self._obj)
+        return self._stdlib_accessor
+
+    def process(
+        self,
+        *,
+        cmor_variable: str,
+        cmor_version: str = "CMIP6",
+        table: Optional[str] = None,
+        compound_name: Optional[str] = None,
+        variable_spec: Optional[str] = None,
+        pipeline=None,
+        **kwargs,
+    ):
+        """Run a full processing pipeline on this dataset/array.
+
+        Parameters
+        ----------
+        cmor_variable : str
+            The CMOR variable name (required).
+        cmor_version : str, optional
+            CMIP version, default ``"CMIP6"``.
+        table : str, optional
+            CMIP6 table name.
+        compound_name : str, optional
+            CMIP7 compound name.
+        variable_spec : str, optional
+            Auto-detect format string.
+        pipeline : Pipeline, optional
+            Custom pipeline. Defaults to ``DefaultPipeline``.
+        **kwargs
+            Additional attributes passed to the Rule.
+
+        Returns
+        -------
+        Dataset or DataArray
+            Processed data.
+        """
+        all_kwargs = {
+            "cmor_variable": cmor_variable,
+            "cmor_version": cmor_version,
+            "table": table,
+            "compound_name": compound_name,
+            "variable_spec": variable_spec,
+            "pipeline": pipeline,
+        }
+        all_kwargs.update(kwargs)
+        # Remove None values so _build_rule uses its own defaults
+        all_kwargs = {k: v for k, v in all_kwargs.items() if v is not None}
+
+        rule = _build_rule(**all_kwargs)
+        return rule.pipelines[0].run(self._obj, rule)
 
     # Time frequency methods - delegate to DatasetFrequencyAccessor
     def resample_safe(self, *args, **kwargs):

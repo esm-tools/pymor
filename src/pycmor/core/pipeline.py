@@ -128,7 +128,7 @@ class Pipeline:
         logger.debug("Dynamically creating workflow with DaskTaskRunner...")
         cmor_name = rule_spec.get("cmor_name")
         rule_name = rule_spec.get("name", cmor_name)
-        if self._cluster is None:
+        if getattr(self, "_cluster", None) is None:
             logger.warning("No cluster assigned to this pipeline. Using local Dask cluster.")
             dask_scheduler_address = None
         else:
@@ -144,7 +144,13 @@ class Pipeline:
         def dynamic_flow(data, rule_spec):
             return self._run_native(data, rule_spec)
 
-        return dynamic_flow(data, rule_spec)
+        result = dynamic_flow(data, rule_spec, return_state=True)
+        if result.is_failed():
+            exc = result.result(raise_on_failure=False)
+            if isinstance(exc, BaseException):
+                raise exc
+            raise RuntimeError(f"Pipeline '{self.name}' failed for rule '{rule_name}': {exc}")
+        return result.result()
 
     @staticmethod
     @add_to_report_log
@@ -232,12 +238,79 @@ class FrozenPipeline(Pipeline):
         super().__init__(*steps, name=name, **kwargs)
 
 
+class DefaultOpenDataPipeline(FrozenPipeline):
+    """
+    Pipeline for opening and loading data.
+
+    This pipeline handles the initial data loading step.
+
+    Parameters
+    ----------
+    name : str, optional
+        The name of the pipeline.
+    """
+
+    STEPS = (
+        "pycmor.core.gather_inputs.load_mfdataset",
+        "pycmor.std_lib.generic.get_variable",
+    )
+    NAME = "pycmor.pipeline.DefaultOpenDataPipeline"
+
+
+class DefaultCorePipeline(FrozenPipeline):
+    """
+    Core processing pipeline without I/O operations.
+
+    This pipeline handles all data transformations and processing but does not
+    load or save data. Useful for testing and when working with data already
+    in memory.
+
+    Parameters
+    ----------
+    name : str, optional
+        The name of the pipeline.
+    """
+
+    STEPS = (
+        "pycmor.std_lib.add_vertical_bounds",
+        "pycmor.std_lib.timeaverage.timeavg",
+        "pycmor.std_lib.units.handle_unit_conversion",
+        "pycmor.std_lib.global_attributes.set_global_attributes",
+        "pycmor.std_lib.variable_attributes.set_variable_attributes",
+    )
+    NAME = "pycmor.pipeline.DefaultCorePipeline"
+
+
+class DefaultSaveDataPipeline(FrozenPipeline):
+    """
+    Pipeline for finalizing and saving processed data.
+
+    This pipeline handles caching, computation triggering, and file output.
+
+    Parameters
+    ----------
+    name : str, optional
+        The name of the pipeline.
+    """
+
+    STEPS = (
+        "pycmor.core.caching.manual_checkpoint",
+        "pycmor.std_lib.generic.trigger_compute",
+        "pycmor.std_lib.generic.show_data",
+        "pycmor.std_lib.files.save_dataset",
+    )
+    NAME = "pycmor.pipeline.DefaultSaveDataPipeline"
+
+
 class DefaultPipeline(FrozenPipeline):
     """
-    The DefaultPipeline class is a subclass of the Pipeline class. It is designed to be a general-purpose pipeline
-    for data processing. It includes steps for loading data, adding vertical bounds, handling unit conversion,
-    mapping dimensions to CMIP standards, and setting CMIP-compliant attributes (global, variable, and coordinate).
-    The specific steps are fixed and cannot be customized, only the name of the pipeline can be customized.
+    Complete default pipeline combining open, process, and save operations.
+
+    This pipeline includes steps for loading data, adding vertical bounds, handling unit conversion,
+    and setting CMIP-compliant attributes, then saving the output. The specific steps are fixed
+    and cannot be customized, only the name of the pipeline can be customized.
+
+    This combines: DefaultOpenDataPipeline + DefaultCorePipeline + DefaultSaveDataPipeline
 
     Parameters
     ----------
@@ -246,11 +319,8 @@ class DefaultPipeline(FrozenPipeline):
 
     Notes
     -----
-    The pipeline includes:
-    - Automatic vertical bounds calculation for datasets with vertical coordinates (pressure levels, depth, height)
-    - Dimension mapping from source data to CMIP dimension names (e.g., `'latitude'` → `'lat'`, `'lev'` → `'plev19'`)
-    - CF-compliant coordinate metadata setting (standard_name, axis, units, positive)
-    - Global and variable attribute setting following CMIP6/CMIP7 conventions
+    The pipeline includes automatic vertical bounds calculation for datasets with vertical coordinates
+    (pressure levels, depth, height), ensuring CMIP compliance.
     """
 
     # FIXME(PG): This is not so nice. All things should come out of the std_lib,
@@ -261,8 +331,6 @@ class DefaultPipeline(FrozenPipeline):
         "pycmor.std_lib.add_vertical_bounds",
         "pycmor.std_lib.timeaverage.timeavg",
         "pycmor.std_lib.units.handle_unit_conversion",
-        # "pycmor.std_lib.time.average",
-        # "pycmor.std_lib.units.convert",  # Removed: duplicate of handle_unit_conversion (wrong signature for pipeline)
         "pycmor.std_lib.attributes.set_global",
         "pycmor.std_lib.attributes.set_variable",
         "pycmor.std_lib.attributes.set_coordinates",

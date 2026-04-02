@@ -142,13 +142,13 @@ def _infer_frequency_core(times, tol=0.05, return_metadata=False, strict=False, 
     }.get(calendar, 365.25)
 
     base_freqs = {
-        "H": 1 / 24,
+        "h": 1 / 24,
         "D": 1,
         "W": 7,
-        "M": days_in_calendar_year / 12,
+        "ME": days_in_calendar_year / 12,
         "Q": days_in_calendar_year / 4,
-        "A": days_in_calendar_year,
-        "10A": days_in_calendar_year * 10,
+        "YE": days_in_calendar_year,
+        "10YE": days_in_calendar_year * 10,
     }
 
     matched_freq = None
@@ -298,7 +298,7 @@ def approx_interval_to_frequency_str(approx_interval, tolerance=0.1):
     Returns
     -------
     str or None
-        Pandas-style frequency string (e.g., 'D', 'M', '3M', 'Y') or None for
+        Pandas-style frequency string (e.g., 'D', 'ME', '3ME', 'Y') or None for
         time-invariant data (0.0 days)
 
     Examples
@@ -306,13 +306,13 @@ def approx_interval_to_frequency_str(approx_interval, tolerance=0.1):
     >>> approx_interval_to_frequency_str(1.0)  # Daily
     'D'
     >>> approx_interval_to_frequency_str(30.0)  # Monthly
-    'M'
+    'ME'
     >>> approx_interval_to_frequency_str(91.3)  # 3-Monthly (approx)
-    '3M'
+    '3ME'
     >>> approx_interval_to_frequency_str(365.0)  # Yearly
     'Y'
     >>> approx_interval_to_frequency_str(0.041667)  # Hourly
-    'H'
+    'h'
     """
     # Handle special case: time-invariant/fixed data
     if approx_interval == 0.0:
@@ -339,7 +339,7 @@ def approx_interval_to_frequency_str(approx_interval, tolerance=0.1):
         # Check for common hourly frequencies
         for h in [1, 2, 3, 4, 6, 8, 12]:
             if is_close(hours, h, tolerance):
-                return f"{h}H" if h > 1 else "H"
+                return f"{h}h" if h > 1 else "h"
 
         # Check for sub-hourly (minutes)
         minutes = approx_interval * MINUTES_PER_DAY
@@ -351,7 +351,7 @@ def approx_interval_to_frequency_str(approx_interval, tolerance=0.1):
 
         # Fall back to rounded hours or minutes
         if hours >= 1:
-            return f"{int(round(hours))}H"
+            return f"{int(round(hours))}h"
         else:
             return f"{int(round(minutes))}T"
 
@@ -385,12 +385,12 @@ def approx_interval_to_frequency_str(approx_interval, tolerance=0.1):
         # Check for common monthly frequencies (excluding 12 since we handle yearly above)
         for m in [1, 2, 3, 4, 5, 6, 9]:
             if is_close(months, m, tolerance):
-                return "M" if m == 1 else f"{m}M"
+                return "ME" if m == 1 else f"{m}ME"
 
         # Fall back to rounded months
         months_rounded = int(round(months))
         if months_rounded >= 1:
-            return "M" if months_rounded == 1 else f"{months_rounded}M"
+            return "ME" if months_rounded == 1 else f"{months_rounded}ME"
         else:
             # Very close to monthly but not quite - use days
             days = int(round(approx_interval))

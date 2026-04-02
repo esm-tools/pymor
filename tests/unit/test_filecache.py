@@ -212,9 +212,9 @@ class TestFilecache:
             mock_info.variable = "temperature"
             mock_get.return_value = mock_info
             with patch("pycmor.core.filecache.infer_frequency") as mock_infer:
-                mock_infer.return_value = "Y"
+                mock_infer.return_value = "YE"
                 result = cache.infer_freq("temp.nc")
-                assert result == "Y"
+                assert result == "YE"
                 mock_infer.assert_called_once()
                 args = mock_infer.call_args[0][0]
                 assert len(args) == 3  # Three temperature files in same directory
