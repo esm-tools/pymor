@@ -10,8 +10,6 @@ import tempfile
 import time
 from functools import partial
 
-import requests
-
 from .logging import logger
 
 # Use importlib.metadata for Python 3.9+
@@ -250,6 +248,7 @@ def wait_for_workers(client, n_workers, timeout=600):
     Returns:
     bool: True if the required number of workers are available, False if timeout occurred
     """
+
     start_time = time.time()
     while len(client.scheduler_info()["workers"]) < n_workers:
         if time.time() - start_time > timeout:
@@ -305,6 +304,8 @@ def list_files_in_directory(git_url, directory_path, branch="main"):
     Returns:
     - list of str, filenames in the directory.
     """
+    import requests
+
     api_url = git_url_to_api_url(git_url, path=directory_path, branch=branch)
 
     response = requests.get(api_url)
@@ -330,6 +331,8 @@ def download_json_tables_from_url(url: str, filenames: list):
     str :
         The directory where the JSON tables were downloaded.
     """
+    import requests
+
     directory = tempfile.mkdtemp()
     logger.debug(f"Downloading JSON tables from '{url}' to '{directory}'")
     for filename in filenames:

@@ -484,9 +484,9 @@ class CMIP7DataRequestVariable(DataRequestVariable):
             _branding_label=data.get("branding_label"),
             _region=data.get("region"),
             # CMIP6 backward compatibility
-            _cmip6_table=data.get("cmip6_table"),
+            _cmip6_table=data.get("cmip6_cmor_table"),
             _cmip6_compound_name=data.get("cmip6_compound_name"),
-            _table_name=data.get("cmip6_table", data.get("table_name")),
+            _table_name=data.get("cmip6_cmor_table", data.get("table_name")),
         )
         return cls(**extracted_data)
 

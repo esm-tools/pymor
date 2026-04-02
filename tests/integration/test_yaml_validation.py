@@ -3,7 +3,7 @@
 import pytest
 import yaml
 
-from pycmor.core.validate import GENERAL_VALIDATOR, RULES_VALIDATOR, RuleSectionValidator, RULES_SCHEMA
+from pycmor.core.validate import GENERAL_VALIDATOR, RULES_SCHEMA, RULES_VALIDATOR, RuleSectionValidator
 
 
 @pytest.fixture

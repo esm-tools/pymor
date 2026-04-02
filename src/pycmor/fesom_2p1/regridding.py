@@ -6,7 +6,11 @@ import numpy as np
 import scipy
 import scipy.spatial.qhull as qhull
 import xarray as xr
-from pyfesom2.load_mesh_data import load_mesh
+
+try:
+    from pyfesom2.load_mesh_data import load_mesh
+except ImportError:
+    load_mesh = None
 from scipy.interpolate import CloughTocher2DInterpolator, LinearNDInterpolator
 from scipy.spatial import cKDTree
 

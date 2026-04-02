@@ -122,7 +122,7 @@ def year_bounds_major_digits(first, last, step, binning_digit, return_type=int):
         raise ValueError("return_type must be either int or pendulum.DateTime")
 
 
-def date_ranges_from_bounds(bounds, freq: str = "M", **kwargs):
+def date_ranges_from_bounds(bounds, freq: str = "ME", **kwargs):
     """
     Class method to create a list of instances from a list of start and end bounds.
 
@@ -143,7 +143,7 @@ def date_ranges_from_bounds(bounds, freq: str = "M", **kwargs):
     Examples
     --------
     >>> bounds = [("2020-01-01", "2020-12-31")]
-    >>> date_ranges_from_bounds(bounds, freq="M")
+    >>> date_ranges_from_bounds(bounds, freq="ME")
     DatetimeIndex(['2020-01-31', '2020-02-29', ..., '2020-12-31'], dtype='datetime64[ns]', freq='ME')
     """
     objs = []
@@ -154,7 +154,7 @@ def date_ranges_from_bounds(bounds, freq: str = "M", **kwargs):
     return (*objs,)
 
 
-def date_ranges_from_year_bounds(year_bounds, freq: str = "M", **kwargs):
+def date_ranges_from_year_bounds(year_bounds, freq: str = "ME", **kwargs):
     """
     Class method to create a list of instances from a list of year bounds.
 

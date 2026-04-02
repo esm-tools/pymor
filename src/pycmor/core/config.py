@@ -551,9 +551,16 @@ class PycmorConfigManager(ConfigManager):
         list
             List of environment objects in priority order (first has highest priority).
         """
+        # Uppercase keys and add namespace prefix for ConfigDictEnv
+        # When using with_namespace(), everett expects keys like PYCMOR_DASK_CLUSTER
+        uppercased_cfg = {}
+        if run_specific_cfg:
+            for key, value in run_specific_cfg.items():
+                uppercased_cfg[f'{cls._NAMESPACE.upper()}_{key.upper()}'] = value
+        
         return [
             ConfigOSEnv(),  # Highest: Environment variables
-            ConfigDictEnv(run_specific_cfg or {}),  # Run-specific configuration
+            ConfigDictEnv(uppercased_cfg),  # Run-specific configuration
             ConfigYamlEnv(cls._CONFIG_FILES),  # Lowest: User config file
         ]
 

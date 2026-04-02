@@ -500,14 +500,58 @@ class CMIP7GlobalAttributes(GlobalAttributes):
             table_id = self.drv.get("cmip6_table", None)
         else:
             table_id = getattr(self.drv, "cmip6_table", None)
-        
-        if table_id:
-            logger.debug(f"table_id from variable metadata (cmip6_table - backward compat): {table_id}")
-            return table_id
-        
-        # CMIP7 doesn't strictly require table_id, so returning None is acceptable
-        logger.debug(f"table_id could not be determined (CMIP7 doesn't require table_id)")
-        return None
+        logger.debug(f"table_id from variable metadata (cmip6_table): {table_id}")
+
+        if table_id is None:
+            # Fallback to user-provided
+            table_id = self.rule_dict.get("table_id", None)
+            logger.debug(f"table_id from rule_dict: {table_id}")
+
+        # If still not found, try to derive from compound_name (works for both CMIP6 and CMIP7)
+        if table_id is None:
+            compound_name = self.rule_dict.get("compound_name", None)
+            logger.debug(f"Attempting to derive table_id from compound_name: {compound_name}")
+            if compound_name:
+                # compound_name formats:
+                # CMIP6-style: Table.variable (e.g., Amon.tas, Omon.thetao)
+                # CMIP7-style: component.variable.cell_methods.frequency.grid
+                parts = compound_name.split(".")
+                logger.debug(f"compound_name split into {len(parts)} parts: {parts}")
+                if len(parts) == 2:
+                    # CMIP6-style compound name: table_id is the first part
+                    table_id = parts[0]
+                    logger.debug(f"Derived table_id from CMIP6-style compound_name: {table_id}")
+                elif len(parts) >= 5:
+                    component = parts[0]  # e.g., ocnBgchem
+                    frequency = parts[3]  # e.g., mon
+
+                    # Map component prefix to realm letter
+                    realm_map = {
+                        "atmos": "A",
+                        "ocean": "O",
+                        "ocn": "O",
+                        "ocnBgchem": "O",
+                        "seaIce": "SI",
+                        "land": "L",
+                        "landIce": "LI",
+                    }
+
+                    # Get realm letter (default to first letter if not in map)
+                    realm_letter = realm_map.get(component, component[0].upper())
+
+                    # Capitalize frequency and combine with realm
+                    # mon -> Omon, day -> Oday, etc.
+                    table_id = f"{realm_letter}{frequency}"
+                    logger.debug(f"Derived table_id: {table_id} (realm={realm_letter}, freq={frequency})")
+                else:
+                    logger.warning(f"compound_name has {len(parts)} parts, expected at least 5")
+
+        if table_id is None:
+            logger.error(f"Could not determine table_id. rule_dict keys: {list(self.rule_dict.keys())}")
+            raise ValueError("table_id not found in variable metadata or rule_dict")
+
+        logger.debug(f"Final table_id: {table_id}")
+        return table_id
 
     def get_mip_era(self):
         """Get MIP era (CMIP7)"""
@@ -850,5 +894,9 @@ def set_global_attributes(ds, rule):
     """Set global attributes for the dataset"""
     if isinstance(ds, xr.DataArray):
         ds = ds.to_dataset()
-    ds.attrs.update(rule.ga.global_attributes())
+    global_attrs = rule.ga.global_attributes()
+    # Filter out None values -- xarray accepts them in memory but
+    # netCDF serialization rejects non-string/non-numeric attributes
+    global_attrs = {k: v for k, v in global_attrs.items() if v is not None}
+    ds.attrs.update(global_attrs)
     return ds

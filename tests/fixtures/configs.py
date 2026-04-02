@@ -1,5 +1,4 @@
 import pytest
-import ruamel.yaml
 
 
 @pytest.fixture
@@ -42,5 +41,7 @@ def config_pattern_env_var_name_and_value():
 
 @pytest.fixture
 def fesom_pi_mesh_config(fesom_pi_mesh_config_file):
+    import ruamel.yaml
+
     yaml = ruamel.yaml.YAML()
     return yaml.load(fesom_pi_mesh_config_file.open())

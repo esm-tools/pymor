@@ -1,3 +1,4 @@
+import re
 from collections import deque
 
 import cftime
@@ -5,6 +6,18 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from xarray.core.utils import is_scalar
+
+# Pandas >= 2.2 removed bare "Y", "M", "Q" aliases for offsets.
+# Map them to the modern "end-of-period" equivalents.
+_DEPRECATED_FREQ_RE = re.compile(r"^(\d*)(Y|Q)$")
+
+
+def _normalize_freq(freq: str) -> str:
+    """Replace deprecated bare 'Y'/'Q' offset aliases with 'YE'/'QE'."""
+    m = _DEPRECATED_FREQ_RE.match(freq)
+    if m:
+        return f"{m.group(1)}{m.group(2)}E"
+    return freq
 
 
 def is_datetime_type(arr: np.ndarray) -> bool:
@@ -225,7 +238,7 @@ def needs_resampling(ds, timespan):
     # string representation is need to deal with cftime
     start = pd.Timestamp(str(ds[time_label].data[0]))
     end = pd.Timestamp(str(ds[time_label].data[-1]))
-    offset = pd.tseries.frequencies.to_offset(timespan)
+    offset = pd.tseries.frequencies.to_offset(_normalize_freq(timespan))
     return (start + offset) < end
 
 
@@ -240,7 +253,7 @@ def freq_is_coarser_than_data(
     Parameters
     ----------
     freq : str
-        The frequency to compare (e.g. 'M', 'D', '6H').
+        The frequency to compare (e.g. 'ME', 'D', '6h').
     ds : xr.Dataset
         The dataset containing a time coordinate.
     ref_time : pd.Timestamp, optional
@@ -266,12 +279,12 @@ def freq_is_coarser_than_data(
     True
     >>> # INPUT: Same daily data, checking if hourly frequency is coarser
     >>> # OUTPUT: Hourly is finer than daily (not coarser)
-    >>> print(freq_is_coarser_than_data('H', ds_daily))
+    >>> print(freq_is_coarser_than_data('h', ds_daily))
     False
     >>> # INPUT: Hourly data, checking if daily frequency is coarser
     >>> ds_hourly = xr.Dataset(
     ...     {'temp': ('time', range(48))},
-    ...     coords={'time': pd.date_range('2000-01-01', periods=48, freq='H')}
+    ...     coords={'time': pd.date_range('2000-01-01', periods=48, freq='h')}
     ... )
     >>> # OUTPUT: Daily is coarser than hourly
     >>> print(freq_is_coarser_than_data('D', ds_hourly))
@@ -294,7 +307,7 @@ def freq_is_coarser_than_data(
     if data_freq is None:
         raise ValueError("Could not infer frequency from the dataset's time coordinate.")
 
-    delta1 = (ref_time + pd.tseries.frequencies.to_offset(freq)) - ref_time
-    delta2 = (ref_time + pd.tseries.frequencies.to_offset(data_freq)) - ref_time
+    delta1 = (ref_time + pd.tseries.frequencies.to_offset(_normalize_freq(freq))) - ref_time
+    delta2 = (ref_time + pd.tseries.frequencies.to_offset(_normalize_freq(data_freq))) - ref_time
 
     return delta1 > delta2
