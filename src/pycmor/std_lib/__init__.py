@@ -35,6 +35,7 @@ from .generic import load_data as _load_data
 from .generic import show_data as _show_data
 from .generic import trigger_compute as _trigger_compute
 from .global_attributes import set_global_attributes as _set_global_attributes
+from .time_bounds import time_bounds as _set_time_bounds
 from .timeaverage import timeavg
 from .units import handle_unit_conversion
 from .variable_attributes import set_variable_attrs
@@ -53,6 +54,7 @@ __all__ = [
     "map_dimensions",
     "checkpoint_pipeline",
     "add_vertical_bounds",
+    "set_time_bounds",
 ]
 
 
@@ -528,3 +530,38 @@ def add_vertical_bounds(data: Union[DataArray, Dataset], rule: Rule) -> Union[Da
 
     # Dataset input - pass through directly
     return _add_vertical_bounds(data)
+
+
+def set_time_bounds(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
+    """
+    Set time bounds for a Dataset based on the time method and approximate interval.
+
+    Creates time bounds representing the start and end of each time interval.
+    Handles mean (interval bounds), instantaneous (zero-width bounds), and
+    climatology (no bounds) time methods.
+
+    Parameters
+    ----------
+    data : xarray.DataArray or xarray.Dataset
+        The data to add time bounds to. If a DataArray, it will be converted
+        to a Dataset temporarily for processing.
+    rule : Rule
+        The rule containing ``approx_interval`` (in days) and optionally
+        ``time_method`` (mean, instantaneous, or climatology).
+
+    Returns
+    -------
+    xarray.DataArray or xarray.Dataset
+        The data with time bounds added.
+
+    See Also
+    --------
+    pycmor.std_lib.time_bounds.time_bounds : The underlying implementation
+    """
+    if isinstance(data, DataArray):
+        var_name = data.name or "data"
+        ds = data.to_dataset(name=var_name)
+        ds_with_bounds = _set_time_bounds(ds, rule)
+        return ds_with_bounds[var_name]
+
+    return _set_time_bounds(data, rule)

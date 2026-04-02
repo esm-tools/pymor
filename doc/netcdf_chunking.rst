@@ -23,7 +23,7 @@ Configuration Options
 Global Configuration via Inherit Block
 ---------------------------------------
 
-The recommended way to configure chunking is through the ``inherit`` block in your pycmor configuration file. 
+The recommended way to configure chunking is through the ``inherit`` block in your pycmor configuration file.
 Settings in the ``inherit`` block are automatically passed down to all rules, making them available as rule attributes:
 
 .. code-block:: yaml
@@ -31,33 +31,33 @@ Settings in the ``inherit`` block are automatically passed down to all rules, ma
    general:
      cmor_version: "CMIP6"
      CMIP_Tables_Dir: ./cmip6-cmor-tables/Tables/
-   
+
    pycmor:
      warn_on_no_rule: False
-   
+
    # Chunking configuration that applies to all rules
    inherit:
      # Enable/disable chunking
      netcdf_enable_chunking: yes
-     
+
      # Chunking algorithm: simple, even_divisor, or iterative
      netcdf_chunk_algorithm: simple
-     
+
      # Target chunk size (can be specified as bytes or string like '100MB')
      netcdf_chunk_size: 100MB
-     
+
      # Tolerance for chunk size matching (0.0-1.0, used by even_divisor and iterative)
      netcdf_chunk_tolerance: 0.5
-     
+
      # Prefer chunking along time dimension
      netcdf_chunk_prefer_time: yes
-     
+
      # Compression level (1-9, higher = better compression but slower)
      netcdf_compression_level: 4
-     
+
      # Enable zlib compression
      netcdf_enable_compression: yes
-   
+
    rules:
      - model_variable: temp
        cmor_variable: tas

@@ -32,9 +32,26 @@ Key features:
 ## Development Commands
 
 ### Installation
+
+#### Using pip (traditional)
 ```bash
 # From within any worktree
 pip install -e ".[dev,fesom]"
+
+# For CMIP7 support
+pip install -e ".[dev,fesom,cmip7]"
+```
+
+#### Using pixi (recommended for development)
+```bash
+# Install dependencies and create environment
+pixi install
+
+# Activate the development environment
+pixi shell -e dev
+
+# Run commands in the pixi environment
+pixi run pytest
 ```
 
 ### Testing
@@ -102,6 +119,37 @@ pycmor validate config <config_file.yaml>
 
 # Launch table explorer (Streamlit UI)
 pycmor table-explorer
+
+# Run example configurations
+pycmor process examples/01-default-unit-conversion/units-example.yaml
+```
+
+### Environment Variables
+```bash
+# Set log level (DEBUG, INFO, WARNING, ERROR)
+export PYTHONLOGLEVEL=DEBUG
+
+# Override config file location
+export PYCMOR_CONFIG_FILE=/path/to/config.yaml
+
+# Enable real test data in test suite
+export PYCMOR_USE_REAL_TEST_DATA=1
+```
+
+### Debugging on HPC/SLURM
+```bash
+# Check SLURM job outputs (when using dask_cluster: slurm)
+# Look for slurm-*.out files in the working directory
+ls -lt slurm-*.out | head -1
+
+# View the most recent SLURM output
+tail -100 $(ls -t slurm-*.out | head -1)
+
+# Monitor running jobs
+squeue -u $USER
+
+# Cancel all pycmor-worker jobs
+scancel -n pycmor-worker
 ```
 
 ## Core Architecture
@@ -137,13 +185,24 @@ pycmor table-explorer
 
 ### Configuration Structure
 
-YAML config files have 5 main sections:
+YAML config files have up to 7 sections:
 
 1. **`pycmor`**: CLI settings (logging, cluster type, parallelization)
+   - `dask_cluster`: "local", "slurm", or "ssh_tunnel"
+   - `dask_cluster_scaling_mode`: "fixed" or "adaptive"
+   - `fixed_jobs`, `minimum_jobs`, `maximum_jobs`: Worker scaling parameters
 2. **`general`**: Global info (data paths, CMOR tables, CV directories, experiment metadata)
+   - `name`: Configuration name for logging/identification
+   - `cmor_version`: "CMIP6" or "CMIP7"
 3. **`pipelines`**: Pipeline definitions with steps or `uses` directives
 4. **`rules`**: List of rules mapping model output to CMOR variables
+   - Each rule must specify: `name`, `inputs`, `cmor_variable`
+   - Optional: `compound_name` (CMIP7), `experiment_id`, `grid_label`, etc.
 5. **`inherit`**: Key-value pairs added to all rules (unless rule overrides)
+6. **`distributed`**: Dask distributed settings (worker memory, resources, timeouts)
+7. **`jobqueue`**: SLURM-specific settings (queue, account, cores, walltime, interface)
+
+See `examples/` directory for complete configuration examples.
 
 ### Processing Flow
 
@@ -206,6 +265,8 @@ Scaling modes:
 - Fixtures are modular via `conftest.py` and `tests/fixtures/`
 - Test categories: unit, integration, meta (environment checks)
 - Uses pytest with coverage, async support, mock, xdist
+- Slow tests are marked with `@pytest.mark.slow` and skipped by default
+- Real data tests require `PYCMOR_USE_REAL_TEST_DATA=1` or `@pytest.mark.real_data` marker
 
 ### Model-Specific Code
 - FESOM 1.4 support: `src/pycmor/fesom_1p4/` (nodes to levels conversion)
@@ -223,6 +284,45 @@ Scaling modes:
 - Import sorting: isort with Black profile
 - Docstring style: ReStructuredText for Sphinx
 - Type hints: Optional but encouraged
+
+## Logging
+
+pycmor uses `loguru` for logging with `RichHandler` for formatted terminal output:
+- Default log level: INFO (override with `PYTHONLOGLEVEL` env var)
+- Report log: `pycmor_report.log` (created with `add_to_report=True` context)
+- To add logging to code: `from loguru import logger` then use `logger.info()`, `logger.debug()`, etc.
+- Warnings are automatically redirected to logger with file/line context
+
+## Common Workflows
+
+### Running an Example
+```bash
+# Navigate to example directory
+cd examples/01-default-unit-conversion
+
+# Edit configuration to point to your data (if needed)
+# Modify paths in units-example.yaml
+
+# Process the example
+pycmor process units-example.yaml
+
+# Check outputs (written to output_directory specified in rules)
+ls -lh *.nc
+```
+
+### Debugging Failed Pipeline Steps
+When a pipeline step fails, check:
+1. SLURM output files (`slurm-*.out`) for worker errors
+2. Prefect logs for task failures
+3. Set `PYTHONLOGLEVEL=DEBUG` for verbose output
+4. Check input file patterns match actual files: `ls -lh path/pattern*`
+
+### Adding Support for a New Model Variable
+1. Find the CMOR variable name in CMIP tables (use `pycmor table-explorer`)
+2. Create a rule with appropriate input patterns
+3. Specify model variable name and CMOR variable mapping
+4. Add any required custom pipeline steps for conversions
+5. Test with a small dataset first
 
 ## Important Patterns
 

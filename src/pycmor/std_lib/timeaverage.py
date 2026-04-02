@@ -367,7 +367,7 @@ def timeavg(da: xr.DataArray, rule):
     return ds
 
 
-def custom_resample(df, freq="M", offset=0.5, func="mean"):
+def custom_resample(df, freq="ME", offset=0.5, func="mean"):
     """
     Resample a DataFrame and place timestamps at a custom offset within each period.
 

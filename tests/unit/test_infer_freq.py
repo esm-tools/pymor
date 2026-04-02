@@ -29,7 +29,7 @@ def short_time():
 
 def test_infer_monthly_frequency(regular_monthly_time):
     freq = infer_frequency(regular_monthly_time)
-    assert freq == "M"
+    assert freq == "ME"
 
 
 def test_infer_irregular_time(irregular_time):
@@ -70,14 +70,14 @@ def test_resolution_check_too_sparse():
 def test_accessor_on_dataarray(regular_monthly_time):
     da = xr.DataArray([1, 2, 3, 4], coords={"time": regular_monthly_time}, dims="time")
     result = da.timefreq.infer_frequency(log=False)
-    assert result.frequency == "M"
+    assert result.frequency == "ME"
 
 
 def test_accessor_on_dataset(regular_monthly_time):
     da = xr.DataArray([1, 2, 3, 4], coords={"time": regular_monthly_time}, dims="time")
     ds = xr.Dataset({"tas": da})
     result = ds.timefreq.infer_frequency(log=False)
-    assert result.frequency == "M"
+    assert result.frequency == "ME"
 
 
 def test_strict_mode_detection():
@@ -92,7 +92,7 @@ def test_dataarray_resample_safe_pass(regular_monthly_time):
     da = xr.DataArray([1, 2, 3, 4], coords={"time": regular_monthly_time}, dims="time")
 
     # Should pass and return resampled array
-    resampled = da.timefreq.resample_safe(freq_str="M", target_approx_interval=30.4375, calendar="360_day")
+    resampled = da.timefreq.resample_safe(freq_str="ME", target_approx_interval=30.4375, calendar="360_day")
 
     assert isinstance(resampled, xr.DataArray)
     assert "time" in resampled.dims
@@ -103,7 +103,7 @@ def test_dataset_resample_safe_pass(regular_monthly_time):
     ds = xr.Dataset({"pr": da})
 
     # Should pass and return resampled dataset
-    resampled_ds = ds.timefreq.resample_safe(freq_str="M", target_approx_interval=30.4375, calendar="360_day")
+    resampled_ds = ds.timefreq.resample_safe(freq_str="ME", target_approx_interval=30.4375, calendar="360_day")
 
     assert isinstance(resampled_ds, xr.Dataset)
     assert "time" in resampled_ds.dims
@@ -120,14 +120,14 @@ def test_resample_safe_fails_on_coarse_resolution():
     da = xr.DataArray([1, 2, 3], coords={"time": times}, dims="time")
 
     with pytest.raises(ValueError, match="time resolution too coarse"):
-        da.timefreq.resample_safe(freq_str="M", target_approx_interval=30.4375, calendar="360_day")
+        da.timefreq.resample_safe(freq_str="ME", target_approx_interval=30.4375, calendar="360_day")
 
 
 def test_resample_safe_with_mean(regular_monthly_time):
     da = xr.DataArray([1.0, 2.0, 3.0, 4.0], coords={"time": regular_monthly_time}, dims="time")
 
     # Should apply 'mean' over each monthly bin
-    resampled = da.timefreq.resample_safe(freq_str="M", target_approx_interval=30.0, calendar="360_day", method="mean")
+    resampled = da.timefreq.resample_safe(freq_str="ME", target_approx_interval=30.0, calendar="360_day", method="mean")
 
     assert np.allclose(resampled.values, [1.0, 2.0, 3.0, 4.0])
 
@@ -246,7 +246,7 @@ def test_consistent_is_exact_and_status():
     # Both status and is_exact should indicate irregularity
     assert result_strict.status == "irregular"
     assert not result_strict.is_exact  # Should be consistent with status
-    assert result_strict.frequency == "M"
+    assert result_strict.frequency == "ME"
 
     # With strict=False: should be valid (less strict tolerance)
     result_non_strict = infer_frequency(times_with_offsets, return_metadata=True, strict=False)
@@ -254,7 +254,7 @@ def test_consistent_is_exact_and_status():
     # Should be valid with non-strict mode
     assert result_non_strict.status == "valid"
     assert result_non_strict.is_exact
-    assert result_non_strict.frequency == "M"
+    assert result_non_strict.frequency == "ME"
 
 
 def test_is_datetime_type_numpy_datetime64():
@@ -373,12 +373,12 @@ def test_mixed_calendar_types():
     # Test 360-day calendar
     times_360 = [cftime.Datetime360Day(2000, m, 15) for m in range(1, 5)]
     result_360 = infer_frequency(times_360, calendar="360_day", return_metadata=True)
-    assert result_360.frequency == "M"
+    assert result_360.frequency == "ME"
 
     # Test no-leap calendar
     times_noleap = [cftime.DatetimeNoLeap(2000, m, 15) for m in range(1, 5)]
     result_noleap = infer_frequency(times_noleap, calendar="noleap", return_metadata=True)
-    assert result_noleap.frequency == "M"
+    assert result_noleap.frequency == "ME"
 
 
 def test_accessor_no_datetime_coord_error():
@@ -464,7 +464,7 @@ def test_resample_safe_error_paths():
 
     # Should raise error when trying to resample to finer resolution
     with pytest.raises(ValueError, match="time resolution too coarse"):
-        da.timefreq.resample_safe(freq_str="M", target_approx_interval=30.4375)  # Monthly interval
+        da.timefreq.resample_safe(freq_str="ME", target_approx_interval=30.4375)  # Monthly interval
 
 
 def test_different_strict_mode_behaviors():
@@ -493,7 +493,7 @@ def test_log_frequency_check_function():
     # Test different scenarios
     log_frequency_check("Test Series", "D", 1.0, 1, True, "valid", False)
     log_frequency_check("Test Series", None, None, None, False, "too_short", True)
-    log_frequency_check("Test Series", "M", 30.0, 1, False, "irregular", True)
+    log_frequency_check("Test Series", "ME", 30.0, 1, False, "irregular", True)
 
 
 def test_pandas_datetime_index_input():

@@ -188,7 +188,7 @@ Accessor Methods
 ~~~~~~~~~~~~~~~~
 
 Time frequency functionality is available through xarray accessors. For comprehensive
-documentation of all accessor methods, including both specialized (``timefreq``) and 
+documentation of all accessor methods, including both specialized (``timefreq``) and
 unified (``pymor``) accessors, see:
 
 .. seealso::
