@@ -466,6 +466,11 @@ class CMORizer:
     def _match_pipelines_in_rules(self, force=False):
         for rule in self.rules:
             rule.match_pipelines(self.pipelines, force=force)
+            # Ensure all matched pipelines have the cluster assigned
+            if self._cluster is not None:
+                for pl in rule.pipelines:
+                    if getattr(pl, "_cluster", None) is None:
+                        pl.assign_cluster(self._cluster)
 
     def find_matching_rule(self, data_request_variable: DataRequestVariable) -> Rule or None:
         matches = []
@@ -667,7 +672,7 @@ class CMORizer:
                 pl = Pipeline.from_dict(p)
                 if self._cluster is not None:
                     pl.assign_cluster(self._cluster)
-                pipelines.append(Pipeline.from_dict(p))
+                pipelines.append(pl)
             else:
                 raise ValueError(f"Invalid pipeline configuration for {p}")
         self.pipelines = pipelines

@@ -7,9 +7,8 @@ general:
 pycmor:
   warn_on_no_rule: False
   dask_cluster: "slurm"
-  dask_cluster_scaling_mode: "adapt"
-  dask_cluster_scaling_minimum_jobs: 1
-  dask_cluster_scaling_maximum_jobs: 4
+  dask_cluster_scaling_mode: "fixed"
+  dask_cluster_scaling_fixed_jobs: 1
 
 jobqueue:
   slurm:
