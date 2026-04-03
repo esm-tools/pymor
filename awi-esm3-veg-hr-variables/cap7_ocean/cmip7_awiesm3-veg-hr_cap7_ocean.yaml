@@ -266,11 +266,10 @@ rules:
     model_variable: virtsalt
 
   # ============================================================
-  # NEEDS NAMELIST.IO ADDITIONS (after model re-run)
+  # Evaporation and salt flux correction
   # ============================================================
 
   # evspsbl — evaporation over ice-free ocean (evap × rho_water)
-  # Requires: 'evap' added to namelist.io monthly output
   - name: evspsbl
     inputs:
       - path: *dp
@@ -284,8 +283,7 @@ rules:
     # NOTE: FESOM evap is total evaporation, not ice-free-only.
     # May need masking by (1 - siconc) if CMIP requires ice-free fraction only.
 
-  # vsfcorr — virtual salt flux correction (relaxsalt from namelist.io)
-  # Requires: 'relaxsalt' added to namelist.io monthly output
+  # vsfcorr — virtual salt flux correction (relaxsalt)
   - name: vsfcorr
     inputs:
       - path: *dp
@@ -297,7 +295,7 @@ rules:
     # Verify units after first test run.
 
   # ============================================================
-  # Daily fields — namelist.io updated to daily frequency
+  # Daily fields
   # ============================================================
 
   - name: mlotst_day

@@ -710,7 +710,7 @@ rules:
     model_variable: sivols
 
   # ============================================================
-  # SIday — Daily variables (need model re-run with daily output)
+  # SIday — Daily variables
   # ============================================================
 
   - name: sispeed_day

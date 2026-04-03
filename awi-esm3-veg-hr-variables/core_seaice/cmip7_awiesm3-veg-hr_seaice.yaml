@@ -1,10 +1,8 @@
 # CMIP7 Core Sea Ice Variables — AWI-ESM3-VEG-HR
 # Generated from cmip7_all_core_variables_seaIce.csv + seaIce_ocean.csv
 #
-# Research notes (2026-04-03):
+# Research notes:
 #   - a_ice is fraction (0-1), CMIP wants percentage → fraction_to_percent step
-#   - h_ice, h_snow, ist now added to namelist.io (need model re-run)
-#   - uice/vice need vec_autorotate=.true. (already set in namelist.io)
 #   - ist available because AWI-ESM3 compiled with __oifs
 #   - sitimefrac approximated from monthly siconc>0 (binary)
 
@@ -95,7 +93,7 @@ rules:
         pattern: uice.fesom.1350.nc
     compound_name: seaIce.siu.tavg-u-hxy-si.mon.GLB
     model_variable: uice
-    # Requires vec_autorotate=.true. in namelist.io (now set)
+    # vec_autorotate=.true. set in namelist.io
 
   - name: siv
     inputs:
@@ -103,10 +101,10 @@ rules:
         pattern: vice.fesom.1350.nc
     compound_name: seaIce.siv.tavg-u-hxy-si.mon.GLB
     model_variable: vice
-    # Requires vec_autorotate=.true. in namelist.io (now set)
+    # vec_autorotate=.true. set in namelist.io
 
   # ============================================================
-  # Monthly (SImon) — needs namelist re-run for h_ice, h_snow, ist
+  # Monthly (SImon) — h_ice, h_snow, ist
   # ============================================================
 
   - name: sithick
@@ -154,7 +152,7 @@ rules:
       - sitimefrac_pipeline
 
   # ============================================================
-  # Daily (SIday) — daily a_ice added to namelist.io
+  # Daily (SIday)
   # ============================================================
 
   - name: siconc_day

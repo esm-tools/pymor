@@ -1,13 +1,11 @@
 # CMIP7 Core Ocean Variables — AWI-ESM3-VEG-HR
 # Generated from cmip7_all_core_variables_ocean.csv
 #
-# Research notes (2026-04-03):
+# Research notes:
 #   - FESOM2 uses POTENTIAL temperature (not conservative) → no bigthetao
 #   - MLD3 is the CMIP-compliant definition (sigma_t=0.03), not MLD1
-#   - namelist.io updated: vec_autorotate=.true., hnode enabled, daily sst/sss/ssh added
 #   - uo/vo use unod/vnod (nodal, nod2 grid) instead of u/v (elem grid)
 #   - tauuo/tauvo still on elem grid — may need elem→node step
-#   - Daily tos/sos/zos rules enabled; sst/sss/ssh output at daily freq in namelist.io
 
 general:
   name: "awiesm3-cmip7-core-ocean"
@@ -207,7 +205,7 @@ rules:
     compound_name: ocean.tauuo.tavg-u-hxy-sea.mon.GLB
     model_variable: tx_sur
     # NOTE: tx_sur is on elem grid (6.2M elements), not nod2 (3.1M nodes).
-    # Requires vec_autorotate=.true. in namelist.io (now set).
+    # vec_autorotate=.true. set in namelist.io
     # May still need elem→node interpolation pipeline step for consistency.
 
   - name: tauvo
@@ -246,7 +244,7 @@ rules:
     compound_name: ocean.uo.tavg-ol-hxy-sea.mon.GLB
     model_variable: unod
     # Using unod (nodal velocity, nod2 grid) instead of u (elem grid).
-    # Requires vec_autorotate=.true. in namelist.io (now set).
+    # vec_autorotate=.true. set in namelist.io
 
   - name: vo
     inputs:
@@ -255,7 +253,7 @@ rules:
     compound_name: ocean.vo.tavg-ol-hxy-sea.mon.GLB
     model_variable: vnod
     # Using vnod (nodal velocity, nod2 grid) instead of v (elem grid).
-    # Requires vec_autorotate=.true. in namelist.io (now set).
+    # vec_autorotate=.true. set in namelist.io
 
   - name: wo
     inputs:
@@ -285,8 +283,6 @@ rules:
 
   # ============================================================
   # Daily variables (Oday) — DefaultPipeline
-  # sst/sss/ssh output at daily frequency in namelist.io.
-  # Monthly rules for these variables use timeavg to downsample.
   # ============================================================
 
   - name: tos_day
@@ -364,17 +360,15 @@ rules:
   # hfgeou (Ofx) — NOT POSSIBLE: not in FESOM output or config
 
   # ============================================================
-  # Time-varying cell thickness — DefaultPipeline, needs model re-run
-  # hnode now enabled in namelist.io
+  # Time-varying cell thickness — DefaultPipeline
   # ============================================================
 
-  # Uncomment after model re-runs with hnode in namelist.io:
-  # - name: thkcello
-  #   inputs:
-  #     - path: *dp
-  #       pattern: hnode.fesom.1350.nc
-  #   compound_name: ocean.thkcello.tavg-ol-hxy-sea.mon.GLB
-  #   model_variable: hnode
+  - name: thkcello
+    inputs:
+      - path: *dp
+        pattern: hnode.fesom.1350.nc
+    compound_name: ocean.thkcello.tavg-ol-hxy-sea.mon.GLB
+    model_variable: hnode
 
   # masscello (Omon) — needs density x hnode, requires equation of state pipeline
   # TODO: build once gsw-based density computation is validated
