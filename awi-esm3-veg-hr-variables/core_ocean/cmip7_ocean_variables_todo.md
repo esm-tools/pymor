@@ -39,11 +39,11 @@ Rules file: `cmip7_awiesm3-veg-hr_ocean.yaml`
 - [ ] **basin** — Region Selection Index (`1`, Ofx) — NOT POSSIBLE: needs external basin mask
 - [ ] **hfgeou** — Upward Geothermal Heat Flux (`W m-2`, Ofx) — NOT POSSIBLE: not in FESOM
 
-## Daily (Oday) — BLOCKED: no daily output in namelist.io
+## Daily (Oday) — namelist.io updated to daily frequency
 
-- [ ] **tos** — Sea Surface Temperature (`degC`, Oday)
-- [ ] **sos** — Sea Surface Salinity (`1E-03`, Oday)
-- [ ] **zos** — Sea Surface Height Above Geoid (`m`, Oday)
+- [x] **tos** — Sea Surface Temperature (`degC`, Oday) — rule written (tos_day, DefaultPipeline)
+- [x] **sos** — Sea Surface Salinity (`1E-03`, Oday) — rule written (sos_day, DefaultPipeline)
+- [x] **zos** — Sea Surface Height Above Geoid (`m`, Oday) — rule written (zos_day, DefaultPipeline)
 
 ## Blockers (namelist.io updated, model re-run needed)
 

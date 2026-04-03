@@ -7,7 +7,7 @@
 #   - namelist.io updated: vec_autorotate=.true., hnode enabled, daily sst/sss/ssh added
 #   - uo/vo use unod/vnod (nodal, nod2 grid) instead of u/v (elem grid)
 #   - tauuo/tauvo still on elem grid — may need elem→node step
-#   - Daily rules commented until model re-runs with updated namelist
+#   - Daily tos/sos/zos rules enabled; sst/sss/ssh output at daily freq in namelist.io
 
 general:
   name: "awiesm3-cmip7-core-ocean"
@@ -285,31 +285,30 @@ rules:
 
   # ============================================================
   # Daily variables (Oday) — DefaultPipeline
-  # Daily output now added to namelist.io (sst, sss, ssh at 'd').
-  # Input paths need updating once model re-runs with new namelist.
-  # FESOM writes daily output to separate files from monthly.
+  # sst/sss/ssh output at daily frequency in namelist.io.
+  # Monthly rules for these variables use timeavg to downsample.
   # ============================================================
 
-  # - name: tos_day
-  #   inputs:
-  #     - path: <path_with_daily_output>
-  #       pattern: sst.fesom.1350.nc
-  #   compound_name: ocean.tos.tavg-u-hxy-sea.day.GLB
-  #   model_variable: sst
+  - name: tos_day
+    inputs:
+      - path: *dp
+        pattern: sst.fesom.1350.nc
+    compound_name: ocean.tos.tavg-u-hxy-sea.day.GLB
+    model_variable: sst
 
-  # - name: sos_day
-  #   inputs:
-  #     - path: <path_with_daily_output>
-  #       pattern: sss.fesom.1350.nc
-  #   compound_name: ocean.sos.tavg-u-hxy-sea.day.GLB
-  #   model_variable: sss
+  - name: sos_day
+    inputs:
+      - path: *dp
+        pattern: sss.fesom.1350.nc
+    compound_name: ocean.sos.tavg-u-hxy-sea.day.GLB
+    model_variable: sss
 
-  # - name: zos_day
-  #   inputs:
-  #     - path: <path_with_daily_output>
-  #       pattern: ssh.fesom.1350.nc
-  #   compound_name: ocean.zos.tavg-u-hxy-sea.day.GLB
-  #   model_variable: ssh
+  - name: zos_day
+    inputs:
+      - path: *dp
+        pattern: ssh.fesom.1350.nc
+    compound_name: ocean.zos.tavg-u-hxy-sea.day.GLB
+    model_variable: ssh
 
   # ============================================================
   # Ofx mesh-derived variables — fx pipelines

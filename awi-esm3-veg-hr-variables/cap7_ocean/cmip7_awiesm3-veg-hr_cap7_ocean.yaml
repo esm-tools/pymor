@@ -297,21 +297,16 @@ rules:
     # Verify units after first test run.
 
   # ============================================================
-  # NEEDS NAMELIST.IO ADDITIONS — daily fields
+  # Daily fields — namelist.io updated to daily frequency
   # ============================================================
 
-  # mlotst_day — daily ocean mixed layer thickness
-  # Requires: daily 'MLD3' added to namelist.io
   - name: mlotst_day
     inputs:
       - path: *dp
         pattern: MLD3.fesom.1350.nc
     compound_name: ocean.mlotst.tavg-u-hxy-sea.day.GLB
     model_variable: MLD3
-    # NOTE: uses daily MLD3 file pattern — adjust pattern after model re-run
 
-  # uos — daily surface X velocity (surface level of unod)
-  # Requires: daily 'unod' added to namelist.io (WARNING: full 3D output, very expensive)
   - name: uos
     inputs:
       - path: *dp
@@ -320,10 +315,7 @@ rules:
     model_variable: unod
     pipelines:
       - surface_extract_pipeline
-    # NOTE: daily 3D unod output is ~3M nodes × ~100 levels — very storage-heavy
 
-  # vos — daily surface Y velocity (surface level of vnod)
-  # Requires: daily 'vnod' added to namelist.io (WARNING: full 3D output, very expensive)
   - name: vos
     inputs:
       - path: *dp
@@ -332,7 +324,6 @@ rules:
     model_variable: vnod
     pipelines:
       - surface_extract_pipeline
-    # NOTE: daily 3D vnod output is ~3M nodes × ~100 levels — very storage-heavy
 
   # ============================================================
   # EASY: Squaring steps (tossq, sossq, zossq, mlotstsq)
