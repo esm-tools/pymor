@@ -1171,3 +1171,76 @@ def vertical_integrate(
             integrated.attrs["processing_note"] = f"Vertically integrated over {vertical_dim} dimension"
 
     return integrated
+
+
+# ============================================================
+# Volume cell steps (volcello)
+# ============================================================
+
+
+def compute_volcello_fx(data, rule):
+    """
+    Compute static ocean grid-cell volume from mesh geometry.
+
+    volcello = cell_area * layer_thickness
+
+    Input (data) is loaded from the grid/mesh file (via load_gridfile step).
+    Expects the mesh Dataset to contain cell_area (or cluster_area)
+    and depth_bnds for layer thickness computation.
+
+    Rule attributes:
+      - (none required beyond grid_file already used by load_gridfile)
+    """
+    if "cell_area" in data:
+        cell_area = data["cell_area"]
+    elif "cluster_area" in data:
+        cell_area = data["cluster_area"]
+    else:
+        raise ValueError("Mesh must contain 'cell_area' or 'cluster_area'")
+
+    if "depth_bnds" not in data:
+        raise ValueError("Mesh must contain 'depth_bnds' for layer thickness")
+
+    bnds = data["depth_bnds"].values
+    thickness = np.abs(np.diff(bnds, axis=-1)).squeeze()
+    dz = xr.DataArray(thickness, dims=["nz1"])
+
+    result = cell_area * dz
+    result.attrs = {"units": "m3", "standard_name": "ocean_volume", "long_name": "Ocean Grid-Cell Volume"}
+    result.name = "volcello"
+    return result
+
+
+def compute_volcello_time(data, rule):
+    """
+    Compute time-varying ocean grid-cell volume from layer thickness.
+
+    volcello = hnode * cell_area
+
+    Input (data) is hnode (time-varying layer thickness per node per level).
+    cell_area is loaded from the mesh file.
+
+    Rule attributes:
+      - grid_file: path to mesh file (for cell_area)
+    """
+    grid_file = rule.get("grid_file")
+    if grid_file is None:
+        raise ValueError("Rule must specify 'grid_file' for compute_volcello_time")
+
+    mesh = xr.open_dataset(grid_file)
+    if "cell_area" in mesh:
+        cell_area = mesh["cell_area"]
+    elif "cluster_area" in mesh:
+        cell_area = mesh["cluster_area"]
+    else:
+        mesh.close()
+        raise ValueError("Mesh must contain 'cell_area' or 'cluster_area'")
+    mesh.close()
+
+    result = data * cell_area
+    result.attrs = data.attrs.copy()
+    result.attrs["units"] = "m3"
+    result.attrs["standard_name"] = "ocean_volume"
+    result.attrs["long_name"] = "Ocean Grid-Cell Volume"
+    result.name = data.name
+    return result

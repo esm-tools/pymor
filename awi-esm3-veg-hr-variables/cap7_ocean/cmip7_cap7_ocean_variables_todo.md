@@ -36,8 +36,8 @@ thkcello, masscello).
   Available: evap.fesom [m/s] × rho_water → kg m-2 s-1 (needs adding to namelist.io)
 - [ ] **sfriver** — Salt Flux from Rivers (`kg m-2 s-1`, mon)
   BLOCKED: no river salt flux diagnostic in FESOM2
-- [ ] **vsf** — Virtual Salt Flux into Sea Water (`kg m-2 s-1`, mon)
-  Available: virtsalt.fesom (already in namelist.io, also in cap7_seaice as vsfsit)
+- [x] **vsf** — Virtual Salt Flux into Sea Water (`kg m-2 s-1`, mon)
+  Rule written: direct mapping from virtsalt.fesom (already in namelist.io)
 - [ ] **vsfcorr** — Virtual Salt Flux Correction (`kg m-2 s-1`, mon)
   Available: relaxsalt.fesom [m/s*psu] (needs adding to namelist.io + unit conversion)
 - [ ] **vsfevap** — Virtual Salt Flux Due to Evaporation (`kg m-2 s-1`, mon)
@@ -169,8 +169,8 @@ thkcello, masscello).
   BLOCKED: unstructured mesh
 - [ ] **dyvo** — Cell Length Y at v-points (`m`, fx)
   BLOCKED: unstructured mesh
-- [ ] **volcello** — Ocean Grid-Cell Volume (`m3`, fx/yr/dec)
-  Compute: cell_area × layer_thickness from mesh; similar to masscello_fx pipeline
+- [x] **volcello** — Ocean Grid-Cell Volume (`m3`, fx/yr/dec)
+  Rule written: volcello_fx_pipeline (cell_area × layer_thickness from mesh); volcello_dec via volcello_time_pipeline
 
 ## Daily (Oday)
 
@@ -199,10 +199,10 @@ thkcello, masscello).
   Rule written: DefaultPipeline from ty_sur.fesom
 - [x] **thkcello_dec** — Cell Thickness (`m`, dec, 3D)
   Rule written: DefaultPipeline from hnode.fesom
-- [ ] **masscello_dec** — Cell Mass per Area (`kg m-2`, dec, 3D)
-  Needs density × hnode pipeline
-- [ ] **volcello_dec** — Cell Volume (`m3`, dec, 3D)
-  Needs cell_area × hnode pipeline
+- [x] **masscello_dec** — Cell Mass per Area (`kg m-2`, dec, 3D)
+  Rule written: scale_pipeline (hnode × rho_0=1025)
+- [x] **volcello_dec** — Cell Volume (`m3`, dec, 3D)
+  Rule written: volcello_time_pipeline (hnode × cell_area)
 - [x] **masso_dec** — Sea Water Mass (`kg`, dec, scalar)
   Rule written: scale_pipeline (volo × rho_0)
 - [x] **volo_dec** — Sea Water Volume (`m3`, dec, scalar)
@@ -245,11 +245,11 @@ thkcello, masscello).
 
 ## Yearly integrated fields (Oyr)
 
-- [ ] **opottempmint** — Depth Integral of rho×theta (`degC kg m-2`, yr)
-  Compute: vertical integral of rho_0 × temp; like absscint but with temp
+- [x] **opottempmint** — Depth Integral of rho×theta (`degC kg m-2`, yr)
+  Rule written: ocean_vertical_integration_pipeline from temp.fesom (needs rho_0 post-multiply)
 - [ ] **ocontempmint** — same for conservative temp — SKIPPED
-- [ ] **somint** — Depth Integral of rho×S (`g m-2`, yr)
-  Compute: vertical integral of rho_0 × salt × 1000
+- [x] **somint** — Depth Integral of rho×S (`g m-2`, yr)
+  Rule written: ocean_vertical_integration_pipeline from salt.fesom (needs rho_0*1000 post-multiply)
 
 ## Yearly mixing/diffusivity (Oyr)
 
@@ -298,14 +298,14 @@ thkcello, masscello).
 
 | Category | Count | Done | Status |
 |----------|-------|------|--------|
-| Feasible from existing output | ~15 | 15 | DONE |
-| Medium (bottom extract, integration) | ~8 | 6 | mostly done |
+| Feasible from existing output | ~16 | 16 | DONE |
+| Medium (bottom extract, integration, volcello) | ~10 | 9 | mostly done |
 | Yearly diffusivity | 3 | 3 | DONE |
-| Decadal | ~10 | 7 | mostly done |
+| Decadal | ~10 | 9 | mostly done |
 | Hard (streamfunction, tendencies) | ~4 | 1 | 1 done, 2 commented, 1 blocked |
 | Needs namelist.io additions | ~5 | 0 | after model re-run |
 | Needs basin masks (external data) | ~12 | 0 | BLOCKED |
 | Requires online diagnostics | ~15 | 0 | BLOCKED |
 | Not applicable (conservative T / isotopes / unstructured) | ~20 | — | SKIPPED |
 
-Total rules written: **28** (+ 2 commented placeholders for sfx/sfy, msftbarot)
+Total rules written: **34** (+ 2 commented placeholders for sfx/sfy, msftbarot)

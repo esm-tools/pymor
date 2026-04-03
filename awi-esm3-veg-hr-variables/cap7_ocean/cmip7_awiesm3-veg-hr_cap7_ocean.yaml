@@ -109,6 +109,35 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # Static volcello from mesh: cell_area × layer_thickness
+  - name: volcello_fx_pipeline
+    steps:
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_volcello_fx
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # Time-varying volcello: hnode × cell_area
+  - name: volcello_time_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_volcello_time
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   # Ofx: load grid file, extract variable
   - name: fx_extract_pipeline
     steps:
@@ -211,6 +240,14 @@ rules:
     scaled_units: "kg m-2 s-1"
     pipelines:
       - scale_pipeline
+
+  # vsf — virtual salt flux into sea water (virtsalt from namelist.io)
+  - name: vsf
+    inputs:
+      - path: *dp
+        pattern: virtsalt.fesom.1350.nc
+    compound_name: ocean.vsf.tavg-u-hxy-sea.mon.GLB
+    model_variable: virtsalt
 
   # ============================================================
   # EASY: Squaring steps (tossq, sossq, zossq, mlotstsq)
@@ -341,11 +378,48 @@ rules:
     pipelines:
       - ocean_vertical_integration_pipeline
 
+  # opottempmint — depth integral of rho_0 × potential temperature (Oyr)
+  # integral(rho_0 * temp * dz) — uses vertical integration with rho_0 scaling
+  - name: opottempmint
+    inputs:
+      - path: *dp
+        pattern: temp.fesom.1350.nc
+    compound_name: ocean.opottempmint.tavg-op4-hxy-sea.yr.GLB
+    model_variable: temp
+    integration_attrs:
+      long_name: "Depth integral of product of sea water density and potential temperature"
+      standard_name: "integral_wrt_depth_of_product_of_sea_water_density_and_potential_temperature"
+      units: "degC kg m-2"
+    pipelines:
+      - ocean_vertical_integration_pipeline
+    # NOTE: needs post-multiply by rho_0 — may need combined pipeline
+
+  # somint — depth integral of rho_0 × salinity (Oyr)
+  # integral(rho_0 * salt * dz)
+  - name: somint
+    inputs:
+      - path: *dp
+        pattern: salt.fesom.1350.nc
+    compound_name: ocean.somint.tavg-op4-hxy-sea.yr.GLB
+    model_variable: salt
+    integration_attrs:
+      long_name: "Integral wrt depth of product of sea water density and salinity"
+      standard_name: "integral_wrt_depth_of_product_of_sea_water_density_and_salinity"
+      units: "g m-2"
+    pipelines:
+      - ocean_vertical_integration_pipeline
+    # NOTE: needs post-multiply by rho_0*1000 — may need combined pipeline
+
   # volcello (fx) — static ocean grid-cell volume
   # cell_area × layer_thickness from mesh
-  # NOTE: similar to masscello_fx but without rho_0 multiplication
-  # For now using fx_extract_pipeline with a computed variable
-  # TODO: needs a compute_volcello_fx step
+  - name: volcello_fx
+    inputs:
+      - path: *mp
+        pattern: mesh.nc
+    compound_name: ocean.volcello.point-ol-hxy-sea.fx.GLB
+    model_variable: volcello
+    pipelines:
+      - volcello_fx_pipeline
 
   # ============================================================
   # MEDIUM: Yearly mixing/diffusivity (Oyr)
@@ -425,6 +499,26 @@ rules:
         pattern: volo.fesom.1350.nc
     compound_name: ocean.volo.tavg-u-hm-sea.dec.GLB
     model_variable: volo
+
+  - name: masscello_dec
+    inputs:
+      - path: *dp
+        pattern: hnode.fesom.1350.nc
+    compound_name: ocean.masscello.tavg-ol-hxy-sea.dec.GLB
+    model_variable: hnode
+    scale_factor: 1025.0
+    scaled_units: "kg m-2"
+    pipelines:
+      - scale_pipeline
+
+  - name: volcello_dec
+    inputs:
+      - path: *dp
+        pattern: hnode.fesom.1350.nc
+    compound_name: ocean.volcello.tavg-ol-hxy-sea.dec.GLB
+    model_variable: hnode
+    pipelines:
+      - volcello_time_pipeline
 
   - name: masso_dec
     inputs:
