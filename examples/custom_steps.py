@@ -192,6 +192,500 @@ def compute_sitimefrac(data, rule):
 
 
 # ============================================================
+# Sea ice post-processing steps — computed from available output
+# ============================================================
+
+
+def compute_siflcondtop(data, rule):
+    """
+    Compute conductive heat flux at ice surface.
+
+    siflcondtop = k_ice * (T_base - T_surface) / h_ice
+
+    Positive downward (into the ice, i.e. when surface is colder
+    than base). T_base is the freezing point computed from SSS.
+
+    Primary input (data) is ist (ice surface temperature, K).
+    Rule attributes:
+      - sss_file: path to SSS file (for freezing point)
+      - sss_variable: variable name (default: 'sss')
+      - hice_file: path to h_ice file
+      - hice_variable: variable name (default: 'h_ice')
+      - k_ice: thermal conductivity of ice (default: 2.1656 W/m/K, from namelist.ice con=)
+    """
+    k_ice = float(rule.get("k_ice", 2.1656))
+
+    sss_file = rule.get("sss_file")
+    hice_file = rule.get("hice_file")
+    if sss_file is None or hice_file is None:
+        raise ValueError("Rule must specify 'sss_file' and 'hice_file'")
+
+    ds_sss = xr.open_dataset(sss_file)
+    sss = ds_sss[rule.get("sss_variable", "sss")]
+    ds_sss.close()
+
+    ds_hice = xr.open_dataset(hice_file)
+    h_ice = ds_hice[rule.get("hice_variable", "h_ice")]
+    ds_hice.close()
+
+    # Freezing point at ice base
+    t_base = -0.054 * sss + 273.15
+
+    # Avoid division by zero where ice is absent
+    h_safe = xr.where(h_ice > 0.01, h_ice, np.nan)
+
+    result = k_ice * (t_base - data) / h_safe
+    result.attrs = {
+        "units": "W m-2",
+        "standard_name": "sea_ice_surface_net_downward_conductive_heat_flux",
+        "long_name": "Net Conductive Heat Flux in Sea Ice at the Surface",
+        "processing_note": f"k_ice={k_ice}, T_base=freezing_point(SSS), T_surface=ist",
+    }
+    result.name = "siflcondtop"
+    return result
+
+
+def compute_sihc(data, rule):
+    """
+    Compute sea ice heat content per unit area.
+
+    sihc = rho_ice * h_ice * (c_ice * (T_mean - T_melt) - L_f)
+
+    where T_mean is approximated as average of surface and basal
+    temperature: (ist + T_freeze) / 2.
+
+    This is always negative (energy required to melt ice).
+
+    Primary input (data) is h_ice.
+    Rule attributes:
+      - ist_file: path to ice surface temperature file
+      - ist_variable: variable name (default: 'ist')
+      - sss_file: path to SSS file (for freezing point at base)
+      - sss_variable: variable name (default: 'sss')
+      - rho_ice: ice density (default: 910.0 kg/m3)
+      - c_ice: specific heat of ice (default: 2090.0 J/kg/K)
+      - L_f: latent heat of fusion (default: 334000.0 J/kg)
+    """
+    rho_ice = float(rule.get("rho_ice", 910.0))
+    c_ice = float(rule.get("c_ice", 2090.0))
+    L_f = float(rule.get("L_f", 334000.0))
+
+    ist_file = rule.get("ist_file")
+    sss_file = rule.get("sss_file")
+    if ist_file is None or sss_file is None:
+        raise ValueError("Rule must specify 'ist_file' and 'sss_file'")
+
+    ds_ist = xr.open_dataset(ist_file)
+    ist = ds_ist[rule.get("ist_variable", "ist")]
+    ds_ist.close()
+
+    ds_sss = xr.open_dataset(sss_file)
+    sss = ds_sss[rule.get("sss_variable", "sss")]
+    ds_sss.close()
+
+    # Freezing point at ice base
+    t_base = -0.054 * sss + 273.15
+    # Mean ice temperature (linear profile approximation)
+    t_mean = (ist + t_base) / 2.0
+    # Melting point in K
+    t_melt = 273.15
+
+    # Heat content: sensible + latent (latent dominates, result is negative)
+    result = rho_ice * data * (c_ice * (t_mean - t_melt) - L_f)
+    result.attrs = {
+        "units": "J m-2",
+        "standard_name": "integral_of_sea_ice_temperature_wrt_depth_expressed_as_heat_content",
+        "long_name": "Sea-Ice Heat Content",
+        "processing_note": f"rho_ice={rho_ice}, c_ice={c_ice}, L_f={L_f}, T_mean=(ist+T_freeze)/2",
+    }
+    result.name = "sihc"
+    return result
+
+
+def compute_sisnhc(data, rule):
+    """
+    Compute snow heat content per unit area on sea ice.
+
+    sisnhc ≈ rho_snow * h_snow * (c_snow * (T_snow - T_melt) - L_f)
+
+    Snow on sea ice is typically near 0°C, so T_snow ≈ T_melt and
+    the sensible term vanishes. The dominant term is latent heat:
+    sisnhc ≈ -rho_snow * L_f * h_snow (always negative).
+
+    Primary input (data) is h_snow.
+    Rule attributes:
+      - rho_snow: snow density (default: 330.0 kg/m3)
+      - L_f: latent heat of fusion (default: 334000.0 J/kg)
+    """
+    rho_snow = float(rule.get("rho_snow", 330.0))
+    L_f = float(rule.get("L_f", 334000.0))
+
+    # Dominant term: latent heat (sensible ≈ 0 since T_snow ≈ T_melt)
+    result = -rho_snow * L_f * data
+    result.attrs = {
+        "units": "J m-2",
+        "standard_name": "integral_of_snow_temperature_wrt_depth_expressed_as_heat_content",
+        "long_name": "Snow Heat Content",
+        "processing_note": f"sisnhc = -rho_snow*L_f*h_snow, rho_snow={rho_snow}, L_f={L_f}",
+    }
+    result.name = "sisnhc"
+    return result
+
+
+def compute_sitempbot(data, rule):
+    """
+    Compute temperature at ice-ocean interface (freezing point).
+
+    T_freeze = -0.054 * SSS + 273.15 K (linear approximation).
+
+    Primary input (data) is SSS (sea surface salinity, in psu).
+    Returns temperature in K.
+    """
+    result = -0.054 * data + 273.15
+    result.attrs = {
+        "units": "K",
+        "standard_name": "sea_ice_basal_temperature",
+        "long_name": "Temperature at Ice-Ocean Interface",
+        "processing_note": "Computed as freezing point: T_f = -0.054 * SSS + 273.15",
+    }
+    result.name = "sitempbot"
+    return result
+
+
+def compute_sifb(data, rule):
+    """
+    Compute sea ice freeboard from ice and snow thickness.
+
+    freeboard = h_ice * (1 - rho_ice/rho_water) - h_snow * rho_snow/rho_water
+
+    Primary input (data) is h_ice.
+    Rule attributes:
+      - snow_file: path to h_snow file
+      - snow_variable: variable name (default: 'h_snow')
+      - rho_ice: ice density (default: 910.0 kg/m3)
+      - rho_snow: snow density (default: 330.0 kg/m3)
+      - rho_water: seawater density (default: 1025.0 kg/m3)
+    """
+    rho_ice = float(rule.get("rho_ice", 910.0))
+    rho_snow = float(rule.get("rho_snow", 330.0))
+    rho_water = float(rule.get("rho_water", 1025.0))
+
+    snow_file = rule.get("snow_file")
+    if snow_file is None:
+        raise ValueError("Rule must specify 'snow_file' for compute_sifb")
+
+    ds = xr.open_dataset(snow_file)
+    snow_var = rule.get("snow_variable", "h_snow")
+    h_snow = ds[snow_var]
+    ds.close()
+
+    result = data * (1.0 - rho_ice / rho_water) - h_snow * rho_snow / rho_water
+    result.attrs = {
+        "units": "m",
+        "standard_name": "sea_ice_freeboard",
+        "long_name": "Sea-Ice Freeboard",
+        "processing_note": f"freeboard = h_ice*(1-{rho_ice}/{rho_water}) - h_snow*{rho_snow}/{rho_water}",
+    }
+    result.name = "sifb"
+    return result
+
+
+def compute_constant_field(data, rule):
+    """
+    Replace data values with a constant, preserving shape and coordinates.
+
+    Used for fields that are constant in the model configuration,
+    e.g. drag coefficients.
+
+    Rule attributes:
+      - constant_value: float (required)
+      - constant_units: str (optional)
+    """
+    value = float(rule.get("constant_value"))
+    if value is None:
+        raise ValueError("Rule must specify 'constant_value'")
+    result = xr.full_like(data, value)
+    result.attrs = data.attrs.copy()
+    constant_units = rule.get("constant_units")
+    if constant_units:
+        result.attrs["units"] = constant_units
+    result.name = data.name
+    return result
+
+
+def integrate_over_hemisphere(data, rule):
+    """
+    Area-weighted hemisphere integral of any 2D field.
+
+    result = sum(data * cell_area) for nodes in the selected hemisphere.
+
+    Generic step — works for any variable that needs hemisphere
+    integration: snow mass, ice volume, ice area, etc.
+
+    Rule attributes:
+      - grid_file: path to mesh file (for cell_area and lat)
+      - hemisphere: 'N' or 'S'
+    """
+    grid_file = rule.get("grid_file")
+    hemisphere = rule.get("hemisphere", "N")
+    if grid_file is None:
+        raise ValueError("Rule must specify 'grid_file' for integrate_over_hemisphere")
+
+    mesh = xr.open_dataset(grid_file)
+
+    # Get cell area
+    if "cell_area" in mesh:
+        cell_area = mesh["cell_area"]
+    elif "cluster_area" in mesh:
+        cell_area = mesh["cluster_area"]
+    else:
+        raise ValueError("Mesh must contain 'cell_area' or 'cluster_area'")
+
+    # Get latitude for hemisphere selection
+    if "lat" in mesh:
+        lat = mesh["lat"]
+    elif "latitude" in mesh:
+        lat = mesh["latitude"]
+    else:
+        raise ValueError("Mesh must contain 'lat' or 'latitude'")
+    mesh.close()
+
+    # Select hemisphere
+    if hemisphere.upper() == "N":
+        mask = lat >= 0
+    else:
+        mask = lat < 0
+
+    # Integrate: sum(data * cell_area) over hemisphere nodes
+    horizontal_dim = None
+    for dim in ["nod2", "ncells", "node"]:
+        if dim in data.dims:
+            horizontal_dim = dim
+            break
+    if horizontal_dim is None:
+        raise ValueError(f"Cannot identify horizontal dim. Available: {list(data.dims)}")
+
+    result = (data * cell_area * mask).sum(dim=horizontal_dim)
+    result.attrs = data.attrs.copy()
+    result.name = data.name
+    return result
+
+
+# ============================================================
+# Melt pond steps
+# ============================================================
+
+
+def compute_simpeffconc(data, rule):
+    """
+    Compute effective (radiatively-active) melt pond area fraction.
+
+    Effective pond fraction = pond area not covered by a refrozen lid.
+    Where the lid fully covers the pond depth, the pond is not
+    radiatively active.
+
+    simpeffconc = apnd * max(0, 1 - ipnd/hpnd) * 100
+
+    Primary input (data) is apnd (melt pond area fraction, 0-1).
+    Rule attributes:
+      - ipnd_file: path to ice lid thickness file
+      - ipnd_variable: variable name (default: 'ipnd')
+      - hpnd_file: path to pond depth file
+      - hpnd_variable: variable name (default: 'hpnd')
+    """
+    ipnd_file = rule.get("ipnd_file")
+    hpnd_file = rule.get("hpnd_file")
+    if ipnd_file is None or hpnd_file is None:
+        raise ValueError("Rule must specify 'ipnd_file' and 'hpnd_file'")
+
+    ds_ipnd = xr.open_dataset(ipnd_file)
+    ipnd = ds_ipnd[rule.get("ipnd_variable", "ipnd")]
+    ds_ipnd.close()
+
+    ds_hpnd = xr.open_dataset(hpnd_file)
+    hpnd = ds_hpnd[rule.get("hpnd_variable", "hpnd")]
+    ds_hpnd.close()
+
+    # Lid fraction: ipnd/hpnd, clamped to [0, 1]
+    # Where hpnd is 0, there's no pond so effective fraction is 0
+    hpnd_safe = xr.where(hpnd > 0, hpnd, np.nan)
+    lid_fraction = np.clip(ipnd / hpnd_safe, 0, 1).fillna(1.0)
+
+    # Effective fraction = open pond area (not lidded), convert to %
+    result = data * (1.0 - lid_fraction) * 100.0
+    result.attrs = {
+        "units": "%",
+        "standard_name": "area_fraction",
+        "long_name": "Fraction of Sea Ice Covered by Effective Melt Pond",
+        "processing_note": "simpeffconc = apnd * (1 - ipnd/hpnd) * 100",
+    }
+    result.name = "simpeffconc"
+    return result
+
+
+# ============================================================
+# Generic scaling step — reusable across models and realms
+# ============================================================
+
+
+def scale_by_constant(data, rule):
+    """
+    Multiply data by a constant factor from rule.scale_factor.
+
+    Generic step for unit conversions that are a simple multiplication,
+    e.g. m/s → kg m-2 s-1 (multiply by density).
+
+    Rule attributes:
+      - scale_factor: float, the multiplicative factor (required)
+      - scaled_units: str, units after scaling (optional, updates attrs)
+    """
+    factor = float(rule.get("scale_factor"))
+    if factor is None:
+        raise ValueError("Rule must specify 'scale_factor' for scale_by_constant step")
+    result = data * factor
+    result.attrs = data.attrs.copy()
+    scaled_units = rule.get("scaled_units")
+    if scaled_units:
+        result.attrs["units"] = scaled_units
+    result.name = data.name
+    return result
+
+
+# ============================================================
+# Sea ice multi-variable compute steps
+# These load a second variable from an auxiliary file specified
+# in rule attributes.
+# ============================================================
+
+
+def compute_sispeed(data, rule):
+    """
+    Compute sea ice speed from X and Y velocity components.
+
+    sispeed = sqrt(uice² + vice²)
+
+    Primary input (data) is one velocity component.
+    The other component is loaded from rule.second_input_file.
+
+    Rule attributes:
+      - second_input_file: path to the other velocity component file
+      - second_variable: variable name in that file (default: auto-detect)
+    """
+    second_file = rule.get("second_input_file")
+    if second_file is None:
+        raise ValueError("Rule must specify 'second_input_file' for compute_sispeed")
+
+    ds2 = xr.open_dataset(second_file)
+    second_var = rule.get("second_variable")
+    if second_var and second_var in ds2:
+        v2 = ds2[second_var]
+    else:
+        # Auto-detect: take first non-coordinate variable
+        data_vars = [v for v in ds2.data_vars if v not in ds2.coords]
+        v2 = ds2[data_vars[0]]
+    ds2.close()
+
+    result = np.sqrt(data**2 + v2**2)
+    result.attrs = {
+        "units": "m s-1",
+        "standard_name": "sea_ice_speed",
+        "long_name": "Sea-Ice Speed",
+    }
+    result.name = "sispeed"
+    return result
+
+
+def compute_ice_mass_transport(data, rule):
+    """
+    Compute sea ice mass transport: velocity × mass per area.
+
+    ice_mass_transport = velocity_component × m_ice
+
+    Rule attributes:
+      - mice_file: path to m_ice file
+      - mice_variable: variable name (default: 'm_ice')
+    """
+    mice_file = rule.get("mice_file")
+    if mice_file is None:
+        raise ValueError("Rule must specify 'mice_file' for compute_ice_mass_transport")
+
+    ds = xr.open_dataset(mice_file)
+    mice_var = rule.get("mice_variable", "m_ice")
+    m_ice = ds[mice_var]
+    ds.close()
+
+    result = data * m_ice
+    result.attrs = data.attrs.copy()
+    result.attrs["units"] = "kg s-1"
+    result.name = data.name
+    return result
+
+
+def compute_sistressave(data, rule):
+    """
+    Compute average normal sea ice stress from mEVP stress tensor.
+
+    sistressave = (sigma_11 + sigma_22) / 2
+
+    Primary input (data) is sgm11 dataset.
+    Rule attributes:
+      - sgm22_file: path to sgm22 file
+      - sgm22_variable: variable name (default: 'sgm22')
+    """
+    sgm22_file = rule.get("sgm22_file")
+    if sgm22_file is None:
+        raise ValueError("Rule must specify 'sgm22_file' for compute_sistressave")
+
+    ds = xr.open_dataset(sgm22_file)
+    sgm22_var = rule.get("sgm22_variable", "sgm22")
+    sgm22 = ds[sgm22_var]
+    ds.close()
+
+    result = (data + sgm22) / 2.0
+    result.attrs = {
+        "units": "N m-1",
+        "standard_name": "average_normal_stress_in_sea_ice",
+        "long_name": "Average Normal Stress in Sea Ice",
+    }
+    result.name = "sistressave"
+    return result
+
+
+def compute_sistressmax(data, rule):
+    """
+    Compute maximum shear stress from mEVP stress tensor.
+
+    sistressmax = sqrt(((sigma_11 - sigma_22) / 2)² + sigma_12²)
+
+    Primary input (data) is sgm11 dataset.
+    Rule attributes:
+      - sgm22_file: path to sgm22 file
+      - sgm12_file: path to sgm12 file
+    """
+    sgm22_file = rule.get("sgm22_file")
+    sgm12_file = rule.get("sgm12_file")
+    if sgm22_file is None or sgm12_file is None:
+        raise ValueError("Rule must specify 'sgm22_file' and 'sgm12_file'")
+
+    ds22 = xr.open_dataset(sgm22_file)
+    sgm22 = ds22[rule.get("sgm22_variable", "sgm22")]
+    ds22.close()
+
+    ds12 = xr.open_dataset(sgm12_file)
+    sgm12 = ds12[rule.get("sgm12_variable", "sgm12")]
+    ds12.close()
+
+    result = np.sqrt(((data - sgm22) / 2.0) ** 2 + sgm12**2)
+    result.attrs = {
+        "units": "N m-1",
+        "standard_name": "maximum_shear_stress_in_sea_ice",
+        "long_name": "Maximum Shear Stress in Sea Ice",
+    }
+    result.name = "sistressmax"
+    return result
+
+
+# ============================================================
 # Ocean density and transport steps
 # These load auxiliary data (mesh, other variables) from paths
 # specified in rule attributes, since pycmor pipelines pass

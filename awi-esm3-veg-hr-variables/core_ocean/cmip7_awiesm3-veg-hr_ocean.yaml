@@ -1,14 +1,5 @@
-# CMIP7 Core Ocean Variables — AWI-ESM3-VEG-HR Rules
+# CMIP7 Core Ocean Variables — AWI-ESM3-VEG-HR
 # Generated from cmip7_all_core_variables_ocean.csv
-#
-# Pipeline key:
-#   (no pipelines specified) = DefaultPipeline
-#   ocean_vertical_integration_pipeline = depth-integration custom step
-#   fx_extract_pipeline = load grid file, extract variable by model_variable name
-#   fx_deptho_pipeline = load grid file, compute bathymetry
-#   fx_sftof_pipeline = load grid file, compute sea area fraction
-#   fx_thkcello_pipeline = load grid file, compute layer thickness
-#   fx_masscello_pipeline = load grid file, compute mass per area
 #
 # Research notes (2026-04-03):
 #   - FESOM2 uses POTENTIAL temperature (not conservative) → no bigthetao
@@ -18,6 +9,156 @@
 #   - tauuo/tauvo still on elem grid — may need elem→node step
 #   - Daily rules commented until model re-runs with updated namelist
 
+general:
+  name: "awiesm3-cmip7-core-ocean"
+  cmor_version: "CMIP7"
+  mip: "CMIP"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
+
+pycmor:
+  warn_on_no_rule: False
+  dask_cluster: "slurm"
+  dask_cluster_scaling_mode: "fixed"
+  dask_cluster_scaling_fixed_jobs: 1
+
+jobqueue:
+  slurm:
+    name: pycmor-worker
+    queue: compute
+    account: bb1469
+    cores: 16
+    memory: 256GB
+    walltime: '00:30:00'
+
+pipelines:
+  - name: ocean_vertical_integration_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:vertical_integrate
+      - pycmor.std_lib.add_vertical_bounds
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # Ofx pipeline: load grid file, extract variable directly (e.g., areacello)
+  - name: fx_extract_pipeline
+    steps:
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
+      - pycmor.std_lib.generic.get_variable
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # Ofx pipeline: compute bathymetry from mesh depth_lev
+  - name: fx_deptho_pipeline
+    steps:
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_deptho
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # Ofx pipeline: compute sea area fraction from mesh
+  - name: fx_sftof_pipeline
+    steps:
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_sftof
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # Ofx pipeline: compute static layer thickness from depth_bnds
+  - name: fx_thkcello_pipeline
+    steps:
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_thkcello_fx
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # Ofx pipeline: compute static mass per area (rho_0 * thkcello)
+  - name: fx_masscello_pipeline
+    steps:
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_masscello_fx
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # Mass transport pipeline: load velocity → extract → multiply by rho_0*dz
+  - name: mass_transport_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_mass_transport
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # Zostoga pipeline: load temperature → extract → compute global thermosteric SL
+  - name: zostoga_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_zostoga
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+inherit:
+  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+  source_id: AWI-ESM-3
+  institution_id: AWI
+  experiment_id: picontrol
+  variant_label: r1i1p1f1
+  grid_label: gn
+  mesh_path: &mp /work/ab0246/a270092/input/fesom2/dars2
+  grid_file: /work/ab0246/a270092/input/fesom2/dars2/mesh.nc
+  grid: "FESOM 2.6 unstructured grid DARS (3146761 surface nodes)"
+  nominal_resolution: "10 km"
+  institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
+  output_directory: ./cmorized_output/awiesm3
+
 rules:
   # ============================================================
   # Monthly 2D surface variables (Omon) — DefaultPipeline
@@ -25,35 +166,35 @@ rules:
 
   - name: tos
     inputs:
-      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+      - path: *dp
         pattern: sst.fesom.1350.nc
     compound_name: ocean.tos.tavg-u-hxy-sea.mon.GLB
     model_variable: sst
 
   - name: sos
     inputs:
-      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+      - path: *dp
         pattern: sss.fesom.1350.nc
     compound_name: ocean.sos.tavg-u-hxy-sea.mon.GLB
     model_variable: sss
 
   - name: zos
     inputs:
-      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+      - path: *dp
         pattern: ssh.fesom.1350.nc
     compound_name: ocean.zos.tavg-u-hxy-sea.mon.GLB
     model_variable: ssh
 
   - name: hfds
     inputs:
-      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+      - path: *dp
         pattern: fh.fesom.1350.nc
     compound_name: ocean.hfds.tavg-u-hxy-sea.mon.GLB
     model_variable: fh
 
   - name: mlotst
     inputs:
-      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+      - path: *dp
         pattern: MLD3.fesom.1350.nc
     compound_name: ocean.mlotst.tavg-u-hxy-sea.mon.GLB
     model_variable: MLD3
@@ -61,7 +202,7 @@ rules:
 
   - name: tauuo
     inputs:
-      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+      - path: *dp
         pattern: tx_sur.fesom.1350.nc
     compound_name: ocean.tauuo.tavg-u-hxy-sea.mon.GLB
     model_variable: tx_sur
@@ -71,7 +212,7 @@ rules:
 
   - name: tauvo
     inputs:
-      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+      - path: *dp
         pattern: ty_sur.fesom.1350.nc
     compound_name: ocean.tauvo.tavg-u-hxy-sea.mon.GLB
     model_variable: ty_sur
@@ -83,7 +224,7 @@ rules:
 
   - name: thetao
     inputs:
-      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+      - path: *dp
         pattern: temp.fesom.1350.nc
     compound_name: ocean.thetao.tavg-ol-hxy-sea.mon.GLB
     model_variable: temp
@@ -93,14 +234,14 @@ rules:
 
   - name: so
     inputs:
-      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+      - path: *dp
         pattern: salt.fesom.1350.nc
     compound_name: ocean.so.tavg-ol-hxy-sea.mon.GLB
     model_variable: salt
 
   - name: uo
     inputs:
-      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+      - path: *dp
         pattern: unod.fesom.1350.nc
     compound_name: ocean.uo.tavg-ol-hxy-sea.mon.GLB
     model_variable: unod
@@ -109,7 +250,7 @@ rules:
 
   - name: vo
     inputs:
-      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+      - path: *dp
         pattern: vnod.fesom.1350.nc
     compound_name: ocean.vo.tavg-ol-hxy-sea.mon.GLB
     model_variable: vnod
@@ -118,7 +259,7 @@ rules:
 
   - name: wo
     inputs:
-      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+      - path: *dp
         pattern: w.fesom.1350.nc
     compound_name: ocean.wo.tavg-ol-hxy-sea.mon.GLB
     model_variable: w
@@ -131,7 +272,7 @@ rules:
 
   - name: absscint
     inputs:
-      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+      - path: *dp
         pattern: salt.fesom.1350.nc
     compound_name: ocean.absscint.tavg-op4-hxy-sea.mon.GLB
     model_variable: salt
@@ -176,7 +317,7 @@ rules:
 
   - name: areacello
     inputs:
-      - path: /work/ab0246/a270092/input/fesom2/dars2
+      - path: *mp
         pattern: mesh.nc
     compound_name: ocean.areacello.ti-u-hxy-u.fx.GLB
     model_variable: cell_area
@@ -185,7 +326,7 @@ rules:
 
   - name: deptho
     inputs:
-      - path: /work/ab0246/a270092/input/fesom2/dars2
+      - path: *mp
         pattern: mesh.nc
     compound_name: ocean.deptho.ti-u-hxy-sea.fx.GLB
     model_variable: deptho
@@ -194,7 +335,7 @@ rules:
 
   - name: sftof
     inputs:
-      - path: /work/ab0246/a270092/input/fesom2/dars2
+      - path: *mp
         pattern: mesh.nc
     compound_name: ocean.sftof.ti-u-hxy-u.fx.GLB
     model_variable: sftof
@@ -203,7 +344,7 @@ rules:
 
   - name: thkcello_fx
     inputs:
-      - path: /work/ab0246/a270092/input/fesom2/dars2
+      - path: *mp
         pattern: mesh.nc
     compound_name: ocean.thkcello.ti-ol-hxy-sea.fx.GLB
     model_variable: thkcello
@@ -212,7 +353,7 @@ rules:
 
   - name: masscello_fx
     inputs:
-      - path: /work/ab0246/a270092/input/fesom2/dars2
+      - path: *mp
         pattern: mesh.nc
     compound_name: ocean.masscello.ti-ol-hxy-sea.fx.GLB
     model_variable: masscello
@@ -221,7 +362,7 @@ rules:
       - fx_masscello_pipeline
 
   # basin (Ofx) — NOT POSSIBLE: needs external basin mask data, not in mesh
-  # hfgeou (Ofx) — NOT POSSIBLE: not in FESOM output or config (see missing.md)
+  # hfgeou (Ofx) — NOT POSSIBLE: not in FESOM output or config
 
   # ============================================================
   # Time-varying cell thickness — DefaultPipeline, needs model re-run
@@ -231,7 +372,7 @@ rules:
   # Uncomment after model re-runs with hnode in namelist.io:
   # - name: thkcello
   #   inputs:
-  #     - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+  #     - path: *dp
   #       pattern: hnode.fesom.1350.nc
   #   compound_name: ocean.thkcello.tavg-ol-hxy-sea.mon.GLB
   #   model_variable: hnode
@@ -242,12 +383,11 @@ rules:
   # ============================================================
   # Mass transport — mass_transport_pipeline (Boussinesq: u * rho_0 * dz)
   # Uses unod/vnod (rotated with vec_autorotate=.true.)
-  # Needs model re-run with updated namelist.io
   # ============================================================
 
   - name: umo
     inputs:
-      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+      - path: *dp
         pattern: unod.fesom.1350.nc
     compound_name: ocean.umo.tavg-ol-hxy-sea.mon.GLB
     model_variable: unod
@@ -258,7 +398,7 @@ rules:
 
   - name: vmo
     inputs:
-      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+      - path: *dp
         pattern: vnod.fesom.1350.nc
     compound_name: ocean.vmo.tavg-ol-hxy-sea.mon.GLB
     model_variable: vnod
@@ -269,7 +409,7 @@ rules:
 
   - name: wmo
     inputs:
-      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+      - path: *dp
         pattern: w.fesom.1350.nc
     compound_name: ocean.wmo.tavg-ol-hxy-sea.mon.GLB
     model_variable: w
@@ -285,7 +425,7 @@ rules:
 
   - name: zostoga
     inputs:
-      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+      - path: *dp
         pattern: temp.fesom.1350.nc
     compound_name: ocean.zostoga.tavg-u-hm-sea.mon.GLB
     model_variable: temp

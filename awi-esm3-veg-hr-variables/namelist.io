@@ -39,7 +39,7 @@ ldiag_cmor        = .true.  ! enables CMOR diagnostics for CMIP6/CMIP7 ('tos', '
 ! GENERAL OUTPUT SETTINGS
 ! ============================================================================
 &nml_general
-io_listsize       = 130      ! total number of streams to allocate. Shall be larger or equal to the number of streams in &nml_list (max. 150)
+io_listsize       = 150      ! total number of streams to allocate. Shall be larger or equal to the number of streams in &nml_list (max. 150)
 vec_autorotate    = .true.   ! unrotate vector fields (velocities, winds) before writing to output files
 compression_level = 1        ! compression level for netCDF output (1=fastest, 9=smallest)
 /
@@ -86,10 +86,35 @@ io_list =  'sst       ',1, 'm', 4,
            'fw        ',1, 'm', 4,
            'fh        ',1, 'm', 4,
            'otracers  ',1, 'm', 4,
+           'thdgrarea ',1, 'm', 4,
+           'dyngrarea ',1, 'm', 4,
+           'thdgrice  ',1, 'm', 4,
+           'dyngrice  ',1, 'm', 4,
+           'thdgrsn   ',1, 'm', 4,
+           'strength_ice',1, 'm', 4,
+           'atmice_x  ',1, 'm', 4,
+           'atmice_y  ',1, 'm', 4,
+           'iceoce_x  ',1, 'm', 4,
+           'iceoce_y  ',1, 'm', 4,
+           'fw_ice    ',1, 'm', 4,
+           'fw_snw    ',1, 'm', 4,
+           'virtsalt  ',1, 'm', 4,
+           'realsalt  ',1, 'm', 4,
+           'qcon      ',1, 'm', 4,
+           'apnd      ',1, 'm', 4,
+           'hpnd      ',1, 'm', 4,
+           'ipnd      ',1, 'm', 4,
+           'sgm11     ',1, 'm', 4,
+           'sgm12     ',1, 'm', 4,
+           'sgm22     ',1, 'm', 4,
            'sst       ',1, 'd', 4,
            'sss       ',1, 'd', 4,
            'ssh       ',1, 'd', 4,
            'a_ice     ',1, 'd', 4,
+           'uice      ',1, 'd', 4,
+           'vice      ',1, 'd', 4,
+           'ist       ',1, 'd', 4,
+           'm_snow    ',1, 'd', 4,
 /
 
 ! ============================================================================
