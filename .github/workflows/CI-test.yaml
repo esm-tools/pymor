@@ -1135,13 +1135,6 @@ jobs:
           echo "*Generated automatically by the CI workflow*" >> test-matrix-status.md
 
           cat test-matrix-status.md
-      - name: Post comment on PR
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh pr comment ${{ github.event.pull_request.number }} \
-            --body-file test-matrix-status.md \
-            --repo ${{ github.repository }}
   set-workflow-artifact:
     name: Set workflow artifact
     runs-on: ubuntu-latest
