@@ -154,15 +154,14 @@ rules:
       - sitimefrac_pipeline
 
   # ============================================================
-  # Daily (SIday) — needs daily a_ice in namelist.io (now added)
-  # Uncomment after model re-runs
+  # Daily (SIday) — daily a_ice added to namelist.io
   # ============================================================
 
-  # - name: siconc_day
-  #   inputs:
-  #     - path: <path_with_daily_output>
-  #       pattern: a_ice.fesom.1350.nc
-  #   compound_name: seaIce.siconc.tavg-u-hxy-u.day.GLB
-  #   model_variable: a_ice
-  #   pipelines:
-  #     - siconc_pipeline
+  - name: siconc_day
+    inputs:
+      - path: *dp
+        pattern: a_ice.fesom.1350.nc
+    compound_name: seaIce.siconc.tavg-u-hxy-u.day.GLB
+    model_variable: a_ice
+    pipelines:
+      - siconc_pipeline

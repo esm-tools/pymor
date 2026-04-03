@@ -20,7 +20,7 @@ Both come from FESOM sea-ice output and are handled the same way.
 
 ## Daily (SIday)
 
-- [ ] **siconc** — Sea-Ice Area Percentage (`%`, SIday) — needs daily a_ice output (added to namelist.io, needs model re-run)
+- [x] **siconc** — Sea-Ice Area Percentage (`%`, SIday) — daily a_ice in namelist.io, rule written (siconc_pipeline)
 
 ## Available FESOM output (monthly)
 
