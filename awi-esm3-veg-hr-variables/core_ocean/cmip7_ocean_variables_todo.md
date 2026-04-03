@@ -24,7 +24,7 @@ Rules file: `cmip7_awiesm3-veg-hr_ocean.yaml`
 - [x] **uo** — Sea Water X Velocity (`m s-1`, Omon, 3D) *(rule written, uses unod.fesom, needs vec_autorotate)*
 - [x] **vo** — Sea Water Y Velocity (`m s-1`, Omon, 3D) *(rule written, uses vnod.fesom, needs vec_autorotate)*
 - [x] **thkcello** — Ocean Model Cell Thickness (`m`, Omon, time-varying) *(rule written, uses hnode.fesom, needs model re-run)*
-- [ ] **masscello** — Ocean Grid-Cell Mass per Area (`kg m-2`, Omon, time-varying) — needs density x hnode pipeline
+- [x] **masscello** — Ocean Grid-Cell Mass per Area (`kg m-2`, Omon, time-varying) — rho_0 × hnode via scale_pipeline
 - [x] **umo** — Ocean Mass X Transport (`kg s-1`, Omon, 3D) *(rule + mass_transport_pipeline, Boussinesq approx)*
 - [x] **vmo** — Ocean Mass Y Transport (`kg s-1`, Omon, 3D) *(rule + mass_transport_pipeline)*
 - [x] **wmo** — Upward Ocean Mass Transport (`kg s-1`, Omon, 3D) *(rule + mass_transport_pipeline)*

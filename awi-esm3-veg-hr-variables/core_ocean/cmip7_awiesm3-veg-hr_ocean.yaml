@@ -128,6 +128,23 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # Scale pipeline: multiply variable by a constant (scale_factor on rule)
+  - name: scale_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:scale_by_constant
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   # Zostoga pipeline: load temperature → extract → compute global thermosteric SL
   - name: zostoga_pipeline
     steps:
@@ -370,8 +387,16 @@ rules:
     compound_name: ocean.thkcello.tavg-ol-hxy-sea.mon.GLB
     model_variable: hnode
 
-  # masscello (Omon) — needs density x hnode, requires equation of state pipeline
-  # TODO: build once gsw-based density computation is validated
+  - name: masscello
+    inputs:
+      - path: *dp
+        pattern: hnode.fesom.1350.nc
+    compound_name: ocean.masscello.tavg-ol-hxy-sea.mon.GLB
+    model_variable: hnode
+    scale_factor: 1025.0
+    scaled_units: "kg m-2"
+    pipelines:
+      - scale_pipeline
 
   # ============================================================
   # Mass transport — mass_transport_pipeline (Boussinesq: u * rho_0 * dz)
