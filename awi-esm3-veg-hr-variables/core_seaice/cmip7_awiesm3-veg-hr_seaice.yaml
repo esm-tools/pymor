@@ -1,0 +1,105 @@
+# CMIP7 Core Sea Ice Variables — AWI-ESM3-VEG-HR Rules
+# Generated from cmip7_all_core_variables_seaIce.csv + seaIce_ocean.csv
+#
+# Pipeline key:
+#   (no pipelines specified) = DefaultPipeline
+#   siconc_pipeline = load → get_variable → fraction_to_percent → standard steps
+#   sitimefrac_pipeline = load → get_variable → compute_sitimefrac → standard steps
+#
+# Research notes (2026-04-03):
+#   - a_ice is fraction (0-1), CMIP wants percentage → fraction_to_percent step
+#   - h_ice, h_snow, ist now added to namelist.io (need model re-run)
+#   - uice/vice need vec_autorotate=.true. (already set in namelist.io)
+#   - ist available because AWI-ESM3 compiled with __oifs
+#   - sitimefrac approximated from monthly siconc>0 (binary)
+
+rules:
+  # ============================================================
+  # Monthly (SImon) — DefaultPipeline
+  # ============================================================
+
+  - name: simass
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: m_ice.fesom.1350.nc
+    compound_name: seaIce.simass.tavg-u-hxy-si.mon.GLB
+    model_variable: m_ice
+
+  - name: siu
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: uice.fesom.1350.nc
+    compound_name: seaIce.siu.tavg-u-hxy-si.mon.GLB
+    model_variable: uice
+    # Requires vec_autorotate=.true. in namelist.io (now set)
+
+  - name: siv
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: vice.fesom.1350.nc
+    compound_name: seaIce.siv.tavg-u-hxy-si.mon.GLB
+    model_variable: vice
+    # Requires vec_autorotate=.true. in namelist.io (now set)
+
+  # ============================================================
+  # Monthly (SImon) — needs namelist re-run for h_ice, h_snow, ist
+  # Uncomment after model re-runs with updated namelist.io
+  # ============================================================
+
+  - name: sithick
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: h_ice.fesom.1350.nc
+    compound_name: seaIce.sithick.tavg-u-hxy-si.mon.GLB
+    model_variable: h_ice
+
+  - name: snd
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: h_snow.fesom.1350.nc
+    compound_name: seaIce.snd.tavg-u-hxy-sn.mon.GLB
+    model_variable: h_snow
+
+  - name: ts
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: ist.fesom.1350.nc
+    compound_name: seaIce.ts.tavg-u-hxy-si.mon.GLB
+    model_variable: ist
+    # ist outputs in K, CMIP wants K — no conversion needed
+
+  # ============================================================
+  # Monthly (SImon) — custom pipelines
+  # ============================================================
+
+  - name: siconc
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: a_ice.fesom.1350.nc
+    compound_name: seaIce.siconc.tavg-u-hxy-u.mon.GLB
+    model_variable: a_ice
+    pipelines:
+      - siconc_pipeline
+
+  - name: sitimefrac
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: a_ice.fesom.1350.nc
+    compound_name: seaIce.sitimefrac.tavg-u-hxy-sea.mon.GLB
+    model_variable: a_ice
+    pipelines:
+      - sitimefrac_pipeline
+
+  # ============================================================
+  # Daily (SIday) — needs daily a_ice in namelist.io (now added)
+  # Uncomment after model re-runs
+  # ============================================================
+
+  # - name: siconc_day
+  #   inputs:
+  #     - path: <path_with_daily_output>
+  #       pattern: a_ice.fesom.1350.nc
+  #   compound_name: seaIce.siconc.tavg-u-hxy-u.day.GLB
+  #   model_variable: a_ice
+  #   pipelines:
+  #     - siconc_pipeline

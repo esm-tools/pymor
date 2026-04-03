@@ -151,6 +151,47 @@ def compute_masscello_fx(data, rule):
 
 
 # ============================================================
+# Sea ice steps
+# ============================================================
+
+
+def fraction_to_percent(data, rule):
+    """
+    Convert a fraction (0-1) to percentage (0-100).
+
+    Generic step — works for any variable stored as fraction
+    that CMIP expects as percentage (siconc, sftof, etc.).
+    """
+    result = data * 100.0
+    result.attrs = data.attrs.copy()
+    result.attrs["units"] = "%"
+    result.name = data.name
+    return result
+
+
+def compute_sitimefrac(data, rule):
+    """
+    Compute fraction of time steps with sea ice present.
+
+    From monthly sea ice concentration, sitimefrac is 1 where
+    siconc > 0, and 0 otherwise. For monthly data this is a
+    binary field (ice present that month or not).
+
+    For accurate sitimefrac, daily or sub-daily siconc is needed.
+    With monthly data this is an approximation.
+    """
+    result = xr.where(data > 0, 1.0, 0.0)
+    result.attrs = {
+        "units": "1",
+        "standard_name": "fraction_of_time_with_sea_ice_area_fraction_above_threshold",
+        "long_name": "Fraction of Time Steps with Sea Ice",
+        "processing_note": "Computed from monthly siconc; 1 where siconc>0, 0 otherwise",
+    }
+    result.name = "sitimefrac"
+    return result
+
+
+# ============================================================
 # Ocean density and transport steps
 # These load auxiliary data (mesh, other variables) from paths
 # specified in rule attributes, since pycmor pipelines pass
