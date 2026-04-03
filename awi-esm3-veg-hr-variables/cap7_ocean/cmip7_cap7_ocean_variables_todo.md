@@ -214,34 +214,34 @@ thkcello, masscello).
 
 - [x] **opottemptend** — Temperature Tendency (`W m-2`, yr, 3D)
   Rule written: direct mapping from opottemptend.fesom (ldiag_cmor)
-- [ ] **opottempdiff** — Temp Tendency from Dianeutral Mixing (`W m-2`, yr)
-  BLOCKED: requires individual tendency decomposition, not output by FESOM
-- [ ] **opottemppadvect** — Temp Tendency from Eddy Advection (`W m-2`, yr)
-  BLOCKED: same
-- [ ] **opottemppmdiff** — Temp Tendency from Mesoscale Diffusion (`W m-2`, yr)
-  BLOCKED: same
-- [ ] **opottemppsmadvect** — Temp Tendency from Submesoscale Advection (`W m-2`, yr)
-  BLOCKED: same
-- [ ] **opottemprmadvect** — Temp Tendency from Residual Mean Advection (`W m-2`, yr)
-  BLOCKED: same
+- [x] **opottempdiff** — Temp Tendency from Dianeutral Mixing (`W m-2`, yr)
+  FESOM2 source modified: computed as total - advection in gen_modules_cmor_diag.F90
+- [~] **opottemppadvect** — Temp Tendency from Eddy Advection (`W m-2`, yr)
+  SKIPPED: zero field (fer_gm=.false., no GM parameterization active)
+- [~] **opottemppmdiff** — Temp Tendency from Mesoscale Diffusion (`W m-2`, yr)
+  SKIPPED: zero field (fer_gm=.false.)
+- [~] **opottemppsmadvect** — Temp Tendency from Submesoscale Advection (`W m-2`, yr)
+  SKIPPED: zero field (no submesoscale parameterization)
+- [x] **opottemprmadvect** — Temp Tendency from Residual Mean Advection (`W m-2`, yr)
+  FESOM2 source modified: saved from del_ttf advection snapshot in gen_modules_cmor_diag.F90
 - [~] **ocontemptend** — Conservative Temp Tendency (`W m-2`, yr) — SKIPPED: not conservative temp
 - [~] **ocontempdiff** — same family — SKIPPED
 - [~] **ocontemppadvect** — SKIPPED
 - [~] **ocontemppmdiff** — SKIPPED
 - [~] **ocontemppsmadvect** — SKIPPED
 - [~] **ocontemprmadvect** — SKIPPED
-- [ ] **osalttend** — Salinity Tendency (`kg m-2 s-1`, yr, 3D)
-  BLOCKED: no salinity tendency diagnostic
-- [ ] **osaltdiff** — Salt Tendency from Dianeutral Mixing (`kg m-2 s-1`, yr)
-  BLOCKED: same
-- [ ] **osaltpadvect** — Salt Tendency from Eddy Advection (`kg m-2 s-1`, yr)
-  BLOCKED: same
-- [ ] **osaltpmdiff** — Salt Tendency from Mesoscale Diffusion (`kg m-2 s-1`, yr)
-  BLOCKED: same
-- [ ] **osaltpsmadvect** — Salt Tendency from Submesoscale (`kg m-2 s-1`, mon/yr)
-  BLOCKED: same
-- [ ] **osaltrmadvect** — Salt Tendency from Residual Mean (`kg m-2 s-1`, yr)
-  BLOCKED: same
+- [x] **osalttend** — Salinity Tendency (`kg m-2 s-1`, yr, 3D)
+  FESOM2 source modified: computed in gen_modules_cmor_diag.F90 (mirrors opottemptend)
+- [x] **osaltdiff** — Salt Tendency from Dianeutral Mixing (`kg m-2 s-1`, yr)
+  FESOM2 source modified: computed as total - advection in gen_modules_cmor_diag.F90
+- [~] **osaltpadvect** — Salt Tendency from Eddy Advection (`kg m-2 s-1`, yr)
+  SKIPPED: zero field (fer_gm=.false.)
+- [~] **osaltpmdiff** — Salt Tendency from Mesoscale Diffusion (`kg m-2 s-1`, yr)
+  SKIPPED: zero field (fer_gm=.false.)
+- [~] **osaltpsmadvect** — Salt Tendency from Submesoscale (`kg m-2 s-1`, mon/yr)
+  SKIPPED: zero field (no submesoscale parameterization)
+- [x] **osaltrmadvect** — Salt Tendency from Residual Mean (`kg m-2 s-1`, yr)
+  FESOM2 source modified: saved from del_ttf advection snapshot in gen_modules_cmor_diag.F90
 
 ## Yearly integrated fields (Oyr)
 
@@ -265,8 +265,8 @@ thkcello, masscello).
   Possible: fer_K.fesom if Fer_GM=.true. (GM diffusivity); check config
 - [ ] **diftrblo** — Tracer Diffusivity from Mesoscale Parameterization (`m2 s-1`, yr, 3D)
   Possible: same as diftrelo (fer_K) under Fer_GM
-- [ ] **rsdoabsorb** — Shortwave Absorption by Ocean Layer (`W m-2`, yr, 3D)
-  BLOCKED: no per-layer shortwave absorption diagnostic
+- [x] **rsdoabsorb** — Shortwave Absorption by Ocean Layer (`W m-2`, yr, 3D)
+  FESOM2 source modified: computed from sw_3d in gen_modules_cmor_diag.F90
 
 ## Yearly energy diagnostics (Oyr)
 
@@ -304,8 +304,10 @@ thkcello, masscello).
 | Decadal | ~10 | 9 | mostly done |
 | Hard (streamfunction, tendencies) | ~4 | 1 | 1 done, 2 commented, 1 blocked |
 | Needs namelist.io additions | 5 | 5 | DONE (rules written, awaiting model re-run) |
+| FESOM2 source changes (tendencies + SW) | 7 | 7 | DONE (code added, needs compile+test) |
 | Needs basin masks (external data) | ~12 | 0 | BLOCKED |
-| Requires online diagnostics | ~15 | 0 | BLOCKED |
-| Not applicable (conservative T / isotopes / unstructured) | ~20 | — | SKIPPED |
+| Requires online diagnostics (remaining) | ~8 | 0 | BLOCKED |
+| Not applicable (conservative T / isotopes / unstructured) | ~26 | — | SKIPPED |
 
-Total rules written: **39** (+ 2 commented placeholders for sfx/sfy, msftbarot)
+Total rules written: **45** (+ 2 commented placeholders for sfx/sfy, msftbarot)
+FESOM2 source additions: **6** new diagnostic outputs (osalttend, opottempdiff, opottemprmadvect, osaltdiff, osaltrmadvect, rsdoabsorb)
