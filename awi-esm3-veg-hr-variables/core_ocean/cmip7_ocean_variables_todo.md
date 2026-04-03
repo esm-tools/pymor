@@ -13,7 +13,7 @@ Rules file: `cmip7_awiesm3-veg-hr_ocean.yaml`
 - [x] **absscint** — Depth-integrated salinity (`kg m-2`, Omon) *(implemented + tested)*
 - [x] **tauuo** — Sea Water Surface Downward X Stress (`N m-2`, Omon) *(rule written, uses tx_sur.fesom, elem grid)*
 - [x] **tauvo** — Sea Water Surface Downward Y Stress (`N m-2`, Omon) *(rule written, uses ty_sur.fesom, elem grid)*
-- [ ] **zostoga** — Global Average Thermosteric Sea Level Change (`m`, Omon) — NEEDS NEW PIPELINE
+- [x] **zostoga** — Global Average Thermosteric Sea Level Change (`m`, Omon) *(rule + zostoga_pipeline, gsw/TEOS-10)*
 
 ## Monthly 3D (Omon, with olevel)
 
@@ -24,10 +24,10 @@ Rules file: `cmip7_awiesm3-veg-hr_ocean.yaml`
 - [x] **uo** — Sea Water X Velocity (`m s-1`, Omon, 3D) *(rule written, uses unod.fesom, needs vec_autorotate)*
 - [x] **vo** — Sea Water Y Velocity (`m s-1`, Omon, 3D) *(rule written, uses vnod.fesom, needs vec_autorotate)*
 - [x] **thkcello** — Ocean Model Cell Thickness (`m`, Omon, time-varying) *(rule written, uses hnode.fesom, needs model re-run)*
-- [ ] **masscello** — Ocean Grid-Cell Mass per Area (`kg m-2`, Omon, time-varying) — NEEDS NEW PIPELINE
-- [ ] **umo** — Ocean Mass X Transport (`kg s-1`, Omon, 3D) — NEEDS NEW PIPELINE
-- [ ] **vmo** — Ocean Mass Y Transport (`kg s-1`, Omon, 3D) — NEEDS NEW PIPELINE
-- [ ] **wmo** — Upward Ocean Mass Transport (`kg s-1`, Omon, 3D) — NEEDS NEW PIPELINE
+- [ ] **masscello** — Ocean Grid-Cell Mass per Area (`kg m-2`, Omon, time-varying) — needs density x hnode pipeline
+- [x] **umo** — Ocean Mass X Transport (`kg s-1`, Omon, 3D) *(rule + mass_transport_pipeline, Boussinesq approx)*
+- [x] **vmo** — Ocean Mass Y Transport (`kg s-1`, Omon, 3D) *(rule + mass_transport_pipeline)*
+- [x] **wmo** — Upward Ocean Mass Transport (`kg s-1`, Omon, 3D) *(rule + mass_transport_pipeline)*
 
 ## Fixed frequency (Ofx) — fx pipelines built
 

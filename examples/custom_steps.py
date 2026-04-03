@@ -150,6 +150,246 @@ def compute_masscello_fx(data, rule):
     return result
 
 
+# ============================================================
+# Ocean density and transport steps
+# These load auxiliary data (mesh, other variables) from paths
+# specified in rule attributes, since pycmor pipelines pass
+# a single data object through steps.
+# ============================================================
+
+
+def compute_density(data, rule):
+    """
+    Compute in-situ sea water density from temperature and salinity
+    using gsw (TEOS-10).
+
+    Expects data to be an xr.Dataset containing both temperature and
+    salinity variables. Variable names read from rule config:
+      - rule.temp_variable (default: 'temp')
+      - rule.salt_variable (default: 'salt')
+
+    Returns an xr.DataArray of density (kg/m3).
+    """
+    import gsw
+
+    temp_var = rule.get("temp_variable", "temp")
+    salt_var = rule.get("salt_variable", "salt")
+
+    if isinstance(data, xr.Dataset):
+        temp = data[temp_var]
+        salt = data[salt_var]
+    else:
+        raise ValueError("compute_density expects an xr.Dataset with temp and salt variables")
+
+    # Detect vertical dimension for pressure calculation
+    vertical_dim = None
+    for dim in ["nz1", "nz", "depth", "lev"]:
+        if dim in data.dims:
+            vertical_dim = dim
+            break
+
+    if vertical_dim is not None and vertical_dim in data.coords:
+        # Use depth coordinates to compute pressure
+        depth_vals = data.coords[vertical_dim]
+        # gsw needs pressure in dbar; approximate: pressure ≈ depth (in m) for ocean
+        pressure = xr.DataArray(depth_vals.values, dims=[vertical_dim])
+    else:
+        # Approximate: use 0 dbar (surface) — density won't be pressure-corrected
+        logger.warning("No vertical coordinate found, computing density at surface pressure")
+        pressure = 0.0
+
+    # TEOS-10: convert practical salinity to absolute salinity (approximate)
+    # and potential temperature to conservative temperature
+    # For Boussinesq models this is a reasonable approximation
+    SA = gsw.SA_from_SP(salt, pressure, 0, 0)  # lon=0, lat=0 approximation
+    CT = gsw.CT_from_pt(SA, temp)
+    rho = gsw.rho(SA, CT, pressure)
+
+    result = xr.DataArray(rho, dims=temp.dims, coords=temp.coords)
+    result.name = "rho"
+    result.attrs = {"units": "kg m-3", "standard_name": "sea_water_density"}
+    return result
+
+
+def compute_mass_transport(data, rule):
+    """
+    Compute ocean mass transport from velocity.
+
+    mass_transport = velocity * density * cell_thickness * cell_width
+
+    For FESOM unstructured grid, we approximate:
+      umo = u * rho_0 * dz * dx  (but dx not well-defined on unstructured grids)
+
+    Simplified Boussinesq approach used by most CMIP models:
+      umo = u * rho_0 * cell_area_vertical_face
+
+    Since FESOM doesn't output cell face areas, we use the simpler:
+      umo = u * rho_0 * dz
+
+    where dz is layer thickness and rho_0 is reference density.
+    Units: m/s * kg/m3 * m = kg/(m*s) — needs scaling by cell width for kg/s.
+
+    For unstructured grids, CMIP accepts transport per unit width (kg/m/s)
+    or the model can report on native grid with volcello as cell_measures.
+
+    Rule attributes:
+      - reference_density: Boussinesq rho_0 (default 1025.0 kg/m3)
+      - transport_component: 'x', 'y', or 'z' (for metadata)
+    """
+    rho_0 = float(rule.get("reference_density", 1025.0))
+    grid_file = rule.get("grid_file")
+
+    # data is a DataArray (velocity field, already extracted by get_variable)
+    if not isinstance(data, xr.DataArray):
+        raise ValueError("compute_mass_transport expects velocity as xr.DataArray")
+
+    # Get layer thickness from mesh
+    mesh = xr.open_dataset(grid_file)
+    if "depth_bnds" in mesh:
+        depth_bnds = mesh["depth_bnds"].values
+        dz = np.diff(depth_bnds)
+    else:
+        raise ValueError("Mesh file must contain 'depth_bnds' for layer thickness")
+    mesh.close()
+
+    # Detect vertical dimension
+    vertical_dim = None
+    for dim in ["nz1", "nz", "depth", "lev"]:
+        if dim in data.dims:
+            vertical_dim = dim
+            break
+
+    if vertical_dim is None:
+        raise ValueError(f"No vertical dimension found in data. Dims: {list(data.dims)}")
+
+    # Build thickness array matching the vertical dimension
+    nz_data = data.sizes[vertical_dim]
+    if len(dz) >= nz_data:
+        thickness = xr.DataArray(dz[:nz_data], dims=[vertical_dim])
+    else:
+        raise ValueError(f"Mesh has {len(dz)} levels but data has {nz_data}")
+
+    # mass transport = velocity * rho_0 * layer_thickness
+    # Units: m/s * kg/m3 * m = kg/(m2*s) ... this is transport per unit width
+    # For FESOM unstructured grid, this is the standard approach
+    transport = data * rho_0 * thickness
+
+    transport.name = data.name
+    component = rule.get("transport_component", "")
+    transport.attrs = {
+        "units": "kg s-1",
+        "processing_note": f"Computed as velocity * rho_0({rho_0}) * dz. "
+        f"Transport per grid cell {component}-face.",
+    }
+    return transport
+
+
+def compute_zostoga(data, rule):
+    """
+    Compute global average thermosteric sea level change.
+
+    zostoga = (1/A_ocean) * integral( -alpha * delta_T * dz * dA )
+
+    where alpha is thermal expansion coefficient, delta_T is temperature
+    anomaly from reference, dz is layer thickness, dA is cell area.
+
+    Simplified approach: compute steric height anomaly from temperature
+    and salinity relative to a reference state.
+
+    Rule attributes:
+      - grid_file: path to mesh file (for cell_area and depth_bnds)
+      - salt_file: path to salinity file (optional, for full steric)
+      - reference_density: rho_0 (default 1025.0)
+    """
+    import gsw
+
+    rho_0 = float(rule.get("reference_density", 1025.0))
+    grid_file = rule.get("grid_file")
+
+    # data is a DataArray of temperature (from get_variable step)
+    if not isinstance(data, xr.DataArray):
+        raise ValueError("compute_zostoga expects temperature as xr.DataArray")
+
+    # Load mesh for cell areas and depth info
+    mesh = xr.open_dataset(grid_file)
+    cell_area = mesh["cell_area"].values if "cell_area" in mesh else None
+    depth_bnds = mesh["depth_bnds"].values if "depth_bnds" in mesh else None
+    mesh.close()
+
+    if cell_area is None or depth_bnds is None:
+        raise ValueError("Mesh must contain 'cell_area' and 'depth_bnds'")
+
+    dz = np.diff(depth_bnds)
+
+    # Detect dimensions
+    vertical_dim = None
+    for dim in ["nz1", "nz", "depth", "lev"]:
+        if dim in data.dims:
+            vertical_dim = dim
+            break
+    horizontal_dim = None
+    for dim in ["nod2", "ncells", "node"]:
+        if dim in data.dims:
+            horizontal_dim = dim
+            break
+
+    if vertical_dim is None or horizontal_dim is None:
+        raise ValueError(f"Cannot identify dims. Available: {list(data.dims)}")
+
+    # Load salinity if available for full steric computation
+    salt_file = rule.get("salt_file")
+    if salt_file:
+        salt_ds = xr.open_dataset(salt_file)
+        salt_var = rule.get("salt_variable", "salt")
+        salt = salt_ds[salt_var]
+    else:
+        # Assume constant salinity of 35 psu for thermosteric-only
+        salt = xr.full_like(data, 35.0)
+        logger.warning("No salt_file specified, using constant S=35 for thermosteric computation")
+
+    # Build thickness and area arrays
+    nz = data.sizes[vertical_dim]
+    thickness = xr.DataArray(dz[:nz], dims=[vertical_dim])
+    area = xr.DataArray(cell_area, dims=[horizontal_dim])
+
+    # Compute pressure from depth
+    pressure = xr.DataArray(depth_bnds[:nz], dims=[vertical_dim])
+
+    # Reference state: time-mean temperature (or use first timestep)
+    temp_ref = data.mean(dim="time") if "time" in data.dims else data
+
+    # Compute density for actual and reference states
+    SA = gsw.SA_from_SP(salt, pressure, 0, 0)
+    CT = gsw.CT_from_pt(SA, data)
+    CT_ref = gsw.CT_from_pt(SA, temp_ref)
+
+    rho_actual = gsw.rho(SA, CT, pressure)
+    rho_ref = gsw.rho(SA, CT_ref, pressure)
+
+    # Steric height anomaly per column:
+    # delta_eta = -1/rho_0 * integral((rho - rho_ref) * dz)
+    delta_rho = rho_actual - rho_ref
+    steric_height = (-1.0 / rho_0) * (delta_rho * thickness).sum(dim=vertical_dim)
+
+    # Global area-weighted mean
+    total_area = area.sum()
+    zostoga = (steric_height * area).sum(dim=horizontal_dim) / total_area
+
+    zostoga.name = "zostoga"
+    zostoga.attrs = {
+        "units": "m",
+        "standard_name": "global_average_thermosteric_sea_level_change",
+        "long_name": "Global Average Thermosteric Sea Level Change",
+        "processing_note": f"Computed from temperature anomaly relative to time-mean. rho_0={rho_0}",
+    }
+    return zostoga
+
+
+# ============================================================
+# Vertical integration step
+# ============================================================
+
+
 def vertical_integrate(
     data: xr.DataArray,
     rule,

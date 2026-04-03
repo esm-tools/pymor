@@ -237,23 +237,60 @@ rules:
   #   model_variable: hnode
 
   # masscello (Omon) — needs density x hnode, requires equation of state pipeline
+  # TODO: build once gsw-based density computation is validated
 
   # ============================================================
-  # NEEDS NEW PIPELINE — mass transport
-  # FESOM only outputs velocities, not mass transport.
-  # umo/vmo/wmo = velocity x density x cell cross-section area
-  # Also blocked by vec_autorotate for uo/vo rotation.
+  # Mass transport — mass_transport_pipeline (Boussinesq: u * rho_0 * dz)
+  # Uses unod/vnod (rotated with vec_autorotate=.true.)
+  # Needs model re-run with updated namelist.io
   # ============================================================
 
-  # umo (Omon) — ocean mass x transport
-  # vmo (Omon) — ocean mass y transport
-  # wmo (Omon) — upward ocean mass transport
+  - name: umo
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: unod.fesom.1350.nc
+    compound_name: ocean.umo.tavg-ol-hxy-sea.mon.GLB
+    model_variable: unod
+    reference_density: 1025.0
+    transport_component: x
+    pipelines:
+      - mass_transport_pipeline
+
+  - name: vmo
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: vnod.fesom.1350.nc
+    compound_name: ocean.vmo.tavg-ol-hxy-sea.mon.GLB
+    model_variable: vnod
+    reference_density: 1025.0
+    transport_component: y
+    pipelines:
+      - mass_transport_pipeline
+
+  - name: wmo
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: w.fesom.1350.nc
+    compound_name: ocean.wmo.tavg-ol-hxy-sea.mon.GLB
+    model_variable: w
+    reference_density: 1025.0
+    transport_component: z
+    pipelines:
+      - mass_transport_pipeline
 
   # ============================================================
-  # NEEDS NEW PIPELINE — global thermosteric sea level
-  # FESOM does not compute zostoga directly.
-  # Could derive from pbo (bottom pressure) steric contribution,
-  # but that requires ldiag_cmor=.true. and complex post-processing.
+  # Global thermosteric sea level — zostoga_pipeline
+  # Computes steric height anomaly from temperature using gsw (TEOS-10)
   # ============================================================
 
-  # zostoga (Omon) — global average thermosteric sea level change
+  - name: zostoga
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: temp.fesom.1350.nc
+    compound_name: ocean.zostoga.tavg-u-hm-sea.mon.GLB
+    model_variable: temp
+    salt_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/salt.fesom.1350.nc
+    salt_variable: salt
+    reference_density: 1025.0
+    pipelines:
+      - zostoga_pipeline
