@@ -627,6 +627,31 @@ def extract_bottom(data, rule):
     return result
 
 
+def extract_surface(data, rule):
+    """
+    Extract the surface (top) value from a 3D field.
+
+    Selects index 0 along the vertical dimension to produce a
+    2D (+ time) field from a 3D input.
+
+    Rule attributes (optional):
+      - vertical_dim: name of vertical dimension (auto-detected if not given)
+    """
+    vertical_dim = rule.get("vertical_dim")
+    if vertical_dim is None:
+        for dim in ["nz1", "depth", "lev", "nz"]:
+            if dim in data.dims:
+                vertical_dim = dim
+                break
+    if vertical_dim is None:
+        raise ValueError(f"Cannot find vertical dimension in {list(data.dims)}")
+
+    result = data.isel({vertical_dim: 0})
+    result.attrs = data.attrs.copy()
+    result.name = data.name
+    return result
+
+
 def compute_surface_pressure(data, rule):
     """
     Compute sea water pressure at sea surface from SSH.

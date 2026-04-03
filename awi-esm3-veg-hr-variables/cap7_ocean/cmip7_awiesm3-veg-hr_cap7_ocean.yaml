@@ -138,6 +138,22 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # Surface extraction from 3D field (uos, vos)
+  - name: surface_extract_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:extract_surface
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   # Ofx: load grid file, extract variable
   - name: fx_extract_pipeline
     steps:
@@ -248,6 +264,75 @@ rules:
         pattern: virtsalt.fesom.1350.nc
     compound_name: ocean.vsf.tavg-u-hxy-sea.mon.GLB
     model_variable: virtsalt
+
+  # ============================================================
+  # NEEDS NAMELIST.IO ADDITIONS (after model re-run)
+  # ============================================================
+
+  # evspsbl — evaporation over ice-free ocean (evap × rho_water)
+  # Requires: 'evap' added to namelist.io monthly output
+  - name: evspsbl
+    inputs:
+      - path: *dp
+        pattern: evap.fesom.1350.nc
+    compound_name: ocean.evspsbl.tavg-u-hxy-sea.mon.GLB
+    model_variable: evap
+    scale_factor: 1000.0
+    scaled_units: "kg m-2 s-1"
+    pipelines:
+      - scale_pipeline
+    # NOTE: FESOM evap is total evaporation, not ice-free-only.
+    # May need masking by (1 - siconc) if CMIP requires ice-free fraction only.
+
+  # vsfcorr — virtual salt flux correction (relaxsalt from namelist.io)
+  # Requires: 'relaxsalt' added to namelist.io monthly output
+  - name: vsfcorr
+    inputs:
+      - path: *dp
+        pattern: relaxsalt.fesom.1350.nc
+    compound_name: ocean.vsfcorr.tavg-u-hxy-sea.mon.GLB
+    model_variable: relaxsalt
+    # NOTE: FESOM relaxsalt units are [m/s*psu]. CMIP wants [kg m-2 s-1].
+    # Conversion: rho_water * V * S * 1e-3 ≈ V*S (numerically ~1:1).
+    # Verify units after first test run.
+
+  # ============================================================
+  # NEEDS NAMELIST.IO ADDITIONS — daily fields
+  # ============================================================
+
+  # mlotst_day — daily ocean mixed layer thickness
+  # Requires: daily 'MLD3' added to namelist.io
+  - name: mlotst_day
+    inputs:
+      - path: *dp
+        pattern: MLD3.fesom.1350.nc
+    compound_name: ocean.mlotst.tavg-u-hxy-sea.day.GLB
+    model_variable: MLD3
+    # NOTE: uses daily MLD3 file pattern — adjust pattern after model re-run
+
+  # uos — daily surface X velocity (surface level of unod)
+  # Requires: daily 'unod' added to namelist.io (WARNING: full 3D output, very expensive)
+  - name: uos
+    inputs:
+      - path: *dp
+        pattern: unod.fesom.1350.nc
+    compound_name: ocean.uos.tavg-u-hxy-sea.day.GLB
+    model_variable: unod
+    pipelines:
+      - surface_extract_pipeline
+    # NOTE: daily 3D unod output is ~3M nodes × ~100 levels — very storage-heavy
+
+  # vos — daily surface Y velocity (surface level of vnod)
+  # Requires: daily 'vnod' added to namelist.io (WARNING: full 3D output, very expensive)
+  - name: vos
+    inputs:
+      - path: *dp
+        pattern: vnod.fesom.1350.nc
+    compound_name: ocean.vos.tavg-u-hxy-sea.day.GLB
+    model_variable: vnod
+    pipelines:
+      - surface_extract_pipeline
+    # NOTE: daily 3D vnod output is ~3M nodes × ~100 levels — very storage-heavy
 
   # ============================================================
   # EASY: Squaring steps (tossq, sossq, zossq, mlotstsq)

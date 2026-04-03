@@ -32,14 +32,14 @@ thkcello, masscello).
   Rule written: square_pipeline from MLD3.fesom
 - [x] **wfo** — Water Flux into Sea Water (`kg m-2 s-1`, mon)
   Rule written: scale_pipeline (fw × 1000)
-- [ ] **evspsbl** — Evaporation Where Ice Free Ocean (`kg m-2 s-1`, mon)
-  Available: evap.fesom [m/s] × rho_water → kg m-2 s-1 (needs adding to namelist.io)
+- [x] **evspsbl** — Evaporation Where Ice Free Ocean (`kg m-2 s-1`, mon)
+  Rule written: scale_pipeline (evap × 1000). Needs 'evap' added to namelist.io. Note: may need ice-free masking.
 - [ ] **sfriver** — Salt Flux from Rivers (`kg m-2 s-1`, mon)
   BLOCKED: no river salt flux diagnostic in FESOM2
 - [x] **vsf** — Virtual Salt Flux into Sea Water (`kg m-2 s-1`, mon)
   Rule written: direct mapping from virtsalt.fesom (already in namelist.io)
-- [ ] **vsfcorr** — Virtual Salt Flux Correction (`kg m-2 s-1`, mon)
-  Available: relaxsalt.fesom [m/s*psu] (needs adding to namelist.io + unit conversion)
+- [x] **vsfcorr** — Virtual Salt Flux Correction (`kg m-2 s-1`, mon)
+  Rule written: direct mapping from relaxsalt.fesom. Needs 'relaxsalt' added to namelist.io. Verify unit conversion.
 - [ ] **vsfevap** — Virtual Salt Flux Due to Evaporation (`kg m-2 s-1`, mon)
   BLOCKED: FESOM does not split virtual salt flux by component
 - [ ] **vsfpr** — Virtual Salt Flux Due to Rainfall (`kg m-2 s-1`, mon)
@@ -174,14 +174,14 @@ thkcello, masscello).
 
 ## Daily (Oday)
 
-- [ ] **mlotst_day** — Ocean Mixed Layer Thickness (`m`, day)
-  Needs: daily MLD3 in namelist.io (currently monthly only)
+- [x] **mlotst_day** — Ocean Mixed Layer Thickness (`m`, day)
+  Rule written: direct mapping from daily MLD3. Needs daily 'MLD3' added to namelist.io.
 - [ ] **thetao200_day** — Potential Temp top 200m (`degC`, day)
   BLOCKED: no daily 3D output feasible; and needs op20bar layer extraction
-- [ ] **uos** — Daily Surface X Velocity (`m s-1`, day)
-  Needs: daily unod in namelist.io (currently monthly)
-- [ ] **vos** — Daily Surface Y Velocity (`m s-1`, day)
-  Needs: daily vnod in namelist.io (currently monthly)
+- [x] **uos** — Daily Surface X Velocity (`m s-1`, day)
+  Rule written: surface_extract_pipeline from daily unod. Needs daily 'unod' in namelist.io (WARNING: full 3D, expensive).
+- [x] **vos** — Daily Surface Y Velocity (`m s-1`, day)
+  Rule written: surface_extract_pipeline from daily vnod. Needs daily 'vnod' in namelist.io (WARNING: full 3D, expensive).
 - [ ] **hfx** — Vertically Integrated Heat X Transport (`W`, day)
   BLOCKED: requires online computation (temp × u × dz integrated), too expensive daily
 - [ ] **hfy** — Vertically Integrated Heat Y Transport (`W`, day)
@@ -303,9 +303,9 @@ thkcello, masscello).
 | Yearly diffusivity | 3 | 3 | DONE |
 | Decadal | ~10 | 9 | mostly done |
 | Hard (streamfunction, tendencies) | ~4 | 1 | 1 done, 2 commented, 1 blocked |
-| Needs namelist.io additions | ~5 | 0 | after model re-run |
+| Needs namelist.io additions | 5 | 5 | DONE (rules written, awaiting model re-run) |
 | Needs basin masks (external data) | ~12 | 0 | BLOCKED |
 | Requires online diagnostics | ~15 | 0 | BLOCKED |
 | Not applicable (conservative T / isotopes / unstructured) | ~20 | — | SKIPPED |
 
-Total rules written: **34** (+ 2 commented placeholders for sfx/sfy, msftbarot)
+Total rules written: **39** (+ 2 commented placeholders for sfx/sfy, msftbarot)
