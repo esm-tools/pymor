@@ -24,7 +24,7 @@ ldiag_curl_vel3   = .false.  ! enables 'curl_u' output (relative vorticity from 
 ldiag_Ri          = .false.  ! enables Richardson number diagnostics ('shear', 'Ri')
 ldiag_turbflux    = .false.  ! enables turbulent flux diagnostics ('KvdTdz', 'KvdSdz')
 ldiag_salt3D      = .false.  ! enables 3D salinity diagnostics
-ldiag_dMOC        = .false.  ! enables 'dMOC' output (density MOC diagnostics)
+ldiag_dMOC        = .true.  ! enables 'dMOC' output (density MOC diagnostics)
 ldiag_DVD         = .false.  ! enables 'DVD' output (Discrete Variance Decay diagnostics)
 ldiag_forc        = .false.  ! enables 'FORC' output (comprehensive forcing diagnostics)
 ldiag_extflds     = .false.  ! enables extended field diagnostics
@@ -32,7 +32,7 @@ ldiag_destine     = .false.  ! enables heat content computation ('hc300m', 'hc70
 ldiag_trflx       = .false.  ! enables tracer flux diagnostics ('utemp', 'vtemp', 'usalt', 'vsalt')
 ldiag_uvw_sqr     = .false.  ! enables 'UVW_SQR' output (squared velocities: u2, v2, w2)
 ldiag_trgrd_xyz   = .false.  ! enables 'TRGRD_XYZ' output (horizontal & vertical tracer gradients)
-ldiag_cmor        = .false.  ! enables CMOR diagnostics for CMIP6/CMIP7 ('tos', 'sos', 'pbo', 'volo', etc.)
+ldiag_cmor        = .true.  ! enables CMOR diagnostics for CMIP6/CMIP7 ('tos', 'sos', 'pbo', 'volo', etc.)
 /
 
 ! ============================================================================
