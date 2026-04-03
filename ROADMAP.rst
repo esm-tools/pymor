@@ -10,6 +10,6 @@ Here is how we envision the development of the next several versions:
    - New features will be added upon request by the community, subject to
      the resources of the development team.
 
-.. versionadded:: 1.2.0
+.. versionadded:: 1.1.0
 
    - CMIP7 Support

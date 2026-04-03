@@ -1,9 +1,9 @@
 import os
 import sys
 from importlib import resources
+from importlib.metadata import entry_points
 from typing import List
 
-import pkg_resources
 import rich_click as click
 import yaml
 from click_loguru import ClickLoguru
@@ -22,11 +22,7 @@ from .dev import utils as dev_utils
 from .fesom_1p4.nodes_to_levels import convert
 from .scripts.update_dimensionless_mappings import update_dimensionless_mappings
 
-MAX_FRAMES = int(
-    os.environ.get(
-        "PYCMOR_ERROR_MAX_FRAMES", os.environ.get("PYMOR_ERROR_MAX_FRAMES", 3)
-    )
-)
+MAX_FRAMES = int(os.environ.get("PYCMOR_ERROR_MAX_FRAMES", os.environ.get("PYMOR_ERROR_MAX_FRAMES", 3)))
 """
 str: The maximum number of frames to show in the traceback if there is an error. Default to 3
 """
@@ -56,9 +52,7 @@ def pymor_cli_group(func):
     func = click_loguru.logging_options(func)
     func = click.group()(func)
     func = click_loguru.stash_subcommand()(func)
-    func = click.version_option(
-        version=VERSION, prog_name="PyCMOR - Makes CMOR Simple"
-    )(func)
+    func = click.version_option(version=VERSION, prog_name="PyCMOR - Makes CMOR Simple")(func)
     return func
 
 
@@ -69,9 +63,15 @@ def find_subcommands():
     groups = ["pycmor.cli_subcommands", "pymor.cli_subcommands"]
     discovered_subcommands = {}
     for group in groups:
-        for entry_point in pkg_resources.iter_entry_points(group):
+        try:
+            # Python 3.10+ - use keyword argument
+            eps = entry_points(group=group)
+        except TypeError:
+            # Python 3.9 - returns dict-like object
+            eps = entry_points().get(group, [])
+        for entry_point in eps:
             discovered_subcommands[entry_point.name] = {
-                "plugin_name": entry_point.module_name.split(".")[0],
+                "plugin_name": entry_point.value.split(":")[0].split(".")[0],
                 "callable": entry_point.load(),
             }
     return discovered_subcommands
@@ -101,6 +101,9 @@ def process(config_file):
     # NOTE(PG): The ``init_logger`` decorator above removes *ALL* previously configured loggers,
     #           so we need to re-create the report logger here. Paul does not like this at all.
     add_report_logger()
+    from .core.banner import show_banner
+
+    show_banner()
     logger.info(f"Processing {config_file}")
     with open(config_file, "r") as f:
         cfg = yaml.safe_load(f)
@@ -180,11 +183,10 @@ def scripts():
 
 
 @develop.command()
-@click_loguru.logging_options
 @click_loguru.init_logger()
 @click.argument("directory", type=click.Path(exists=True))
 @click.argument("output_file", type=click.File("w"), required=False, default=None)
-def ls(directory, output_file, verbose, quiet, logfile, profile_mem):
+def ls(directory, output_file):
     yaml_str = dev_utils.ls_to_yaml(directory)
     # Append to beginning of output file
     if output_file is not None:
@@ -202,10 +204,9 @@ def ls(directory, output_file, verbose, quiet, logfile, profile_mem):
 
 
 @validate.command()
-@click_loguru.logging_options
 @click_loguru.init_logger()
 @click.argument("config_file", type=click.Path(exists=True))
-def config(config_file, verbose, quiet, logfile, profile_mem):
+def config(config_file):
     logger.info(f"Checking if a CMORizer can be built from {config_file}")
     with open(config_file, "r") as f:
         cfg = yaml.safe_load(f)
@@ -225,9 +226,7 @@ def config(config_file, verbose, quiet, logfile, profile_mem):
                 GENERAL_VALIDATOR.errors,
             ]
         ):
-            logger.success(
-                f"Configuration {config_file} is valid for general settings, rules, and pipelines!"
-            )
+            logger.success(f"Configuration {config_file} is valid for general settings, rules, and pipelines!")
         for key, error in {
             **GENERAL_VALIDATOR.errors,
             **PIPELINES_VALIDATOR.errors,
@@ -237,11 +236,10 @@ def config(config_file, verbose, quiet, logfile, profile_mem):
 
 
 @validate.command()
-@click_loguru.logging_options
 @click_loguru.init_logger()
 @click.argument("config_file", type=click.Path(exists=True))
 @click.argument("table_name", type=click.STRING)
-def table(config_file, table_name, verbose, quiet, logfile, profile_mem):
+def table(config_file, table_name):
     logger.info(f"Processing {config_file}")
     with open(config_file, "r") as f:
         cfg = yaml.safe_load(f)
@@ -250,11 +248,10 @@ def table(config_file, table_name, verbose, quiet, logfile, profile_mem):
 
 
 @validate.command()
-@click_loguru.logging_options
 @click_loguru.init_logger()
 @click.argument("config_file", type=click.Path(exists=True))
 @click.argument("output_dir", type=click.STRING)
-def directory(config_file, output_dir, verbose, quiet, logfile, profile_mem):
+def directory(config_file, output_dir):
     logger.info(f"Processing {config_file}")
     with open(config_file, "r") as f:
         cfg = yaml.safe_load(f)
@@ -291,14 +288,13 @@ scripts.add_command(update_dimensionless_mappings)
 
 
 @cache.command()
-@click_loguru.logging_options
 @click_loguru.init_logger()
 @click.argument(
     "cache_dir",
     default=f"{os.environ['HOME']}/.prefect/storage/",
     type=click.Path(exists=True, dir_okay=True),
 )
-def inspect_prefect_global(cache_dir, verbose, quiet, logfile, profile_mem):
+def inspect_prefect_global(cache_dir):
     """Print information about items in Prefect's storage cache"""
     logger.info(f"Inspecting Prefect Cache at {cache_dir}")
     caching.inspect_cache(cache_dir)
@@ -306,24 +302,176 @@ def inspect_prefect_global(cache_dir, verbose, quiet, logfile, profile_mem):
 
 
 @cache.command()
-@click_loguru.logging_options
 @click_loguru.init_logger()
 @click.argument(
     "result",
     type=click.Path(exists=True),
 )
-def inspect_prefect_result(result, verbose, quiet, logfile, profile_mem):
+def inspect_prefect_result(result):
     obj = caching.inspect_result(result)
     logger.info(obj)
     return 0
 
 
 @cache.command()
-@click_loguru.logging_options
 @click.argument("files", type=click.Path(exists=True), nargs=-1)
-def populate_cache(files: List, verbose, quiet, logfile, profile_mem):
+def populate_cache(files: List):
     fc.add_files(files)
     fc.save()
+
+
+################################################################################
+################################################################################
+################################################################################
+
+################################################################################
+# CMIP7 Testing Commands
+################################################################################
+
+
+@cli.command()
+@click_loguru.init_logger()
+@click.argument("compound_name", type=click.STRING)
+@click.option(
+    "--version",
+    "-v",
+    default="v1.2.2.2",
+    help="CMIP7 data request version to test against",
+    show_default=True,
+)
+@click.option(
+    "--metadata-file",
+    "-m",
+    type=click.Path(exists=True),
+    help="Path to local metadata JSON file (optional)",
+)
+@click.option(
+    "--show-all-variants",
+    "-a",
+    is_flag=True,
+    help="Show all variants of the variable if found",
+)
+def cmip7_name_test(compound_name, version, metadata_file, show_all_variants):
+    """
+    Test a CMIP7 compound name against the data request.
+
+    Checks if the given compound name exists in the CMIP7 data request
+    and displays metadata information.
+
+    Example compound name format: realm.variable.branding.frequency.region
+    Example: atmos.tas.tavg-h2m-hxy-u.mon.GLB
+    """
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.table import Table
+
+    from .data_request.cmip7_interface import CMIP7Interface
+
+    console = Console()
+
+    try:
+        # Initialize interface
+        console.print("[bold]Loading CMIP7 Data Request...[/bold]")
+        interface = CMIP7Interface()
+        interface.load_metadata(version=version, metadata_file=metadata_file)
+        console.print(f"[green]✓[/green] Loaded metadata for version: {version}\n")
+
+        # Try to find the compound name
+        console.print(f"[bold]Testing compound name:[/bold] {compound_name}\n")
+        metadata = interface.get_variable_metadata(compound_name)
+
+        if metadata:
+            # Found it!
+            console.print(Panel("[bold green]✓ Compound name FOUND in data request[/bold green]", border_style="green"))
+
+            # Display metadata in a table
+            table = Table(title="Variable Metadata", show_header=True, header_style="bold magenta")
+            table.add_column("Property", style="cyan", no_wrap=True)
+            table.add_column("Value", style="white")
+
+            # Key properties to display
+            display_props = [
+                "variable_id",
+                "standard_name",
+                "long_name",
+                "units",
+                "frequency",
+                "modeling_realm",
+                "cmip6_compound_name",
+                "cell_methods",
+                "cell_measures",
+            ]
+
+            for prop in display_props:
+                if prop in metadata:
+                    value = str(metadata[prop])
+                    # Truncate very long values
+                    if len(value) > 80:
+                        value = value[:77] + "..."
+                    table.add_row(prop, value)
+
+            console.print(table)
+
+            # Show all variants if requested
+            if show_all_variants:
+                parts = compound_name.split(".")
+                if len(parts) == 5:
+                    realm, variable, branding, frequency, region = parts
+                    console.print(f"\n[bold]Finding all variants of variable '{variable}' in realm '{realm}'...[/bold]")
+                    variants = interface.find_variable_variants(variable, realm=realm)
+
+                    if len(variants) > 1:
+                        console.print(f"Found {len(variants)} total variants:\n")
+                        for var in variants:
+                            console.print(f"  • {var['cmip7_compound_name']}")
+                    else:
+                        console.print("No other variants found.")
+
+        else:
+            # Not found
+            console.print(Panel("[bold red]✗ Compound name NOT FOUND in data request[/bold red]", border_style="red"))
+
+            # Try to provide helpful information
+            parts = compound_name.split(".")
+            if len(parts) != 5:
+                console.print(
+                    f"\n[yellow]Warning:[/yellow] Compound name should have 5 parts "
+                    f"(realm.variable.branding.frequency.region), but got {len(parts)} parts."
+                )
+            else:
+                realm, variable, branding, frequency, region = parts
+                console.print("\n[bold]Searching for similar variables...[/bold]")
+
+                # Try to find variants of this variable
+                variants = interface.find_variable_variants(variable, realm=realm)
+                if variants:
+                    console.print(f"\nFound {len(variants)} variant(s) of '{variable}' in realm '{realm}':")
+                    for var in variants:
+                        console.print(f"  • {var['cmip7_compound_name']}")
+                    console.print("\n[yellow]Hint:[/yellow] Check if one of these matches what you're looking for.")
+                else:
+                    console.print(f"\n[yellow]No variants found for variable '{variable}' in realm '{realm}'.[/yellow]")
+                    console.print("\n[yellow]Suggestions:[/yellow]")
+                    console.print("  1. Check spelling of variable name")
+                    console.print("  2. Verify the realm is correct")
+                    console.print("  3. Use 'pycmor table-explorer' to browse available variables")
+
+        return 0
+
+    except ImportError as e:
+        console.print(
+            Panel(
+                "[bold red]Error: CMIP7 Data Request API not installed[/bold red]\n\n"
+                f"{str(e)}\n\n"
+                "Install with: pip install CMIP7-data-request-api",
+                border_style="red",
+            )
+        )
+        return 1
+    except Exception as e:
+        console.print(Panel(f"[bold red]Error:[/bold red] {str(e)}", border_style="red"))
+        logger.exception("Failed to test compound name")
+        return 1
 
 
 ################################################################################

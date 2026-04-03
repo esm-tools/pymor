@@ -1,5 +1,4 @@
 import pytest
-import ruamel.yaml
 
 
 @pytest.fixture
@@ -9,13 +8,13 @@ def config(request):
 
 @pytest.fixture
 def config_empty():
-    return {"pymor": {}}
+    return {"pycmor": {}}
 
 
 @pytest.fixture
 def config_pattern_env_var_name():
     return {
-        "pymor": {
+        "pycmor": {
             "pattern_env_var_name": "CMOR_PATTERN",
         }
     }
@@ -24,7 +23,7 @@ def config_pattern_env_var_name():
 @pytest.fixture
 def config_pattern_env_var_value():
     return {
-        "pymor": {
+        "pycmor": {
             "pattern_env_var_value": "test.*nc",
         }
     }
@@ -33,7 +32,7 @@ def config_pattern_env_var_value():
 @pytest.fixture
 def config_pattern_env_var_name_and_value():
     return {
-        "pymor": {
+        "pycmor": {
             "pattern_env_var_name": "CMOR_PATTERN",
             "pattern_env_var_value": "other_test.*nc",
         }
@@ -42,5 +41,7 @@ def config_pattern_env_var_name_and_value():
 
 @pytest.fixture
 def fesom_pi_mesh_config(fesom_pi_mesh_config_file):
+    import ruamel.yaml
+
     yaml = ruamel.yaml.YAML()
     return yaml.load(fesom_pi_mesh_config_file.open())

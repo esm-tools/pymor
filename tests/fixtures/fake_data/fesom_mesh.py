@@ -1,6 +1,4 @@
-import numpy as np
 import pytest
-import xarray as xr
 
 
 def make_fake_grid():
@@ -9,6 +7,9 @@ def make_fake_grid():
     The dimension lengths are made up to reduce the size. Dummy values are used for variables.
     The purpose of this fake grid is just to test the setgrid functionality.
     """
+    import numpy as np
+    import xarray as xr
+
     # dimensions
     ncells = 100
     vertices = 18

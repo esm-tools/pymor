@@ -45,6 +45,12 @@ import xarray as xr
 from xarray.core.utils import is_scalar
 
 from ..core.logging import logger
+from .chunking import (
+    calculate_chunks_even_divisor,
+    calculate_chunks_iterative,
+    calculate_chunks_simple,
+    get_encoding_with_chunks,
+)
 from .dataset_helpers import get_time_label, has_time_axis
 
 
@@ -212,8 +218,7 @@ def create_filepath(ds, rule):
     frequency_str = rule.data_request_variable.frequency
     if frequency_str == "fx" or not time_range:
         filepath = (
-            f"{out_dir}/{name}_{table_id}_{institution}-{source_id}_"
-            f"{experiment_id}_{label}_{grid}{clim_suffix}.nc"
+            f"{out_dir}/{name}_{table_id}_{institution}-{source_id}_" f"{experiment_id}_{label}_{grid}{clim_suffix}.nc"
         )
     else:
         filepath = (
@@ -245,9 +250,7 @@ def get_offset(rule):
             offset = pd.Timedelta(offset)
         else:
             # offset is a float value scaled by the approx_interval
-            approx_interval = float(
-                rule.data_request_variable.table_header.approx_interval
-            )
+            approx_interval = float(rule.data_request_variable.table_header.approx_interval)
             dt = pd.Timedelta(approx_interval, unit="d")
             offset = dt * float(offset)
     return offset
@@ -348,9 +351,7 @@ def _save_dataset_with_native_timespan(
                 )
 
                 # Replace the time coordinate with the encoded values
-                ds[time_label] = xr.DataArray(
-                    encoded_values, dims=[time_label], attrs=ds[time_label].attrs.copy()
-                )
+                ds[time_label] = xr.DataArray(encoded_values, dims=[time_label], attrs=ds[time_label].attrs.copy())
 
             # Set time units and calendar as attributes for consistency
             # Only set if they are actual strings (not Mock objects)
@@ -372,11 +373,82 @@ def _save_dataset_with_native_timespan(
 
     # Don't pass encoding to save_mfdataset since we've already encoded the time values
     # and set the attributes - let xarray use what we've provided
-    return xr.save_mfdataset(
+    xr.save_mfdataset(
         datasets,
         paths,
         **extra_kwargs,
     )
+    return da
+
+
+def _calculate_netcdf_chunks(ds: xr.Dataset, rule) -> dict:
+    """
+    Calculate optimal NetCDF chunk sizes based on configuration.
+
+    Parameters
+    ----------
+    ds : xr.Dataset
+        The dataset to calculate chunks for.
+    rule : Rule
+        The rule object containing configuration.
+
+    Returns
+    -------
+    dict
+        Dictionary mapping variable names to their encoding (including chunks).
+    """
+    # Check if chunking is enabled
+    # First check global config, then allow rule-level override (including from inherit block)
+    enable_chunking = rule._pycmor_cfg("netcdf_enable_chunking")
+    enable_chunking = getattr(rule, "netcdf_enable_chunking", enable_chunking)
+    if not enable_chunking:
+        return {}
+
+    # Get chunking configuration from global config
+    chunk_algorithm = rule._pycmor_cfg("netcdf_chunk_algorithm")
+    chunk_size = rule._pycmor_cfg("netcdf_chunk_size")
+    chunk_tolerance = rule._pycmor_cfg("netcdf_chunk_tolerance")
+    prefer_time = rule._pycmor_cfg("netcdf_chunk_prefer_time")
+    compression_level = rule._pycmor_cfg("netcdf_compression_level")
+    enable_compression = rule._pycmor_cfg("netcdf_enable_compression")
+
+    # Allow per-rule override of chunking settings (including from inherit block)
+    chunk_algorithm = getattr(rule, "netcdf_chunk_algorithm", chunk_algorithm)
+    chunk_size = getattr(rule, "netcdf_chunk_size", chunk_size)
+    chunk_tolerance = getattr(rule, "netcdf_chunk_tolerance", chunk_tolerance)
+    prefer_time = getattr(rule, "netcdf_chunk_prefer_time", prefer_time)
+    compression_level = getattr(rule, "netcdf_compression_level", compression_level)
+    enable_compression = getattr(rule, "netcdf_enable_compression", enable_compression)
+
+    # Calculate chunks based on algorithm
+    chunk_functions = {
+        "simple": calculate_chunks_simple,
+        "even_divisor": calculate_chunks_even_divisor,
+        "iterative": calculate_chunks_iterative,
+    }
+    try:
+        chunk_function = chunk_functions[chunk_algorithm]
+    except KeyError:
+        logger.warning(f"Unknown chunk algorithm: {chunk_algorithm}, using simple")
+        chunk_function = calculate_chunks_simple
+    try:
+        chunks = chunk_function(
+            ds,
+            target_chunk_size=chunk_size,
+            prefer_time_chunking=prefer_time,
+        )
+        # Generate encoding with chunks and compression
+        encoding = get_encoding_with_chunks(
+            ds,
+            chunks=chunks,
+            compression_level=compression_level,
+            enable_compression=enable_compression,
+        )
+        logger.info(f"Calculated NetCDF chunks: {chunks}")
+        return encoding
+    except Exception as e:
+        logger.warning(f"Failed to calculate chunks: {e}. Proceeding without chunking.")
+        return {}
 
 
 def save_dataset(da: xr.DataArray, rule):
@@ -438,22 +510,48 @@ def save_dataset(da: xr.DataArray, rule):
         time_encoding["calendar"] = "standard"
     if not has_time_axis(da):
         filepath = create_filepath(da, rule)
+        # Calculate chunking encoding
+        if isinstance(da, xr.DataArray):
+            # Ensure DataArray has a name before converting to Dataset
+            if da.name is None:
+                da = da.rename("data")
+            ds_temp = da.to_dataset()
+        else:
+            ds_temp = da
+        chunk_encoding = _calculate_netcdf_chunks(ds_temp, rule)
         return da.to_netcdf(
             filepath,
             mode="w",
             format="NETCDF4",
+            encoding=chunk_encoding if chunk_encoding else None,
         )
     time_label = get_time_label(da)
     if is_scalar(da[time_label]):
         filepath = create_filepath(da, rule)
+        # Calculate chunking encoding
+        if isinstance(da, xr.DataArray):
+            # Ensure DataArray has a name before converting to Dataset
+            if da.name is None:
+                da = da.rename("data")
+            ds_temp = da.to_dataset()
+        else:
+            ds_temp = da
+        chunk_encoding = _calculate_netcdf_chunks(ds_temp, rule)
+        # Merge time encoding with chunk encoding
+        final_encoding = {time_label: time_encoding}
+        if chunk_encoding:
+            final_encoding.update(chunk_encoding)
         return da.to_netcdf(
             filepath,
             mode="w",
             format="NETCDF4",
-            encoding={time_label: time_encoding},
+            encoding=final_encoding,
             **extra_kwargs,
         )
     if isinstance(da, xr.DataArray):
+        # Ensure DataArray has a name before converting to Dataset
+        if da.name is None:
+            da = da.rename("data")
         da = da.to_dataset()
 
     # Set time variable attributes
@@ -479,6 +577,9 @@ def save_dataset(da: xr.DataArray, rule):
 
         # Convert the dataset to Dataset if it's a DataArray
         if isinstance(da, xr.DataArray):
+            # Ensure DataArray has a name before converting to Dataset
+            if da.name is None:
+                da = da.rename("data")
             da = da.to_dataset()
 
         # Get the current time values (should be datetime objects)
@@ -492,9 +593,7 @@ def save_dataset(da: xr.DataArray, rule):
         )
 
         # Replace the time coordinate with the encoded values
-        da[time_label] = xr.DataArray(
-            encoded_values, dims=[time_label], attrs=da[time_label].attrs.copy()
-        )
+        da[time_label] = xr.DataArray(encoded_values, dims=[time_label], attrs=da[time_label].attrs.copy())
 
     # Set time units and calendar as attributes (for metadata)
     # Only set if they are actual strings (not Mock objects)
@@ -511,17 +610,31 @@ def save_dataset(da: xr.DataArray, rule):
 
     # Ensure the encoding is set on the time variable itself
     if isinstance(da, xr.DataArray):
+        # Ensure DataArray has a name before converting to Dataset
+        if da.name is None:
+            da = da.rename("data")
         da = da.to_dataset()
     da[time_label].encoding.update(time_encoding)
 
     if not has_time_axis(da):
         filepath = create_filepath(da, rule)
-        return da.to_netcdf(
+        # Calculate chunking encoding
+        if isinstance(da, xr.DataArray):
+            # Ensure DataArray has a name before converting to Dataset
+            if da.name is None:
+                da = da.rename("data")
+            ds_temp = da.to_dataset()
+        else:
+            ds_temp = da
+        chunk_encoding = _calculate_netcdf_chunks(ds_temp, rule)
+        da.to_netcdf(
             filepath,
             mode="w",
             format="NETCDF4",
+            encoding=chunk_encoding if chunk_encoding else None,
             **extra_kwargs,
         )
+        return da
 
     default_file_timespan = rule._pycmor_cfg("file_timespan")
     file_timespan = getattr(rule, "file_timespan", default_file_timespan)
@@ -535,9 +648,7 @@ def save_dataset(da: xr.DataArray, rule):
         )
     else:
         file_timespan_as_offset = pd.tseries.frequencies.to_offset(file_timespan)
-        file_timespan_as_dt = (
-            pd.Timestamp.now() + file_timespan_as_offset - pd.Timestamp.now()
-        )
+        file_timespan_as_dt = pd.Timestamp.now() + file_timespan_as_offset - pd.Timestamp.now()
         approx_interval = float(rule.data_request_variable.table_header.approx_interval)
         dt = pd.Timedelta(approx_interval, unit="d")
         if file_timespan_as_dt < dt:
@@ -559,9 +670,16 @@ def save_dataset(da: xr.DataArray, rule):
             for group_name, group_ds in groups:
                 paths.append(create_filepath(group_ds, rule))
                 datasets.append(group_ds)
-            return xr.save_mfdataset(
+            # Calculate chunking encoding for the first dataset (assume all similar)
+            chunk_encoding = _calculate_netcdf_chunks(datasets[0], rule)
+            # Merge time encoding with chunk encoding
+            final_encoding = {time_label: time_encoding}
+            if chunk_encoding:
+                final_encoding.update(chunk_encoding)
+            xr.save_mfdataset(
                 datasets,
                 paths,
-                encoding={time_label: time_encoding},
+                encoding=final_encoding,
                 **extra_kwargs,
             )
+            return da

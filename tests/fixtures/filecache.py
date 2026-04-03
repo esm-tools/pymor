@@ -1,19 +1,23 @@
-"""Fixtures for filecache tests."""
+"""Fixtures for filecache tests.
+
+Note: Heavy dependencies (numpy, pandas, xarray) are imported lazily inside
+fixtures to avoid slowing down test collection and unrelated test runs.
+"""
 
 import os
 import tempfile
 
-import numpy as np
-import pandas as pd
 import pytest
-import xarray as xr
-
-from pycmor.core.filecache import Filecache
 
 
 @pytest.fixture
 def sample_netcdf_file():
     """Create a temporary NetCDF file for testing."""
+    # Lazy imports to avoid loading heavy dependencies during test collection
+    import numpy as np
+    import pandas as pd
+    import xarray as xr
+
     with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp:
         # Create sample data
         time = pd.date_range("2000-01-01", periods=12, freq="ME")
@@ -48,12 +52,16 @@ def sample_netcdf_file():
 @pytest.fixture
 def empty_filecache():
     """Create an empty filecache instance."""
+    from pycmor.core.filecache import Filecache
+
     return Filecache()
 
 
 @pytest.fixture
 def sample_cache_data():
     """Create sample cache data for testing."""
+    import pandas as pd
+
     return pd.DataFrame(
         {
             "variable": ["temperature", "precipitation"],

@@ -1,7 +1,8 @@
 """
-==========================
-The Pycmor Standard Library
-==========================
+===========================
+The PyCMOR Standard Library
+===========================
+
 The standard library contains functions that are included in the default
 pipelines, and are generally used as ``step`` functions. We expose several
 useful ones:
@@ -26,15 +27,15 @@ from xarray import DataArray, Dataset
 from ..core.logging import logger
 from ..core.rule import Rule
 from .bounds import add_vertical_bounds as _add_vertical_bounds
+from .coordinate_attributes import set_coordinate_attributes as _set_coordinate_attributes
 from .dataset_helpers import freq_is_coarser_than_data, get_time_label, has_time_axis
-from .exceptions import (
-    PycmorResamplingError,
-    PycmorResamplingTimeAxisIncompatibilityError,
-)
+from .dimension_mapping import map_dimensions as _map_dimensions
+from .exceptions import PycmorResamplingError, PycmorResamplingTimeAxisIncompatibilityError
 from .generic import load_data as _load_data
 from .generic import show_data as _show_data
 from .generic import trigger_compute as _trigger_compute
 from .global_attributes import set_global_attributes as _set_global_attributes
+from .time_bounds import time_bounds as _set_time_bounds
 from .timeaverage import timeavg
 from .units import handle_unit_conversion
 from .variable_attributes import set_variable_attrs
@@ -49,14 +50,15 @@ __all__ = [
     "show_data",
     "set_global_attributes",
     "set_variable_attributes",
+    "set_coordinate_attributes",
+    "map_dimensions",
     "checkpoint_pipeline",
     "add_vertical_bounds",
+    "set_time_bounds",
 ]
 
 
-def convert_units(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def convert_units(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Convert units of a DataArray or Dataset based upon the Data Request Variable you
     have selected. Automatically handles chemical elements and dimensionless units.
@@ -77,9 +79,7 @@ def convert_units(
     return handle_unit_conversion(data, rule)
 
 
-def time_average(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def time_average(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Compute the time average of a DataArray or Dataset based upon the Data Request Variable you
     have selected.
@@ -100,9 +100,7 @@ def time_average(
     return timeavg(data, rule)
 
 
-def load_data(
-    data: Union[DataArray, Dataset, None], rule: Rule
-) -> Union[DataArray, Dataset]:
+def load_data(data: Union[DataArray, Dataset, None], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Load data from files according to the rule specification.
 
@@ -131,9 +129,7 @@ def load_data(
     return _load_data(data, rule)
 
 
-def get_variable(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def get_variable(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Extract a variable from a dataset as a DataArray.
 
@@ -162,9 +158,7 @@ def get_variable(
     return data
 
 
-def temporal_resample(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def temporal_resample(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Resample a DataArray or Dataset to a different temporal frequency.
 
@@ -213,9 +207,7 @@ def temporal_resample(
         )
 
 
-def trigger_compute(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def trigger_compute(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Trigger computation of lazy (dask-backed) data operations.
 
@@ -260,9 +252,7 @@ def show_data(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, D
     return _show_data(data, rule)
 
 
-def set_global_attributes(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def set_global_attributes(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Set global metadata attributes for a Dataset or DataArray.
 
@@ -285,9 +275,7 @@ def set_global_attributes(
     return _set_global_attributes(data, rule)
 
 
-def set_variable_attributes(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def set_variable_attributes(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Set variable-specific metadata attributes.
 
@@ -310,9 +298,141 @@ def set_variable_attributes(
     return set_variable_attrs(data, rule)
 
 
-def checkpoint_pipeline(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def set_coordinate_attributes(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
+    """
+    Set CF-compliant metadata attributes on coordinate variables.
+
+    This function applies standardized CF attributes (standard_name, axis,
+    units, positive) to coordinate variables (latitude, longitude, vertical
+    coordinates, etc.) to ensure proper interpretation by xarray and other
+    CF-aware tools.
+
+    Time coordinates are handled separately in the file saving step.
+
+    Parameters
+    ----------
+    data : xarray.DataArray or xarray.Dataset
+        The data to which coordinate attributes will be added.
+    rule : Rule
+        The rule containing configuration for coordinate attribute setting.
+
+    Returns
+    -------
+    xarray.DataArray or xarray.Dataset
+        The data with updated coordinate attributes.
+
+    Notes
+    -----
+    This function sets:
+    - standard_name: CF standard name for the coordinate
+    - axis: X, Y, Z, or T designation
+    - units: Physical units (degrees_east, degrees_north, Pa, m, etc.)
+    - positive: Direction for vertical coordinates (up or down)
+    - coordinates: Attribute on data variables listing their coordinates
+
+    Configuration options:
+    - xarray_set_coordinate_attributes: Enable/disable coordinate attrs
+    - xarray_set_coordinates_attribute: Enable/disable 'coordinates' attr
+
+    Examples
+    --------
+    .. note::
+       These examples are illustrative and not verified by doctests.
+
+    .. code-block:: python
+
+       import xarray as xr
+       from pycmor.core.rule import Rule
+       rule = Rule(cmor_variable='tas', model_variable='tas')
+       ds = xr.Dataset(
+          data={
+              "tas": (["time", "lat", "lon"], data),
+          },
+          coords={"lat": lats, "lon": lons}
+       )
+
+       ds = set_coordinate_attributes(ds, rule)
+       print(ds['lat'].attrs)
+       # {'standard_name': 'latitude', 'units': 'degrees_north', 'axis': 'Y'}
+    """
+    return _set_coordinate_attributes(data, rule)
+
+
+def map_dimensions(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
+    """
+    Map dimensions from source data to CMIP table requirements.
+
+    This function handles the "input side" of dimension handling:
+    - Detects what source dimensions represent (latitude, longitude, pressure, etc.)
+    - Maps source dimension names to CMIP dimension names
+    - Renames dimensions to match CMIP requirements
+    - Validates dimension mapping
+
+    The function uses multiple strategies to detect dimension types:
+    1. Name pattern matching (e.g., 'lat', 'latitude', 'rlat')
+    2. Standard name attributes
+    3. Axis attributes
+    4. Value range analysis
+
+    Parameters
+    ----------
+    data : xarray.DataArray or xarray.Dataset
+        The input data with source dimension names.
+    rule : Rule
+        The rule containing the data request variable and configuration.
+
+    Returns
+    -------
+    xarray.DataArray or xarray.Dataset
+        The data with dimensions renamed to match CMIP requirements.
+
+    Configuration options:
+    - xarray_enable_dimension_mapping: Enable/disable dimension mapping
+    - dimension_mapping_validation: Validation mode (ignore, warn, error)
+    - dimension_mapping: User-specified mapping dict
+
+    Examples
+    --------
+    .. note::
+       These examples are illustrative and not verified by doctests.
+
+    .. code-block:: python
+
+        import xarray as xr
+        import numpy as np
+        from types import SimpleNamespace
+        data = np.random.random((10,19,90,180))
+        # Source data with non-CMIP dimension names
+        ds = xr.Dataset({
+            'temp': (['time', 'lev', 'latitude', 'longitude'], data),
+        })
+        # After mapping (if CMIP table requires 'time plev19 lat lon')
+        class FakeRule(SimpleNamespace):
+            def _pycmor_cfg(self, key, default=None):
+                return self.config.get(key, default)
+        rule = FakeRule(
+            cmor_variable="temp",
+            model_variable="temp",
+            data_request_variable=SimpleNamespace(attrs={"units": "K"}),
+            config={"xarray_enable_dimension_mapping": True},
+        )
+        ds = map_dimensions(ds, rule)
+        print(ds.dims)
+        # Frozen({'time': 10, 'plev19': 19, 'lat': 90, 'lon': 180})
+
+    Notes
+    -----
+    This function should be called BEFORE set_coordinate_attributes in the pipeline,
+    so that coordinates have the correct CMIP names before metadata is set.
+
+    See Also
+    --------
+    set_coordinate_attributes : Sets CF-compliant metadata on coordinates
+    """
+    return _map_dimensions(data, rule)
+
+
+def checkpoint_pipeline(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Insert a checkpoint in the pipeline processing.
 
@@ -343,9 +463,7 @@ def checkpoint_pipeline(
     return data
 
 
-def add_vertical_bounds(
-    data: Union[DataArray, Dataset], rule: Rule
-) -> Union[DataArray, Dataset]:
+def add_vertical_bounds(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
     """
     Add vertical coordinate bounds to a dataset (similar to cdo genlevelbounds).
 
@@ -370,18 +488,26 @@ def add_vertical_bounds(
 
     Examples
     --------
-    >>> import xarray as xr
-    >>> import numpy as np
-    >>> ds = xr.Dataset({
-    ...     'ta': (['time', 'plev', 'lat', 'lon'], np.random.rand(10, 8, 5, 6)),
-    ... }, coords={
-    ...     'plev': [100000, 92500, 85000, 70000, 60000, 50000, 40000, 30000],
-    ...     'lat': np.linspace(-90, 90, 5),
-    ...     'lon': np.linspace(0, 360, 6),
-    ... })
-    >>> ds_with_bounds = add_vertical_bounds(ds, rule)
-    >>> print('plev_bnds' in ds_with_bounds)
-    True
+    .. note::
+       These examples are illustrative and not verified by doctests.
+
+    .. code-block:: python
+
+        import xarray as xr
+        import numpy as np
+        from pycmor.core.rule import Rule
+        import pycmor.std_lib
+        ds = xr.Dataset({
+            'ta': (['time', 'plev', 'lat', 'lon'], np.random.rand(10, 8, 5, 6)),
+        }, coords={
+            'plev': [100000, 92500, 85000, 70000, 60000, 50000, 40000, 30000],
+            'lat': np.linspace(-90, 90, 5),
+            'lon': np.linspace(0, 360, 6),
+        })
+        rule = Rule(cmor_variable='ta', model_variable='ta')
+        ds_with_bounds = pycmor.std_lib.add_vertical_bounds(ds, rule=rule)
+        'plev_bnds' in ds_with_bounds.data_vars
+        # True
 
     Notes
     -----
@@ -404,3 +530,38 @@ def add_vertical_bounds(
 
     # Dataset input - pass through directly
     return _add_vertical_bounds(data)
+
+
+def set_time_bounds(data: Union[DataArray, Dataset], rule: Rule) -> Union[DataArray, Dataset]:
+    """
+    Set time bounds for a Dataset based on the time method and approximate interval.
+
+    Creates time bounds representing the start and end of each time interval.
+    Handles mean (interval bounds), instantaneous (zero-width bounds), and
+    climatology (no bounds) time methods.
+
+    Parameters
+    ----------
+    data : xarray.DataArray or xarray.Dataset
+        The data to add time bounds to. If a DataArray, it will be converted
+        to a Dataset temporarily for processing.
+    rule : Rule
+        The rule containing ``approx_interval`` (in days) and optionally
+        ``time_method`` (mean, instantaneous, or climatology).
+
+    Returns
+    -------
+    xarray.DataArray or xarray.Dataset
+        The data with time bounds added.
+
+    See Also
+    --------
+    pycmor.std_lib.time_bounds.time_bounds : The underlying implementation
+    """
+    if isinstance(data, DataArray):
+        var_name = data.name or "data"
+        ds = data.to_dataset(name=var_name)
+        ds_with_bounds = _set_time_bounds(ds, rule)
+        return ds_with_bounds[var_name]
+
+    return _set_time_bounds(data, rule)

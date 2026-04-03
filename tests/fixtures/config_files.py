@@ -1,43 +1,39 @@
-import pytest
+"""Generic configuration file fixtures.
 
-from tests.utils.constants import TEST_ROOT
+Model-specific config fixtures have been moved to their respective
+model fixture modules in tests/contrib/models/<model>/fixtures/config.py
+"""
+
+import pytest
 
 
 @pytest.fixture
 def test_config():
+    """Generic test config file path."""
+    from tests.utils.constants import TEST_ROOT
+
     return TEST_ROOT / "configs" / "test_config.yaml"
 
 
 @pytest.fixture
 def fesom_pi_mesh_config_file():
+    """FESOM PI mesh config file path (legacy)."""
+    from tests.utils.constants import TEST_ROOT
+
     return TEST_ROOT / "configs/fesom_pi_mesh_run.yaml"
 
 
 @pytest.fixture
 def test_config_cmip6():
+    """Generic CMIP6 test config file path."""
+    from tests.utils.constants import TEST_ROOT
+
     return TEST_ROOT / "configs" / "test_config_cmip6.yaml"
 
 
 @pytest.fixture
 def test_config_cmip7():
+    """Generic CMIP7 test config file path."""
+    from tests.utils.constants import TEST_ROOT
+
     return TEST_ROOT / "configs" / "test_config_cmip7.yaml"
-
-
-@pytest.fixture
-def pi_uxarray_config():
-    return TEST_ROOT / "configs" / "test_config_pi_uxarray.yaml"
-
-
-@pytest.fixture
-def pi_uxarray_config_cmip7():
-    return TEST_ROOT / "configs" / "test_config_pi_uxarray_cmip7.yaml"
-
-
-@pytest.fixture
-def fesom_2p6_pimesh_esm_tools_config():
-    return TEST_ROOT / "configs" / "test_config_fesom_2p6_pimesh.yaml"
-
-
-@pytest.fixture
-def awicm_1p0_recom_config():
-    return TEST_ROOT / "configs" / "test_config_awicm_1p0_recom.yaml"

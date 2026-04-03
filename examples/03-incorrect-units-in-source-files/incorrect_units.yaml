@@ -3,10 +3,7 @@ general:
   description: "CMOR configuration for AWIESM 1.1 LR"
   maintainer: "pgierz"
   email: "pgierz@awi.de"
-  cmor_version: "CMIP6"
-  mip: "CMIP"
-  CMIP_Tables_Dir: "/work/ab0246/a270077/SciComp/Projects/pycmor/cmip6-cmor-tables/Tables"
-  CV_Dir: "/work/ab0246/a270077/SciComp/Projects/pycmor/cmip6-cmor-tables/CMIP6_CVs/"
+  cmor_version: "CMIP7"
 pycmor:
   # parallel: True
   warn_on_no_rule: False
@@ -18,39 +15,37 @@ pycmor:
   # maximum_jobs: 30
   # You can add your own path to the dimensionless mapping table
   # If nothing is specified here, it will use the built-in one.
+inherit:
+  # Common attributes shared by all rules
+  activity_id: CMIP
+  institution_id: AWI
+  source_id: AWI-CM-1-1-HR
+  variant_label: r1i1p1f1
+  experiment_id: piControl
+  grid_label: gn
+  model_component: ocnBgchem
+  output_directory: .
+  grid_file: /pool/data/AWICM/FESOM1/MESHES/core/griddes.nc
+  mesh_path: /pool/data/AWICM/FESOM1/MESHES/core
 rules:
   - name: Dissolved Inorganic Carbon in Seawater
     description: "dissic from REcoM, showing missing units in NetCDF"
     inputs:
-      - path: "/work/ab0246/a270077/SciComp/Projects/pymor/examples/03-incorrect-units-in-source-files/model_runs/piControl_LUtrans1850/outdata/recom/"
+      - path: "./model_runs/piControl_LUtrans1850/outdata/recom/"
         pattern: bgc02_fesom_.*.nc
-    grid_file: /pool/data/AWICM/FESOM1/MESHES/core/griddes.nc
-    mesh_path: /pool/data/AWICM/FESOM1/MESHES/core
     cmor_variable: dissic
+    compound_name: ocnBgchem.dissic.tavg-u-hxy-u.mon.GLB # CMIP7 compound name
     model_variable: "bgc02"
     model_unit: "mmol m-3"
-    output_directory: .
-    variant_label: r1i1p1f1
-    experiment_id: piControl
-    source_id: AWI-CM-1-1-HR
-    model_component: ocnBgchem
-    grid_label: gn
   - name: Seawater Alkalinity
     description: "talk from REcoM, showing missing units in NetCDF"
     inputs:
-      - path: "/work/ab0246/a270077/SciComp/Projects/pymor/examples/03-incorrect-units-in-source-files/model_runs/piControl_LUtrans1850/outdata/recom/"
+      - path: "./model_runs/piControl_LUtrans1850/outdata/recom/"
         pattern: bgc03_fesom_.*.nc
-    grid_file: /pool/data/AWICM/FESOM1/MESHES/core/griddes.nc
-    mesh_path: /pool/data/AWICM/FESOM1/MESHES/core
     cmor_variable: talk
+    compound_name: ocnBgchem.talk.tavg-u-hxy-u.mon.GLB # CMIP7 compound name
     model_variable: "bgc03"
     model_unit: "mmol m-3"
-    output_directory: .
-    variant_label: r1i1p1f1
-    experiment_id: piControl
-    source_id: AWI-CM-1-1-HR
-    model_component: ocnBgchem
-    grid_label: gn
 distributed:
   worker:
     memory:

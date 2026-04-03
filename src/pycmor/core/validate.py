@@ -78,13 +78,151 @@ class PipelineSectionValidator(Validator):
     def _validate(self, document):
         super()._validate(document)
         if "steps" not in document and "uses" not in document:
-            self._error(
-                "document", 'At least one of "steps" or "uses" must be specified'
-            )
+            self._error("document", 'At least one of "steps" or "uses" must be specified')
 
 
 class RuleSectionValidator(DirectoryAwareValidator):
     """Validator for rules configuration."""
+
+    def __init__(self, schema=None, cmor_version=None, **kwargs):
+        # Handle the case where cerberus calls this with allow_unknown, etc.
+        if schema is None:
+            schema = RULES_SCHEMA
+        super().__init__(schema, **kwargs)
+        self.cmor_version = cmor_version
+        # If we have a cmor_version, create a dynamic schema
+        if cmor_version:
+            self.schema = self._create_dynamic_rules_schema(cmor_version)
+
+    def _create_dynamic_rules_schema(self, cmor_version):
+        """Create a rules schema that's conditional on CMOR version."""
+        base_rule_schema = {
+            "name": {"type": "string", "required": False},
+            "cmor_variable": {
+                "type": "string",
+                "required": cmor_version == "CMIP6",  # Required for CMIP6
+            },
+            "compound_name": {
+                "type": "string",
+                "required": cmor_version == "CMIP7",  # Required for CMIP7
+            },
+            "model_variable": {"type": "string", "required": False},
+            "input_type": {
+                "type": "string",
+                "required": False,
+                "allowed": [
+                    "xr.DataArray",
+                    "xr.Dataset",
+                ],
+            },
+            "input_source": {
+                "type": "string",
+                "required": False,
+                "allowed": [
+                    "xr_tutorial",
+                ],
+            },
+            "inputs": {
+                "type": "list",
+                "schema": {
+                    "type": "dict",
+                    "schema": {
+                        "path": {"type": "string", "required": True},
+                        "pattern": {"type": "string", "required": True},
+                    },
+                },
+                "required": True,
+            },
+            "enabled": {"type": "boolean", "required": False},
+            "description": {"type": "string", "required": False},
+            "pipelines": {
+                "type": "list",
+                "schema": {"type": "string"},
+            },
+            "cmor_unit": {"type": "string", "required": False},
+            "model_unit": {"type": "string", "required": False},
+            "file_timespan": {"type": "string", "required": False},
+            "variant_label": {
+                "type": "string",
+                "required": True,
+                "regex": r"^r\d+i\d+p\d+f\d+$",
+            },
+            "source_id": {"type": "string", "required": True},
+            "output_directory": {
+                "type": "string",
+                "required": True,
+                "is_directory": True,
+            },
+            "institution_id": {
+                "type": "string",
+                "required": False,
+            },
+            "instition_id": {  # Keep for backward compatibility (typo)
+                "type": "string",
+                "required": False,
+            },
+            "experiment_id": {"type": "string", "required": True},
+            "adjust_timestamp": {"type": "string", "required": False},
+            "further_info_url": {"type": "string", "required": False},
+            "model_component": {
+                "type": "string",
+                "required": False,
+            },
+            "realm": {
+                "type": "string",
+                "required": False,
+            },
+            "grid_label": {"type": "string", "required": True},
+            "array_order": {"type": "list", "required": False},
+            "frequency": {
+                "type": "string",
+                "required": False,
+            },
+            "table_id": {
+                "type": "string",
+                "required": False,
+            },
+            "grid": {"type": "string", "required": False},
+            "nominal_resolution": {
+                "type": "string",
+                "required": False,
+            },
+            "time_units": {
+                "type": "string",
+                "required": False,
+                "regex": (
+                    r"^\s*(days|hours|minutes|seconds|milliseconds|microseconds|nanoseconds)"
+                    r"\s+since\s+\d{4}-\d{2}-\d{2}(\s+\d{2}:\d{2}:\d{2}(.\d+)?)?\s*$"
+                ),
+            },
+            "time_calendar": {
+                "type": "string",
+                "required": False,
+                "allowed": [
+                    "standard",
+                    "gregorian",
+                    "proleptic_gregorian",
+                    "noleap",
+                    "365_day",
+                    "all_leap",
+                    "366_day",
+                    "360_day",
+                    "julian",
+                    "none",
+                ],
+            },
+        }
+
+        return {
+            "rules": {
+                "type": "list",
+                "schema": {
+                    "type": "dict",
+                    "allow_unknown": True,
+                    "schema": base_rule_schema,
+                },
+            },
+        }
 
 
 GENERAL_SCHEMA = {
@@ -102,13 +240,30 @@ GENERAL_SCHEMA = {
             },
             "CV_Dir": {
                 "type": "string",
-                "required": True,
+                "required": False,  # Optional: uses CVLocator fallback chain
                 "is_directory": True,
+            },
+            "CV_version": {
+                "type": "string",
+                "required": False,  # Optional: defaults to "6.2.58.64" (CMIP6) or "src-data" (CMIP7)
             },
             "CMIP_Tables_Dir": {
                 "type": "string",
-                "required": True,
+                "required": False,  # Not required for CMIP7
                 "is_directory": True,
+            },
+            "CMIP_Tables_version": {
+                "type": "string",
+                "required": False,  # Optional: defaults to version in TableLocator (e.g., "main")
+            },
+            "CMIP7_DReq_metadata": {
+                "type": "string",
+                "required": False,  # Required only for CMIP7
+                "is_directory": False,
+            },
+            "CMIP7_DReq_version": {
+                "type": "string",
+                "required": False,  # Optional: defaults to "v1.2.2.2"
             },
         },
     },
@@ -149,7 +304,14 @@ RULES_SCHEMA = {
             "allow_unknown": True,
             "schema": {
                 "name": {"type": "string", "required": False},
-                "cmor_variable": {"type": "string", "required": True},
+                "cmor_variable": {
+                    "type": "string",
+                    "required": False,
+                },  # Not required if compound_name provided
+                "compound_name": {
+                    "type": "string",
+                    "required": False,
+                },  # CMIP7 compound name
                 "model_variable": {"type": "string", "required": False},
                 "input_type": {
                     "type": "string",
@@ -199,15 +361,44 @@ RULES_SCHEMA = {
                     "required": True,
                     "is_directory": True,
                 },
-                "instition_id": {"type": "string", "required": False},
+                "institution_id": {
+                    "type": "string",
+                    "required": False,
+                },  # Fixed typo, required for CMIP7
+                "instition_id": {
+                    "type": "string",
+                    "required": False,
+                },  # Keep for backward compatibility (typo)
                 "experiment_id": {"type": "string", "required": True},
                 "adjust_timestamp": {"type": "string", "required": False},
                 "further_info_url": {"type": "string", "required": False},
                 # "model_component" examples:
                 # aerosol, atmos, land, landIce, ocnBgchem, ocean, seaIce
-                "model_component": {"type": "string", "required": True},
+                "model_component": {
+                    "type": "string",
+                    "required": False,
+                },  # Not required if compound_name provided
+                "realm": {
+                    "type": "string",
+                    "required": False,
+                },  # CMIP7 alternative to model_component
                 "grid_label": {"type": "string", "required": True},
                 "array_order": {"type": "list", "required": False},
+                # CMIP7-specific fields
+                "frequency": {
+                    "type": "string",
+                    "required": False,
+                },  # Can come from compound_name
+                "table_id": {
+                    "type": "string",
+                    "required": False,
+                },  # Can come from compound_name
+                "grid": {"type": "string", "required": False},  # Grid description
+                "nominal_resolution": {
+                    "type": "string",
+                    "required": False,
+                },  # Model resolution
+                # Time coordinate fields
                 "time_units": {
                     "type": "string",
                     "required": False,

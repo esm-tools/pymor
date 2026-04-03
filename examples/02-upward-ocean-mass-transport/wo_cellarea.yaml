@@ -1,9 +1,6 @@
 general:
   name: "wo_cellarea"
-  cmor_version: "CMIP6"
-  mip: "CMIP"
-  CMIP_Tables_Dir: "/work/ab0995/a270243/pycmor/cmip6-cmor-tables/Tables"
-  CV_Dir: "/work/ab0995/a270243/pycmor/cmip6-cmor-tables/CMIP6_CVs"
+  cmor_version: "CMIP7"
 pycmor:
   # parallel: True
   warn_on_no_rule: False
@@ -11,21 +8,26 @@ pycmor:
   dask_cluster: "slurm"
   dask_cluster_scaling_mode: fixed
   fixed_jobs: 12
+inherit:
+  # Common attributes shared across all rules
+  activity_id: CMIP
+  institution_id: AWI
+  source_id: AWI-CM-1-1-HR
+  variant_label: r1i1p1f1
+  experiment_id: piControl
+  grid_label: gn
+  grid_file: /pool/data/AWICM/FESOM1/MESHES/core/griddes.nc
+  mesh_path: /pool/data/AWICM/FESOM1/MESHES/core
+  output_directory: .
 rules:
   - name: cellarea_wo
     inputs:
-      - path: /work/ab0995/a270243/pycmor_sample_data
+      - path: ./sample_data/
         pattern: wo_fesom_.*nc
     cmor_variable: wmo
+    compound_name: ocean.wmo.mean.mon.gn
     model_variable: wo
-    grid_file: /pool/data/AWICM/FESOM1/MESHES/core/griddes.nc
-    mesh_path: /pool/data/AWICM/FESOM1/MESHES/core
-    output_directory: .
-    variant_label: r1i1p1f1
-    experiment_id: piControl
-    source_id: AWI-CM-1-1-HR
-    model_component: seaIce
-    grid_label: gn
+    model_component: ocean
     pipelines:
       - default
 pipelines:
