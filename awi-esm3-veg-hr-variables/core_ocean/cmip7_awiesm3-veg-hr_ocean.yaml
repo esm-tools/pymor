@@ -1,0 +1,259 @@
+# CMIP7 Core Ocean Variables — AWI-ESM3-VEG-HR Rules
+# Generated from cmip7_all_core_variables_ocean.csv
+#
+# Pipeline key:
+#   (no pipelines specified) = DefaultPipeline
+#   ocean_vertical_integration_pipeline = depth-integration custom step
+#   fx_extract_pipeline = load grid file, extract variable by model_variable name
+#   fx_deptho_pipeline = load grid file, compute bathymetry
+#   fx_sftof_pipeline = load grid file, compute sea area fraction
+#   fx_thkcello_pipeline = load grid file, compute layer thickness
+#   fx_masscello_pipeline = load grid file, compute mass per area
+#
+# Research notes (2026-04-03):
+#   - FESOM2 uses POTENTIAL temperature (not conservative) → no bigthetao
+#   - MLD3 is the CMIP-compliant definition (sigma_t=0.03), not MLD1
+#   - namelist.io updated: vec_autorotate=.true., hnode enabled, daily sst/sss/ssh added
+#   - uo/vo use unod/vnod (nodal, nod2 grid) instead of u/v (elem grid)
+#   - tauuo/tauvo still on elem grid — may need elem→node step
+#   - Daily rules commented until model re-runs with updated namelist
+
+rules:
+  # ============================================================
+  # Monthly 2D surface variables (Omon) — DefaultPipeline
+  # ============================================================
+
+  - name: tos
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: sst.fesom.1350.nc
+    compound_name: ocean.tos.tavg-u-hxy-sea.mon.GLB
+    model_variable: sst
+
+  - name: sos
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: sss.fesom.1350.nc
+    compound_name: ocean.sos.tavg-u-hxy-sea.mon.GLB
+    model_variable: sss
+
+  - name: zos
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: ssh.fesom.1350.nc
+    compound_name: ocean.zos.tavg-u-hxy-sea.mon.GLB
+    model_variable: ssh
+
+  - name: hfds
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: fh.fesom.1350.nc
+    compound_name: ocean.hfds.tavg-u-hxy-sea.mon.GLB
+    model_variable: fh
+
+  - name: mlotst
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: MLD3.fesom.1350.nc
+    compound_name: ocean.mlotst.tavg-u-hxy-sea.mon.GLB
+    model_variable: MLD3
+    # MLD3 = Griffies 2016 (sigma_t=0.03 kg/m3) = CMIP-compliant mlotst
+
+  - name: tauuo
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: tx_sur.fesom.1350.nc
+    compound_name: ocean.tauuo.tavg-u-hxy-sea.mon.GLB
+    model_variable: tx_sur
+    # NOTE: tx_sur is on elem grid (6.2M elements), not nod2 (3.1M nodes).
+    # Requires vec_autorotate=.true. in namelist.io (now set).
+    # May still need elem→node interpolation pipeline step for consistency.
+
+  - name: tauvo
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: ty_sur.fesom.1350.nc
+    compound_name: ocean.tauvo.tavg-u-hxy-sea.mon.GLB
+    model_variable: ty_sur
+    # NOTE: Same elem grid caveat as tauuo.
+
+  # ============================================================
+  # Monthly 3D variables (Omon) — DefaultPipeline
+  # ============================================================
+
+  - name: thetao
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: temp.fesom.1350.nc
+    compound_name: ocean.thetao.tavg-ol-hxy-sea.mon.GLB
+    model_variable: temp
+
+  # bigthetao: SKIPPED — FESOM2 uses potential temperature, not conservative.
+  # Only thetao should be reported.
+
+  - name: so
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: salt.fesom.1350.nc
+    compound_name: ocean.so.tavg-ol-hxy-sea.mon.GLB
+    model_variable: salt
+
+  - name: uo
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: unod.fesom.1350.nc
+    compound_name: ocean.uo.tavg-ol-hxy-sea.mon.GLB
+    model_variable: unod
+    # Using unod (nodal velocity, nod2 grid) instead of u (elem grid).
+    # Requires vec_autorotate=.true. in namelist.io (now set).
+
+  - name: vo
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: vnod.fesom.1350.nc
+    compound_name: ocean.vo.tavg-ol-hxy-sea.mon.GLB
+    model_variable: vnod
+    # Using vnod (nodal velocity, nod2 grid) instead of v (elem grid).
+    # Requires vec_autorotate=.true. in namelist.io (now set).
+
+  - name: wo
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: w.fesom.1350.nc
+    compound_name: ocean.wo.tavg-ol-hxy-sea.mon.GLB
+    model_variable: w
+    # NOTE: w is on nz (57 interfaces), not nz1 (56 midpoints).
+    # May need vertical coordinate handling different from tracers.
+
+  # ============================================================
+  # Depth-integrated variables — ocean_vertical_integration_pipeline
+  # ============================================================
+
+  - name: absscint
+    inputs:
+      - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+        pattern: salt.fesom.1350.nc
+    compound_name: ocean.absscint.tavg-op4-hxy-sea.mon.GLB
+    model_variable: salt
+    integration_attrs:
+      long_name: "Integral wrt depth of seawater absolute salinity expressed as salt mass content"
+      standard_name: "integral_wrt_depth_of_sea_water_absolute_salinity_expressed_as_salt_mass_content"
+      units: "kg m-2"
+    pipelines:
+      - ocean_vertical_integration_pipeline
+
+  # ============================================================
+  # Daily variables (Oday) — DefaultPipeline
+  # Daily output now added to namelist.io (sst, sss, ssh at 'd').
+  # Input paths need updating once model re-runs with new namelist.
+  # FESOM writes daily output to separate files from monthly.
+  # ============================================================
+
+  # - name: tos_day
+  #   inputs:
+  #     - path: <path_with_daily_output>
+  #       pattern: sst.fesom.1350.nc
+  #   compound_name: ocean.tos.tavg-u-hxy-sea.day.GLB
+  #   model_variable: sst
+
+  # - name: sos_day
+  #   inputs:
+  #     - path: <path_with_daily_output>
+  #       pattern: sss.fesom.1350.nc
+  #   compound_name: ocean.sos.tavg-u-hxy-sea.day.GLB
+  #   model_variable: sss
+
+  # - name: zos_day
+  #   inputs:
+  #     - path: <path_with_daily_output>
+  #       pattern: ssh.fesom.1350.nc
+  #   compound_name: ocean.zos.tavg-u-hxy-sea.day.GLB
+  #   model_variable: ssh
+
+  # ============================================================
+  # Ofx mesh-derived variables — fx pipelines
+  # ============================================================
+
+  - name: areacello
+    inputs:
+      - path: /work/ab0246/a270092/input/fesom2/dars2
+        pattern: mesh.nc
+    compound_name: ocean.areacello.ti-u-hxy-u.fx.GLB
+    model_variable: cell_area
+    pipelines:
+      - fx_extract_pipeline
+
+  - name: deptho
+    inputs:
+      - path: /work/ab0246/a270092/input/fesom2/dars2
+        pattern: mesh.nc
+    compound_name: ocean.deptho.ti-u-hxy-sea.fx.GLB
+    model_variable: deptho
+    pipelines:
+      - fx_deptho_pipeline
+
+  - name: sftof
+    inputs:
+      - path: /work/ab0246/a270092/input/fesom2/dars2
+        pattern: mesh.nc
+    compound_name: ocean.sftof.ti-u-hxy-u.fx.GLB
+    model_variable: sftof
+    pipelines:
+      - fx_sftof_pipeline
+
+  - name: thkcello_fx
+    inputs:
+      - path: /work/ab0246/a270092/input/fesom2/dars2
+        pattern: mesh.nc
+    compound_name: ocean.thkcello.ti-ol-hxy-sea.fx.GLB
+    model_variable: thkcello
+    pipelines:
+      - fx_thkcello_pipeline
+
+  - name: masscello_fx
+    inputs:
+      - path: /work/ab0246/a270092/input/fesom2/dars2
+        pattern: mesh.nc
+    compound_name: ocean.masscello.ti-ol-hxy-sea.fx.GLB
+    model_variable: masscello
+    reference_density: 1025.0
+    pipelines:
+      - fx_masscello_pipeline
+
+  # basin (Ofx) — NOT POSSIBLE: needs external basin mask data, not in mesh
+  # hfgeou (Ofx) — NOT POSSIBLE: not in FESOM output or config (see missing.md)
+
+  # ============================================================
+  # Time-varying cell thickness — DefaultPipeline, needs model re-run
+  # hnode now enabled in namelist.io
+  # ============================================================
+
+  # Uncomment after model re-runs with hnode in namelist.io:
+  # - name: thkcello
+  #   inputs:
+  #     - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+  #       pattern: hnode.fesom.1350.nc
+  #   compound_name: ocean.thkcello.tavg-ol-hxy-sea.mon.GLB
+  #   model_variable: hnode
+
+  # masscello (Omon) — needs density x hnode, requires equation of state pipeline
+
+  # ============================================================
+  # NEEDS NEW PIPELINE — mass transport
+  # FESOM only outputs velocities, not mass transport.
+  # umo/vmo/wmo = velocity x density x cell cross-section area
+  # Also blocked by vec_autorotate for uo/vo rotation.
+  # ============================================================
+
+  # umo (Omon) — ocean mass x transport
+  # vmo (Omon) — ocean mass y transport
+  # wmo (Omon) — upward ocean mass transport
+
+  # ============================================================
+  # NEEDS NEW PIPELINE — global thermosteric sea level
+  # FESOM does not compute zostoga directly.
+  # Could derive from pbo (bottom pressure) steric contribution,
+  # but that requires ldiag_cmor=.true. and complex post-processing.
+  # ============================================================
+
+  # zostoga (Omon) — global average thermosteric sea level change
