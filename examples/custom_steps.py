@@ -278,8 +278,7 @@ def compute_mass_transport(data, rule):
     component = rule.get("transport_component", "")
     transport.attrs = {
         "units": "kg s-1",
-        "processing_note": f"Computed as velocity * rho_0({rho_0}) * dz. "
-        f"Transport per grid cell {component}-face.",
+        "processing_note": f"Computed as velocity * rho_0({rho_0}) * dz. " f"Transport per grid cell {component}-face.",
     }
     return transport
 
