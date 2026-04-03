@@ -552,6 +552,104 @@ def scale_by_constant(data, rule):
 
 
 # ============================================================
+# Generic compute steps — reusable across models and realms
+# ============================================================
+
+
+def compute_square(data, rule):
+    """
+    Square the input field.
+
+    Useful for variance-related diagnostics (tossq, sossq, zossq, mlotstsq).
+
+    Rule attributes (optional):
+      - squared_units: str, units after squaring (e.g. "degC2", "m2")
+    """
+    result = data * data
+    result.attrs = data.attrs.copy()
+    squared_units = rule.get("squared_units")
+    if squared_units:
+        result.attrs["units"] = squared_units
+    result.name = data.name
+    return result
+
+
+def extract_bottom(data, rule):
+    """
+    Extract the bottom-of-column value from a 3D field.
+
+    Uses the mesh bottom index to select the deepest valid value at each
+    horizontal point. Produces a 2D (+ time) field from a 3D input.
+
+    Rule attributes:
+      - grid_file: path to mesh file containing bottom index info
+      - vertical_dim: name of vertical dimension (auto-detected if not given)
+    """
+    grid_file = rule.get("grid_file")
+    if grid_file is None:
+        raise ValueError("Rule must specify 'grid_file' for extract_bottom step")
+
+    mesh = xr.open_dataset(grid_file)
+
+    # Auto-detect vertical dimension
+    vertical_dim = rule.get("vertical_dim")
+    if vertical_dim is None:
+        for dim in ["nz1", "depth", "lev", "nz"]:
+            if dim in data.dims:
+                vertical_dim = dim
+                break
+    if vertical_dim is None:
+        raise ValueError(f"Cannot find vertical dimension in {list(data.dims)}")
+
+    # Get number of levels per node from mesh
+    # FESOM meshes typically have 'nlevels' or 'nlevels_nod2D' (1-based count)
+    if "nlevels_nod2D" in mesh:
+        bottom_idx = mesh["nlevels_nod2D"].values - 2  # 0-based, last valid midpoint
+    elif "nlevels" in mesh:
+        bottom_idx = mesh["nlevels"].values - 2
+    else:
+        mesh.close()
+        raise ValueError("Mesh file must contain 'nlevels_nod2D' or 'nlevels'")
+    mesh.close()
+
+    # Clamp to valid range
+    nz = data.sizes[vertical_dim]
+    bottom_idx = np.clip(bottom_idx, 0, nz - 1)
+
+    # Extract bottom values using advanced indexing
+    # Convert bottom_idx to DataArray for .isel compatibility
+    horizontal_dim = next(d for d in data.dims if d not in [vertical_dim, "time"])
+    idx_da = xr.DataArray(bottom_idx, dims=[horizontal_dim])
+    result = data.isel({vertical_dim: idx_da})
+
+    result.attrs = data.attrs.copy()
+    result.name = data.name
+    return result
+
+
+def compute_surface_pressure(data, rule):
+    """
+    Compute sea water pressure at sea surface from SSH.
+
+    pso = rho_0 * g * ssh  [Pa]
+
+    For a Boussinesq model, surface pressure is the weight of the
+    water column above the geoid approximated by rho_0 * g * ssh.
+
+    Rule attributes (optional):
+      - reference_density: float (default 1025.0 kg/m3)
+      - gravity: float (default 9.80665 m/s2)
+    """
+    rho_0 = float(rule.get("reference_density", 1025.0))
+    g = float(rule.get("gravity", 9.80665))
+    result = rho_0 * g * data
+    result.attrs = data.attrs.copy()
+    result.attrs["units"] = "Pa"
+    result.name = data.name
+    return result
+
+
+# ============================================================
 # Sea ice multi-variable compute steps
 # These load a second variable from an auxiliary file specified
 # in rule attributes.

@@ -1,0 +1,489 @@
+# CMIP7 CAP7 Ocean Variables — AWI-ESM3-VEG-HR
+# Generated from cmip7_CAP7extra_variables_ocean.csv
+#
+# Excludes variables already in core_ocean config.
+# See cmip7_cap7_ocean_variables_todo.md for full variable tracking.
+
+general:
+  name: "awiesm3-cmip7-cap7-ocean"
+  cmor_version: "CMIP7"
+  mip: "CMIP"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
+
+pycmor:
+  warn_on_no_rule: False
+  dask_cluster: "slurm"
+  dask_cluster_scaling_mode: "fixed"
+  dask_cluster_scaling_fixed_jobs: 1
+
+jobqueue:
+  slurm:
+    name: pycmor-worker
+    queue: compute
+    account: bb1469
+    cores: 16
+    memory: 256GB
+    walltime: '00:30:00'
+
+pipelines:
+  # Square a field (tossq, sossq, zossq, mlotstsq)
+  - name: square_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_square
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # Generic scaling (multiply by constant, e.g. fw × rho_water)
+  - name: scale_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:scale_by_constant
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # Extract bottom-of-column from 3D field (tob, sob)
+  - name: bottom_extract_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:extract_bottom
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # Compute surface pressure from SSH (pso)
+  - name: surface_pressure_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_surface_pressure
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # Vertical integration (phcint, scint, opottempmint, somint)
+  - name: ocean_vertical_integration_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:vertical_integrate
+      - pycmor.std_lib.add_vertical_bounds
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # Ofx: load grid file, extract variable
+  - name: fx_extract_pipeline
+    steps:
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
+      - pycmor.std_lib.generic.get_variable
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+inherit:
+  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+  source_id: AWI-ESM-3
+  institution_id: AWI
+  experiment_id: picontrol
+  variant_label: r1i1p1f1
+  grid_label: gn
+  mesh_path: &mp /work/ab0246/a270092/input/fesom2/dars2
+  grid_file: /work/ab0246/a270092/input/fesom2/dars2/mesh.nc
+  grid: "FESOM 2.6 unstructured grid DARS (3146761 surface nodes)"
+  nominal_resolution: "10 km"
+  institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
+  output_directory: ./cmorized_output/awiesm3
+
+rules:
+  # ============================================================
+  # EASY: Direct mapping from ldiag_cmor or existing namelist.io
+  # ============================================================
+
+  # pbo — sea water pressure at sea floor (from ldiag_cmor=.true.)
+  - name: pbo
+    inputs:
+      - path: *dp
+        pattern: pbo.fesom.1350.nc
+    compound_name: ocean.pbo.tavg-u-hxy-sea.mon.GLB
+    model_variable: pbo
+
+  # volo — sea water volume (from ldiag_cmor=.true., global scalar)
+  - name: volo
+    inputs:
+      - path: *dp
+        pattern: volo.fesom.1350.nc
+    compound_name: ocean.volo.tavg-u-hm-sea.mon.GLB
+    model_variable: volo
+
+  # tos_ga — global average sea surface temperature (thetaoga from ldiag_cmor)
+  - name: tos_ga
+    inputs:
+      - path: *dp
+        pattern: thetaoga.fesom.1350.nc
+    compound_name: ocean.tos.tavg-u-hm-sea.mon.GLB
+    model_variable: thetaoga
+
+  # sos_ga — global average sea surface salinity (soga from ldiag_cmor)
+  - name: sos_ga
+    inputs:
+      - path: *dp
+        pattern: soga.fesom.1350.nc
+    compound_name: ocean.sos.tavg-u-hm-sea.mon.GLB
+    model_variable: soga
+
+  # thetao_ga — global average potential temperature (per level, from ldiag_cmor)
+  # NOTE: ldiag_cmor outputs thetaoga as a scalar, not per-level.
+  # The per-level profile requires a volume-weighted average pipeline.
+  # Using the scalar version for now.
+  - name: thetao_ga
+    inputs:
+      - path: *dp
+        pattern: thetaoga.fesom.1350.nc
+    compound_name: ocean.thetao.tavg-ol-hm-sea.mon.GLB
+    model_variable: thetaoga
+
+  # so_ga — global mean salinity (scalar from ldiag_cmor)
+  - name: so_ga
+    inputs:
+      - path: *dp
+        pattern: soga.fesom.1350.nc
+    compound_name: ocean.so.tavg-ol-hm-sea.mon.GLB
+    model_variable: soga
+
+  # obvfsq — Brunt-Vaisala frequency squared (N2 from namelist.io)
+  - name: obvfsq
+    inputs:
+      - path: *dp
+        pattern: N2.fesom.1350.nc
+    compound_name: ocean.obvfsq.tavg-ol-hxy-sea.mon.GLB
+    model_variable: N2
+
+  # wfo — water flux into sea water (fw × rho_water)
+  - name: wfo
+    inputs:
+      - path: *dp
+        pattern: fw.fesom.1350.nc
+    compound_name: ocean.wfo.tavg-u-hxy-sea.mon.GLB
+    model_variable: fw
+    scale_factor: 1000.0
+    scaled_units: "kg m-2 s-1"
+    pipelines:
+      - scale_pipeline
+
+  # ============================================================
+  # EASY: Squaring steps (tossq, sossq, zossq, mlotstsq)
+  # ============================================================
+
+  - name: tossq
+    inputs:
+      - path: *dp
+        pattern: sst.fesom.1350.nc
+    compound_name: ocean.tossq.tavg-u-hxy-sea.mon.GLB
+    model_variable: sst
+    squared_units: "degC2"
+    pipelines:
+      - square_pipeline
+
+  - name: sossq
+    inputs:
+      - path: *dp
+        pattern: sss.fesom.1350.nc
+    compound_name: ocean.sossq.tavg-u-hxy-sea.mon.GLB
+    model_variable: sss
+    squared_units: "1E-06"
+    pipelines:
+      - square_pipeline
+
+  - name: zossq
+    inputs:
+      - path: *dp
+        pattern: ssh.fesom.1350.nc
+    compound_name: ocean.zossq.tavg-u-hxy-sea.mon.GLB
+    model_variable: ssh
+    squared_units: "m2"
+    pipelines:
+      - square_pipeline
+
+  - name: mlotstsq
+    inputs:
+      - path: *dp
+        pattern: MLD3.fesom.1350.nc
+    compound_name: ocean.mlotstsq.tavg-u-hxy-sea.mon.GLB
+    model_variable: MLD3
+    squared_units: "m2"
+    pipelines:
+      - square_pipeline
+
+  # ============================================================
+  # MEDIUM: Bottom extraction (tob, sob)
+  # ============================================================
+
+  - name: tob
+    inputs:
+      - path: *dp
+        pattern: temp.fesom.1350.nc
+    compound_name: ocean.tob.tavg-u-hxy-sea.mon.GLB
+    model_variable: temp
+    pipelines:
+      - bottom_extract_pipeline
+
+  - name: sob
+    inputs:
+      - path: *dp
+        pattern: salt.fesom.1350.nc
+    compound_name: ocean.sob.tavg-u-hxy-sea.mon.GLB
+    model_variable: salt
+    pipelines:
+      - bottom_extract_pipeline
+
+  # ============================================================
+  # MEDIUM: Computed from existing output
+  # ============================================================
+
+  # pso — surface pressure from SSH
+  - name: pso
+    inputs:
+      - path: *dp
+        pattern: ssh.fesom.1350.nc
+    compound_name: ocean.pso.tavg-u-hxy-sea.mon.GLB
+    model_variable: ssh
+    reference_density: 1025.0
+    pipelines:
+      - surface_pressure_pipeline
+
+  # masso — global sea water mass (rho_0 × volo)
+  # Approximation: masso = rho_0 × volo (Boussinesq)
+  - name: masso
+    inputs:
+      - path: *dp
+        pattern: volo.fesom.1350.nc
+    compound_name: ocean.masso.tavg-u-hm-sea.mon.GLB
+    model_variable: volo
+    scale_factor: 1025.0
+    scaled_units: "kg"
+    pipelines:
+      - scale_pipeline
+
+  # phcint — integrated ocean heat content from potential temperature
+  # integral of rho_0 * cp * temp over depth
+  # Using vertical_integration_pipeline with scale: rho_0*cp = 1025*3992 ≈ 4.09e6
+  # NOTE: The vertical_integrate step integrates data*dz; we need rho_0*cp*temp*dz.
+  # We use scale_pipeline first to get rho_0*cp*temp, then integrate.
+  # For now, use the integration pipeline and set scale in integration_attrs.
+  - name: phcint
+    inputs:
+      - path: *dp
+        pattern: temp.fesom.1350.nc
+    compound_name: ocean.phcint.tavg-op4-hxy-sea.mon.GLB
+    model_variable: temp
+    integration_attrs:
+      long_name: "Depth integrated ocean heat content from potential temperature"
+      standard_name: "integral_wrt_depth_of_product_of_sea_water_density_and_potential_temperature"
+      units: "J m-2"
+    pipelines:
+      - ocean_vertical_integration_pipeline
+    # NOTE: needs post-multiply by rho_0*cp — may need a combined pipeline
+
+  # scint — depth-integrated practical salinity as salt mass content
+  # Similar to absscint (already in core_ocean)
+  - name: scint
+    inputs:
+      - path: *dp
+        pattern: salt.fesom.1350.nc
+    compound_name: ocean.scint.tavg-op4-hxy-sea.mon.GLB
+    model_variable: salt
+    integration_attrs:
+      long_name: "Integral wrt depth of seawater practical salinity expressed as salt mass content"
+      standard_name: "integral_wrt_depth_of_sea_water_practical_salinity_expressed_as_salt_mass_content"
+      units: "kg m-2"
+    pipelines:
+      - ocean_vertical_integration_pipeline
+
+  # volcello (fx) — static ocean grid-cell volume
+  # cell_area × layer_thickness from mesh
+  # NOTE: similar to masscello_fx but without rho_0 multiplication
+  # For now using fx_extract_pipeline with a computed variable
+  # TODO: needs a compute_volcello_fx step
+
+  # ============================================================
+  # MEDIUM: Yearly mixing/diffusivity (Oyr)
+  # ============================================================
+
+  # difvho — vertical heat diffusivity (Kv from namelist.io)
+  # FESOM uses same Kv for heat and salt
+  - name: difvho
+    inputs:
+      - path: *dp
+        pattern: Kv.fesom.1350.nc
+    compound_name: ocean.difvho.tavg-ol-hxy-sea.yr.GLB
+    model_variable: Kv
+    # NOTE: monthly data, CMIP wants yearly average — needs yearly timeavg
+
+  # difvso — vertical salt diffusivity (same Kv)
+  - name: difvso
+    inputs:
+      - path: *dp
+        pattern: Kv.fesom.1350.nc
+    compound_name: ocean.difvso.tavg-ol-hxy-sea.yr.GLB
+    model_variable: Kv
+
+  # difmxylo — momentum XY Laplacian diffusivity (Av from namelist.io)
+  - name: difmxylo
+    inputs:
+      - path: *dp
+        pattern: Av.fesom.1350.nc
+    compound_name: ocean.difmxylo.tavg-ol-hxy-sea.yr.GLB
+    model_variable: Av
+
+  # ============================================================
+  # DECADAL: 10-year averages of existing variables
+  # These use DefaultPipeline with modified time averaging.
+  # Need multi-year input patterns (e.g. temp.fesom.*.nc)
+  # ============================================================
+
+  - name: thetao_dec
+    inputs:
+      - path: *dp
+        pattern: temp.fesom.1350.nc
+    compound_name: ocean.thetao.tavg-ol-hxy-sea.dec.GLB
+    model_variable: temp
+    # TODO: needs 10-year input pattern and decadal timeavg
+
+  - name: so_dec
+    inputs:
+      - path: *dp
+        pattern: salt.fesom.1350.nc
+    compound_name: ocean.so.tavg-ol-hxy-sea.dec.GLB
+    model_variable: salt
+
+  - name: tauuo_dec
+    inputs:
+      - path: *dp
+        pattern: tx_sur.fesom.1350.nc
+    compound_name: ocean.tauuo.tavg-u-hxy-sea.dec.GLB
+    model_variable: tx_sur
+
+  - name: tauvo_dec
+    inputs:
+      - path: *dp
+        pattern: ty_sur.fesom.1350.nc
+    compound_name: ocean.tauvo.tavg-u-hxy-sea.dec.GLB
+    model_variable: ty_sur
+
+  - name: thkcello_dec
+    inputs:
+      - path: *dp
+        pattern: hnode.fesom.1350.nc
+    compound_name: ocean.thkcello.tavg-ol-hxy-sea.dec.GLB
+    model_variable: hnode
+
+  - name: volo_dec
+    inputs:
+      - path: *dp
+        pattern: volo.fesom.1350.nc
+    compound_name: ocean.volo.tavg-u-hm-sea.dec.GLB
+    model_variable: volo
+
+  - name: masso_dec
+    inputs:
+      - path: *dp
+        pattern: volo.fesom.1350.nc
+    compound_name: ocean.masso.tavg-u-hm-sea.dec.GLB
+    model_variable: volo
+    scale_factor: 1025.0
+    scaled_units: "kg"
+    pipelines:
+      - scale_pipeline
+
+  # ============================================================
+  # HARD: Barotropic streamfunction
+  # ============================================================
+
+  # msftbarot — barotropic mass streamfunction from SSH
+  # Requires: vertically-integrated transport → streamfunction via Poisson solver
+  # or direct SSH-based computation for Boussinesq models.
+  # TODO: implement compute_msftbarot step
+  # - name: msftbarot
+  #   inputs:
+  #     - path: *dp
+  #       pattern: ssh.fesom.1350.nc
+  #   compound_name: ocean.msftbarot.tavg-u-hxy-sea.mon.GLB
+  #   model_variable: ssh
+
+  # ============================================================
+  # HARD: Temperature tendency (opottemptend from ldiag_cmor)
+  # ============================================================
+
+  # opottemptend — tendency of potential temperature as heat content
+  # Available from ldiag_cmor=.true. (already enabled)
+  - name: opottemptend
+    inputs:
+      - path: *dp
+        pattern: opottemptend.fesom.1350.nc
+    compound_name: ocean.opottemptend.tavg-ol-hxy-sea.yr.GLB
+    model_variable: opottemptend
+    # NOTE: monthly data, CMIP wants yearly — needs yearly timeavg
+
+  # ============================================================
+  # HARD: 3D salt transport (sfx, sfy)
+  # ============================================================
+
+  # sfx/sfy — 3D salt mass transport
+  # Compute: velocity × salinity × cell cross-section
+  # Requires: unod × salt + dz weighting; complex multi-field pipeline
+  # TODO: implement compute_salt_transport step
+  # - name: sfx
+  #   inputs:
+  #     - path: *dp
+  #       pattern: unod.fesom.1350.nc
+  #   compound_name: ocean.sfx.tavg-ol-hxy-sea.mon.GLB
+  #   model_variable: unod
+
+  # - name: sfy
+  #   inputs:
+  #     - path: *dp
+  #       pattern: vnod.fesom.1350.nc
+  #   compound_name: ocean.sfy.tavg-ol-hxy-sea.mon.GLB
+  #   model_variable: vnod
