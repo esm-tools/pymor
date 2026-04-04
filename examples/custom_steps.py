@@ -7,7 +7,9 @@ Steps are organized by reusability:
 - Vertical integration: generic ocean/atmosphere
 """
 
+import glob as _glob
 import logging
+import os as _os
 from typing import Optional
 
 import numpy as np
@@ -1268,4 +1270,178 @@ def compute_volcello_time(data, rule):
     result.attrs["standard_name"] = "ocean_volume"
     result.attrs["long_name"] = "Ocean Grid-Cell Volume"
     result.name = data.name
+    return result
+
+
+# ============================================================
+# Atmosphere derived-variable steps
+# These compute CMOR variables that require combining two or
+# more IFS output fields (e.g. wind speed from u/v components,
+# humidity from dewpoint + temperature/pressure).
+#
+# Secondary inputs are loaded via glob patterns specified in
+# rule attributes, using xr.open_mfdataset for multi-file
+# (yearly split) atmosphere output.
+# ============================================================
+
+
+def _load_secondary_mf(rule, path_key, pattern_key, variable_key):
+    """Load a secondary input variable from a glob pattern of files.
+
+    Parameters
+    ----------
+    rule : Rule
+        The pycmor rule object.
+    path_key : str
+        Rule attribute name for the directory path.
+    pattern_key : str
+        Rule attribute name for the file glob pattern.
+    variable_key : str
+        Rule attribute name for the variable name inside the files.
+
+    Returns
+    -------
+    xr.DataArray
+    """
+    path = rule.get(path_key)
+    pattern = rule.get(pattern_key)
+    if path is None or pattern is None:
+        raise ValueError(f"Rule must specify '{path_key}' and '{pattern_key}'")
+    files = sorted(_glob.glob(_os.path.join(path, pattern)))
+    if not files:
+        raise FileNotFoundError(f"No files matching {_os.path.join(path, pattern)}")
+    ds = xr.open_mfdataset(files)
+    var_name = rule.get(variable_key)
+    if var_name and var_name in ds:
+        result = ds[var_name]
+    else:
+        data_vars = [v for v in ds.data_vars if v not in ds.coords]
+        result = ds[data_vars[0]]
+    return result
+
+
+def compute_sfcwind(data, rule):
+    """
+    Compute near-surface wind speed from U and V components.
+
+    sfcWind = sqrt(10u² + 10v²)
+
+    Primary input (data) is 10u (eastward 10m wind).
+    The V component is loaded from rule attributes.
+
+    Rule attributes:
+      - second_input_path: directory containing V-component files
+      - second_input_pattern: glob pattern for V-component files
+      - second_variable: variable name in V files (default: auto-detect)
+    """
+    v10 = _load_secondary_mf(rule, "second_input_path", "second_input_pattern", "second_variable")
+    result = np.sqrt(data**2 + v10**2)
+    result.attrs = {
+        "units": "m s-1",
+        "standard_name": "wind_speed",
+        "long_name": "Near-Surface Wind Speed",
+    }
+    result.name = "sfcWind"
+    return result
+
+
+def compute_hurs(data, rule):
+    """
+    Compute near-surface relative humidity from temperature and dewpoint.
+
+    Uses the Magnus formula:
+      RH = 100 * exp(b*Td/(c+Td)) / exp(b*T/(c+T))
+
+    where T and Td are in Celsius, b = 17.625, c = 243.04.
+
+    Primary input (data) is 2t (2m temperature, K).
+    Dewpoint is loaded from rule attributes.
+
+    Rule attributes:
+      - second_input_path: directory containing dewpoint files
+      - second_input_pattern: glob pattern for dewpoint files
+      - second_variable: variable name in dewpoint files
+    """
+    td_K = _load_secondary_mf(rule, "second_input_path", "second_input_pattern", "second_variable")
+
+    # Convert K -> °C
+    t_C = data - 273.15
+    td_C = td_K - 273.15
+
+    # Magnus formula constants (Alduchov and Eskridge, 1996)
+    b = 17.625
+    c = 243.04
+
+    result = 100.0 * np.exp(b * td_C / (c + td_C)) / np.exp(b * t_C / (c + t_C))
+
+    # Clip to physical range
+    result = result.clip(0, 100)
+
+    result.attrs = {
+        "units": "%",
+        "standard_name": "relative_humidity",
+        "long_name": "Near-Surface Relative Humidity",
+    }
+    result.name = "hurs"
+    return result
+
+
+def compute_huss(data, rule):
+    """
+    Compute near-surface specific humidity from dewpoint and surface pressure.
+
+    Uses Tetens formula for saturation vapour pressure at dewpoint:
+      e = 611.2 * exp(17.67 * Td / (Td + 243.5))
+
+    Then specific humidity:
+      q = 0.622 * e / (p - 0.378 * e)
+
+    Primary input (data) is 2d (2m dewpoint temperature, K).
+    Surface pressure is loaded from rule attributes.
+
+    Rule attributes:
+      - second_input_path: directory containing surface pressure files
+      - second_input_pattern: glob pattern for surface pressure files
+      - second_variable: variable name in pressure files
+    """
+    sp = _load_secondary_mf(rule, "second_input_path", "second_input_pattern", "second_variable")
+
+    # Dewpoint in Celsius
+    td_C = data - 273.15
+
+    # Saturation vapour pressure at dewpoint (Tetens formula)
+    e = 611.2 * np.exp(17.67 * td_C / (td_C + 243.5))
+
+    result = 0.622 * e / (sp - 0.378 * e)
+    result.attrs = {
+        "units": "1",
+        "standard_name": "specific_humidity",
+        "long_name": "Near-Surface Specific Humidity",
+    }
+    result.name = "huss"
+    return result
+
+
+def compute_clwvi(data, rule):
+    """
+    Compute condensed water path (liquid + ice).
+
+    clwvi = tclw + tciw
+
+    Primary input (data) is tclw (total column cloud liquid water).
+    Ice water path is loaded from rule attributes.
+
+    Rule attributes:
+      - second_input_path: directory containing tciw files
+      - second_input_pattern: glob pattern for tciw files
+      - second_variable: variable name in tciw files
+    """
+    tciw = _load_secondary_mf(rule, "second_input_path", "second_input_pattern", "second_variable")
+    result = data + tciw
+    result.attrs = {
+        "units": "kg m-2",
+        "standard_name": "atmosphere_mass_content_of_cloud_condensed_water",
+        "long_name": "Condensed Water Path",
+    }
+    result.name = "clwvi"
     return result
