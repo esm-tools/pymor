@@ -1,0 +1,67 @@
+# CMIP7 Core Land Variables — Rule Implementation TODO
+
+Variables from 3 CSVs: `cmip7_all_core_variables_land.csv` (13), `cmip7_all_core_variables_atmos_land.csv` (2), `cmip7_all_core_variables_landIce_land.csv` (3). Total: 18 rows, 17 unique CMOR variables.
+11 implementable from IFS output, 6 deferred to cap7_land (need LPJ-GUESS or external data).
+
+XIOS field definitions: `field_def_cmip7.xml`
+Output config: `file_def_oifs_cmip7_spinup.xml.j2`
+Pycmor rules: `cmip7_awiesm3-veg-hr_land.yaml`
+
+## Key conversion patterns
+
+- IFS accumulated fields (m or J m-2) need deaccumulation: ÷21600 for 6h freq_op
+- Volumetric soil moisture (m3 m-3) → kg m-2 via ×layer_thickness×1000
+- IFS evaporation `e` is negative for actual evaporation → sign flip
+- HTESSEL soil layers: 0.07m, 0.21m, 0.72m, 1.89m (total 2.89m)
+
+---
+
+## Monthly land (Lmon) — IFS-producible
+
+### XIOS CMOR-ready (derived fields in field_def)
+
+- [x] **evspsbl** — Evaporation Including Sublimation (`kg m-2 s-1`, Amon) — XIOS expr: `-1000*e/21600`
+- [x] **mrro** — Total Runoff (`kg m-2 s-1`, Lmon) — XIOS expr: `1000*ro/21600`
+- [x] **mrros** — Surface Runoff (`kg m-2 s-1`, Lmon) — XIOS expr: `1000*sro/21600`
+- [x] **snw** — Surface Snow Amount (`kg m-2`, LImon) — XIOS expr: `sd*1000`
+- [x] **lai** — Leaf Area Index (`1`, Lmon) — XIOS expr: `lai_lv*cvl + lai_hv*cvh`
+- [x] **mrso** — Total Soil Moisture Content (`kg m-2`, Lmon) — XIOS expr: `1000*(swvl1*0.07 + swvl2*0.21 + swvl3*0.72 + swvl4*1.89)`
+- [x] **mrsol** — Upper 10cm Soil Moisture (`kg m-2`, Lmon) — XIOS expr: `1000*(swvl1*0.07 + swvl2*0.03)`
+
+### pycmor pipeline computed
+
+- [x] **snc** — Snow Area Fraction (`%`, LImon) — pycmor pipeline: parametric from `sd` (saturation at 15mm water equiv)
+
+## Fixed (fx) — IFS-producible
+
+- [x] **orog** — Surface Altitude (`m`, fx) — XIOS expr: `sz/9.80665`
+- [x] **areacella** — Grid-Cell Area (`m2`, fx) — pycmor pipeline: computed from grid coordinates
+- [x] **slthick** — Soil Layer Thickness (`m`, fx) — pycmor pipeline: constant [0.07, 0.21, 0.72, 1.89]
+
+## Deferred to cap7_land (need LPJ-GUESS or external data)
+
+- [ ] **evspsblsoi** — Soil Evaporation (`kg m-2 s-1`, Lmon) — IFS `e` is total, not partitioned. Needs LPJ-GUESS
+- [ ] **evspsblveg** — Canopy Evaporation (`kg m-2 s-1`, Lmon) — IFS `e` is total, not partitioned. Needs LPJ-GUESS
+- [ ] **rootd** — Maximum Root Depth (`m`, fx) — Not an IFS output. Needs LPJ-GUESS or hardcoded 2.89m (HTESSEL total)
+- [ ] **mrsofc** — Soil Field Capacity (`kg m-2`, fx) — Depends on IFS soil type map + HTESSEL lookup. Needs external data
+- [ ] **sftgif** — Glacier Area Fraction (`%`, fx) — Not a standard IFS output. Needs external glacier dataset
+- [ ] **mrfso** — Frozen Soil Water Content (`kg m-2`, LImon) — IFS HTESSEL doesn't output frozen fraction separately. Needs research
+
+---
+
+## Blockers / verification needed
+
+1. **XIOS multi-field expressions** — mrso (4 fields), lai (4 fields), mrsol (2 fields) use multi-field XIOS expressions. Verify these work at runtime
+2. **sro field** — Added to file_def monthly output. Verify IFS/FullPos outputs surface runoff separately
+3. **sz field** — Added to file_def. Verify surface geopotential is output correctly
+4. **lai_lv, lai_hv, cvl, cvh** — Uncommented in file_def monthly output. Were previously disabled
+
+## Research findings
+
+- HTESSEL soil layer thicknesses: 0.07, 0.21, 0.72, 1.89 m (total 2.89m)
+- IFS evaporation field `e` has negative sign convention (evaporation from surface is negative)
+- IFS `sd` is snow depth in metres of water equivalent, not physical depth
+- IFS `ro` includes both surface and subsurface runoff; `sro` is surface only
+- `sz` is surface geopotential (m2 s-2), needs division by g for altitude
+- LAI requires weighting low/high veg LAI by vegetation cover fractions
+- Upper 10cm soil moisture approximation: full layer 1 (7cm) + top 3cm of layer 2

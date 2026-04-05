@@ -210,6 +210,38 @@
     </field>
     <field id="mass_fraction_cloud_ice__cli" name="cli" field_ref="ciwc" standard_name="mass_fraction_of_cloud_ice_in_air" long_name="Mass Fraction of Cloud Ice" unit="kg kg-1" grid_ref="reduced_ml" />
     <field id="mass_fraction_cloud_liquid__clw" name="clw" field_ref="clwc" standard_name="mass_fraction_of_cloud_liquid_water_in_air" long_name="Mass Fraction of Cloud Liquid Water" unit="kg kg-1" grid_ref="reduced_ml" />
+    <!-- ========== Land/surface CMIP7 derived fields ========== -->
+    <!-- Evaporation: deaccumulate + sign flip (IFS evaporation is negative for evap) + m → kg m-2 s-1 -->
+    <field id="water_evapotranspiration_flux__evspsbl" name="evspsbl" field_ref="e" standard_name="water_evapotranspiration_flux" long_name="Evaporation Including Sublimation and Transpiration" unit="kg m-2 s-1" >
+        -1000*e/21600
+    </field>
+    <!-- Runoff: deaccumulate m → kg m-2 s-1 -->
+    <field id="runoff_flux__mrro" name="mrro" field_ref="ro" standard_name="runoff_flux" long_name="Total Runoff" unit="kg m-2 s-1" >
+        1000*ro/21600
+    </field>
+    <field id="surface_runoff_flux__mrros" name="mrros" field_ref="sro" standard_name="surface_runoff_flux" long_name="Surface Runoff" unit="kg m-2 s-1" >
+        1000*sro/21600
+    </field>
+    <!-- Snow: m water equivalent → kg m-2 -->
+    <field id="surface_snow_amount__snw" name="snw" field_ref="sd" standard_name="surface_snow_amount" long_name="Surface Snow Amount" unit="kg m-2" >
+        sd*1000
+    </field>
+    <!-- Orography: surface geopotential m2 s-2 → altitude m -->
+    <field id="surface_altitude__orog" name="orog" field_ref="sz" standard_name="surface_altitude" long_name="Surface Altitude" unit="m" >
+        sz/9.80665
+    </field>
+    <!-- LAI: weighted combination of low + high vegetation -->
+    <field id="leaf_area_index__lai" name="lai" field_ref="lai_lv" standard_name="leaf_area_index" long_name="Leaf Area Index" unit="1" >
+        lai_lv*cvl + lai_hv*cvh
+    </field>
+    <!-- Total soil moisture: volumetric × layer thickness × rho_water (HTESSEL layers: 0.07, 0.21, 0.72, 1.89 m) -->
+    <field id="soil_moisture_content__mrso" name="mrso" field_ref="swvl1" standard_name="soil_moisture_content" long_name="Total Soil Moisture Content" unit="kg m-2" >
+        1000*(swvl1*0.07 + swvl2*0.21 + swvl3*0.72 + swvl4*1.89)
+    </field>
+    <!-- Upper 10cm soil moisture: layer 1 (7cm) + top 3cm of layer 2 -->
+    <field id="moisture_content_of_soil_layer__mrsol" name="mrsol" field_ref="swvl1" standard_name="moisture_content_of_soil_layer" long_name="Moisture in Upper Portion of Soil Column" unit="kg m-2" >
+        1000*(swvl1*0.07 + swvl2*0.03)
+    </field>
     <!-- Geopotential height: m2 s-2 → m (divide by g) -->
     <field id="geopotential_height__zg" name="zg" field_ref="z_pl" standard_name="geopotential_height" long_name="Geopotential Height" unit="m" >
         z_pl/9.80665

@@ -1445,3 +1445,106 @@ def compute_clwvi(data, rule):
     }
     result.name = "clwvi"
     return result
+
+
+# ============================================================
+# Land surface derived-variable steps
+# ============================================================
+
+
+def compute_snc(data, rule):
+    """
+    Compute snow area fraction from snow depth (water equivalent).
+
+    Uses a saturation curve: snc = min(100, sd_we / sd_crit * 100)
+    where sd_crit = 0.015 m water equivalent (~5 cm fresh snow).
+
+    Primary input (data) is sd (snow depth, m water equivalent).
+    """
+    sd_crit = 0.015  # m water equivalent threshold for full cover
+    result = (data / sd_crit * 100).clip(min=0, max=100)
+    result.attrs = {
+        "units": "%",
+        "standard_name": "surface_snow_area_fraction",
+        "long_name": "Snow Area Fraction",
+    }
+    result.name = "snc"
+    return result
+
+
+def compute_areacella(data, rule):
+    """
+    Compute atmospheric grid cell area from latitude/longitude.
+
+    Uses the spherical Earth formula:
+      area = R^2 * delta_lon * |sin(lat+dlat/2) - sin(lat-dlat/2)|
+
+    Primary input (data) is any field on the target grid (used for coords).
+    """
+    R = 6371000.0  # Earth radius in metres
+
+    # Get lat/lon coordinates
+    lat = None
+    lon = None
+    for coord_name in data.coords:
+        if "lat" in coord_name.lower():
+            lat = data.coords[coord_name]
+        if "lon" in coord_name.lower():
+            lon = data.coords[coord_name]
+    if lat is None or lon is None:
+        raise ValueError("Cannot find lat/lon coordinates in input data")
+
+    lat_vals = np.deg2rad(lat.values)
+    lon_vals = np.deg2rad(lon.values)
+
+    # Compute grid spacing
+    dlat = np.abs(np.diff(lat_vals).mean())
+    dlon = np.abs(np.diff(lon_vals).mean())
+
+    # Cell area for each latitude band
+    lat_upper = lat_vals + dlat / 2
+    lat_lower = lat_vals - dlat / 2
+    area_1d = R**2 * dlon * np.abs(np.sin(lat_upper) - np.sin(lat_lower))
+
+    # Broadcast to 2D (lat, lon)
+    area_2d = np.broadcast_to(area_1d[:, np.newaxis], (len(lat_vals), len(lon_vals)))
+
+    result = xr.DataArray(
+        area_2d,
+        dims=[lat.dims[0], lon.dims[0]],
+        coords={lat.name: lat, lon.name: lon},
+    )
+    result.attrs = {
+        "units": "m2",
+        "standard_name": "cell_area",
+        "long_name": "Grid-Cell Area for Atmospheric Grid Variables",
+    }
+    result.name = "areacella"
+    return result
+
+
+def compute_slthick(data, rule):
+    """
+    Generate HTESSEL soil layer thicknesses as a constant field.
+
+    IFS HTESSEL has 4 soil layers with fixed thicknesses:
+      Layer 1: 0.07 m (0-7 cm)
+      Layer 2: 0.21 m (7-28 cm)
+      Layer 3: 0.72 m (28-100 cm)
+      Layer 4: 1.89 m (100-289 cm)
+
+    Primary input (data) is ignored (any grid file will do).
+    """
+    thicknesses = np.array([0.07, 0.21, 0.72, 1.89])
+    result = xr.DataArray(
+        thicknesses,
+        dims=["sdepth"],
+        coords={"sdepth": np.arange(1, 5)},
+    )
+    result.attrs = {
+        "units": "m",
+        "standard_name": "cell_thickness",
+        "long_name": "Thickness of Soil Layers",
+    }
+    result.name = "slthick"
+    return result
