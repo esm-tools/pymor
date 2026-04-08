@@ -2279,3 +2279,58 @@ def compute_rootd(data, rule):
         if coord not in ds.coords:
             ds.coords[coord] = data.coords[coord]
     return ds
+
+
+# ============================================================
+# CAP7 atmosphere steps
+# ============================================================
+
+
+def compute_rtmt(data, rule):
+    """
+    Compute net downward radiative flux at top of model.
+
+    rtmt = rsdt - rsut + rlds - rlus
+
+    Primary input (data) should be a Dataset containing rsdt, rsut,
+    rlds, and rlus from the _day_cap7 or monthly XIOS output.
+    """
+    rsdt = data["rsdt"]
+    rsut = data["rsut"]
+    rlds = data["rlds"]
+    rlus = data["rlus"]
+
+    result = (rsdt - rsut) + (rlds - rlus)
+    result.attrs = {
+        "units": "W m-2",
+        "standard_name": "net_downward_radiative_flux_at_top_of_atmosphere_model",
+        "long_name": "Net Downward Radiative Flux at Top of Model",
+    }
+    result.name = "rtmt"
+    return result.to_dataset()
+
+
+def extract_single_plevel(data, rule):
+    """
+    Extract a single pressure level from a multi-level dataset.
+
+    Rule attributes:
+      - model_variable: variable name in dataset (e.g. 't', 'w')
+      - target_plevel: pressure level in Pa (e.g. 70000 for 700 hPa, 50000 for 500 hPa)
+    """
+    var = rule.model_variable
+    plevel = float(rule.target_plevel)
+
+    da = data[var]
+    # Find the pressure level dimension
+    plev_dim = None
+    for dim in da.dims:
+        if "lev" in dim or "plev" in dim or "pressure" in dim:
+            plev_dim = dim
+            break
+    if plev_dim is None:
+        raise ValueError(f"Cannot find pressure level dimension in {da.dims}")
+
+    result = da.sel({plev_dim: plevel}, method="nearest")
+    result = result.drop_vars(plev_dim, errors="ignore")
+    return result.to_dataset()

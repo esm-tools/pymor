@@ -324,6 +324,15 @@
     <field id="surface_snow_melt_flux__snm" name="snm" field_ref="smlt" standard_name="surface_snow_melt_flux" long_name="Surface Snow Melt" unit="kg m-2 s-1" >
         smlt*1000/3600
     </field>
+    <!-- Atmosphere water vapor content: tcwv passthrough (kg m-2) -->
+    <field id="atmosphere_water_vapor_content__prw" name="prw" field_ref="tcwv" standard_name="atmosphere_mass_content_of_water_vapor" long_name="Water Vapor Path" unit="kg m-2" />
+    <!-- Atmosphere cloud ice content: tciw passthrough (kg m-2) -->
+    <field id="atmosphere_cloud_ice_content__clivi" name="clivi" field_ref="tciw" standard_name="atmosphere_mass_content_of_cloud_ice" long_name="Ice Water Path" unit="kg m-2" />
+    <!-- 3hr snowfall flux: sf deaccumulated by 3600 s (IFS 1hr send freq) -->
+    <field id="snowfall_flux_3h__prsn" name="prsn" field_ref="sf" standard_name="snowfall_flux" long_name="Snowfall Flux" unit="kg m-2 s-1" >
+        sf*1000/3600
+    </field>
+
     <field id="vimd"   long_name="vertically integrated moisture divergence"                                                                                           unit="kg m-2" />
     <field id="tp"     long_name="total precipitation (rain+snow)"                            standard_name="lwe_thickness_of_precipitation_amount"                    unit="m" />
     <!--remains nonstandard-->
@@ -416,13 +425,25 @@
     <field id="ciwc_pl"   long_name="specific cloud ice water content"          standard_name="specific_cloud_ice_water_content"          unit="kg*kg-1" />
     <field id="cc_pl"     long_name="cloud cover"                               standard_name="cloud_cover"                               unit="1" />
     <field id="co2_pl"    long_name="co2 mass mixing ration"                    standard_name="co2_mass_mixing_ratio"                     unit="kg*kg-1" />
-    <!-- Geopotential height: m2 s-2 → m (divide by g) -->
+    <!-- Geopotential height: m2 s-2 → m (divide by g) — pressure levels -->
     <field id="geopotential_height__zg" name="zg" field_ref="z_pl" standard_name="geopotential_height" long_name="Geopotential Height" unit="m" >
         z_pl/9.80665
     </field>
-    <!-- Relative humidity: fraction → percentage (pressure levels) -->
+    <!-- Relative humidity: fraction → percentage — pressure levels -->
     <field id="relative_humidity_pct__hur" name="hur" field_ref="r_pl" standard_name="relative_humidity" long_name="Relative Humidity" unit="%" >
         r_pl*100
+    </field>
+  </field_group>
+
+  <!-- Model-level derived CMOR fields -->
+  <field_group id="3D_ml_cmor" grid_ref="reduced_ml" freq_op="3h" >
+    <!-- Geopotential height on model levels: z/g -->
+    <field id="geopotential_height_ml__zg" name="zg" field_ref="z" standard_name="geopotential_height" long_name="Geopotential Height" unit="m" >
+        z/9.80665
+    </field>
+    <!-- Relative humidity on model levels: fraction → percentage -->
+    <field id="relative_humidity_ml__hur" name="hur" field_ref="r" standard_name="relative_humidity" long_name="Relative Humidity" unit="%" >
+        r*100
     </field>
   </field_group>
 

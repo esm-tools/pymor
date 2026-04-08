@@ -280,6 +280,7 @@ def main():
         "core_atm": "Atmosphere",
         "veg_atm": "Atmosphere",
         "extra_atm": "Atmosphere",
+        "cap7_atm": "Atmosphere",
         "core_land": "Land",
         "lrcs_land": "Land",
         "veg_land": "Land",

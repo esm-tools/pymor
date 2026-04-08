@@ -107,6 +107,12 @@ Each subdirectory contains:
 | `extra_land/` | Land | OpenIFS/HTESSEL + LPJ-GUESS | 13 | 19 variables: 2 fx, 7 LPJ-GUESS (PFT fracs, LAI), 3 IFS hydrology, 1 hourly tas; 6 blocked (irrigation, river, root zone) |
 | `extra_atm/` | Atmos/Aerosol | OpenIFS | 21 | 43 variables: 13 1hr (fluxes, rad, 30S-90S subsets), 2 3hr, 5 daily, 1 monthly gust; 22 blocked (aerosol/chem, crops, heat index, lightning) |
 
+### CAP7 (high-priority additional variables)
+
+| Directory | Realm | Model | Rules | Key notes |
+|-----------|-------|-------|-------|-----------|
+| `cap7_atm/` | Atmosphere | OpenIFS | 58 | 154 variables: 58 implemented (daily radiation/fluxes/precip, 6hr ml+plev7h, 1hr instant, monthly ml); 92 blocked (17 COSP, 21 tendencies, 9 aerosol, 5 CO2, 4 reff, ~40 IFS source) |
+
 ## Custom Pipeline Steps
 
 Complex variables that cannot be expressed as XIOS expressions are computed in `../examples/custom_steps.py`.
@@ -136,6 +142,10 @@ Complex variables that cannot be expressed as XIOS expressions are computed in `
 - **compute_mrsow**: total soil wetness ratio (weighted mean swvl / porosity)
 - **sum_lpjguess_monthly_files**: load and sum multiple LPJ-GUESS .out files (for c3PftFrac)
 - **select_southern_hemisphere**: lat subset for 30S-90S regional variables (orog, tas)
+
+### CAP7 atmosphere custom steps
+- **compute_rtmt**: net downward radiative flux at model top (rsdt - rsut + rlds - rlus)
+- **extract_single_plevel**: extract single pressure level from multi-level dataset (ta@700hPa, wap@500hPa)
 
 ### Ocean pipelines
 - **zostoga**: global thermosteric sea level via gsw/TEOS-10
