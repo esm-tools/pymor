@@ -190,6 +190,19 @@
             </field_group>
         </file>
 
+        <!-- 1hr averaged near-surface temperature (extra_land: tas 1hr 30S-90S) -->
+        <file
+            enabled="true"
+            timeseries="only"
+            output_freq="1h"
+            name_suffix="_1h_tas"
+            description="AWI-ESM3-VEG-HR 1-hourly near-surface temperature">
+
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
+                <field field_ref="2t" name="2t" long_name="2 metre temperature"/>
+            </field_group>
+        </file>
+
         <!-- 6hr averaged surface fields (for hurs computation) -->
         <file
             enabled="true"

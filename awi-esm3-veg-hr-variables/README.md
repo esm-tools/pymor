@@ -103,6 +103,7 @@ Each subdirectory contains:
 | `veg_atm/` | Atmos/Aerosol | OpenIFS + LPJ-GUESS | 27 | 38 variables: 27 implemented (3hr rad/flux, plev6, daily snow, lwp, 7 fire emissions), 11 blocked |
 | `veg_land/` | Land | OpenIFS/HTESSEL + LPJ-GUESS | 58 | 88 variables: 22 IFS (3hr/day/mon hydrology, snow), 36 LPJ-GUESS (N-cycle, fractions, Lut), 30 blocked |
 | `veg_seaice/` | Sea Ice | FESOM 2.6 | 1 | 4 variables: 1 implemented (daily sisnhc from m_snow/a_ice), 3 blocked (2 ITD, 1 missing physics) |
+| `extra_land/` | Land | OpenIFS/HTESSEL + LPJ-GUESS | 13 | 19 variables: 2 fx, 7 LPJ-GUESS (PFT fracs, LAI), 3 IFS hydrology, 1 hourly tas; 6 blocked (irrigation, river, root zone) |
 
 ## Custom Pipeline Steps
 
@@ -127,9 +128,12 @@ Complex variables that cannot be expressed as XIOS expressions are computed in `
 - **compute_fire_emission**: converts fFireAll (kgC/m2/s) to species emissions using Andreae (2019) savanna/grassland emission factors (BC, CH4, CO, DMS, OA, SO2, NMVOC)
 
 ### Land hydrology/snow custom steps
-- **compute_temporal_diff**: temporal differencing for dgw, dsn, dsw (daily storage changes)
+- **compute_temporal_diff**: temporal differencing for dgw, dsn, dsw, dcw, dslw (daily storage changes)
 - **compute_mrtws**: terrestrial water storage summation (soil + snow + skin reservoir)
 - **compute_snd**: physical snow depth from SWE and snow density (sd*1000/rsn)
+- **compute_mrsow**: total soil wetness ratio (weighted mean swvl / porosity)
+- **sum_lpjguess_monthly_files**: load and sum multiple LPJ-GUESS .out files (for c3PftFrac)
+- **select_southern_hemisphere**: lat subset for 30S-90S regional variables (orog, tas)
 
 ### Ocean pipelines
 - **zostoga**: global thermosteric sea level via gsw/TEOS-10

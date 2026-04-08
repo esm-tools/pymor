@@ -1961,6 +1961,15 @@ def compute_temporal_diff(data, rule):
             + data["sd"] * 1000.0
             + data["src"] * 1000.0
         )
+    elif model_variable == "skin_reservoir":
+        # dcw: change in canopy interception storage (src in m → kg/m2)
+        da = data["src"] * 1000.0
+    elif model_variable == "soil_moisture":
+        # dslw: change in total soil moisture (all 4 HTESSEL layers)
+        da = 1000.0 * (
+            data["swvl1"] * 0.07 + data["swvl2"] * 0.21
+            + data["swvl3"] * 0.72 + data["swvl4"] * 1.89
+        )
     else:
         da = data[model_variable] * float(layer_thickness) * 1000.0 * float(scale_factor)
 
@@ -2017,3 +2026,128 @@ def compute_snd(data, rule):
         if coord not in ds.coords:
             ds.coords[coord] = data.coords[coord]
     return ds
+
+
+def sum_lpjguess_monthly_files(data, rule):
+    """
+    Load and sum multiple LPJ-GUESS monthly .out files.
+
+    For variables like c3PftFrac that are the sum of multiple output files
+    (grassFracC3 + treeFracBdlDcd + treeFracBdlEvg + treeFracNdlDcd + treeFracNdlEvg).
+
+    Primary input (data) is already loaded (first file).
+    Rule attributes:
+      - additional_files: comma-separated list of additional .out filenames
+        e.g. "treeFracBdlDcd_monthly.out,treeFracBdlEvg_monthly.out,..."
+      - lpjg_data_path: base path to LPJ-GUESS output
+      - additional_pattern_prefix: glob prefix for period dirs (default: "*/run1/")
+    """
+    lpjg_path = rule.get("lpjg_data_path")
+    additional = rule.get("additional_files", "")
+    prefix = rule.get("additional_pattern_prefix", "*/run1/")
+
+    if not additional or not lpjg_path:
+        return data
+
+    # data is an xr.Dataset from load_lpjguess_monthly; extract the single variable
+    var_names = [v for v in data.data_vars if v not in data.coords]
+    result = data[var_names[0]]
+
+    import cftime
+    import pandas as pd
+
+    for filename in additional.split(","):
+        filename = filename.strip()
+        if not filename:
+            continue
+        file_pattern = _os.path.join(lpjg_path, prefix, filename)
+        files = sorted(_glob.glob(file_pattern))
+        if not files:
+            logger.warning(f"No files matching {file_pattern}, skipping")
+            continue
+        # Read with the same logic as load_lpjguess_monthly
+        frames = []
+        for f in files:
+            df = pd.read_csv(f, sep=r"\s+")
+            frames.append(df)
+        df_all = pd.concat(frames, ignore_index=True)
+        years = sorted(df_all["Year"].unique())
+        month_cols = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        time_vals = []
+        data_list = []
+        for yr in years:
+            yr_df = df_all[df_all["Year"] == yr].sort_values(["Lat", "Lon"], ascending=[False, True])
+            for mi, mcol in enumerate(month_cols):
+                time_vals.append(cftime.DatetimeProlepticGregorian(int(yr), mi + 1, 15))
+                data_list.append(yr_df[mcol].values)
+        arr = np.array(data_list)
+        da = xr.DataArray(
+            arr, dims=["time", "ncells"],
+            coords={"time": time_vals},
+        )
+        result = result + da
+
+    out_name = rule.get("output_variable", var_names[0])
+    result.attrs = data[var_names[0]].attrs.copy()
+    result.name = out_name
+    ds_out = result.to_dataset()
+    for coord in data.coords:
+        if coord not in ds_out.coords:
+            ds_out.coords[coord] = data.coords[coord]
+    return ds_out
+
+
+def compute_mrsow(data, rule):
+    """
+    Compute total soil wetness as fraction of saturation.
+
+    mrsow = (swvl1*d1 + swvl2*d2 + swvl3*d3 + swvl4*d4) /
+            (porosity * (d1 + d2 + d3 + d4))
+
+    HTESSEL layer thicknesses: d1=0.07, d2=0.21, d3=0.72, d4=1.89 m.
+    HTESSEL porosity varies by soil type but a representative global
+    average is ~0.472 (loam).
+
+    Rule attributes:
+      - porosity: soil porosity (default: 0.472, HTESSEL loam)
+    """
+    porosity = float(rule.get("porosity", 0.472))
+    d1, d2, d3, d4 = 0.07, 0.21, 0.72, 1.89
+    total_depth = d1 + d2 + d3 + d4
+
+    # Weighted average volumetric soil moisture
+    swvl_avg = (
+        data["swvl1"] * d1 + data["swvl2"] * d2
+        + data["swvl3"] * d3 + data["swvl4"] * d4
+    ) / total_depth
+
+    result = swvl_avg / porosity
+    # Clip to [0, 1]
+    result = result.clip(0.0, 1.0)
+    result.attrs = {"units": "1", "long_name": "Total Soil Wetness"}
+    result.name = "mrsow"
+
+    ds = result.to_dataset()
+    for coord in data.coords:
+        if coord not in ds.coords:
+            ds.coords[coord] = data.coords[coord]
+    return ds
+
+
+def select_southern_hemisphere(data, rule):
+    """
+    Select Southern Hemisphere subset (south of 30S).
+
+    For CMIP7 variables with region=30S-90S (e.g., orogSouth30, tasSouth30).
+    Selects latitudes <= -30.
+    """
+    lat_name = None
+    for name in ["lat", "latitude", "nav_lat"]:
+        if name in data.coords:
+            lat_name = name
+            break
+    if lat_name is None:
+        raise ValueError("Cannot find latitude coordinate in data")
+    result = data.sel({lat_name: data[lat_name] <= -30.0})
+    return result
