@@ -16,7 +16,7 @@ Model constraints:
 
 All producible from OpenIFS via XIOS. These are additional frequencies of fields already defined for monthly output in core_atm.
 
-### 3hr averaged (need XIOS expressions with freq_op="3h", deaccum /10800)
+### 3hr averaged (XIOS expressions with deaccum /3600 (1h IFS→XIOS))
 
 - [x] **hfls** (3hr) -- Surface Upward Latent Heat Flux (`W m-2`) -- XIOS: `-slhf/10800`
 - [x] **hfss** (3hr) -- Surface Upward Sensible Heat Flux (`W m-2`) -- XIOS: `-sshf/10800`

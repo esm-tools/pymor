@@ -1705,3 +1705,267 @@ def compute_fire_emission(data, rule):
         f"EF={ef} g/kgDM, conversion={conversion_factor:.6e} kg_species/kgC"
     )
     return ds
+
+
+# ============================================================
+# LPJ-GUESS loaders for yearly and Lut file formats
+# ============================================================
+
+
+def load_lpjguess_yearly(data, rule):
+    """
+    Load LPJ-GUESS yearly .out files (Lon/Lat/Year/Total format).
+
+    Returns an xarray Dataset with dimensions (time, ncells) where time
+    has one entry per year (mid-year: July 1).
+    """
+    import cftime
+    import pandas as pd
+
+    input_collection = rule.inputs[0]
+    base_path = input_collection.path
+    pattern_str = input_collection.pattern_str
+
+    files = sorted(base_path.glob(pattern_str))
+    if not files:
+        raise FileNotFoundError(f"No LPJ-GUESS files found matching {base_path}/{pattern_str}")
+    logger.info(f"Loading {len(files)} LPJ-GUESS yearly .out files from {base_path}")
+
+    frames = []
+    for f in files:
+        logger.info(f"  * {f}")
+        df = pd.read_csv(f, delim_whitespace=True)
+        frames.append(df)
+
+    df_all = pd.concat(frames, ignore_index=True)
+    years = np.sort(df_all["Year"].unique())
+
+    # Build cell index
+    coords_df = df_all[["Lon", "Lat"]].drop_duplicates()
+    coords_df = coords_df.sort_values(["Lat", "Lon"], ascending=[False, True]).reset_index(drop=True)
+    lon_vals = coords_df["Lon"].values
+    lat_vals = coords_df["Lat"].values
+    ncells = len(coords_df)
+    cell_map = {(row.Lon, row.Lat): i for i, row in coords_df.iterrows()}
+
+    # Time coordinate: one per year (mid-year)
+    times = [cftime.DatetimeProlepticGregorian(int(yr), 7, 1) for yr in years]
+
+    model_variable = rule.get("model_variable", "Total")
+    values = np.full((len(times), ncells), np.nan, dtype=np.float64)
+
+    for _, row in df_all.iterrows():
+        cell_idx = cell_map.get((row["Lon"], row["Lat"]))
+        if cell_idx is None:
+            continue
+        yr_idx = np.searchsorted(years, row["Year"])
+        values[yr_idx, cell_idx] = row[model_variable]
+
+    da = xr.DataArray(
+        values,
+        dims=["time", "ncells"],
+        coords={"time": times, "lon": ("ncells", lon_vals), "lat": ("ncells", lat_vals)},
+        name=model_variable,
+    )
+    return da.to_dataset()
+
+
+def load_lpjguess_yearly_lut(data, rule):
+    """
+    Load LPJ-GUESS yearly Lut .out files (Lon/Lat/Year/psl/crp/pst/urb format).
+
+    Returns an xarray Dataset with dimensions (time, ncells). Reads the
+    column specified by rule.model_variable (typically 'psl').
+    """
+    import cftime
+    import pandas as pd
+
+    input_collection = rule.inputs[0]
+    base_path = input_collection.path
+    pattern_str = input_collection.pattern_str
+
+    files = sorted(base_path.glob(pattern_str))
+    if not files:
+        raise FileNotFoundError(f"No LPJ-GUESS files found matching {base_path}/{pattern_str}")
+    logger.info(f"Loading {len(files)} LPJ-GUESS yearly Lut .out files from {base_path}")
+
+    frames = []
+    for f in files:
+        logger.info(f"  * {f}")
+        df = pd.read_csv(f, delim_whitespace=True)
+        frames.append(df)
+
+    df_all = pd.concat(frames, ignore_index=True)
+    years = np.sort(df_all["Year"].unique())
+
+    coords_df = df_all[["Lon", "Lat"]].drop_duplicates()
+    coords_df = coords_df.sort_values(["Lat", "Lon"], ascending=[False, True]).reset_index(drop=True)
+    lon_vals = coords_df["Lon"].values
+    lat_vals = coords_df["Lat"].values
+    ncells = len(coords_df)
+    cell_map = {(row.Lon, row.Lat): i for i, row in coords_df.iterrows()}
+
+    times = [cftime.DatetimeProlepticGregorian(int(yr), 7, 1) for yr in years]
+
+    model_variable = rule.get("model_variable", "psl")
+    values = np.full((len(times), ncells), np.nan, dtype=np.float64)
+
+    for _, row in df_all.iterrows():
+        cell_idx = cell_map.get((row["Lon"], row["Lat"]))
+        if cell_idx is None:
+            continue
+        yr_idx = np.searchsorted(years, row["Year"])
+        values[yr_idx, cell_idx] = row[model_variable]
+
+    da = xr.DataArray(
+        values,
+        dims=["time", "ncells"],
+        coords={"time": times, "lon": ("ncells", lon_vals), "lat": ("ncells", lat_vals)},
+        name=model_variable,
+    )
+    return da.to_dataset()
+
+
+def load_lpjguess_monthly_lut(data, rule):
+    """
+    Load LPJ-GUESS monthly Lut .out files (Lon/Lat/Year/Mth/psl/crp/pst/urb format).
+
+    Returns an xarray Dataset with dimensions (time, ncells). Each row
+    in the .out file is one (gridpoint, year, month) tuple.
+    """
+    import cftime
+    import pandas as pd
+
+    input_collection = rule.inputs[0]
+    base_path = input_collection.path
+    pattern_str = input_collection.pattern_str
+
+    files = sorted(base_path.glob(pattern_str))
+    if not files:
+        raise FileNotFoundError(f"No LPJ-GUESS files found matching {base_path}/{pattern_str}")
+    logger.info(f"Loading {len(files)} LPJ-GUESS monthly Lut .out files from {base_path}")
+
+    frames = []
+    for f in files:
+        logger.info(f"  * {f}")
+        df = pd.read_csv(f, delim_whitespace=True)
+        frames.append(df)
+
+    df_all = pd.concat(frames, ignore_index=True)
+    years = np.sort(df_all["Year"].unique())
+
+    coords_df = df_all[["Lon", "Lat"]].drop_duplicates()
+    coords_df = coords_df.sort_values(["Lat", "Lon"], ascending=[False, True]).reset_index(drop=True)
+    lon_vals = coords_df["Lon"].values
+    lat_vals = coords_df["Lat"].values
+    ncells = len(coords_df)
+    cell_map = {(row.Lon, row.Lat): i for i, row in coords_df.iterrows()}
+
+    # Build time axis: one per (year, month)
+    times = []
+    for yr in years:
+        for m in range(1, 13):
+            times.append(cftime.DatetimeProlepticGregorian(int(yr), m, 15))
+
+    model_variable = rule.get("model_variable", "psl")
+    n_times = len(times)
+    values = np.full((n_times, ncells), np.nan, dtype=np.float64)
+
+    for _, row in df_all.iterrows():
+        cell_idx = cell_map.get((row["Lon"], row["Lat"]))
+        if cell_idx is None:
+            continue
+        yr_idx = np.searchsorted(years, row["Year"])
+        m_idx = int(row["Mth"]) - 1
+        t_idx = yr_idx * 12 + m_idx
+        values[t_idx, cell_idx] = row[model_variable]
+
+    da = xr.DataArray(
+        values,
+        dims=["time", "ncells"],
+        coords={"time": times, "lon": ("ncells", lon_vals), "lat": ("ncells", lat_vals)},
+        name=model_variable,
+    )
+    return da.to_dataset()
+
+
+# ============================================================
+# IFS land custom computation steps
+# ============================================================
+
+
+def compute_temporal_diff(data, rule):
+    """
+    Compute temporal difference of a variable (for dgw, dsn, dsw).
+
+    For dgw: diff of swvl4 * layer_thickness * 1000
+    For dsn: diff of sd * scale_factor
+    For dsw: diff of total water storage
+    """
+    model_variable = rule.get("model_variable")
+    scale_factor = rule.get("scale_factor", 1.0)
+    layer_thickness = rule.get("layer_thickness", 1.0)
+
+    if model_variable == "total_water":
+        # Compute total water storage: soil moisture + snow + skin reservoir
+        da = (
+            1000.0 * (data["swvl1"] * 0.07 + data["swvl2"] * 0.21 + data["swvl3"] * 0.72 + data["swvl4"] * 1.89)
+            + data["sd"] * 1000.0
+            + data["src"] * 1000.0
+        )
+    else:
+        da = data[model_variable] * float(layer_thickness) * 1000.0 * float(scale_factor)
+
+    diff = da.diff(dim="time")
+    diff.attrs["units"] = "kg m-2"
+    diff.name = model_variable
+
+    ds = diff.to_dataset()
+    for coord in data.coords:
+        if coord not in ds.coords and coord != "time":
+            ds.coords[coord] = data.coords[coord]
+    return ds
+
+
+def compute_mrtws(data, rule):
+    """
+    Compute terrestrial water storage (mrtws).
+
+    Sum of all water stores: soil moisture (4 layers) + snow + skin reservoir.
+    HTESSEL layer thicknesses: 0.07, 0.21, 0.72, 1.89 m.
+    """
+    mrtws = (
+        1000.0 * (data["swvl1"] * 0.07 + data["swvl2"] * 0.21 + data["swvl3"] * 0.72 + data["swvl4"] * 1.89)
+        + data["sd"] * 1000.0
+        + data["src"] * 1000.0
+    )
+    mrtws.attrs["units"] = "kg m-2"
+    mrtws.name = "mrtws"
+
+    ds = mrtws.to_dataset()
+    for coord in data.coords:
+        if coord not in ds.coords:
+            ds.coords[coord] = data.coords[coord]
+    return ds
+
+
+def compute_snd(data, rule):
+    """
+    Compute physical snow depth from SWE and snow density.
+
+    snd = sd * 1000 / rsn  (SWE in m water equiv → physical depth in m)
+    Where rsn = 0, snd = 0 (no snow).
+    """
+    sd = data["sd"]
+    rsn = data["rsn"]
+
+    # Avoid division by zero: where rsn == 0, there's no snow
+    snd = xr.where(rsn > 0, sd * 1000.0 / rsn, 0.0)
+    snd.attrs["units"] = "m"
+    snd.name = "snd"
+
+    ds = snd.to_dataset()
+    for coord in data.coords:
+        if coord not in ds.coords:
+            ds.coords[coord] = data.coords[coord]
+    return ds

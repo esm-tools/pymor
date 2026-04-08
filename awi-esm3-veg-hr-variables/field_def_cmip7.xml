@@ -89,7 +89,7 @@
     <field id="ttr"    long_name="top net thermal radiation"                                  standard_name="toa_net_downward_longwave_flux"                           unit="J m-2" />
     <!-- convert to W m-2-->
     <field id="toa_outgoing_longwave_flux__rlut" name="rlut" field_ref="ttr" standard_name="toa_outgoing_longwave_flux" long_name="TOA Outgoing Longwave Radiation"    unit="W m-2" >
-        -ttr/21600
+        -ttr/3600
     </field>
     <!--remains nonstandard-->
     <field id="ewss"   long_name="eastward turbulent surface stress"                          standard_name="surface_downward_eastward_turbulent_stress_amount"        unit="N m-2 s" />
@@ -113,6 +113,7 @@
     <!--Nonstandard-->
     <field id="mn2t"   long_name="minimum 2-metre temperature since previous post-processing" standard_name="minimum_surface_temperature"                              unit="K" />
     <field id="ro"     long_name="runoff"                                                     standard_name="runoff_amount"                                            unit="m" />
+    <field id="pev"    long_name="potential evaporation"                                      standard_name="water_potential_evaporation_amount"                        unit="m" />
     <field id="tco3"   long_name="total column ozone"                                         standard_name="atmosphere_mass_content_of_ozone"                         unit="kg m-2" />
     <!--TODO: convert to W m-2-->
     <field id="tsrc"   long_name="top net clear sky solar radiation"                          standard_name="toa_net_downward_shortwave_flux_assuming_clear_sky"       unit="J m-2" />
@@ -128,69 +129,69 @@
     <field id="tisr"   long_name="toa incident solar radiation"                               standard_name="toa_incoming_shortwave_flux"                              unit="J m-2" />
     <!-- convert to W m-2-->
     <field id="toa_incoming_shortwave_flux__rsdt" name="rsdt" field_ref="tisr" standard_name="toa_incoming_shortwave_flux" long_name="TOA Incident Shortwave Radiation" unit="W m-2" >
-        tisr/21600
+        tisr/3600
     </field>
     <!-- convert to W m-2-->
     <field id="toa_outgoing_shortwave_flux__rsut" name="rsut" field_ref="tisr" standard_name="toa_outgoing_shortwave_flux" long_name="TOA Outgoing Shortwave Radiation" unit="W m-2" >
-        (tisr-tsr)/21600
+        (tisr-tsr)/3600
     </field>
-    <!-- CMIP7 derived fields: deaccumulate and convert units -->
+    <!-- CMIP7 derived fields: deaccumulate (/3600 assuming 1h IFS→XIOS) and convert units -->
     <!-- TOA clear-sky -->
     <field id="toa_outgoing_shortwave_flux_cs__rsutcs" name="rsutcs" field_ref="tisr" standard_name="toa_outgoing_shortwave_flux_assuming_clear_sky" long_name="TOA Outgoing Clear-Sky Shortwave Radiation" unit="W m-2" >
-        (tisr-tsrc)/21600
+        (tisr-tsrc)/3600
     </field>
     <field id="toa_outgoing_longwave_flux_cs__rlutcs" name="rlutcs" field_ref="ttr" standard_name="toa_outgoing_longwave_flux_assuming_clear_sky" long_name="TOA Outgoing Clear-Sky Longwave Radiation" unit="W m-2" >
-        -ttrc/21600
+        -ttrc/3600
     </field>
     <!-- Surface radiation (all-sky) -->
     <field id="surface_downwelling_shortwave_flux__rsds" name="rsds" field_ref="ssrd" standard_name="surface_downwelling_shortwave_flux_in_air" long_name="Surface Downwelling Shortwave Radiation" unit="W m-2" >
-        ssrd/21600
+        ssrd/3600
     </field>
     <field id="surface_upwelling_shortwave_flux__rsus" name="rsus" field_ref="ssrd" standard_name="surface_upwelling_shortwave_flux_in_air" long_name="Surface Upwelling Shortwave Radiation" unit="W m-2" >
-        (ssrd-ssr)/21600
+        (ssrd-ssr)/3600
     </field>
     <field id="surface_downwelling_longwave_flux__rlds" name="rlds" field_ref="strd" standard_name="surface_downwelling_longwave_flux_in_air" long_name="Surface Downwelling Longwave Radiation" unit="W m-2" >
-        strd/21600
+        strd/3600
     </field>
     <field id="surface_upwelling_longwave_flux__rlus" name="rlus" field_ref="strd" standard_name="surface_upwelling_longwave_flux_in_air" long_name="Surface Upwelling Longwave Radiation" unit="W m-2" >
-        (strd-str)/21600
+        (strd-str)/3600
     </field>
     <!-- Surface radiation (clear-sky) — requires ssrdc/strdc in model output -->
     <field id="surface_downwelling_shortwave_flux_cs__rsdscs" name="rsdscs" field_ref="ssrdc" standard_name="surface_downwelling_shortwave_flux_in_air_assuming_clear_sky" long_name="Surface Downwelling Clear-Sky Shortwave Radiation" unit="W m-2" >
-        ssrdc/21600
+        ssrdc/3600
     </field>
     <field id="surface_upwelling_shortwave_flux_cs__rsuscs" name="rsuscs" field_ref="ssrdc" standard_name="surface_upwelling_shortwave_flux_in_air_assuming_clear_sky" long_name="Surface Upwelling Clear-Sky Shortwave Radiation" unit="W m-2" >
-        (ssrdc-ssrc)/21600
+        (ssrdc-ssrc)/3600
     </field>
     <field id="surface_downwelling_longwave_flux_cs__rldscs" name="rldscs" field_ref="strdc" standard_name="surface_downwelling_longwave_flux_in_air_assuming_clear_sky" long_name="Surface Downwelling Clear-Sky Longwave Radiation" unit="W m-2" >
-        strdc/21600
+        strdc/3600
     </field>
     <field id="surface_upwelling_longwave_flux_cs__rluscs" name="rluscs" field_ref="strdc" standard_name="surface_upwelling_longwave_flux_assuming_clear_sky" long_name="Surface Upwelling Clear-Sky Longwave Radiation" unit="W m-2" >
-        (strdc-strc)/21600
+        (strdc-strc)/3600
     </field>
     <!-- Turbulent fluxes: deaccumulate + sign flip (IFS downward → CMIP upward) -->
     <field id="surface_upward_latent_heat_flux__hfls" name="hfls" field_ref="slhf" standard_name="surface_upward_latent_heat_flux" long_name="Surface Upward Latent Heat Flux" unit="W m-2" >
-        -slhf/21600
+        -slhf/3600
     </field>
     <field id="surface_upward_sensible_heat_flux__hfss" name="hfss" field_ref="sshf" standard_name="surface_upward_sensible_heat_flux" long_name="Surface Upward Sensible Heat Flux" unit="W m-2" >
-        -sshf/21600
+        -sshf/3600
     </field>
     <!-- Surface stress: deaccumulate N m-2 s → Pa -->
     <field id="surface_downward_eastward_stress__tauu" name="tauu" field_ref="ewss" standard_name="surface_downward_eastward_stress" long_name="Surface Downward Eastward Wind Stress" unit="Pa" >
-        ewss/21600
+        ewss/3600
     </field>
     <field id="surface_downward_northward_stress__tauv" name="tauv" field_ref="nsss" standard_name="surface_downward_northward_stress" long_name="Surface Downward Northward Wind Stress" unit="Pa" >
-        nsss/21600
+        nsss/3600
     </field>
     <!-- Precipitation: deaccumulate m → kg m-2 s-1 (× 1000 kg/m3 / 21600 s) -->
     <field id="precipitation_flux__pr" name="pr" field_ref="tp" standard_name="precipitation_flux" long_name="Precipitation" unit="kg m-2 s-1" >
-        tp*1000/21600
+        tp*1000/3600
     </field>
     <field id="convective_precipitation_flux__prc" name="prc" field_ref="cp" standard_name="convective_precipitation_flux" long_name="Convective Precipitation" unit="kg m-2 s-1" >
-        cp*1000/21600
+        cp*1000/3600
     </field>
     <field id="snowfall_flux__prsn" name="prsn" field_ref="sf" standard_name="snowfall_flux" long_name="Snowfall Flux" unit="kg m-2 s-1" >
-        sf*1000/21600
+        sf*1000/3600
     </field>
     <!-- Cloud cover: fraction → percentage -->
     <field id="cloud_area_fraction__clt" name="clt" field_ref="tcc" standard_name="cloud_area_fraction" long_name="Total Cloud Cover Percentage" unit="%" >
@@ -198,7 +199,7 @@
     </field>
     <!-- Precipitation at 3h accumulation: m/3h → kg m-2 s-1 (freq_op="3h") -->
     <field id="precipitation_flux_3h__pr" name="pr" field_ref="tp" standard_name="precipitation_flux" long_name="Precipitation" unit="kg m-2 s-1" >
-        tp*1000/10800
+        tp*1000/3600
     </field>
     <!-- Precipitation at 1h accumulation: m/1h → kg m-2 s-1 (freq_op="1h") -->
     <field id="precipitation_flux_1h__pr" name="pr" field_ref="tp" standard_name="precipitation_flux" long_name="Precipitation" unit="kg m-2 s-1" >
@@ -213,14 +214,14 @@
     <!-- ========== Land/surface CMIP7 derived fields ========== -->
     <!-- Evaporation: deaccumulate + sign flip (IFS evaporation is negative for evap) + m → kg m-2 s-1 -->
     <field id="water_evapotranspiration_flux__evspsbl" name="evspsbl" field_ref="e" standard_name="water_evapotranspiration_flux" long_name="Evaporation Including Sublimation and Transpiration" unit="kg m-2 s-1" >
-        -1000*e/21600
+        -1000*e/3600
     </field>
     <!-- Runoff: deaccumulate m → kg m-2 s-1 -->
     <field id="runoff_flux__mrro" name="mrro" field_ref="ro" standard_name="runoff_flux" long_name="Total Runoff" unit="kg m-2 s-1" >
-        1000*ro/21600
+        1000*ro/3600
     </field>
     <field id="surface_runoff_flux__mrros" name="mrros" field_ref="sro" standard_name="surface_runoff_flux" long_name="Surface Runoff" unit="kg m-2 s-1" >
-        1000*sro/21600
+        1000*sro/3600
     </field>
     <!-- Snow: m water equivalent → kg m-2 -->
     <field id="surface_snow_amount__snw" name="snw" field_ref="sd" standard_name="surface_snow_amount" long_name="Surface Snow Amount" unit="kg m-2" >
@@ -242,48 +243,82 @@
     <field id="moisture_content_of_soil_layer__mrsol" name="mrsol" field_ref="swvl1" standard_name="moisture_content_of_soil_layer" long_name="Moisture in Upper Portion of Soil Column" unit="kg m-2" >
         1000*(swvl1*0.07 + swvl2*0.03)
     </field>
-    <!-- ========== VEG additional 3hr radiation/flux fields (deaccum /10800) ========== -->
+    <!-- ========== VEG additional radiation/flux fields (deaccum /3600, 1h IFS→XIOS) ========== -->
     <!-- Latent heat flux 3hr: deaccum + sign flip -->
     <field id="surface_upward_latent_heat_flux_3h__hfls" name="hfls" field_ref="slhf" standard_name="surface_upward_latent_heat_flux" long_name="Surface Upward Latent Heat Flux" unit="W m-2" >
-        -slhf/10800
+        -slhf/3600
     </field>
     <!-- Sensible heat flux 3hr: deaccum + sign flip -->
     <field id="surface_upward_sensible_heat_flux_3h__hfss" name="hfss" field_ref="sshf" standard_name="surface_upward_sensible_heat_flux" long_name="Surface Upward Sensible Heat Flux" unit="W m-2" >
-        -sshf/10800
+        -sshf/3600
     </field>
     <!-- Surface downwelling LW 3hr -->
     <field id="surface_downwelling_longwave_flux_3h__rlds" name="rlds" field_ref="strd" standard_name="surface_downwelling_longwave_flux_in_air" long_name="Surface Downwelling Longwave Radiation" unit="W m-2" >
-        strd/10800
+        strd/3600
     </field>
     <!-- Surface upwelling LW 3hr -->
     <field id="surface_upwelling_longwave_flux_3h__rlus" name="rlus" field_ref="strd" standard_name="surface_upwelling_longwave_flux_in_air" long_name="Surface Upwelling Longwave Radiation" unit="W m-2" >
-        (strd-str)/10800
+        (strd-str)/3600
     </field>
     <!-- Surface downwelling SW 3hr -->
     <field id="surface_downwelling_shortwave_flux_3h__rsds" name="rsds" field_ref="ssrd" standard_name="surface_downwelling_shortwave_flux_in_air" long_name="Surface Downwelling Shortwave Radiation" unit="W m-2" >
-        ssrd/10800
+        ssrd/3600
     </field>
     <!-- Surface upwelling SW 3hr -->
     <field id="surface_upwelling_shortwave_flux_3h__rsus" name="rsus" field_ref="ssrd" standard_name="surface_upwelling_shortwave_flux_in_air" long_name="Surface Upwelling Shortwave Radiation" unit="W m-2" >
-        (ssrd-ssr)/10800
+        (ssrd-ssr)/3600
     </field>
     <!-- ========== VEG monthly net radiation ========== -->
-    <!-- Net LW surface radiation (= net downward = str/21600, str is accumulated net) -->
+    <!-- Net LW surface radiation (= net downward = str/3600, str is accumulated net) -->
     <field id="surface_net_downward_longwave_flux__rls" name="rls" field_ref="str" standard_name="surface_net_downward_longwave_flux" long_name="Net Longwave Surface Radiation" unit="W m-2" >
-        str/21600
+        str/3600
     </field>
-    <!-- Net SW surface radiation (= net downward = ssr/21600, ssr is accumulated net) -->
+    <!-- Net SW surface radiation (= net downward = ssr/3600, ssr is accumulated net) -->
     <field id="surface_net_downward_shortwave_flux__rss" name="rss" field_ref="ssr" standard_name="surface_net_downward_shortwave_flux" long_name="Net Shortwave Surface Radiation" unit="W m-2" >
-        ssr/21600
+        ssr/3600
     </field>
     <!-- ========== VEG 6hr snowfall ========== -->
     <field id="snowfall_flux_6h__prsn" name="prsn" field_ref="sf" standard_name="snowfall_flux" long_name="Snowfall Flux" unit="kg m-2 s-1" >
-        sf*1000/21600
+        sf*1000/3600
     </field>
     <!-- ========== VEG daily snow diagnostics ========== -->
     <!-- Snowmelt: deaccumulate m → kg m-2 s-1 -->
     <field id="surface_snow_melt_flux__snmsl" name="snmsl" field_ref="smlt" standard_name="surface_snow_melt_flux" long_name="Water Flowing out of Snowpack" unit="kg m-2 s-1" >
-        smlt*1000/21600
+        smlt*1000/3600
+    </field>
+    <!-- ========== VEG_LAND additional derived fields ========== -->
+    <!-- Note: mrro and mrros for 3hr output reuse existing runoff_flux__mrro / surface_runoff_flux__mrros -->
+    <!-- Soil moisture top 1m: HTESSEL layers 1-3 = 0.07+0.21+0.72 = 1.0 m -->
+    <field id="moisture_content_of_soil_layer_100cm__mrsol" name="mrsol" field_ref="swvl1" standard_name="moisture_content_of_soil_layer" long_name="Moisture in Upper Portion of Soil Column" unit="kg m-2" >
+        1000*(swvl1*0.07 + swvl2*0.21 + swvl3*0.72)
+    </field>
+    <!-- Snow evaporation: deaccum + sign flip (IFS es negative for evap, CMIP7 esn positive upward) -->
+    <field id="snow_evaporation_flux__esn" name="esn" field_ref="es" standard_name="water_evaporation_flux" long_name="Snow Evaporation" unit="kg m-2 s-1" >
+        -es*1000/3600
+    </field>
+    <!-- Net surface radiation: net SW + net LW (both accumulated J m-2) -->
+    <field id="net_surface_radiation__srfrad" name="srfrad" field_ref="ssr" standard_name="surface_net_downward_radiative_flux" long_name="Net Radiative Flux at Surface" unit="W m-2" >
+        (ssr+str)/3600
+    </field>
+    <!-- Ground heat flux: surface energy balance residual (Rnet + SHF + LHF, all accumulated, sign-corrected) -->
+    <field id="ground_heat_flux__hfdsl" name="hfdsl" field_ref="ssr" standard_name="downward_heat_flux_in_soil" long_name="Downward Heat Flux in Soil" unit="W m-2" >
+        (ssr+str+sshf+slhf)/3600
+    </field>
+    <!-- Potential evapotranspiration: deaccum + sign flip (IFS pev negative) -->
+    <field id="potential_evapotranspiration__evspsblpot" name="evspsblpot" field_ref="pev" standard_name="water_potential_evaporation_flux" long_name="Potential Evapotranspiration" unit="kg m-2 s-1" >
+        -pev*1000/3600
+    </field>
+    <!-- Subsurface runoff: deaccum m → kg m-2 s-1 -->
+    <field id="subsurface_runoff_flux__mrrob" name="mrrob" field_ref="ssro" standard_name="subsurface_runoff_flux" long_name="Subsurface Runoff" unit="kg m-2 s-1" >
+        ssro*1000/3600
+    </field>
+    <!-- Sublimation: from snow evap, sign flip (IFS es negative, CMIP7 sbl positive upward) -->
+    <field id="sublimation_flux__sbl" name="sbl" field_ref="es" standard_name="tendency_of_atmosphere_mass_content_of_water_vapor_due_to_sublimation_of_surface_snow_and_ice" long_name="Surface Snow and Ice Sublimation Flux" unit="kg m-2 s-1" >
+        -es*1000/3600
+    </field>
+    <!-- Snow melt (snm): same as snmsl but as CMIP7 variable name -->
+    <field id="surface_snow_melt_flux__snm" name="snm" field_ref="smlt" standard_name="surface_snow_melt_flux" long_name="Surface Snow Melt" unit="kg m-2 s-1" >
+        smlt*1000/3600
     </field>
     <!-- Geopotential height: m2 s-2 → m (divide by g) -->
     <field id="geopotential_height__zg" name="zg" field_ref="z_pl" standard_name="geopotential_height" long_name="Geopotential Height" unit="m" >

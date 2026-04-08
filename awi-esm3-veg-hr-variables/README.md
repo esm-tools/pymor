@@ -42,7 +42,13 @@ Config from `global.ins` via `run_coupled_4_1_2.ins`:
 - **Atm-Vegetation**: daily (86400 s)
 - **Runoff mapping**: rnfmap v1.1
 
+### Ice Sheet
+- **No interactive ice sheet model** (no PISM, no Yelmo, no BISICLES)
+- IFS prescribes glaciated areas as grid cells with 10 m water mass equivalent
+- Greenland/Antarctic ice sheets are static boundary conditions
+
 ### What this model does NOT have
+- No interactive ice sheet model
 - No prognostic aerosol (no CAMS, no M7 -- only MACv2-SP prescribed plumes)
 - No atmospheric chemistry
 - No CO2 tracer (concentration-driven)
@@ -95,6 +101,7 @@ Each subdirectory contains:
 | `cap7_seaice/` | Sea Ice | FESOM 2.6 | 40+ | Heat/salt fluxes, tendencies, melt ponds, stress, hemisphere scalars; some blocked by single-category ice |
 | `cap7_land/` | Land | OIFS/LPJ-GUESS | 0 (TODO) | 6 deferred variables with OIFS source code investigation notes |
 | `veg_atm/` | Atmos/Aerosol | OpenIFS + LPJ-GUESS | 27 | 38 variables: 27 implemented (3hr rad/flux, plev6, daily snow, lwp, 7 fire emissions), 11 blocked |
+| `veg_land/` | Land | OpenIFS/HTESSEL + LPJ-GUESS | 58 | 88 variables: 22 IFS (3hr/day/mon hydrology, snow), 36 LPJ-GUESS (N-cycle, fractions, Lut), 30 blocked |
 
 ## Custom Pipeline Steps
 
@@ -111,9 +118,17 @@ Complex variables that cannot be expressed as XIOS expressions are computed in `
 - **areacella**: spherical grid cell area from lat/lon coordinates
 - **slthick**: constant HTESSEL soil layer thicknesses [0.07, 0.21, 0.72, 1.89] m
 
-### Fire emission pipelines (LPJ-GUESS)
+### LPJ-GUESS loaders and fire emission pipelines
 - **load_lpjguess_monthly**: custom loader for LPJ-GUESS plain-text .out files (Lon/Lat/Year/Jan..Dec)
+- **load_lpjguess_yearly**: loader for yearly .out files (Lon/Lat/Year/Total)
+- **load_lpjguess_yearly_lut**: loader for yearly Lut .out files (Lon/Lat/Year/psl/crp/pst/urb)
+- **load_lpjguess_monthly_lut**: loader for monthly Lut .out files (Lon/Lat/Year/Mth/psl/crp/pst/urb)
 - **compute_fire_emission**: converts fFireAll (kgC/m2/s) to species emissions using Andreae (2019) savanna/grassland emission factors (BC, CH4, CO, DMS, OA, SO2, NMVOC)
+
+### Land hydrology/snow custom steps
+- **compute_temporal_diff**: temporal differencing for dgw, dsn, dsw (daily storage changes)
+- **compute_mrtws**: terrestrial water storage summation (soil + snow + skin reservoir)
+- **compute_snd**: physical snow depth from SWE and snow density (sd*1000/rsn)
 
 ### Ocean pipelines
 - **zostoga**: global thermosteric sea level via gsw/TEOS-10

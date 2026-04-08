@@ -23,7 +23,7 @@
             name_suffix="_mon"
             description="AWI-ESM3-VEG-HR monthly surface CMOR fields">
 
-            <field_group grid_ref="regular_sfc" freq_op="6h" operation="average">
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
                 <!-- TOA radiation -->
                 <field field_ref="toa_incoming_shortwave_flux__rsdt"/>
                 <field field_ref="toa_outgoing_shortwave_flux__rsut"/>
@@ -63,7 +63,7 @@
             name_suffix="_day"
             description="AWI-ESM3-VEG-HR daily surface CMOR fields">
 
-            <field_group grid_ref="regular_sfc" freq_op="6h" operation="average">
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
                 <field field_ref="surface_downwelling_shortwave_flux__rsds"/>
                 <field field_ref="precipitation_flux__pr"/>
                 <field field_ref="cloud_area_fraction__clt"/>
@@ -78,7 +78,7 @@
             name_suffix="_mon_pl"
             description="AWI-ESM3-VEG-HR monthly pressure-level CMOR fields">
 
-            <field_group grid_ref="regular_pl" freq_op="6h" operation="average">
+            <field_group grid_ref="regular_pl" freq_op="1h" operation="average">
                 <field field_ref="geopotential_height__zg"/>
                 <field field_ref="relative_humidity_pct__hur"/>
             </field_group>
@@ -92,7 +92,7 @@
             name_suffix="_day_pl"
             description="AWI-ESM3-VEG-HR daily pressure-level CMOR fields">
 
-            <field_group grid_ref="regular_pl" freq_op="6h" operation="average">
+            <field_group grid_ref="regular_pl" freq_op="1h" operation="average">
                 <field field_ref="geopotential_height__zg"/>
                 <field field_ref="relative_humidity_pct__hur"/>
             </field_group>
@@ -106,7 +106,7 @@
             name_suffix="_mon_land"
             description="AWI-ESM3-VEG-HR monthly land CMOR fields">
 
-            <field_group grid_ref="regular_sfc" freq_op="6h" operation="average">
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
                 <field field_ref="water_evapotranspiration_flux__evspsbl"/>
                 <field field_ref="runoff_flux__mrro"/>
                 <field field_ref="surface_runoff_flux__mrros"/>
@@ -126,7 +126,7 @@
             name_suffix="_mon_ml"
             description="AWI-ESM3-VEG-HR monthly model-level CMOR fields">
 
-            <field_group grid_ref="regular_ml" freq_op="6h" operation="average">
+            <field_group grid_ref="regular_ml" freq_op="1h" operation="average">
                 <field field_ref="cloud_area_fraction_ml__cl"/>
                 <field field_ref="mass_fraction_cloud_ice__cli"/>
                 <field field_ref="mass_fraction_cloud_liquid__clw"/>
@@ -141,7 +141,7 @@
             name_suffix="_day_minmax"
             description="AWI-ESM3-VEG-HR daily min/max temperature">
 
-            <field_group grid_ref="regular_sfc" freq_op="6h">
+            <field_group grid_ref="regular_sfc" freq_op="1h">
                 <field field_ref="2t" name="tasmax" long_name="Daily Maximum Near-Surface Air Temperature" operation="maximum"/>
                 <field field_ref="2t" name="tasmin" long_name="Daily Minimum Near-Surface Air Temperature" operation="minimum"/>
             </field_group>
@@ -155,7 +155,7 @@
             name_suffix="_3h_pt"
             description="AWI-ESM3-VEG-HR 3-hourly instantaneous surface fields">
 
-            <field_group grid_ref="regular_sfc" freq_op="3h" operation="instant">
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="instant">
                 <field field_ref="2t" name="2t" long_name="2 metre temperature"/>
                 <field field_ref="2d" name="2d" long_name="2 metre dewpoint temperature"/>
                 <field field_ref="sp" name="sp" long_name="Surface pressure"/>
@@ -172,7 +172,7 @@
             name_suffix="_3h_pr"
             description="AWI-ESM3-VEG-HR 3-hourly precipitation">
 
-            <field_group grid_ref="regular_sfc" freq_op="3h" operation="average">
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
                 <field field_ref="precipitation_flux_3h__pr"/>
             </field_group>
         </file>
@@ -198,7 +198,7 @@
             name_suffix="_6h"
             description="AWI-ESM3-VEG-HR 6-hourly surface fields">
 
-            <field_group grid_ref="regular_sfc" freq_op="6h" operation="average">
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
                 <field field_ref="2t" name="2t" long_name="2 metre temperature"/>
                 <field field_ref="2d" name="2d" long_name="2 metre dewpoint temperature"/>
             </field_group>
@@ -212,7 +212,7 @@
             name_suffix="_6h_pl3"
             description="AWI-ESM3-VEG-HR 6-hourly pressure-level fields (plev3)">
 
-            <field_group grid_ref="regular_pl3" freq_op="6h" operation="instant">
+            <field_group grid_ref="regular_pl3" freq_op="1h" operation="instant">
                 <field field_ref="t_pl" name="t"/>
                 <field field_ref="u_pl" name="u"/>
                 <field field_ref="v_pl" name="v"/>
@@ -229,7 +229,7 @@
             name_suffix="_3h_rad"
             description="AWI-ESM3-VEG-HR 3-hourly radiation and turbulent fluxes">
 
-            <field_group grid_ref="regular_sfc" freq_op="3h" operation="average">
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
                 <field field_ref="surface_upward_latent_heat_flux_3h__hfls"/>
                 <field field_ref="surface_upward_sensible_heat_flux_3h__hfss"/>
                 <field field_ref="surface_downwelling_longwave_flux_3h__rlds"/>
@@ -247,7 +247,7 @@
             name_suffix="_3h_pl6"
             description="AWI-ESM3-VEG-HR 3-hourly instantaneous plev6 fields">
 
-            <field_group grid_ref="regular_pl6" freq_op="3h" operation="instant">
+            <field_group grid_ref="regular_pl6" freq_op="1h" operation="instant">
                 <field field_ref="t_pl" name="ta"/>
                 <field field_ref="u_pl" name="ua"/>
                 <field field_ref="v_pl" name="va"/>
@@ -264,7 +264,7 @@
             name_suffix="_3h_bldep"
             description="AWI-ESM3-VEG-HR 3-hourly boundary layer depth">
 
-            <field_group grid_ref="regular_sfc" freq_op="3h" operation="instant">
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="instant">
                 <field field_ref="blh" name="bldep" long_name="Boundary Layer Depth"/>
             </field_group>
         </file>
@@ -277,7 +277,7 @@
             name_suffix="_6h_prsn"
             description="AWI-ESM3-VEG-HR 6-hourly snowfall flux">
 
-            <field_group grid_ref="regular_sfc" freq_op="6h" operation="average">
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
                 <field field_ref="snowfall_flux_6h__prsn"/>
             </field_group>
         </file>
@@ -290,7 +290,7 @@
             name_suffix="_mon_netrad"
             description="AWI-ESM3-VEG-HR monthly net surface radiation">
 
-            <field_group grid_ref="regular_sfc" freq_op="6h" operation="average">
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
                 <field field_ref="surface_net_downward_longwave_flux__rls"/>
                 <field field_ref="surface_net_downward_shortwave_flux__rss"/>
                 <field field_ref="tclw" name="lwp" long_name="Liquid Water Path"/>
@@ -305,11 +305,77 @@
             name_suffix="_day_snow"
             description="AWI-ESM3-VEG-HR daily snow diagnostics">
 
-            <field_group grid_ref="regular_sfc" freq_op="6h" operation="average">
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
                 <field field_ref="tsn" name="tsns" long_name="Snow Surface Temperature"/>
                 <field field_ref="surface_snow_melt_flux__snmsl"/>
             </field_group>
         </file>
+
+        <!-- ========== VEG_LAND additional output sections ========== -->
+
+        <!-- 3hr land surface hydrology -->
+        <file
+            enabled="true"
+            timeseries="only"
+            output_freq="3h"
+            name_suffix="_3h_land"
+            description="AWI-ESM3-VEG-HR 3-hourly land surface fields">
+
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
+                <field field_ref="runoff_flux__mrro"/>
+                <field field_ref="surface_runoff_flux__mrros"/>
+                <field field_ref="snow_evaporation_flux__esn"/>
+                <field field_ref="net_surface_radiation__srfrad"/>
+                <field field_ref="ground_heat_flux__hfdsl"/>
+            </field_group>
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="instant">
+                <field field_ref="skt" name="tslsi" long_name="Surface Temperature Where Land or Sea Ice"/>
+            </field_group>
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="instant">
+                <field field_ref="moisture_content_of_soil_layer_100cm__mrsol"/>
+            </field_group>
+        </file>
+
+        <!-- Daily land surface hydrology -->
+        <file
+            enabled="true"
+            timeseries="only"
+            output_freq="1d"
+            name_suffix="_day_land"
+            description="AWI-ESM3-VEG-HR daily land surface fields">
+
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
+                <field field_ref="potential_evapotranspiration__evspsblpot"/>
+                <field field_ref="subsurface_runoff_flux__mrrob"/>
+                <field field_ref="sublimation_flux__sbl"/>
+                <field field_ref="surface_snow_melt_flux__snm"/>
+            </field_group>
+            <!-- Raw fields for pycmor temporal differencing (dgw, dsn, dsw, mrtws) -->
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
+                <field field_ref="swvl1" name="swvl1"/>
+                <field field_ref="swvl2" name="swvl2"/>
+                <field field_ref="swvl3" name="swvl3"/>
+                <field field_ref="swvl4" name="swvl4"/>
+                <field field_ref="sd" name="sd" long_name="Snow depth (water equivalent)"/>
+                <field field_ref="src" name="src" long_name="Skin reservoir content"/>
+                <field field_ref="rsn" name="rsn" long_name="Snow density"/>
+            </field_group>
+        </file>
+
+        <!-- Monthly land surface fields -->
+        <file
+            enabled="true"
+            timeseries="only"
+            output_freq="1mo"
+            name_suffix="_mon_land"
+            description="AWI-ESM3-VEG-HR monthly land surface fields">
+
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
+                <field field_ref="potential_evapotranspiration__evspsblpot"/>
+                <field field_ref="sublimation_flux__sbl"/>
+            </field_group>
+        </file>
+
     </file_group>
     <!-- *********************************************- -->
 
@@ -329,7 +395,7 @@
             name_suffix="_1d_cmip7"
             description="AWI-ESM3-VEG-HR daily raw surface fields for CMIP7">
 
-            <field_group grid_ref="regular_sfc" freq_op="6h" operation="average">
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
                 <field field_ref="2t" name="2t" long_name="2 metre temperature"/>
                 <field field_ref="msl" name="msl" long_name="Mean sea level pressure"/>
                 <field field_ref="sp" name="sp" long_name="Surface pressure"/>
@@ -350,7 +416,7 @@
             name_suffix="_1d_pl_cmip7"
             description="AWI-ESM3-VEG-HR daily raw pressure-level fields for CMIP7">
 
-            <field_group grid_ref="regular_pl" freq_op="6h" operation="average">
+            <field_group grid_ref="regular_pl" freq_op="1h" operation="average">
                 <field field_ref="z_pl" name="z"/>
                 <field field_ref="t_pl" name="t"/>
                 <field field_ref="u_pl" name="u"/>
@@ -369,7 +435,7 @@
             name_suffix="_6h"
             description="ECE4/OIFS 6hourly surface fields">
 
-            <field_group grid_ref="regular_sfc" freq_op="6h" operation="instant">
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="instant">
                 <field field_ref="msl" name="msl" long_name="Mean sea level pressure"/>
                 <field field_ref="tcc" name="tcc" long_name="Total cloud cover"/>
                 <field field_ref="10u" name="10u" long_name="10 metre U wind component"/>
@@ -394,7 +460,7 @@
             name_suffix="_1d"
             description="ECE4/OIFS daily surface fields">
 
-            <field_group grid_ref="regular_sfc" freq_op="6h" operation="average">
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
                 <field field_ref="cvl" name="cvl" long_name="Low vegetation cover"/>
                 <field field_ref="cvh" name="cvh" long_name="High vegetation cover"/>
                 <field field_ref="tvl" name="tvl" long_name="Type of low vegetation"/>
@@ -425,7 +491,7 @@
             name_suffix="_1m"
             description="ECE4/OIFS monthly surface fields">
 
-          <field_group grid_ref="regular_sfc" freq_op="6h" operation="average">
+          <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
               <field field_ref="cvl" name="cvl" long_name="Low vegetation cover"/>
               <field field_ref="cvh" name="cvh" long_name="High vegetation cover"/>
               <field field_ref="2t" name="2t" long_name="2 metre temperature"/>
@@ -512,7 +578,7 @@
             name_suffix="_1m_pl"
             description="ECE4/OIFS 6hourly pressure level fields">
 
-            <field_group grid_ref="regular_pl" freq_op="6h" operation="average">
+            <field_group grid_ref="regular_pl" freq_op="1h" operation="average">
                 <field field_ref="z_pl" name="z"/>
                 <field field_ref="t_pl" name="t"/>
                 <field field_ref="u_pl" name="u"/>
