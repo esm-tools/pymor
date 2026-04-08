@@ -358,9 +358,7 @@ def compute_sisnhc_from_msnow(data, rule):
     rho_snow = float(rule.get("rho_snow", 330.0))
     L_f = float(rule.get("L_f", 334000.0))
 
-    a_ice = _load_secondary_mf(
-        rule, "second_input_path", "second_input_pattern", "second_variable"
-    )
+    a_ice = _load_secondary_mf(rule, "second_input_path", "second_input_pattern", "second_variable")
 
     # h_snow = m_snow / (rho_snow * a_ice), then sisnhc = -rho_snow * L_f * h_snow
     # Simplifies to: sisnhc = -L_f * m_snow / a_ice
@@ -374,8 +372,7 @@ def compute_sisnhc_from_msnow(data, rule):
         "standard_name": "integral_of_snow_temperature_wrt_depth_expressed_as_heat_content",
         "long_name": "Snow Heat Content",
         "processing_note": (
-            f"sisnhc = -L_f*m_snow/a_ice, rho_snow={rho_snow}, L_f={L_f}, "
-            "derived from daily m_snow and a_ice"
+            f"sisnhc = -L_f*m_snow/a_ice, rho_snow={rho_snow}, L_f={L_f}, " "derived from daily m_snow and a_ice"
         ),
     }
     result.name = "sisnhc"
@@ -1966,10 +1963,7 @@ def compute_temporal_diff(data, rule):
         da = data["src"] * 1000.0
     elif model_variable == "soil_moisture":
         # dslw: change in total soil moisture (all 4 HTESSEL layers)
-        da = 1000.0 * (
-            data["swvl1"] * 0.07 + data["swvl2"] * 0.21
-            + data["swvl3"] * 0.72 + data["swvl4"] * 1.89
-        )
+        da = 1000.0 * (data["swvl1"] * 0.07 + data["swvl2"] * 0.21 + data["swvl3"] * 0.72 + data["swvl4"] * 1.89)
     else:
         da = data[model_variable] * float(layer_thickness) * 1000.0 * float(scale_factor)
 
@@ -2072,8 +2066,7 @@ def sum_lpjguess_monthly_files(data, rule):
             frames.append(df)
         df_all = pd.concat(frames, ignore_index=True)
         years = sorted(df_all["Year"].unique())
-        month_cols = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        month_cols = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         time_vals = []
         data_list = []
         for yr in years:
@@ -2083,7 +2076,8 @@ def sum_lpjguess_monthly_files(data, rule):
                 data_list.append(yr_df[mcol].values)
         arr = np.array(data_list)
         da = xr.DataArray(
-            arr, dims=["time", "ncells"],
+            arr,
+            dims=["time", "ncells"],
             coords={"time": time_vals},
         )
         result = result + da
@@ -2117,10 +2111,7 @@ def compute_mrsow(data, rule):
     total_depth = d1 + d2 + d3 + d4
 
     # Weighted average volumetric soil moisture
-    swvl_avg = (
-        data["swvl1"] * d1 + data["swvl2"] * d2
-        + data["swvl3"] * d3 + data["swvl4"] * d4
-    ) / total_depth
+    swvl_avg = (data["swvl1"] * d1 + data["swvl2"] * d2 + data["swvl3"] * d3 + data["swvl4"] * d4) / total_depth
 
     result = swvl_avg / porosity
     # Clip to [0, 1]
