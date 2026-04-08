@@ -287,6 +287,7 @@ def main():
         "extra_land": "Land",
         "core_ocean": "Ocean",
         "lrcs_ocean": "Ocean",
+        "cap7_ocean": "Ocean",
         "core_seaice": "Sea Ice",
         "lrcs_seaice": "Sea Ice",
         "veg_seaice": "Sea Ice",

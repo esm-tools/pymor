@@ -1,12 +1,36 @@
 # CAP7 Atmosphere Variables — AWI-ESM3-VEG-HR
 
-Source CSVs: `cmip7_CAP7_variables_atmos.csv` (153), `cmip7_CAP7_variables_landIce.csv` (1: sbl), `cmip7_CAP7_variables_landIce_land.csv` (3: snc, snd, snw). `atmos_land.csv` has 0 data rows.
+Source CSVs (unfiltered): `cmip7_CAP7_variables_atmos.csv` (226), `cmip7_CAP7_variables_landIce.csv` (1: sbl), `cmip7_CAP7_variables_landIce_land.csv` (6: snc, snd, snw, mrfso), `cmip7_CAP7_variables_atmos_land.csv` (0 data rows).
 
-Total: 154 compound_name entries (124 unique out_names)
+Total: 233 compound_name entries — 79 already in core/veg/extra/lrcs, 58 new cap7 rules, ~96 blocked
 
 XIOS field definitions: `field_def_cmip7.xml`
 XIOS output config: `file_def_oifs_cmip7_spinup.xml.j2`
 Pycmor rules: `cmip7_awiesm3-veg-hr_cap7_atm.yaml`
+
+---
+
+## Already in core/veg/extra/lrcs (79 compound entries)
+
+These variables already have matching compound names in other tier configs. No new rules needed.
+
+### core_atm (76)
+- [x] **cl** (mon), **cli** (mon), **clivi** (mon), **clt** (day, mon), **clw** (mon), **clwvi** (mon)
+- [x] **hfls** (mon), **hfss** (mon), **hur** (day, mon), **hurs** (day, 6hr, mon)
+- [x] **hus** (day, mon), **huss** (day, mon, 3hr), **pr** (1hr, 3hr, day, mon), **prc** (mon), **prsn** (mon), **prw** (mon)
+- [x] **ps** (day, mon), **psl** (day, mon)
+- [x] **rlds** (mon), **rldscs** (mon), **rlus** (mon), **rluscs** (mon), **rlut** (mon), **rlutcs** (mon)
+- [x] **rsds** (day, mon), **rsdscs** (mon), **rsdt** (mon), **rsus** (mon), **rsuscs** (mon), **rsut** (mon), **rsutcs** (mon)
+- [x] **sfcWind** (day, mon), **sftlf** (fx)
+- [x] **ta** (day, mon, 6hr plev3), **tas** (day, mon, 3hr, daily max/min, monthly max/min), **tauu** (mon), **tauv** (mon), **ts** (mon)
+- [x] **ua** (day, mon, 6hr plev3), **uas** (day, mon, 3hr), **va** (day, mon, 6hr plev3), **vas** (day, mon, 3hr)
+- [x] **wap** (day, mon), **zg** (day, mon)
+
+### core_land (2)
+- [x] **snc** (mon), **snw** (mon)
+
+### lrcs_land (1)
+- [x] **mrfso** (mon)
 
 ---
 
@@ -257,7 +281,8 @@ Total: 4 entries
 
 | Category | Count |
 |----------|-------|
-| Producible (rules written) | 58 |
+| Already in core/veg/extra/lrcs | 79 |
+| Producible (new cap7 rules written) | 58 |
 | Blocked: COSP satellite simulators | 17 |
 | Blocked: temperature tendencies | 13 |
 | Blocked: humidity tendencies | 8 |
@@ -265,4 +290,4 @@ Total: 4 entries
 | Blocked: CO2 tracer | 5 |
 | Blocked: effective radii | 4 |
 | Blocked: IFS source (convective, radiation, diffuse, 100m, etc.) | ~40 |
-| Blocked: CSV artefact | 1 |
+| **Total** | **233** |

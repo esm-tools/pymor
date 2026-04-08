@@ -111,7 +111,8 @@ Each subdirectory contains:
 
 | Directory | Realm | Model | Rules | Key notes |
 |-----------|-------|-------|-------|-----------|
-| `cap7_atm/` | Atmosphere | OpenIFS | 58 | 154 variables: 58 implemented (daily radiation/fluxes/precip, 6hr ml+plev7h, 1hr instant, monthly ml); 92 blocked (17 COSP, 21 tendencies, 9 aerosol, 5 CO2, 4 reff, ~40 IFS source) |
+| `cap7_atm/` | Atmosphere | OpenIFS | 58 | 233 variables: 79 already in core/veg/extra/lrcs, 58 new (daily radiation/fluxes/precip, 6hr ml+plev7h, 1hr instant, monthly ml); ~96 blocked (17 COSP, 21 tendencies, 9 aerosol, 5 CO2, 4 reff, ~40 IFS source) |
+| `cap7_ocean/` | Ocean | FESOM 2.6 | 2 | 43 variables: 26 already in core/lrcs, 2 new (daily tossq, monthly volcello); 15 blocked (no icebergs/SF6/geothermal/bigthetao, basin masks, namelist changes for friver/hfx/hfy/3hr stress) |
 
 ## Custom Pipeline Steps
 
