@@ -285,6 +285,7 @@ def main():
         "lrcs_land": "Land",
         "veg_land": "Land",
         "extra_land": "Land",
+        "cap7_land": "Land",
         "core_ocean": "Ocean",
         "lrcs_ocean": "Ocean",
         "cap7_ocean": "Ocean",

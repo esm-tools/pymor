@@ -114,6 +114,7 @@ Each subdirectory contains:
 | `cap7_atm/` | Atmosphere | OpenIFS | 58 | 233 variables: 79 already in core/veg/extra/lrcs, 58 new (daily radiation/fluxes/precip, 6hr ml+plev7h, 1hr instant, monthly ml); ~96 blocked (17 COSP, 21 tendencies, 9 aerosol, 5 CO2, 4 reff, ~40 IFS source) |
 | `cap7_ocean/` | Ocean | FESOM 2.6 | 3 | 43 variables: 26 already in core/lrcs, 3 new (daily tossq, monthly volcello, friver); 14 blocked (no icebergs/SF6/geothermal/bigthetao, basin masks, namelist changes for hfx/hfy/3hr stress) |
 | `cap7_seaice/` | Sea Ice | FESOM 2.6 | 9 | 21 variables: 9 already in core/lrcs/veg, 9 new (daily sithick/snd/siu/siv, monthly sieqthick/snw/evspsbl/prra/prsn); 3 blocked (sisali constant, sitempsnic internal, snc single-category) |
+| `cap7_land/` | Land | OpenIFS/LPJ-GUESS | 54 | 98 variables: 12 already in core/lrcs/veg/extra, 54 new (49 LPJ-GUESS monthly carbon/flux/fraction, 4 IFS daily mrro/mrso/mrsol/tslsi, 1 IFS 1hr tas); 2 need new custom step (per-soil-layer tsl/mrsol); 30 blocked (15 per-PFT group, 13 no .out file, 2 no depth-resolved cSoil) |
 
 ## Custom Pipeline Steps
 
