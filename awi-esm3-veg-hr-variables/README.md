@@ -100,7 +100,7 @@ Each subdirectory contains:
 |-----------|-------|-------|-------|-----------|
 | `cap7_ocean/` | Ocean | FESOM 2.6 | 45 | Decadal, yearly tendencies (6 with FESOM source mods), scalar diagnostics; ~12 blocked by basin masks |
 | `cap7_seaice/` | Sea Ice | FESOM 2.6 | 40+ | Heat/salt fluxes, tendencies, melt ponds, stress, hemisphere scalars; some blocked by single-category ice |
-| `cap7_land/` | Land | OIFS/LPJ-GUESS | 0 (TODO) | 6 deferred variables with OIFS source code investigation notes |
+| `cap7_land/` | Land | OIFS/LPJ-GUESS | 3 | 6 deferred variables: 3 now from LPJ-GUESS (evspsblsoi, evspsblveg, mrfso), 3 need offline derivation (rootd, mrsofc, sftgif) |
 | `veg_atm/` | Atmos/Aerosol | OpenIFS + LPJ-GUESS | 27 | 38 variables: 27 implemented (3hr rad/flux, plev6, daily snow, lwp, 7 fire emissions), 11 blocked |
 | `veg_land/` | Land | OpenIFS/HTESSEL + LPJ-GUESS | 58 | 88 variables: 22 IFS (3hr/day/mon hydrology, snow), 36 LPJ-GUESS (N-cycle, fractions, Lut), 30 blocked |
 | `veg_seaice/` | Sea Ice | FESOM 2.6 | 1 | 4 variables: 1 implemented (daily sisnhc from m_snow/a_ice), 3 blocked (2 ITD, 1 missing physics) |

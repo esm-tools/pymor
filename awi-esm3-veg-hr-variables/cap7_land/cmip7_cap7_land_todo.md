@@ -5,19 +5,17 @@ These require LPJ-GUESS dynamic vegetation output or external datasets.
 
 ## From core_land CSVs (deferred)
 
-### Need LPJ-GUESS output
+### From LPJ-GUESS output (now implemented)
 
-- [ ] **evspsblsoi** — Water Evaporation from Soil (`kg m-2 s-1`, Lmon)
+- [x] **evspsblsoi** — Water Evaporation from Soil (`kg m-2 s-1`, Lmon)
   - compound_name: `land.evspsblsoi.tavg-u-hxy-lnd.mon.glb`
-  - IFS `e` is total evaporation (soil + canopy + sublimation), not partitioned
-  - LPJ-GUESS should provide soil evaporation separately
-  - **OIFS source option**: Bare soil evaporation is computed internally as `PDHWLS(:,1,9)` / `D1SW1JBG` in `srfwexc_mod.F90`. Would need new GRIB field registration in `ptrgfu.F90` + `sucfu.F90` + `cpg_dia.F90` to expose via XIOS
+  - From LPJ-GUESS `evspsblsoi_monthly.out` (Jan..Dec format)
+  - IFS `e` is total evaporation (not partitioned), but LPJ-GUESS provides soil evaporation separately
 
-- [ ] **evspsblveg** — Evaporation from Canopy (`kg m-2 s-1`, Lmon)
+- [x] **evspsblveg** — Evaporation from Canopy (`kg m-2 s-1`, Lmon)
   - compound_name: `land.evspsblveg.tavg-u-hxy-lnd.mon.glb`
-  - Same issue: IFS doesn't partition evaporation by source
-  - LPJ-GUESS should provide canopy evaporation (interception loss)
-  - **OIFS source option**: Transpiration is already a GRIB field (`SURFTRANSPIRATIO` / GFP `CTP`) — can be requested via XIOS without source changes. Interception evaporation is `PDHIIS(:,4)` / `D1SWLJQ` in `upddiag.F90` — would need GRIB registration to expose. CMIP7 evspsblveg = interception + transpiration, so both components are needed
+  - From LPJ-GUESS `evspsblveg_monthly.out` (Jan..Dec format)
+  - LPJ-GUESS provides canopy evaporation (interception loss)
 
 - [ ] **rootd** — Maximum Root Depth (`m`, fx)
   - compound_name: `land.rootd.ti-u-hxy-lnd.fx.glb`
@@ -40,10 +38,10 @@ These require LPJ-GUESS dynamic vegetation output or external datasets.
   - Needs external glacier/ice sheet mask (e.g., from GLIMS, RGI, or ESM initial conditions)
   - **No source change needed**: IFS vegetation type 12 = "Ice Caps and Glaciers" (BATS classification in `srfrootfr_mod.F90`). Can derive sftgif from `tvl`/`tvh` fields: where dominant vegetation type = 12, set glacier fraction accordingly
 
-- [ ] **mrfso** — Soil Frozen Water Content (`kg m-2`, LImon)
+- [x] **mrfso** — Soil Frozen Water Content (`kg m-2`, LImon)
   - compound_name: `landIce.mrfso.tavg-u-hxy-lnd.mon.glb`
-  - IFS HTESSEL tracks total soil moisture but liquid/frozen partitioning is internal
-  - **OIFS source option**: Frozen soil water per layer is computed as `PDHWLS(:,:,2)` in `srfwexc_mod.F90` (frozen fraction from soil temperature). Liquid water = `D1SWAFR` in `upddiag.F90` line 436. Would need new GRIB field registration to expose sum of frozen water across 4 layers via XIOS
+  - From LPJ-GUESS `mrfso_monthly.out` (Jan..Dec format)
+  - LPJ-GUESS tracks frozen soil water content directly
 
 ## Additional CAP7-specific land variables
 
