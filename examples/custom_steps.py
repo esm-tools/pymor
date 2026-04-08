@@ -1548,3 +1548,160 @@ def compute_slthick(data, rule):
     }
     result.name = "slthick"
     return result
+
+
+# ============================================================
+# LPJ-GUESS fire emission steps
+# ============================================================
+
+# Andreae (2019) Table 1 — savanna/grassland emission factors [g species / kg DM]
+# Carbon fraction of dry matter = 0.45
+_FIRE_EMISSION_FACTORS_G_PER_KG_DM = {
+    "bc": 0.37,
+    "ch4": 1.94,
+    "co": 63.0,
+    "dms": 0.68,
+    "oa": 2.62,
+    "so2": 0.48,
+    "nmvoc": 3.4,
+}
+_CARBON_FRACTION = 0.45  # kg C per kg dry matter
+
+
+def load_lpjguess_monthly(data, rule):
+    """
+    Load LPJ-GUESS monthly .out files into an xarray Dataset.
+
+    Replaces load_mfdataset for LPJ-GUESS plain-text output. Reads all
+    period directories matching the input pattern, parses the
+    whitespace-delimited Lon/Lat/Year/Jan..Dec format, and returns an
+    xarray Dataset with dimensions (time, ncells).
+
+    Expects rule.inputs[0].path to point to the lpj_guess outdata directory.
+    The files are at {path}/{period}/run1/<filename>.out.
+    """
+    import cftime
+    import pandas as pd
+
+    input_collection = rule.inputs[0]
+    base_path = input_collection.path
+    pattern_str = input_collection.pattern_str
+
+    # Glob for all matching files across period subdirectories
+    files = sorted(base_path.glob(pattern_str))
+    if not files:
+        raise FileNotFoundError(f"No LPJ-GUESS files found matching {base_path}/{pattern_str}")
+    logger.info(f"Loading {len(files)} LPJ-GUESS .out files from {base_path}")
+
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+    frames = []
+    for f in files:
+        logger.info(f"  * {f}")
+        df = pd.read_csv(f, delim_whitespace=True)
+        frames.append(df)
+
+    df_all = pd.concat(frames, ignore_index=True)
+
+    # Get sorted unique years
+    years = np.sort(df_all["Year"].unique())
+
+    # Build a cell index from (lon, lat) pairs, preserving the grid order
+    coords_df = df_all[["Lon", "Lat"]].drop_duplicates()
+    coords_df = coords_df.sort_values(["Lat", "Lon"], ascending=[False, True])
+    coords_df = coords_df.reset_index(drop=True)
+    ncells = len(coords_df)
+    lon_vals = coords_df["Lon"].values
+    lat_vals = coords_df["Lat"].values
+
+    # Map each (lon, lat) to a cell index
+    cell_map = {(row.Lon, row.Lat): i for i, row in coords_df.iterrows()}
+
+    # Build time coordinate
+    times = []
+    for yr in years:
+        for m in range(1, 13):
+            times.append(cftime.DatetimeProlepticGregorian(int(yr), m, 15))
+
+    # Allocate output array
+    n_times = len(times)
+    values = np.full((n_times, ncells), np.nan, dtype=np.float64)
+
+    # Fill values
+    model_variable = rule.get("model_variable", "Total")
+    if model_variable == "Total":
+        # Sum all month columns — they are the data columns
+        for _, row in df_all.iterrows():
+            cell_idx = cell_map.get((row["Lon"], row["Lat"]))
+            if cell_idx is None:
+                continue
+            yr_idx = np.searchsorted(years, row["Year"])
+            for m_idx, month in enumerate(months):
+                t_idx = yr_idx * 12 + m_idx
+                values[t_idx, cell_idx] = row[month]
+    else:
+        raise ValueError(
+            f"model_variable '{model_variable}' not supported for LPJ-GUESS .out files. "
+            f"Use 'Total' for fire emission variables."
+        )
+
+    # Create xarray Dataset
+    da = xr.DataArray(
+        values,
+        dims=["time", "ncells"],
+        coords={
+            "time": times,
+            "lon": ("ncells", lon_vals),
+            "lat": ("ncells", lat_vals),
+        },
+        name=model_variable,
+    )
+    da.attrs["units"] = "kg C m-2 s-1"
+
+    ds = da.to_dataset()
+    return ds
+
+
+def compute_fire_emission(data, rule):
+    """
+    Convert total fire carbon flux to species-specific emission flux.
+
+    Reads rule.emission_species to select the emission factor from
+    Andreae (2019) Table 1 (savanna/grassland). Converts from
+    kg C m-2 s-1 to kg species m-2 s-1.
+
+    Conversion: flux_species = flux_C * EF / (C_frac * 1000)
+      where EF is in g/kgDM and C_frac = 0.45 kgC/kgDM.
+    """
+    species = rule.get("emission_species")
+    if species is None:
+        raise ValueError("Rule must specify 'emission_species' for compute_fire_emission")
+
+    ef = _FIRE_EMISSION_FACTORS_G_PER_KG_DM.get(species)
+    if ef is None:
+        raise ValueError(
+            f"Unknown emission species '{species}'. " f"Available: {list(_FIRE_EMISSION_FACTORS_G_PER_KG_DM.keys())}"
+        )
+
+    # g/kgDM -> kg_species/kgC: divide by 1000 (g->kg) and by C_frac (kgDM->kgC)
+    conversion_factor = ef / (_CARBON_FRACTION * 1000.0)
+
+    model_variable = rule.get("model_variable", "Total")
+    da = data[model_variable]
+
+    da_species = da * conversion_factor
+    da_species.attrs = da.attrs.copy()
+    da_species.attrs["units"] = "kg m-2 s-1"
+    da_species.name = model_variable
+
+    ds = da_species.to_dataset()
+    # Carry over coordinates
+    for coord in data.coords:
+        if coord not in ds.coords:
+            ds.coords[coord] = data.coords[coord]
+
+    logger.info(
+        f"Applied emission factor for '{species}': "
+        f"EF={ef} g/kgDM, conversion={conversion_factor:.6e} kg_species/kgC"
+    )
+    return ds

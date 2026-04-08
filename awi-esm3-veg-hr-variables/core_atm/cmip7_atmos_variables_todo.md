@@ -167,6 +167,14 @@ Pycmor rules then read the CMOR-ready output and just add metadata + save.
 2. **Model-level interpolation** — cl/cli/clw use `regular_ml` grid (interpolation from Gaussian to regular). Verify this works in practice and check computational cost
 3. **plev3 axis** — Added 3-level pressure axis (850/500/250 hPa) to axis_def.xml for 6hr ta/ua/va. Verify XIOS FullPos can interpolate to arbitrary pressure level sets
 
+## OIFS source code investigation (2026-04-06)
+
+### Available GRIB fields not yet used
+- **Transpiration** (`SURFTRANSPIRATIO` / GFP `CTP`) — already registered as accumulated flux in `cpg_dia.F90`. Can be requested via XIOS `field_def.xml` without source changes. Relevant for evspsblveg decomposition in cap7_land
+
+### HTESSEL internals accessible via source changes
+- Bare soil evaporation, interception evaporation, frozen soil water — all computed internally but need GRIB field registration. See `../cap7_land/cmip7_cap7_land_todo.md` for details
+
 ## Research findings
 
 - IFS `w_pl` is omega (Pa/s), not vertical velocity (m/s). Unit annotation in field_def was wrong — fixed

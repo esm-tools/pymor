@@ -242,6 +242,49 @@
     <field id="moisture_content_of_soil_layer__mrsol" name="mrsol" field_ref="swvl1" standard_name="moisture_content_of_soil_layer" long_name="Moisture in Upper Portion of Soil Column" unit="kg m-2" >
         1000*(swvl1*0.07 + swvl2*0.03)
     </field>
+    <!-- ========== VEG additional 3hr radiation/flux fields (deaccum /10800) ========== -->
+    <!-- Latent heat flux 3hr: deaccum + sign flip -->
+    <field id="surface_upward_latent_heat_flux_3h__hfls" name="hfls" field_ref="slhf" standard_name="surface_upward_latent_heat_flux" long_name="Surface Upward Latent Heat Flux" unit="W m-2" >
+        -slhf/10800
+    </field>
+    <!-- Sensible heat flux 3hr: deaccum + sign flip -->
+    <field id="surface_upward_sensible_heat_flux_3h__hfss" name="hfss" field_ref="sshf" standard_name="surface_upward_sensible_heat_flux" long_name="Surface Upward Sensible Heat Flux" unit="W m-2" >
+        -sshf/10800
+    </field>
+    <!-- Surface downwelling LW 3hr -->
+    <field id="surface_downwelling_longwave_flux_3h__rlds" name="rlds" field_ref="strd" standard_name="surface_downwelling_longwave_flux_in_air" long_name="Surface Downwelling Longwave Radiation" unit="W m-2" >
+        strd/10800
+    </field>
+    <!-- Surface upwelling LW 3hr -->
+    <field id="surface_upwelling_longwave_flux_3h__rlus" name="rlus" field_ref="strd" standard_name="surface_upwelling_longwave_flux_in_air" long_name="Surface Upwelling Longwave Radiation" unit="W m-2" >
+        (strd-str)/10800
+    </field>
+    <!-- Surface downwelling SW 3hr -->
+    <field id="surface_downwelling_shortwave_flux_3h__rsds" name="rsds" field_ref="ssrd" standard_name="surface_downwelling_shortwave_flux_in_air" long_name="Surface Downwelling Shortwave Radiation" unit="W m-2" >
+        ssrd/10800
+    </field>
+    <!-- Surface upwelling SW 3hr -->
+    <field id="surface_upwelling_shortwave_flux_3h__rsus" name="rsus" field_ref="ssrd" standard_name="surface_upwelling_shortwave_flux_in_air" long_name="Surface Upwelling Shortwave Radiation" unit="W m-2" >
+        (ssrd-ssr)/10800
+    </field>
+    <!-- ========== VEG monthly net radiation ========== -->
+    <!-- Net LW surface radiation (= net downward = str/21600, str is accumulated net) -->
+    <field id="surface_net_downward_longwave_flux__rls" name="rls" field_ref="str" standard_name="surface_net_downward_longwave_flux" long_name="Net Longwave Surface Radiation" unit="W m-2" >
+        str/21600
+    </field>
+    <!-- Net SW surface radiation (= net downward = ssr/21600, ssr is accumulated net) -->
+    <field id="surface_net_downward_shortwave_flux__rss" name="rss" field_ref="ssr" standard_name="surface_net_downward_shortwave_flux" long_name="Net Shortwave Surface Radiation" unit="W m-2" >
+        ssr/21600
+    </field>
+    <!-- ========== VEG 6hr snowfall ========== -->
+    <field id="snowfall_flux_6h__prsn" name="prsn" field_ref="sf" standard_name="snowfall_flux" long_name="Snowfall Flux" unit="kg m-2 s-1" >
+        sf*1000/21600
+    </field>
+    <!-- ========== VEG daily snow diagnostics ========== -->
+    <!-- Snowmelt: deaccumulate m → kg m-2 s-1 -->
+    <field id="surface_snow_melt_flux__snmsl" name="snmsl" field_ref="smlt" standard_name="surface_snow_melt_flux" long_name="Water Flowing out of Snowpack" unit="kg m-2 s-1" >
+        smlt*1000/21600
+    </field>
     <!-- Geopotential height: m2 s-2 → m (divide by g) -->
     <field id="geopotential_height__zg" name="zg" field_ref="z_pl" standard_name="geopotential_height" long_name="Geopotential Height" unit="m" >
         z_pl/9.80665

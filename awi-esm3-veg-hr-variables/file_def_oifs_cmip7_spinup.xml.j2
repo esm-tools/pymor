@@ -218,6 +218,98 @@
                 <field field_ref="v_pl" name="v"/>
             </field_group>
         </file>
+
+        <!-- ========== VEG additional output sections ========== -->
+
+        <!-- 3hr averaged radiation and turbulent flux fields -->
+        <file
+            enabled="true"
+            timeseries="only"
+            output_freq="3h"
+            name_suffix="_3h_rad"
+            description="AWI-ESM3-VEG-HR 3-hourly radiation and turbulent fluxes">
+
+            <field_group grid_ref="regular_sfc" freq_op="3h" operation="average">
+                <field field_ref="surface_upward_latent_heat_flux_3h__hfls"/>
+                <field field_ref="surface_upward_sensible_heat_flux_3h__hfss"/>
+                <field field_ref="surface_downwelling_longwave_flux_3h__rlds"/>
+                <field field_ref="surface_upwelling_longwave_flux_3h__rlus"/>
+                <field field_ref="surface_downwelling_shortwave_flux_3h__rsds"/>
+                <field field_ref="surface_upwelling_shortwave_flux_3h__rsus"/>
+            </field_group>
+        </file>
+
+        <!-- 3hr instantaneous plev6 fields (lower troposphere: 950-700 hPa) -->
+        <file
+            enabled="true"
+            timeseries="only"
+            output_freq="3h"
+            name_suffix="_3h_pl6"
+            description="AWI-ESM3-VEG-HR 3-hourly instantaneous plev6 fields">
+
+            <field_group grid_ref="regular_pl6" freq_op="3h" operation="instant">
+                <field field_ref="t_pl" name="ta"/>
+                <field field_ref="u_pl" name="ua"/>
+                <field field_ref="v_pl" name="va"/>
+                <field field_ref="w_pl" name="wap"/>
+                <field field_ref="q_pl" name="hus"/>
+            </field_group>
+        </file>
+
+        <!-- 3hr instantaneous boundary layer depth -->
+        <file
+            enabled="true"
+            timeseries="only"
+            output_freq="3h"
+            name_suffix="_3h_bldep"
+            description="AWI-ESM3-VEG-HR 3-hourly boundary layer depth">
+
+            <field_group grid_ref="regular_sfc" freq_op="3h" operation="instant">
+                <field field_ref="blh" name="bldep" long_name="Boundary Layer Depth"/>
+            </field_group>
+        </file>
+
+        <!-- 6hr averaged snowfall flux -->
+        <file
+            enabled="true"
+            timeseries="only"
+            output_freq="6h"
+            name_suffix="_6h_prsn"
+            description="AWI-ESM3-VEG-HR 6-hourly snowfall flux">
+
+            <field_group grid_ref="regular_sfc" freq_op="6h" operation="average">
+                <field field_ref="snowfall_flux_6h__prsn"/>
+            </field_group>
+        </file>
+
+        <!-- Monthly net radiation fields (Emon) -->
+        <file
+            enabled="true"
+            timeseries="only"
+            output_freq="1mo"
+            name_suffix="_mon_netrad"
+            description="AWI-ESM3-VEG-HR monthly net surface radiation">
+
+            <field_group grid_ref="regular_sfc" freq_op="6h" operation="average">
+                <field field_ref="surface_net_downward_longwave_flux__rls"/>
+                <field field_ref="surface_net_downward_shortwave_flux__rss"/>
+                <field field_ref="tclw" name="lwp" long_name="Liquid Water Path"/>
+            </field_group>
+        </file>
+
+        <!-- Daily snow diagnostics -->
+        <file
+            enabled="true"
+            timeseries="only"
+            output_freq="1d"
+            name_suffix="_day_snow"
+            description="AWI-ESM3-VEG-HR daily snow diagnostics">
+
+            <field_group grid_ref="regular_sfc" freq_op="6h" operation="average">
+                <field field_ref="tsn" name="tsns" long_name="Snow Surface Temperature"/>
+                <field field_ref="surface_snow_melt_flux__snmsl"/>
+            </field_group>
+        </file>
     </file_group>
     <!-- *********************************************- -->
 

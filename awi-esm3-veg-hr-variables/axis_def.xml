@@ -14,6 +14,7 @@
       <zoom_axis index="(0,2)[10 11 12]" />
     </axis>
     <axis id="pressure_levels_3" long_name="vertical pressure levels plev3" n_glo="3" value="(0,2)[85000.0 50000.0 25000.0]" />
+    <axis id="pressure_levels_6" long_name="vertical pressure levels plev6 lower troposphere" n_glo="6" value="(0,5)[95000.0 90000.0 85000.0 80000.0 75000.0 70000.0]" />
   </axis_group>
 
   <!-- Definition of theta levels axes -->

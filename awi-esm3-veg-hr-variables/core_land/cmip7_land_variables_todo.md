@@ -49,6 +49,22 @@ Pycmor rules: `cmip7_awiesm3-veg-hr_land.yaml`
 
 ---
 
+## OIFS source code investigation (2026-04-06)
+
+Of the 6 variables deferred to cap7_land, OIFS source analysis shows:
+
+### No source changes needed (derivable from existing output)
+- **rootd** — Per-veg-type root profiles in `srfrootfr_mod.F90` (Zeng 1998). Compute weighted effective depth from `tvl`/`tvh` + lookup table
+- **mrsofc** — Field capacity `RWCAP`/`RWCAPM` in `sussoil_mod.F90` from Van Genuchten params. Derive from IFS soil type initial conditions
+- **sftgif** — IFS vegetation type 12 = "Ice Caps and Glaciers". Derive from `tvl`/`tvh` fields
+
+### Need GRIB field registration (moderate OIFS source changes)
+- **evspsblsoi** — Bare soil evaporation `PDHWLS(:,1,9)` in `srfwexc_mod.F90`. Wire to XIOS via `ptrgfu.F90` + `sucfu.F90` + `cpg_dia.F90`
+- **evspsblveg** — Transpiration already available as GRIB field `SURFTRANSPIRATIO`. Interception evaporation `PDHIIS(:,4)` needs registration
+- **mrfso** — Frozen soil water `PDHWLS(:,:,2)` in `srfwexc_mod.F90`. Sum over 4 layers and register as GRIB field
+
+See detailed notes in `../cap7_land/cmip7_cap7_land_todo.md`.
+
 ## Blockers / verification needed
 
 1. **XIOS multi-field expressions** — mrso (4 fields), lai (4 fields), mrsol (2 fields) use multi-field XIOS expressions. Verify these work at runtime
