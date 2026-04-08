@@ -426,6 +426,23 @@
             </field_group>
         </file>
 
+        <!-- Monthly static land fields for fx derivation (sftgif, mrsofc, rootd) -->
+        <file
+            enabled="true"
+            timeseries="only"
+            output_freq="1mo"
+            name_suffix="_mon_land_static"
+            description="AWI-ESM3-VEG-HR monthly static land fields for fx derivation">
+
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
+                <field field_ref="tvl" name="tvl" long_name="Type of low vegetation"/>
+                <field field_ref="tvh" name="tvh" long_name="Type of high vegetation"/>
+                <field field_ref="cvl" name="cvl" long_name="Low vegetation cover"/>
+                <field field_ref="cvh" name="cvh" long_name="High vegetation cover"/>
+                <field field_ref="slt" name="slt" long_name="Soil type"/>
+            </field_group>
+        </file>
+
         <!-- Daily model-level fields (extra_atm: cl, pfull) -->
         <file
             enabled="true"

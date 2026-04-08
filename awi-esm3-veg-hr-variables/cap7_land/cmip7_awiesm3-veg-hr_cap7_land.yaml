@@ -1,6 +1,7 @@
 # CMIP7 CAP7 Land Variables — AWI-ESM3-VEG-HR
-# 3 of 6 deferred core_land variables now producible from LPJ-GUESS monthly output.
-# Remaining 3 (rootd, mrsofc, sftgif) need offline derivation from IFS fields.
+# All 6 deferred core_land variables now implemented:
+# 3 from LPJ-GUESS monthly output (evspsblsoi, evspsblveg, mrfso)
+# 3 derived from IFS static fields (sftgif, mrsofc, rootd)
 
 general:
   name: "awiesm3-cmip7-cap7-land"
@@ -38,7 +39,48 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # Custom fx pipeline for IFS-derived static fields (sftgif, mrsofc, rootd)
+  - name: sftgif_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_sftgif
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  - name: mrsofc_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_mrsofc
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  - name: rootd_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_rootd
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
 inherit:
+  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/oifs
   lpjg_data_path: &ldp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/lpj_guess
   source_id: AWI-ESM-3
   institution_id: AWI
@@ -80,3 +122,37 @@ rules:
     model_variable: mrfso
     pipelines:
       - lpjg_monthly_pipeline
+
+  # ============================================================
+  # Derived from IFS static fields (fx)
+  # ============================================================
+
+  # Glacier fraction from vegetation type fields
+  - name: sftgif
+    inputs:
+      - path: *dp
+        pattern: atmos_mon_land_static_*.nc
+    compound_name: land.sftgif.ti-u-hxy-u.fx.glb
+    model_variable: sftgif
+    pipelines:
+      - sftgif_pipeline
+
+  # Field capacity from soil type lookup
+  - name: mrsofc
+    inputs:
+      - path: *dp
+        pattern: atmos_mon_land_static_*.nc
+    compound_name: land.mrsofc.ti-u-hxy-lnd.fx.glb
+    model_variable: mrsofc
+    pipelines:
+      - mrsofc_pipeline
+
+  # Maximum root depth from vegetation type weighted average
+  - name: rootd
+    inputs:
+      - path: *dp
+        pattern: atmos_mon_land_static_*.nc
+    compound_name: land.rootd.ti-u-hxy-lnd.fx.glb
+    model_variable: rootd
+    pipelines:
+      - rootd_pipeline

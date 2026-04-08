@@ -2142,3 +2142,140 @@ def select_southern_hemisphere(data, rule):
         raise ValueError("Cannot find latitude coordinate in data")
     result = data.sel({lat_name: data[lat_name] <= -30.0})
     return result
+
+
+def compute_sftgif(data, rule):
+    """
+    Compute glacier fraction from IFS vegetation type fields.
+
+    IFS vegetation type 12 = "Ice Caps and Glaciers" (BATS classification).
+    sftgif = cvl * (tvl == 12) * 100 + cvh * (tvh == 12) * 100
+
+    Input data should contain tvl, tvh, cvl, cvh fields.
+    """
+    tvl = data["tvl"]
+    tvh = data["tvh"]
+    cvl = data["cvl"]
+    cvh = data["cvh"]
+
+    # Vegetation type 12 = Ice Caps and Glaciers
+    glacier = cvl * (tvl == 12).astype(float) + cvh * (tvh == 12).astype(float)
+    result = glacier * 100.0  # fraction → percent
+
+    result.attrs = {"units": "%", "long_name": "Fraction of Grid Cell Covered with Glacier"}
+    result.name = "sftgif"
+
+    ds = result.to_dataset()
+    for coord in data.coords:
+        if coord not in ds.coords:
+            ds.coords[coord] = data.coords[coord]
+    return ds
+
+
+# HTESSEL field capacity lookup table (Van Genuchten parameters per soil type)
+# Soil types 1-7 from IFS documentation, field capacity as volumetric fraction
+# Source: HTESSEL sussoil_mod.F90, Van Genuchten parameters → theta at pF=2.5
+_HTESSEL_FIELD_CAPACITY = {
+    1: 0.242,  # Coarse (sand)
+    2: 0.346,  # Medium (loam)
+    3: 0.382,  # Medium fine (clay loam)
+    4: 0.448,  # Fine (clay)
+    5: 0.310,  # Very fine (silty clay)
+    6: 0.370,  # Organic
+    7: 0.420,  # Tropical organic
+}
+
+
+def compute_mrsofc(data, rule):
+    """
+    Compute soil field capacity from IFS soil type.
+
+    HTESSEL has 7 soil types with known Van Genuchten parameters.
+    Field capacity (theta at pF=2.5) is looked up per soil type,
+    then integrated over the full soil column (2.89 m).
+
+    mrsofc = theta_fc * total_depth * rho_water
+           = theta_fc * 2.89 * 1000 (kg m-2)
+
+    Input data should contain 'slt' (soil type, integer 1-7).
+    """
+    slt = data["slt"]
+    total_depth = 0.07 + 0.21 + 0.72 + 1.89  # 2.89 m
+
+    # Map soil type to field capacity
+    theta_fc = xr.zeros_like(slt, dtype=float)
+    for stype, fc in _HTESSEL_FIELD_CAPACITY.items():
+        theta_fc = xr.where(np.round(slt) == stype, fc, theta_fc)
+
+    result = theta_fc * total_depth * 1000.0  # m3/m3 * m * kg/m3 → kg/m2
+
+    result.attrs = {
+        "units": "kg m-2",
+        "long_name": "Soil Moisture at Field Capacity",
+    }
+    result.name = "mrsofc"
+
+    ds = result.to_dataset()
+    for coord in data.coords:
+        if coord not in ds.coords:
+            ds.coords[coord] = data.coords[coord]
+    return ds
+
+
+# HTESSEL root depth by vegetation type (Zeng et al. 1998 effective depth)
+# IFS BATS vegetation types with 95% cumulative root fraction depth (m)
+_HTESSEL_ROOT_DEPTH = {
+    1: 1.00,  # Crops, mixed farming
+    2: 1.00,  # Short grass
+    3: 1.50,  # Evergreen needleleaf
+    4: 1.50,  # Deciduous needleleaf
+    5: 1.50,  # Deciduous broadleaf
+    6: 2.00,  # Evergreen broadleaf
+    7: 1.00,  # Tall grass
+    8: 0.50,  # Desert
+    9: 0.50,  # Tundra
+    10: 1.00,  # Irrigated crops
+    11: 0.50,  # Semidesert
+    12: 0.00,  # Ice caps and glaciers
+    13: 0.50,  # Bogs and marshes
+    14: 0.00,  # Inland water
+    15: 0.00,  # Ocean
+    16: 1.50,  # Evergreen shrubs
+    17: 1.00,  # Deciduous shrubs
+    18: 1.50,  # Mixed forest
+    19: 1.00,  # Interrupted forest
+    20: 0.00,  # Water and land mix
+}
+
+
+def compute_rootd(data, rule):
+    """
+    Compute effective maximum root depth from IFS vegetation types.
+
+    Uses vegetation-type-weighted root depth:
+    rootd = cvl * rootd(tvl) + cvh * rootd(tvh)
+
+    Input data should contain tvl, tvh, cvl, cvh fields.
+    """
+    tvl = data["tvl"]
+    tvh = data["tvh"]
+    cvl = data["cvl"]
+    cvh = data["cvh"]
+
+    rootd_low = xr.zeros_like(tvl, dtype=float)
+    rootd_high = xr.zeros_like(tvh, dtype=float)
+
+    for vtype, depth in _HTESSEL_ROOT_DEPTH.items():
+        rootd_low = xr.where(np.round(tvl) == vtype, depth, rootd_low)
+        rootd_high = xr.where(np.round(tvh) == vtype, depth, rootd_high)
+
+    result = cvl * rootd_low + cvh * rootd_high
+
+    result.attrs = {"units": "m", "long_name": "Maximum Root Depth"}
+    result.name = "rootd"
+
+    ds = result.to_dataset()
+    for coord in data.coords:
+        if coord not in ds.coords:
+            ds.coords[coord] = data.coords[coord]
+    return ds

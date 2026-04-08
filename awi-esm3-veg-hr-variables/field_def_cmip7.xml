@@ -347,6 +347,7 @@
     <field id="fal"    long_name="forecast albedo"                                                                                                                     unit="1" />
     <field id="fsr"    long_name="forecast surface roughness"                                                                                                          unit="m" />
     <field id="flsr"   long_name="forecast logarithm of surface roughness for heat"                                                                                    unit="1" />
+    <field id="slt"    long_name="soil type"                                                  standard_name="soil_type"                                                unit="1" />
     <field id="tvl"    long_name="type of low vegetation"                                     standard_name="type_of_low_vegetation"                                   unit="1" />
     <field id="tvh"    long_name="type of high vegetation"                                    standard_name="type_of_high_vegetation"                                  unit="1" />
     <field id="cvl"    long_name="low vegetation cover"                                       standard_name="low_vegetation_cover"                                     unit="1" />
