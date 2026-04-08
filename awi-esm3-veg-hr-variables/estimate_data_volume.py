@@ -334,11 +334,16 @@ def main():
         rule_sizes.append((annual_bytes, r))
     rule_sizes.sort(key=lambda x: x[0], reverse=True)
 
-    print(f"Top 20 largest rules (annual):")
-    print(f"{'#':>3} {'Rule':<35} {'Freq':<6} {'Grid':<10} {'Size':>12}")
-    print("-" * 72)
-    for i, (nb, r) in enumerate(rule_sizes[:20]):
-        print(f"{i+1:>3} {r['name']:<35} {r['freq']:<6} {r['grid']:<10} {human_size(nb):>12}")
+    print(f"Top 50 largest rules (annual):")
+    print(
+        f"{'#':>3} {'Rule':<35} {'Freq':<6} {'Grid':<10} {'Tier':<10} {'Size':>12}"
+    )
+    print("-" * 82)
+    for i, (nb, r) in enumerate(rule_sizes[:50]):
+        tier = r["dir"].split("_")[0]  # core, cap7, veg, extra
+        print(
+            f"{i+1:>3} {r['name']:<35} {r['freq']:<6} {r['grid']:<10} {tier:<10} {human_size(nb):>12}"
+        )
     print()
 
     # ── Grid breakdown ──────────────────────────────────────────────
