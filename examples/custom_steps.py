@@ -334,6 +334,54 @@ def compute_sisnhc(data, rule):
     return result
 
 
+def compute_sisnhc_from_msnow(data, rule):
+    """
+    Compute daily snow heat content from m_snow and a_ice.
+
+    FESOM outputs h_snow only at monthly frequency. For daily sisnhc,
+    derive h_snow from daily m_snow (snow mass per area) and a_ice
+    (ice concentration):
+
+        h_snow = m_snow / (rho_snow * a_ice)
+        sisnhc = -rho_snow * L_f * h_snow = -L_f * m_snow / a_ice
+
+    Primary input (data) is m_snow (kg/m2).
+    Secondary input a_ice loaded via rule attributes.
+
+    Rule attributes:
+      - second_input_path: directory containing a_ice files
+      - second_input_pattern: glob pattern for a_ice files
+      - second_variable: variable name (default: auto-detect)
+      - rho_snow: snow density (default: 330.0 kg/m3, used only in note)
+      - L_f: latent heat of fusion (default: 334000.0 J/kg)
+    """
+    rho_snow = float(rule.get("rho_snow", 330.0))
+    L_f = float(rule.get("L_f", 334000.0))
+
+    a_ice = _load_secondary_mf(
+        rule, "second_input_path", "second_input_pattern", "second_variable"
+    )
+
+    # h_snow = m_snow / (rho_snow * a_ice), then sisnhc = -rho_snow * L_f * h_snow
+    # Simplifies to: sisnhc = -L_f * m_snow / a_ice
+    # Protect against division by zero where a_ice == 0
+    a_ice_safe = a_ice.where(a_ice > 0, np.nan)
+    result = -L_f * data / a_ice_safe
+    result = result.fillna(0.0)
+
+    result.attrs = {
+        "units": "J m-2",
+        "standard_name": "integral_of_snow_temperature_wrt_depth_expressed_as_heat_content",
+        "long_name": "Snow Heat Content",
+        "processing_note": (
+            f"sisnhc = -L_f*m_snow/a_ice, rho_snow={rho_snow}, L_f={L_f}, "
+            "derived from daily m_snow and a_ice"
+        ),
+    }
+    result.name = "sisnhc"
+    return result
+
+
 def compute_sitempbot(data, rule):
     """
     Compute temperature at ice-ocean interface (freezing point).

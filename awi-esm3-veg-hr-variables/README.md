@@ -102,6 +102,7 @@ Each subdirectory contains:
 | `cap7_land/` | Land | OIFS/LPJ-GUESS | 0 (TODO) | 6 deferred variables with OIFS source code investigation notes |
 | `veg_atm/` | Atmos/Aerosol | OpenIFS + LPJ-GUESS | 27 | 38 variables: 27 implemented (3hr rad/flux, plev6, daily snow, lwp, 7 fire emissions), 11 blocked |
 | `veg_land/` | Land | OpenIFS/HTESSEL + LPJ-GUESS | 58 | 88 variables: 22 IFS (3hr/day/mon hydrology, snow), 36 LPJ-GUESS (N-cycle, fractions, Lut), 30 blocked |
+| `veg_seaice/` | Sea Ice | FESOM 2.6 | 1 | 4 variables: 1 implemented (daily sisnhc from m_snow/a_ice), 3 blocked (2 ITD, 1 missing physics) |
 
 ## Custom Pipeline Steps
 
@@ -141,6 +142,7 @@ Complex variables that cannot be expressed as XIOS expressions are computed in `
 - **siconc/simpconc**: fraction to percent conversion
 - **sispeed**: sqrt(uice^2 + vice^2)
 - **sihc/sisnhc**: heat content from ice/snow thickness + thermodynamic constants
+- **sisnhc (daily)**: derived from daily m_snow/a_ice (h_snow not available daily)
 - **sistressave/sistressmax**: stress invariants from sigma tensor components
 - **sitempbot**: freezing temperature from SSS
 - **sifb**: freeboard from ice/snow thickness and density ratios
