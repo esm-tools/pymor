@@ -379,6 +379,45 @@ def compute_sisnhc_from_msnow(data, rule):
     return result
 
 
+def compute_snd_from_msnow(data, rule):
+    """
+    Compute daily snow depth on sea ice from m_snow and a_ice.
+
+    FESOM outputs h_snow only at monthly frequency. For daily snd,
+    derive from daily m_snow (snow mass per area) and a_ice
+    (ice concentration):
+
+        snd = m_snow / a_ice
+
+    where m_snow is area-averaged snow mass [m water equiv] and a_ice
+    is ice concentration [0-1]. Result is snow depth over ice [m].
+
+    Primary input (data) is m_snow.
+    Secondary input a_ice loaded via rule attributes.
+
+    Rule attributes:
+      - second_input_path: directory containing a_ice files
+      - second_input_pattern: glob pattern for a_ice files
+      - second_variable: variable name (default: auto-detect)
+    """
+    a_ice = _load_secondary_mf(rule, "second_input_path", "second_input_pattern", "second_variable")
+
+    # snd = m_snow / a_ice (snow depth over ice-covered fraction)
+    # Protect against division by zero where a_ice == 0
+    a_ice_safe = a_ice.where(a_ice > 0, np.nan)
+    result = data / a_ice_safe
+    result = result.fillna(0.0)
+
+    result.attrs = {
+        "units": "m",
+        "standard_name": "surface_snow_thickness",
+        "long_name": "Snow Depth",
+        "processing_note": "snd = m_snow / a_ice, derived from daily m_snow and a_ice",
+    }
+    result.name = "snd"
+    return result
+
+
 def compute_sitempbot(data, rule):
     """
     Compute temperature at ice-ocean interface (freezing point).

@@ -1,8 +1,8 @@
 # CMIP7 CAP7 Ocean Variables — AWI-ESM3-VEG-HR
 # Generated from cmip7_CAP7_variables_ocean.csv
 #
-# Only 2 new rules needed — 10 of 25 variables are already in core/lrcs,
-# 13 are blocked (no physics, basin masks, or namelist changes needed).
+# 3 new rules — 26 of 43 variables are already in core/lrcs,
+# 14 blocked (no physics, basin masks, or further namelist changes needed).
 # See cmip7_cap7_ocean_todo.md for full variable tracking.
 
 general:
@@ -34,6 +34,23 @@ pipelines:
       - pycmor.std_lib.generic.get_variable
       - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_square
       - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # Scale by constant (m/s → kg m-2 s-1 via ×1000)
+  - name: scale_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:scale_by_constant
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -104,3 +121,19 @@ rules:
     model_variable: hnode
     pipelines:
       - volcello_time_pipeline
+
+  # ============================================================
+  # Part 3: Monthly friver — river water flux
+  # ============================================================
+  # Input: runoff from FESOM (newly enabled in namelist.io)
+  # Units: m/s → kg m-2 s-1 (× 1000)
+
+  - name: friver
+    inputs:
+      - path: *dp
+        pattern: runoff.fesom.1350.nc
+    compound_name: ocean.friver.tavg-u-hxy-sea.mon.GLB
+    model_variable: runoff
+    scale_factor: 1000.0
+    pipelines:
+      - scale_pipeline

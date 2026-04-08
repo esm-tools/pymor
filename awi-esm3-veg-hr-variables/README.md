@@ -112,7 +112,8 @@ Each subdirectory contains:
 | Directory | Realm | Model | Rules | Key notes |
 |-----------|-------|-------|-------|-----------|
 | `cap7_atm/` | Atmosphere | OpenIFS | 58 | 233 variables: 79 already in core/veg/extra/lrcs, 58 new (daily radiation/fluxes/precip, 6hr ml+plev7h, 1hr instant, monthly ml); ~96 blocked (17 COSP, 21 tendencies, 9 aerosol, 5 CO2, 4 reff, ~40 IFS source) |
-| `cap7_ocean/` | Ocean | FESOM 2.6 | 2 | 43 variables: 26 already in core/lrcs, 2 new (daily tossq, monthly volcello); 15 blocked (no icebergs/SF6/geothermal/bigthetao, basin masks, namelist changes for friver/hfx/hfy/3hr stress) |
+| `cap7_ocean/` | Ocean | FESOM 2.6 | 3 | 43 variables: 26 already in core/lrcs, 3 new (daily tossq, monthly volcello, friver); 14 blocked (no icebergs/SF6/geothermal/bigthetao, basin masks, namelist changes for hfx/hfy/3hr stress) |
+| `cap7_seaice/` | Sea Ice | FESOM 2.6 | 9 | 21 variables: 9 already in core/lrcs/veg, 9 new (daily sithick/snd/siu/siv, monthly sieqthick/snw/evspsbl/prra/prsn); 3 blocked (sisali constant, sitempsnic internal, snc single-category) |
 
 ## Custom Pipeline Steps
 
@@ -147,6 +148,9 @@ Complex variables that cannot be expressed as XIOS expressions are computed in `
 ### CAP7 atmosphere custom steps
 - **compute_rtmt**: net downward radiative flux at model top (rsdt - rsut + rlds - rlus)
 - **extract_single_plevel**: extract single pressure level from multi-level dataset (ta@700hPa, wap@500hPa)
+
+### CAP7 sea ice custom steps
+- **compute_snd_from_msnow**: snow depth on ice from m_snow/a_ice (unused after h_snow switched to daily)
 
 ### Ocean pipelines
 - **zostoga**: global thermosteric sea level via gsw/TEOS-10

@@ -291,6 +291,7 @@ def main():
         "core_seaice": "Sea Ice",
         "lrcs_seaice": "Sea Ice",
         "veg_seaice": "Sea Ice",
+        "cap7_seaice": "Sea Ice",
     }
     for dirname, count in csv_counts.items():
         rlabel = dir_realm.get(dirname, "Other")

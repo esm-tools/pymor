@@ -7,10 +7,10 @@ Source: `cmip7_CAP7_variables_ocean.csv` (43 variable-frequency entries, unfilte
 | Status | Count |
 |--------|-------|
 | Already in core/lrcs | 26 |
-| Implemented (new cap7 rules) | 2 |
+| Implemented (new cap7 rules) | 3 |
 | Blocked — no physics | 5 |
 | Blocked — basin masks | 3 |
-| Blocked — namelist change needed | 7 |
+| Blocked — namelist change needed | 6 |
 | **Total** | **43** |
 
 ---
@@ -49,10 +49,11 @@ No new rules needed.
 
 ---
 
-## Implemented — new cap7 rules (2)
+## Implemented — new cap7 rules (3)
 
 - [x] **tossq** (day, 2D) — `ocean.tossq.tavg-u-hxy-sea.day.glb` — Square of SST. Daily SST from FESOM (`sst`, daily output), squared via `compute_square`. Same approach as monthly tossq in lrcs_ocean but at daily frequency.
 - [x] **volcello** (mon, 3D) — `ocean.volcello.tavg-ol-hxy-sea.mon.glb` — Monthly ocean cell volume from `hnode` (layer thickness) x cell area. Same approach as `volcello_dec` in lrcs_ocean but averaged to monthly.
+- [x] **friver** (mon, 2D) — `ocean.friver.tavg-u-hxy-sea.mon.glb` — River water flux from `runoff` (newly enabled in namelist.io). Units: m/s -> kg m-2 s-1 (x 1000) via scale_pipeline.
 
 ---
 
@@ -81,7 +82,7 @@ These require basin mask infrastructure not yet available for FESOM DARS mesh.
 These variables exist in FESOM but are not currently enabled in `namelist.io`.
 Enabling them requires rerunning the model with updated configuration.
 
-- [ ] **friver** (mon, 2D) — `ocean.friver.tavg-u-hxy-sea.mon.glb` — River water flux. FESOM has `runoff` variable but it is **commented out** in namelist.io. Uncomment `'runoff',1,'m',4` to enable. Units: m/s -> need conversion to kg m-2 s-1 (x 1000).
+- [x] **friver** (mon, 2D) — `ocean.friver.tavg-u-hxy-sea.mon.glb` — River water flux. **Resolved**: `runoff` now enabled in namelist.io. Moved to implemented section above.
 - [ ] **hfx** (mon, 3D) — `ocean.hfx.tavg-ol-hxy-sea.mon.glb` — 3D ocean heat X transport. Requires `ldiag_trflx=.true.` in namelist (currently `.false.`). Uses FESOM `utemp`.
 - [ ] **hfxint** (mon, 2D) — `ocean.hfx.tavg-u-hxy-sea.mon.glb` — Vertically integrated heat X transport. Same `ldiag_trflx=.true.` requirement + vertical integration.
 - [ ] **hfy** (mon, 3D) — `ocean.hfy.tavg-ol-hxy-sea.mon.glb` — 3D ocean heat Y transport. Same `ldiag_trflx=.true.` requirement, uses FESOM `vtemp`.
