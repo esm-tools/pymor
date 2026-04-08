@@ -281,13 +281,13 @@ def main():
         "veg_atm": "Atmosphere",
         "extra_atm": "Atmosphere",
         "core_land": "Land",
-        "cap7_land": "Land",
+        "lrcs_land": "Land",
         "veg_land": "Land",
         "extra_land": "Land",
         "core_ocean": "Ocean",
-        "cap7_ocean": "Ocean",
+        "lrcs_ocean": "Ocean",
         "core_seaice": "Sea Ice",
-        "cap7_seaice": "Sea Ice",
+        "lrcs_seaice": "Sea Ice",
         "veg_seaice": "Sea Ice",
     }
     for dirname, count in csv_counts.items():
@@ -340,7 +340,7 @@ def main():
     )
     print("-" * 82)
     for i, (nb, r) in enumerate(rule_sizes[:50]):
-        tier = r["dir"].split("_")[0]  # core, cap7, veg, extra
+        tier = r["dir"].split("_")[0]  # core, lrcs, veg, extra
         print(
             f"{i+1:>3} {r['name']:<35} {r['freq']:<6} {r['grid']:<10} {tier:<10} {human_size(nb):>12}"
         )

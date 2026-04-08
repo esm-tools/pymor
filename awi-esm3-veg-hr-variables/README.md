@@ -90,17 +90,17 @@ Each subdirectory contains:
 | Directory | Realm | Model | Rules | Variables | Key notes |
 |-----------|-------|-------|-------|-----------|-----------|
 | `core_atm/` | Atmosphere | OpenIFS | 76 | 45 unique | Monthly/daily/sub-daily (3hr, 6hr, 1hr); surface, plev19, plev3, model levels |
-| `core_land/` | Land | OpenIFS/HTESSEL | 11 | 11 | XIOS-derived + pipeline-computed; 6 variables deferred to cap7_land |
+| `core_land/` | Land | OpenIFS/HTESSEL | 11 | 11 | XIOS-derived + pipeline-computed; 6 variables deferred to lrcs_land |
 | `core_ocean/` | Ocean | FESOM 2.6 | 25 | 25 | Monthly 2D/3D, daily, fx; includes mass transport and zostoga pipelines |
 | `core_seaice/` | Sea Ice | FESOM 2.6 | 9 | 8 unique | Monthly + daily siconc; velocity rotation via vec_autorotate |
 
-### CAP7 (additional priority variables)
+### LRCS (additional priority variables)
 
 | Directory | Realm | Model | Rules | Key notes |
 |-----------|-------|-------|-------|-----------|
-| `cap7_ocean/` | Ocean | FESOM 2.6 | 45 | Decadal, yearly tendencies (6 with FESOM source mods), scalar diagnostics; ~12 blocked by basin masks |
-| `cap7_seaice/` | Sea Ice | FESOM 2.6 | 40+ | Heat/salt fluxes, tendencies, melt ponds, stress, hemisphere scalars; some blocked by single-category ice |
-| `cap7_land/` | Land | OIFS/LPJ-GUESS | 6 | 6 deferred variables: 3 from LPJ-GUESS (evspsblsoi, evspsblveg, mrfso), 3 from IFS static fields (sftgif, mrsofc, rootd) |
+| `lrcs_ocean/` | Ocean | FESOM 2.6 | 45 | Decadal, yearly tendencies (6 with FESOM source mods), scalar diagnostics; ~12 blocked by basin masks |
+| `lrcs_seaice/` | Sea Ice | FESOM 2.6 | 40+ | Heat/salt fluxes, tendencies, melt ponds, stress, hemisphere scalars; some blocked by single-category ice |
+| `lrcs_land/` | Land | OIFS/LPJ-GUESS | 6 | 6 deferred variables: 3 from LPJ-GUESS (evspsblsoi, evspsblveg, mrfso), 3 from IFS static fields (sftgif, mrsofc, rootd) |
 | `veg_atm/` | Atmos/Aerosol | OpenIFS + LPJ-GUESS | 27 | 38 variables: 27 implemented (3hr rad/flux, plev6, daily snow, lwp, 7 fire emissions), 11 blocked |
 | `veg_land/` | Land | OpenIFS/HTESSEL + LPJ-GUESS | 58 | 88 variables: 22 IFS (3hr/day/mon hydrology, snow), 36 LPJ-GUESS (N-cycle, fractions, Lut), 30 blocked |
 | `veg_seaice/` | Sea Ice | FESOM 2.6 | 1 | 4 variables: 1 implemented (daily sisnhc from m_snow/a_ice), 3 blocked (2 ITD, 1 missing physics) |
@@ -163,7 +163,7 @@ Six new diagnostic outputs added to `gen_modules_cmor_diag.F90`:
 
 ## Summary of Implementation Status
 
-| Realm | Core done | Core total | CAP7 done | CAP7 total | Blocked |
+| Realm | Core done | Core total | LRCS done | LRCS total | Blocked |
 |-------|-----------|------------|-----------|------------|---------|
 | Atmosphere | 76 | 76 | -- | -- | 3 items need runtime verification |
 | Land | 11 | 17 | 0 | 6 | 3 need OIFS source changes, 3 derivable offline |

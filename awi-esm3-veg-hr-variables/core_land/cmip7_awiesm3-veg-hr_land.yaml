@@ -3,7 +3,7 @@
 #
 # XIOS expressions handle deaccumulation and unit conversion in field_def_cmip7.xml.
 # Variables not producible from IFS alone (evspsblsoi, evspsblveg, rootd,
-# mrsofc, sftgif, mrfso) are deferred to cap7_land (LPJ-GUESS / external data).
+# mrsofc, sftgif, mrfso) are deferred to lrcs_land (LPJ-GUESS / external data).
 
 general:
   name: "awiesm3-cmip7-core-land"

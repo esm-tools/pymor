@@ -19,7 +19,7 @@ Model constraints:
 
 ### Producible
 
-- [x] **sisnhc** (SIday) -- Snow Heat Content over Sea Ice (`J m-2`) -- derived from daily `m_snow` and `a_ice`: `h_snow = m_snow / a_ice`, then `sisnhc = -rho_snow * L_f * h_snow` (same formula as monthly cap7_seaice, but from daily fields)
+- [x] **sisnhc** (SIday) -- Snow Heat Content over Sea Ice (`J m-2`) -- derived from daily `m_snow` and `a_ice`: `h_snow = m_snow / a_ice`, then `sisnhc = -rho_snow * L_f * h_snow` (same formula as monthly lrcs_seaice, but from daily fields)
 
 ### NOT producible (missing physics)
 

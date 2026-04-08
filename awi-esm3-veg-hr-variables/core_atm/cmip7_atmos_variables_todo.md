@@ -170,10 +170,10 @@ Pycmor rules then read the CMOR-ready output and just add metadata + save.
 ## OIFS source code investigation (2026-04-06)
 
 ### Available GRIB fields not yet used
-- **Transpiration** (`SURFTRANSPIRATIO` / GFP `CTP`) — already registered as accumulated flux in `cpg_dia.F90`. Can be requested via XIOS `field_def.xml` without source changes. Relevant for evspsblveg decomposition in cap7_land
+- **Transpiration** (`SURFTRANSPIRATIO` / GFP `CTP`) — already registered as accumulated flux in `cpg_dia.F90`. Can be requested via XIOS `field_def.xml` without source changes. Relevant for evspsblveg decomposition in lrcs_land
 
 ### HTESSEL internals accessible via source changes
-- Bare soil evaporation, interception evaporation, frozen soil water — all computed internally but need GRIB field registration. See `../cap7_land/cmip7_cap7_land_todo.md` for details
+- Bare soil evaporation, interception evaporation, frozen soil water — all computed internally but need GRIB field registration. See `../lrcs_land/cmip7_lrcs_land_todo.md` for details
 
 ## Research findings
 

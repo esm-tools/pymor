@@ -1,6 +1,6 @@
-# CMIP7 CAP7 Ocean Variables — Rule Implementation TODO
+# CMIP7 LRCS Ocean Variables — Rule Implementation TODO
 
-Variables from `cmip7_CAP7extra_variables_ocean.csv` for AWI-ESM3-VEG-HR.
+Variables from `cmip7_LRCSextra_variables_ocean.csv` for AWI-ESM3-VEG-HR.
 Excludes variables already in core_ocean rules (tos, sos, zos, so, thetao, uo, vo, wo,
 hfds, mlotst, tauuo, tauvo, absscint, umo, vmo, wmo, zostoga, areacello, deptho, sftof,
 thkcello, masscello).

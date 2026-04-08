@@ -1,5 +1,5 @@
 general:
-  name: "awiesm3-cmip7-cap7-seaice"
+  name: "awiesm3-cmip7-lrcs-seaice"
   cmor_version: "CMIP7"
   mip: "CMIP"
   CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
@@ -19,7 +19,7 @@ jobqueue:
     memory: 256GB
     walltime: '00:30:00'
 
-# CAP7 sea ice custom pipelines
+# LRCS sea ice custom pipelines
 pipelines:
   # Fraction to percent (reused from core seaice for simpconc)
   - name: fraction_to_percent_pipeline

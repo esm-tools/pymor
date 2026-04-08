@@ -1,10 +1,10 @@
-# CMIP7 CAP7 Land Variables — AWI-ESM3-VEG-HR
+# CMIP7 LRCS Land Variables — AWI-ESM3-VEG-HR
 # All 6 deferred core_land variables now implemented:
 # 3 from LPJ-GUESS monthly output (evspsblsoi, evspsblveg, mrfso)
 # 3 derived from IFS static fields (sftgif, mrsofc, rootd)
 
 general:
-  name: "awiesm3-cmip7-cap7-land"
+  name: "awiesm3-cmip7-lrcs-land"
   cmor_version: "CMIP7"
   mip: "CMIP"
   CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"

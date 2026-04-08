@@ -1,4 +1,4 @@
-# CMIP7 CAP7 Land Variables — TODO
+# CMIP7 LRCS Land Variables — TODO
 
 Variables deferred from core_land that cannot be produced from IFS/OIFS output alone.
 These require LPJ-GUESS dynamic vegetation output or external datasets.
@@ -39,6 +39,6 @@ These require LPJ-GUESS dynamic vegetation output or external datasets.
   - From LPJ-GUESS `mrfso_monthly.out` (Jan..Dec format)
   - LPJ-GUESS tracks frozen soil water content directly
 
-## Additional CAP7-specific land variables
+## Additional LRCS-specific land variables
 
-(To be populated when CAP7 land CSV is available)
+(To be populated when LRCS land CSV is available)

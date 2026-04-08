@@ -1,7 +1,7 @@
 # CMIP7 Core Land Variables — Rule Implementation TODO
 
 Variables from 3 CSVs: `cmip7_all_core_variables_land.csv` (13), `cmip7_all_core_variables_atmos_land.csv` (2), `cmip7_all_core_variables_landIce_land.csv` (3). Total: 18 rows, 17 unique CMOR variables.
-11 implementable from IFS output, 6 deferred to cap7_land (need LPJ-GUESS or external data).
+11 implementable from IFS output, 6 deferred to lrcs_land (need LPJ-GUESS or external data).
 
 XIOS field definitions: `field_def_cmip7.xml`
 Output config: `file_def_oifs_cmip7_spinup.xml.j2`
@@ -38,7 +38,7 @@ Pycmor rules: `cmip7_awiesm3-veg-hr_land.yaml`
 - [x] **areacella** — Grid-Cell Area (`m2`, fx) — pycmor pipeline: computed from grid coordinates
 - [x] **slthick** — Soil Layer Thickness (`m`, fx) — pycmor pipeline: constant [0.07, 0.21, 0.72, 1.89]
 
-## Deferred to cap7_land (need LPJ-GUESS or external data)
+## Deferred to lrcs_land (need LPJ-GUESS or external data)
 
 - [ ] **evspsblsoi** — Soil Evaporation (`kg m-2 s-1`, Lmon) — IFS `e` is total, not partitioned. Needs LPJ-GUESS
 - [ ] **evspsblveg** — Canopy Evaporation (`kg m-2 s-1`, Lmon) — IFS `e` is total, not partitioned. Needs LPJ-GUESS
@@ -51,7 +51,7 @@ Pycmor rules: `cmip7_awiesm3-veg-hr_land.yaml`
 
 ## OIFS source code investigation (2026-04-06)
 
-Of the 6 variables deferred to cap7_land, OIFS source analysis shows:
+Of the 6 variables deferred to lrcs_land, OIFS source analysis shows:
 
 ### No source changes needed (derivable from existing output)
 - **rootd** — Per-veg-type root profiles in `srfrootfr_mod.F90` (Zeng 1998). Compute weighted effective depth from `tvl`/`tvh` + lookup table
@@ -63,7 +63,7 @@ Of the 6 variables deferred to cap7_land, OIFS source analysis shows:
 - **evspsblveg** — Transpiration already available as GRIB field `SURFTRANSPIRATIO`. Interception evaporation `PDHIIS(:,4)` needs registration
 - **mrfso** — Frozen soil water `PDHWLS(:,:,2)` in `srfwexc_mod.F90`. Sum over 4 layers and register as GRIB field
 
-See detailed notes in `../cap7_land/cmip7_cap7_land_todo.md`.
+See detailed notes in `../lrcs_land/cmip7_lrcs_land_todo.md`.
 
 ## Blockers / verification needed
 

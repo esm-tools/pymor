@@ -1,6 +1,6 @@
-# CMIP7 CAP7 Sea Ice Variables — AWI-ESM3-VEG-HR
+# CMIP7 LRCS Sea Ice Variables — AWI-ESM3-VEG-HR
 
-Status of CAP7 (extra priority) sea ice variables for FESOM 2.7 / AWI-ESM3.
+Status of LRCS (extra priority) sea ice variables for FESOM 2.7 / AWI-ESM3.
 These are lower priority than core variables but still important.
 
 **Key model constraints:**
@@ -12,7 +12,7 @@ These are lower priority than core variables but still important.
 - vec_autorotate=.true. for velocity/stress rotation
 - ldiag_cmor=.true. for hemisphere-integrated scalars
 
-Sources: cmip7_CAP7extra_variables_seaIce.csv, cmip7_CAP7extra_variables_ocean_seaIce.csv
+Sources: cmip7_LRCSextra_variables_seaIce.csv, cmip7_LRCSextra_variables_ocean_seaIce.csv
 
 ## SImon — Monthly variables
 
