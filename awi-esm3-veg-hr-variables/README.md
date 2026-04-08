@@ -51,6 +51,7 @@ Config from `global.ins` via `run_coupled_4_1_2.ins`:
 - No interactive ice sheet model
 - No prognostic aerosol (no CAMS, no M7 -- only MACv2-SP prescribed plumes)
 - No atmospheric chemistry
+- No interactive ozone (O3 prescribed from climatology, not prognostic)
 - No CO2 tracer (concentration-driven)
 - No ice thickness distribution (single-category sea ice)
 - No icebergs
@@ -104,6 +105,7 @@ Each subdirectory contains:
 | `veg_land/` | Land | OpenIFS/HTESSEL + LPJ-GUESS | 58 | 88 variables: 22 IFS (3hr/day/mon hydrology, snow), 36 LPJ-GUESS (N-cycle, fractions, Lut), 30 blocked |
 | `veg_seaice/` | Sea Ice | FESOM 2.6 | 1 | 4 variables: 1 implemented (daily sisnhc from m_snow/a_ice), 3 blocked (2 ITD, 1 missing physics) |
 | `extra_land/` | Land | OpenIFS/HTESSEL + LPJ-GUESS | 13 | 19 variables: 2 fx, 7 LPJ-GUESS (PFT fracs, LAI), 3 IFS hydrology, 1 hourly tas; 6 blocked (irrigation, river, root zone) |
+| `extra_atm/` | Atmos/Aerosol | OpenIFS | 21 | 43 variables: 13 1hr (fluxes, rad, 30S-90S subsets), 2 3hr, 5 daily, 1 monthly gust; 22 blocked (aerosol/chem, crops, heat index, lightning) |
 
 ## Custom Pipeline Steps
 

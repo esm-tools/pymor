@@ -231,6 +231,10 @@
     <field id="surface_altitude__orog" name="orog" field_ref="sz" standard_name="surface_altitude" long_name="Surface Altitude" unit="m" >
         sz/9.80665
     </field>
+    <!-- Surface temperature: skt (skin temperature) → ts -->
+    <field id="surface_temperature__ts" name="ts" field_ref="skt" standard_name="surface_temperature" long_name="Surface Temperature" unit="K" >
+        skt
+    </field>
     <!-- LAI: weighted combination of low + high vegetation -->
     <field id="leaf_area_index__lai" name="lai" field_ref="lai_lv" standard_name="leaf_area_index" long_name="Leaf Area Index" unit="1" >
         lai_lv*cvl + lai_hv*cvh

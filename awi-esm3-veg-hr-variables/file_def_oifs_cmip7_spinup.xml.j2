@@ -203,6 +203,43 @@
             </field_group>
         </file>
 
+        <!-- 1hr averaged surface fluxes and radiation (extra_atm) -->
+        <file
+            enabled="true"
+            timeseries="only"
+            output_freq="1h"
+            name_suffix="_1h_sfc"
+            description="AWI-ESM3-VEG-HR 1-hourly surface fluxes and radiation">
+
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
+                <field field_ref="surface_upward_latent_heat_flux__hfls"/>
+                <field field_ref="surface_upward_sensible_heat_flux__hfss"/>
+                <field field_ref="surface_upwelling_longwave_flux__rlus"/>
+                <field field_ref="surface_upwelling_shortwave_flux__rsus"/>
+                <field field_ref="surface_downwelling_longwave_flux__rlds"/>
+                <field field_ref="surface_downwelling_shortwave_flux__rsds"/>
+                <field field_ref="cloud_area_fraction__clt"/>
+                <field field_ref="2t" name="2t" long_name="2 metre temperature"/>
+                <field field_ref="2d" name="2d" long_name="2 metre dewpoint temperature"/>
+                <field field_ref="10u" name="10u" long_name="10 metre U wind component"/>
+                <field field_ref="10v" name="10v" long_name="10 metre V wind component"/>
+                <field field_ref="sp" name="sp" long_name="Surface pressure"/>
+            </field_group>
+        </file>
+
+        <!-- 1hr instantaneous boundary layer depth (extra_atm) -->
+        <file
+            enabled="true"
+            timeseries="only"
+            output_freq="1h"
+            name_suffix="_1h_bldep"
+            description="AWI-ESM3-VEG-HR 1-hourly boundary layer depth">
+
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="instant">
+                <field field_ref="blh" name="bldep" long_name="Boundary Layer Depth"/>
+            </field_group>
+        </file>
+
         <!-- 6hr averaged surface fields (for hurs computation) -->
         <file
             enabled="true"
@@ -386,6 +423,61 @@
             <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
                 <field field_ref="potential_evapotranspiration__evspsblpot"/>
                 <field field_ref="sublimation_flux__sbl"/>
+            </field_group>
+        </file>
+
+        <!-- Daily model-level fields (extra_atm: cl, pfull) -->
+        <file
+            enabled="true"
+            timeseries="only"
+            output_freq="1d"
+            name_suffix="_day_ml"
+            description="AWI-ESM3-VEG-HR daily model-level fields">
+
+            <field_group grid_ref="regular_ml" freq_op="1h" operation="average">
+                <field field_ref="cloud_area_fraction_ml__cl"/>
+                <field field_ref="pres" name="pfull" long_name="Pressure at Model Full-Levels"/>
+            </field_group>
+        </file>
+
+        <!-- Daily surface radiation and evaporation (extra_atm: rls, rss, evspsbl) -->
+        <file
+            enabled="true"
+            timeseries="only"
+            output_freq="1d"
+            name_suffix="_day_rad"
+            description="AWI-ESM3-VEG-HR daily surface radiation and evaporation">
+
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
+                <field field_ref="surface_net_downward_longwave_flux__rls"/>
+                <field field_ref="surface_net_downward_shortwave_flux__rss"/>
+                <field field_ref="water_evapotranspiration_flux__evspsbl"/>
+            </field_group>
+        </file>
+
+        <!-- Monthly maximum wind gust at 10m (extra_atm: wsg) -->
+        <file
+            enabled="true"
+            timeseries="only"
+            output_freq="1mo"
+            name_suffix="_mon_gust"
+            description="AWI-ESM3-VEG-HR monthly maximum wind gust">
+
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="maximum">
+                <field field_ref="10fg" name="wsg10" long_name="Maximum Wind Speed of Gust at 10m"/>
+            </field_group>
+        </file>
+
+        <!-- 3hr instantaneous surface temperature (extra_atm: ts) -->
+        <file
+            enabled="true"
+            timeseries="only"
+            output_freq="3h"
+            name_suffix="_3h_ts"
+            description="AWI-ESM3-VEG-HR 3-hourly surface temperature">
+
+            <field_group grid_ref="regular_sfc" freq_op="1h" operation="instant">
+                <field field_ref="surface_temperature__ts"/>
             </field_group>
         </file>
 
