@@ -1,14 +1,9 @@
-# CMIP7 Core Ocean Variables — AWI-ESM3-VEG-HR
-# Generated from cmip7_all_core_variables_ocean.csv
-#
-# Research notes:
-#   - FESOM2 uses POTENTIAL temperature (not conservative) → no bigthetao
-#   - MLD3 is the CMIP-compliant definition (sigma_t=0.03), not MLD1
-#   - uo/vo use unod/vnod (nodal, nod2 grid) instead of u/v (elem grid)
-#   - tauuo/tauvo still on elem grid — may need elem→node step
+# CMIP7 Core Ocean Variables — Test config with core2 mesh
+# Adapted from awi-esm3-veg-hr-variables/core_ocean/cmip7_awiesm3-veg-hr_ocean.yaml
+# Uses low-resolution core2 mesh (~127k nodes) for quick testing.
 
 general:
-  name: "awiesm3-cmip7-core-ocean"
+  name: "awiesm3-cmip7-core-ocean-test"
   cmor_version: "CMIP7"
   mip: "CMIP"
   CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
@@ -47,7 +42,6 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # Ofx pipeline: load grid file, extract variable directly (e.g., areacello)
   - name: fx_extract_pipeline
     steps:
       - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
@@ -60,7 +54,6 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # Ofx pipeline: compute bathymetry from mesh depth_lev
   - name: fx_deptho_pipeline
     steps:
       - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
@@ -73,7 +66,6 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # Ofx pipeline: compute sea area fraction from mesh
   - name: fx_sftof_pipeline
     steps:
       - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
@@ -86,7 +78,6 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # Ofx pipeline: compute static layer thickness from depth_bnds
   - name: fx_thkcello_pipeline
     steps:
       - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
@@ -99,7 +90,6 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # Ofx pipeline: compute static mass per area (rho_0 * thkcello)
   - name: fx_masscello_pipeline
     steps:
       - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
@@ -112,7 +102,6 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # Mass transport pipeline: load velocity → extract → multiply by rho_0*dz
   - name: mass_transport_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
@@ -129,7 +118,6 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # Scale pipeline: multiply variable by a constant (scale_factor on rule)
   - name: scale_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
@@ -146,7 +134,6 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # Zostoga pipeline: load temperature → extract → compute global thermosteric SL
   - name: zostoga_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
@@ -162,18 +149,18 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
   variant_label: r1i1p1f1
   grid_label: gn
-  mesh_path: &mp /work/ab0246/a270092/input/fesom2/dars2
-  grid_file: /work/ab0246/a270092/input/fesom2/dars2/mesh.nc
-  grid: "FESOM 2.6 unstructured grid DARS (3146761 surface nodes)"
-  nominal_resolution: "10 km"
+  mesh_path: &mp /work/ab0246/a270092/input/fesom2/core2
+  grid_file: /work/ab0246/a270092/input/fesom2/core2/mesh.nc
+  grid: "FESOM 2.6 unstructured grid CORE2 (126858 surface nodes)"
+  nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
-  output_directory: ./cmorized_output/awiesm3
+  output_directory: ./cmorized_output/core2_test
 
 rules:
   # ============================================================
@@ -183,56 +170,51 @@ rules:
   - name: tos
     inputs:
       - path: *dp
-        pattern: sst.fesom.1350.nc
+        pattern: sst.fesom.1900.nc
     compound_name: ocean.tos.tavg-u-hxy-sea.mon.GLB
     model_variable: sst
 
   - name: sos
     inputs:
       - path: *dp
-        pattern: sss.fesom.1350.nc
+        pattern: sss.fesom.1900.nc
     compound_name: ocean.sos.tavg-u-hxy-sea.mon.GLB
     model_variable: sss
 
   - name: zos
     inputs:
       - path: *dp
-        pattern: ssh.fesom.1350.nc
+        pattern: ssh.fesom.1900.nc
     compound_name: ocean.zos.tavg-u-hxy-sea.mon.GLB
     model_variable: ssh
 
   - name: hfds
     inputs:
       - path: *dp
-        pattern: fh.fesom.1350.nc
+        pattern: fh.fesom.1900.nc
     compound_name: ocean.hfds.tavg-u-hxy-sea.mon.GLB
     model_variable: fh
 
   - name: mlotst
     inputs:
       - path: *dp
-        pattern: MLD3.fesom.1350.nc
+        pattern: MLD3.fesom.1900.nc
     compound_name: ocean.mlotst.tavg-u-hxy-sea.mon.GLB
     model_variable: MLD3
-    # MLD3 = Griffies 2016 (sigma_t=0.03 kg/m3) = CMIP-compliant mlotst
 
   - name: tauuo
     inputs:
       - path: *dp
-        pattern: tx_sur.fesom.1350.nc
+        pattern: tx_sur.fesom.1900.nc
     compound_name: ocean.tauuo.tavg-u-hxy-sea.mon.GLB
     model_variable: tx_sur
-    # NOTE: tx_sur is on elem grid (6.2M elements), not nod2 (3.1M nodes).
-    # vec_autorotate=.true. set in namelist.io
-    # May still need elem→node interpolation pipeline step for consistency.
 
   - name: tauvo
     inputs:
       - path: *dp
-        pattern: ty_sur.fesom.1350.nc
+        pattern: ty_sur.fesom.1900.nc
     compound_name: ocean.tauvo.tavg-u-hxy-sea.mon.GLB
     model_variable: ty_sur
-    # NOTE: Same elem grid caveat as tauuo.
 
   # ============================================================
   # Monthly 3D variables (Omon) — DefaultPipeline
@@ -241,46 +223,37 @@ rules:
   - name: thetao
     inputs:
       - path: *dp
-        pattern: temp.fesom.1350.nc
+        pattern: temp.fesom.1900.nc
     compound_name: ocean.thetao.tavg-ol-hxy-sea.mon.GLB
     model_variable: temp
-
-  # bigthetao: SKIPPED — FESOM2 uses potential temperature, not conservative.
-  # Only thetao should be reported.
 
   - name: so
     inputs:
       - path: *dp
-        pattern: salt.fesom.1350.nc
+        pattern: salt.fesom.1900.nc
     compound_name: ocean.so.tavg-ol-hxy-sea.mon.GLB
     model_variable: salt
 
   - name: uo
     inputs:
       - path: *dp
-        pattern: unod.fesom.1350.nc
+        pattern: unod.fesom.1900.nc
     compound_name: ocean.uo.tavg-ol-hxy-sea.mon.GLB
     model_variable: unod
-    # Using unod (nodal velocity, nod2 grid) instead of u (elem grid).
-    # vec_autorotate=.true. set in namelist.io
 
   - name: vo
     inputs:
       - path: *dp
-        pattern: vnod.fesom.1350.nc
+        pattern: vnod.fesom.1900.nc
     compound_name: ocean.vo.tavg-ol-hxy-sea.mon.GLB
     model_variable: vnod
-    # Using vnod (nodal velocity, nod2 grid) instead of v (elem grid).
-    # vec_autorotate=.true. set in namelist.io
 
   - name: wo
     inputs:
       - path: *dp
-        pattern: w.fesom.1350.nc
+        pattern: w.fesom.1900.nc
     compound_name: ocean.wo.tavg-ol-hxy-sea.mon.GLB
     model_variable: w
-    # NOTE: w is on nz (57 interfaces), not nz1 (56 midpoints).
-    # May need vertical coordinate handling different from tracers.
 
   # ============================================================
   # Depth-integrated variables — ocean_vertical_integration_pipeline
@@ -289,7 +262,7 @@ rules:
   - name: absscint
     inputs:
       - path: *dp
-        pattern: salt.fesom.1350.nc
+        pattern: salt.fesom.1900.nc
     compound_name: ocean.absscint.tavg-op4-hxy-sea.mon.GLB
     model_variable: salt
     integration_attrs:
@@ -306,21 +279,21 @@ rules:
   - name: tos_day
     inputs:
       - path: *dp
-        pattern: sst.fesom.1350.nc
+        pattern: sst.fesom.1900.nc
     compound_name: ocean.tos.tavg-u-hxy-sea.day.GLB
     model_variable: sst
 
   - name: sos_day
     inputs:
       - path: *dp
-        pattern: sss.fesom.1350.nc
+        pattern: sss.fesom.1900.nc
     compound_name: ocean.sos.tavg-u-hxy-sea.day.GLB
     model_variable: sss
 
   - name: zos_day
     inputs:
       - path: *dp
-        pattern: ssh.fesom.1350.nc
+        pattern: ssh.fesom.1900.nc
     compound_name: ocean.zos.tavg-u-hxy-sea.day.GLB
     model_variable: ssh
 
@@ -374,9 +347,6 @@ rules:
     pipelines:
       - fx_masscello_pipeline
 
-  # basin (Ofx) — NOT POSSIBLE: needs external basin mask data, not in mesh
-  # hfgeou (Ofx) — NOT POSSIBLE: not in FESOM output or config
-
   # ============================================================
   # Time-varying cell thickness — DefaultPipeline
   # ============================================================
@@ -384,14 +354,14 @@ rules:
   - name: thkcello
     inputs:
       - path: *dp
-        pattern: hnode.fesom.1350.nc
+        pattern: hnode.fesom.1900.nc
     compound_name: ocean.thkcello.tavg-ol-hxy-sea.mon.GLB
     model_variable: hnode
 
   - name: masscello
     inputs:
       - path: *dp
-        pattern: hnode.fesom.1350.nc
+        pattern: hnode.fesom.1900.nc
     compound_name: ocean.masscello.tavg-ol-hxy-sea.mon.GLB
     model_variable: hnode
     scale_factor: 1025.0
@@ -400,14 +370,13 @@ rules:
       - scale_pipeline
 
   # ============================================================
-  # Mass transport — mass_transport_pipeline (Boussinesq: u * rho_0 * dz)
-  # Uses unod/vnod (rotated with vec_autorotate=.true.)
+  # Mass transport — mass_transport_pipeline
   # ============================================================
 
   - name: umo
     inputs:
       - path: *dp
-        pattern: unod.fesom.1350.nc
+        pattern: unod.fesom.1900.nc
     compound_name: ocean.umo.tavg-ol-hxy-sea.mon.GLB
     model_variable: unod
     reference_density: 1025.0
@@ -418,7 +387,7 @@ rules:
   - name: vmo
     inputs:
       - path: *dp
-        pattern: vnod.fesom.1350.nc
+        pattern: vnod.fesom.1900.nc
     compound_name: ocean.vmo.tavg-ol-hxy-sea.mon.GLB
     model_variable: vnod
     reference_density: 1025.0
@@ -429,7 +398,7 @@ rules:
   - name: wmo
     inputs:
       - path: *dp
-        pattern: w.fesom.1350.nc
+        pattern: w.fesom.1900.nc
     compound_name: ocean.wmo.tavg-ol-hxy-sea.mon.GLB
     model_variable: w
     reference_density: 1025.0
@@ -439,16 +408,15 @@ rules:
 
   # ============================================================
   # Global thermosteric sea level — zostoga_pipeline
-  # Computes steric height anomaly from temperature using gsw (TEOS-10)
   # ============================================================
 
   - name: zostoga
     inputs:
       - path: *dp
-        pattern: temp.fesom.1350.nc
+        pattern: temp.fesom.1900.nc
     compound_name: ocean.zostoga.tavg-u-hm-sea.mon.GLB
     model_variable: temp
-    salt_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/salt.fesom.1350.nc
+    salt_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom/salt.fesom.1900.nc
     salt_variable: salt
     reference_density: 1025.0
     pipelines:
