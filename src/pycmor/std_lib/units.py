@@ -381,10 +381,22 @@ def convert(
         new_da = da.pint.quantify(from_unit).pint.to(to).pint.dequantify()
     except ValueError as e:
         if "scaling factor" in e.args[0]:
-            if str(ureg.Quantity(to).units) != "dimensionless":
+            _to_q = ureg.Quantity(to)
+            if str(_to_q.units) != "dimensionless":
                 new_da = handle_scalar_units(da, from_unit, to)
             else:
-                raise e
+                # Target is dimensionless with a scaling factor (e.g. "1E-03", "0.001").
+                # Check if source is also dimensionless (e.g. "psu", "1").
+                # If so, values are already in the correct numeric range — just relabel.
+                _from_q = ureg.Quantity(1, from_unit)
+                if _from_q.dimensionless:
+                    logger.info(
+                        f"Both source '{from_unit}' and target '{to}' are dimensionless. "
+                        f"Relabeling units without numeric conversion."
+                    )
+                    new_da = da.copy()
+                else:
+                    raise e
         else:
             raise e
     if new_da.units != to_unit:
