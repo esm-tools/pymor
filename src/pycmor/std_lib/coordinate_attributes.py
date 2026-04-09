@@ -308,6 +308,8 @@ def _set_coordinates_attribute(ds: xr.Dataset, rule: Rule) -> None:
         if var_coords:
             # Create coordinates attribute string
             coords_str = " ".join(var_coords)
+            # Remove from encoding to avoid conflict with attrs
+            ds[var_name].encoding.pop("coordinates", None)
             ds[var_name].attrs["coordinates"] = coords_str
             logger.info(f"  → {var_name}: coordinates = '{coords_str}'")
 
