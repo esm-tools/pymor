@@ -49,11 +49,12 @@ No new rules needed.
 
 ---
 
-## Implemented — new cap7 rules (3)
+## Implemented — new cap7 rules (4)
 
 - [x] **tossq** (day, 2D) — `ocean.tossq.tavg-u-hxy-sea.day.glb` — Square of SST. Daily SST from FESOM (`sst`, daily output), squared via `compute_square`. Same approach as monthly tossq in lrcs_ocean but at daily frequency.
 - [x] **volcello** (mon, 3D) — `ocean.volcello.tavg-ol-hxy-sea.mon.glb` — Monthly ocean cell volume from `hnode` (layer thickness) x cell area. Same approach as `volcello_dec` in lrcs_ocean but averaged to monthly.
 - [x] **friver** (mon, 2D) — `ocean.friver.tavg-u-hxy-sea.mon.glb` — River water flux from `runoff` (newly enabled in namelist.io). Units: m/s -> kg m-2 s-1 (x 1000) via scale_pipeline.
+- [x] **msftbarot** (mon, 2D) — `ocean.msftbarot.tavg-u-hxy-sea.mon.glb` — Barotropic mass streamfunction via geostrophic SSH approx: psi = rho_0*g*H/f*eta (`compute_msftbarot` in custom_steps.py). NaN in equatorial band |f| < 1e-5.
 
 ---
 
