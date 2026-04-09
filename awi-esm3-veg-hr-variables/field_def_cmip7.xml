@@ -71,6 +71,9 @@
     <field id="tcc"    long_name="total cloud cover"                                          standard_name="cloud_area_fraction"                                      unit="1" />
     <field id="10u"    long_name="u-component of 10m wind"                                    standard_name="eastward_wind"                                            unit="m s-1" />
     <field id="10v"    long_name="v-component of 10m wind"                                    standard_name="northward_wind"                                           unit="m s-1" />
+    <!-- Aliases with valid identifiers for use in XIOS expressions (YACC cannot parse names starting with digits) -->
+    <field id="u10m"   field_ref="10u" />
+    <field id="v10m"   field_ref="10v" />
     <field id="2t"     long_name="2m air temperature"                                         standard_name="surface_air_temperature"                                  unit="K" />
     <field id="2d"     long_name="2m dewpoint temperature"                                    standard_name="dew_point_temperature"                                    unit="K" />
     <!--TODO: convert to W m-2-->

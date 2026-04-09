@@ -115,6 +115,8 @@
                 <field field_ref="soil_moisture_content__mrso"/>
                 <field field_ref="moisture_content_of_soil_layer__mrsol"/>
                 <field field_ref="surface_altitude__orog"/>
+                <field field_ref="potential_evapotranspiration__evspsblpot"/>
+                <field field_ref="sublimation_flux__sbl"/>
             </field_group>
         </file>
 
@@ -413,20 +415,6 @@
             </field_group>
         </file>
 
-        <!-- Monthly land surface fields -->
-        <file
-            enabled="true"
-            timeseries="only"
-            output_freq="1mo"
-            name_suffix="_mon_land"
-            description="AWI-ESM3-VEG-HR monthly land surface fields">
-
-            <field_group grid_ref="regular_sfc" freq_op="1h" operation="average">
-                <field field_ref="potential_evapotranspiration__evspsblpot"/>
-                <field field_ref="sublimation_flux__sbl"/>
-            </field_group>
-        </file>
-
         <!-- Monthly static land fields for fx derivation (sftgif, mrsofc, rootd) -->
         <file
             enabled="true"
@@ -546,8 +534,8 @@
             description="AWI-ESM3-VEG-HR daily min/max fields for CAP7">
 
             <field_group grid_ref="regular_sfc" freq_op="1h">
-                <field field_ref="10u" name="sfcWindmax" long_name="Daily Maximum Near-Surface Wind Speed" operation="maximum">
-                    sqrt(10u*10u + 10v*10v)
+                <field field_ref="u10m" name="sfcWindmax" long_name="Daily Maximum Near-Surface Wind Speed" operation="maximum">
+                    sqrt(@u10m*@u10m + @v10m*@v10m)
                 </field>
             </field_group>
         </file>
@@ -723,12 +711,12 @@
             </field_group>
         </file>
 
-    <!-- Six hourly snap-shots -->
+    <!-- Six hourly snap-shots (legacy, disabled) -->
         <file
             enabled="false"
 	        timeseries="only"
 	        output_freq="6h"
-            name_suffix="_6h"
+            name_suffix="_6h_legacy"
             description="ECE4/OIFS 6hourly surface fields">
 
             <field_group grid_ref="regular_sfc" freq_op="1h" operation="instant">
