@@ -258,6 +258,10 @@ class PycmorConfig:
                 ],
             ),
         )
+        dask_n_workers = Option(
+            default=None,
+            doc="Number of Dask workers for LocalCluster. Defaults to CPU count if not set.",
+        )
         dask_cluster_scaling_fixed_jobs = Option(
             default=5,
             doc="Number of jobs to create for Jobqueue-backed Dask Cluster",

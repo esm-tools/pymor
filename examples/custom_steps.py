@@ -1514,7 +1514,14 @@ def _load_secondary_mf(rule, path_key, pattern_key, variable_key):
     files = sorted(_glob.glob(_os.path.join(path, pattern)))
     if not files:
         raise FileNotFoundError(f"No files matching {_os.path.join(path, pattern)}")
-    ds = xr.open_mfdataset(files)
+    ds = xr.open_mfdataset(files, use_cftime=True)
+    time_dimname = rule.get("time_dimname")
+    if time_dimname and time_dimname in ds.dims and "time" not in ds.dims:
+        ds = ds.rename({time_dimname: "time"})
+    # Drop residual XIOS time variables that conflict with renamed 'time'
+    for _drop_var in ["time_counter", "time_centered", "time_counter_bounds", "time_centered_bounds"]:
+        if _drop_var in ds.coords and _drop_var != "time":
+            ds = ds.drop_vars(_drop_var, errors="ignore")
     var_name = rule.get(variable_key)
     if var_name and var_name in ds:
         result = ds[var_name]

@@ -286,6 +286,11 @@ def timeavg(da: xr.DataArray, rule):
     First timestamp: 2023-01-1...
     """
     drv = rule.data_request_variable
+    if drv.frequency == "fx" or getattr(drv, 'table_header', None) is None or getattr(drv.table_header, 'approx_interval', None) is None:
+        logger.info(f"Variable with frequency={drv.frequency!r} has no approx_interval — skipping time averaging")
+        rule.frequency_str = getattr(drv, 'frequency', 'fx') or "fx"
+        rule.time_method = "FIXED"
+        return da
     approx_interval = drv.table_header.approx_interval
     frequency_str = _frequency_from_approx_interval(approx_interval)
     logger.debug(f"{approx_interval=} {frequency_str=}")

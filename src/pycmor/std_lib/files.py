@@ -325,7 +325,12 @@ def _save_dataset_with_native_timespan(
     **extra_kwargs,
 ):
     paths = []
-    datasets = split_data_timespan(da, rule)
+    drv = rule.data_request_variable
+    if getattr(drv, 'frequency', None) == "fx":
+        # fx variables: write a single file, no time splitting
+        datasets = [da]
+    else:
+        datasets = split_data_timespan(da, rule)
 
     # Ensure time encoding is properly applied to each dataset
     for i, ds in enumerate(datasets):
@@ -638,7 +643,8 @@ def save_dataset(da: xr.DataArray, rule):
 
     default_file_timespan = rule._pycmor_cfg("file_timespan")
     file_timespan = getattr(rule, "file_timespan", default_file_timespan)
-    if file_timespan == "file_native":
+    drv = rule.data_request_variable
+    if file_timespan == "file_native" or getattr(drv, 'frequency', None) == "fx" or getattr(getattr(drv, 'table_header', None), 'approx_interval', None) is None:
         return _save_dataset_with_native_timespan(
             da,
             rule,

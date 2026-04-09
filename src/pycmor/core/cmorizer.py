@@ -211,7 +211,12 @@ class CMORizer:
         logger.info("Setting up dask cluster...")
         cluster_name = self._pymor_cfg("dask_cluster")
         ClusterClass = CLUSTER_MAPPINGS[cluster_name]
-        self._cluster = ClusterClass()
+        cluster_kwargs = {}
+        if cluster_name == "local":
+            n_workers = self._pymor_cfg.get("dask_n_workers", None)
+            if n_workers is not None:
+                cluster_kwargs["n_workers"] = int(n_workers)
+        self._cluster = ClusterClass(**cluster_kwargs)
         set_dashboard_link(self._cluster)
         cluster_scaling_mode = self._pymor_cfg.get("dask_cluster_scaling_mode", "adapt")
         if cluster_scaling_mode == "adapt":

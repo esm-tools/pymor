@@ -453,6 +453,7 @@ def get_encoding_with_chunks(
         if enable_compression:
             var_encoding["zlib"] = True
             var_encoding["complevel"] = compression_level
+            var_encoding["shuffle"] = True
 
         encoding[var] = var_encoding
 
