@@ -1,0 +1,80 @@
+# CMIP7 CAP7 Aerosol / AtmosChem Variables — AWI-ESM3-VEG-HR
+# Generated from 5 CSVs in cap7_aerosol/
+#
+# AWI-ESM3-VEG-HR has NO prognostic aerosol (uses MACv2-SP) and NO interactive
+# chemistry. Only 2 of 52 variables are producible:
+# - od550aer: total AOD from MACv2-SP
+# - toz: total column ozone from prescribed climatology
+# See cmip7_cap7_aerosol_todo.md for full variable tracking.
+
+general:
+  name: "awiesm3-cmip7-cap7-aerosol"
+  cmor_version: "CMIP7"
+  mip: "CMIP"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
+
+pycmor:
+  warn_on_no_rule: False
+  dask_cluster: "slurm"
+  dask_cluster_scaling_mode: "fixed"
+  dask_cluster_scaling_fixed_jobs: 1
+
+jobqueue:
+  slurm:
+    name: pycmor-worker
+    queue: compute
+    account: bb1469
+    cores: 16
+    memory: 256GB
+    walltime: '00:30:00'
+
+pipelines:
+  # Scale pipeline for toz: tco3 (kg m-2) -> toz (m)
+  # toz(m) = tco3(kg/m2) / rho_O3_STP = tco3 / 2.1415
+  - name: toz_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:apply_scale_factor
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+inherit:
+  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/oifs
+  source_id: AWI-ESM-3
+  institution_id: AWI
+  experiment_id: picontrol
+  variant_label: r1i1p1f1
+  grid_label: gn
+  grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
+  nominal_resolution: "25 km"
+  institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
+  output_directory: ./cmorized_output/awiesm3
+
+rules:
+  # od550aer: total aerosol optical depth at 550nm from MACv2-SP
+  # MACv2-SP provides total AOD, already dimensionless (unit "1")
+  - name: od550aer_mon
+    inputs:
+      - path: *dp
+        pattern: atmos_1m_macv2sp_taod550_*.nc
+    compound_name: aerosol.od550aer.tavg-u-hxy-u.mon.glb
+    model_variable: macv2sp_taod550
+
+  # toz: total column ozone from IFS prescribed ozone
+  # tco3 (kg m-2) -> toz (m) via division by O3 density at STP (2.1415 kg/m3)
+  - name: toz_mon
+    inputs:
+      - path: *dp
+        pattern: atmos_1m_tco3_*.nc
+    compound_name: aerosol.toz.tavg-u-hxy-u.mon.glb
+    model_variable: tco3
+    scale_factor: 0.46697
+    pipeline: toz_pipeline
