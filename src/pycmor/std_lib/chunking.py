@@ -399,7 +399,7 @@ def calculate_chunks_simple(
         scale_factor = (target_elements / total_elements) ** (1.0 / len(ds.dims))
 
         for dim in ds.dims:
-            chunks[dim] = max(1, int(ds.sizes[dim] * scale_factor))
+            chunks[dim] = max(1, min(ds.sizes[dim], int(ds.sizes[dim] * scale_factor)))
 
     logger.info(f"Simple chunking selected: {chunks}")
     logger.info(f"Estimated chunk size: {get_memory_size(ds, chunks)} bytes")
