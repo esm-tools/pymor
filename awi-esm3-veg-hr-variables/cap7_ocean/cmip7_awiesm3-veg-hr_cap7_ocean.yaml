@@ -76,6 +76,51 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # Surface extraction from 3D field (uos, vos)
+  - name: surface_extract_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:extract_surface
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # Ofx: load grid file, extract variable
+  - name: fx_extract_pipeline
+    steps:
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
+      - pycmor.std_lib.generic.get_variable
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # Barotropic mass streamfunction (msftbarot) via geostrophic SSH approximation
+  - name: msftbarot_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_msftbarot
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
 inherit:
   data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
   source_id: AWI-ESM-3
@@ -137,3 +182,109 @@ rules:
     scale_factor: 1000.0
     pipelines:
       - scale_pipeline
+
+  # ============================================================
+  # Barotropic streamfunction
+  # ============================================================
+
+  # msftbarot — barotropic mass streamfunction
+  # Geostrophic SSH approximation: psi = rho_0 * g * H / f * eta
+  # where H is local ocean depth (from mesh) and f is the Coriolis parameter.
+  # NaN is set in the equatorial band where |f| < f_min (~|lat| < 4 deg).
+  - name: msftbarot
+    inputs:
+      - path: *dp
+        pattern: ssh.fesom.1350.nc
+    compound_name: ocean.msftbarot.tavg-u-hxy-sea.mon.GLB
+    model_variable: ssh
+    pipelines:
+      - msftbarot_pipeline
+
+  # ============================================================
+  # HARD: Temperature tendency (opottemptend from ldiag_cmor)
+  # ============================================================
+
+  # opottemptend — tendency of potential temperature as heat content
+  # Available from ldiag_cmor=.true. (already enabled)
+  - name: opottemptend
+    inputs:
+      - path: *dp
+        pattern: opottemptend.fesom.1350.nc
+    compound_name: ocean.opottemptend.tavg-ol-hxy-sea.yr.GLB
+    model_variable: opottemptend
+    # NOTE: monthly data, CMIP wants yearly — needs yearly timeavg
+
+  # ============================================================
+  # NEW FESOM2 DIAGNOSTICS (require source code changes)
+  # These variables were added to gen_modules_cmor_diag.F90
+  # ============================================================
+
+  # osalttend — total salinity tendency (column-integrated)
+  - name: osalttend
+    inputs:
+      - path: *dp
+        pattern: osalttend.fesom.1350.nc
+    compound_name: ocean.osalttend.tavg-ol-hxy-sea.yr.GLB
+    model_variable: osalttend
+
+  # opottemprmadvect — temperature tendency from residual mean advection
+  - name: opottemprmadvect
+    inputs:
+      - path: *dp
+        pattern: opottemprmadvect.fesom.1350.nc
+    compound_name: ocean.opottemprmadvect.tavg-ol-hxy-sea.yr.GLB
+    model_variable: opottemprmadvect
+
+  # opottempdiff — temperature tendency from dianeutral mixing
+  - name: opottempdiff
+    inputs:
+      - path: *dp
+        pattern: opottempdiff.fesom.1350.nc
+    compound_name: ocean.opottempdiff.tavg-ol-hxy-sea.yr.GLB
+    model_variable: opottempdiff
+
+  # osaltrmadvect — salinity tendency from residual mean advection
+  - name: osaltrmadvect
+    inputs:
+      - path: *dp
+        pattern: osaltrmadvect.fesom.1350.nc
+    compound_name: ocean.osaltrmadvect.tavg-ol-hxy-sea.yr.GLB
+    model_variable: osaltrmadvect
+
+  # osaltdiff — salinity tendency from dianeutral mixing
+  - name: osaltdiff
+    inputs:
+      - path: *dp
+        pattern: osaltdiff.fesom.1350.nc
+    compound_name: ocean.osaltdiff.tavg-ol-hxy-sea.yr.GLB
+    model_variable: osaltdiff
+
+  # rsdoabsorb — net rate of absorption of shortwave energy in ocean layer (3D)
+  - name: rsdoabsorb
+    inputs:
+      - path: *dp
+        pattern: rsdoabsorb.fesom.1350.nc
+    compound_name: ocean.rsdoabsorb.tavg-ol-hxy-sea.yr.GLB
+    model_variable: rsdoabsorb
+
+  # ============================================================
+  # HARD: 3D salt transport (sfx, sfy)
+  # ============================================================
+
+  # sfx/sfy — 3D salt mass transport
+  # Compute: velocity × salinity × cell cross-section
+  # Requires: unod × salt + dz weighting; complex multi-field pipeline
+  # TODO: implement compute_salt_transport step
+  # - name: sfx
+  #   inputs:
+  #     - path: *dp
+  #       pattern: unod.fesom.1350.nc
+  #   compound_name: ocean.sfx.tavg-ol-hxy-sea.mon.GLB
+  #   model_variable: unod
+
+  # - name: sfy
+  #   inputs:
+  #     - path: *dp
+  #       pattern: vnod.fesom.1350.nc
+  #   compound_name: ocean.sfy.tavg-ol-hxy-sea.mon.GLB
+  #   model_variable: vnod

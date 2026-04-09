@@ -760,6 +760,111 @@ def compute_surface_pressure(data, rule):
     return result
 
 
+def compute_msftbarot(data, rule):
+    """
+    Compute ocean barotropic mass streamfunction from SSH.
+
+    Geostrophic approximation for Boussinesq free-surface models:
+
+        psi = rho_0 * g * H / f * eta
+
+    where:
+      - eta is sea surface height (SSH, in m)
+      - H   is ocean floor depth (bathymetry, in m, positive downward)
+      - f   = 2*Omega*sin(lat) is the Coriolis parameter (1/s)
+      - rho_0 is reference seawater density (kg/m3)
+      - g   is gravitational acceleration (m/s2)
+
+    Derivation: geostrophic balance gives depth-integrated meridional
+    transport M_y = rho_0*g*H/f * d(eta)/dx. Integrating M_y = d(psi)/dx
+    from the eastern boundary (psi=0) yields psi = rho_0*g*H/f * eta.
+
+    Near the equator where |f| < f_min the result is set to NaN.
+    See CMIP7 OMDP document for details on streamfunction approximations
+    for free-surface ocean models.
+
+    Primary input (data) is SSH (sea surface height, in metres).
+
+    Rule attributes:
+      - grid_file: path to mesh NetCDF file (must contain 'depth'+'depth_lev'
+        or 'zbar_n_bottom', and 'lat' or 'latitude')
+      - reference_density: Boussinesq rho_0 (default 1025.0 kg/m3)
+      - gravity: g (default 9.80665 m/s2)
+      - omega: Earth's angular velocity (default 7.2921e-5 rad/s)
+      - f_min: minimum |f| cutoff for equatorial masking (default 1e-5 1/s)
+    """
+    rho_0 = float(rule.get("reference_density", 1025.0))
+    g = float(rule.get("gravity", 9.80665))
+    omega = float(rule.get("omega", 7.2921e-5))
+    f_min = float(rule.get("f_min", 1e-5))
+
+    grid_file = rule.get("grid_file")
+    if grid_file is None:
+        raise ValueError("Rule must specify 'grid_file' for compute_msftbarot step")
+
+    mesh = xr.open_dataset(grid_file)
+
+    # --- Ocean floor depth H (positive downward) ---
+    if "depth_lev" in mesh and "depth" in mesh:
+        depth_vals = mesh["depth"].values
+        depth_lev = mesh["depth_lev"].values
+        H = np.array(
+            [
+                depth_vals[min(int(nl) - 1, len(depth_vals) - 1)] if nl > 0 else 0.0
+                for nl in depth_lev
+            ]
+        )
+    elif "zbar_n_bottom" in mesh:
+        H = np.abs(mesh["zbar_n_bottom"].values)
+    else:
+        mesh.close()
+        raise ValueError("Mesh file must contain 'depth'+'depth_lev' or 'zbar_n_bottom'")
+
+    # --- Latitude for Coriolis ---
+    if "lat" in mesh:
+        lat = mesh["lat"].values
+    elif "latitude" in mesh:
+        lat = mesh["latitude"].values
+    else:
+        mesh.close()
+        raise ValueError("Mesh file must contain 'lat' or 'latitude'")
+
+    mesh.close()
+
+    # --- Horizontal dimension ---
+    horizontal_dim = None
+    for dim in ["nod2", "ncells", "node"]:
+        if dim in data.dims:
+            horizontal_dim = dim
+            break
+    if horizontal_dim is None:
+        raise ValueError(f"Cannot identify horizontal dimension in {list(data.dims)}")
+
+    # --- Coriolis: f = 2*Omega*sin(lat) ---
+    f = 2.0 * omega * np.sin(np.deg2rad(lat))
+    f_da = xr.DataArray(f, dims=[horizontal_dim])
+    H_da = xr.DataArray(H, dims=[horizontal_dim])
+
+    # --- Geostrophic streamfunction approximation ---
+    # Mask equatorial singularity before dividing
+    f_safe = xr.where(np.abs(f_da) >= f_min, f_da, np.nan)
+
+    psi = rho_0 * g * H_da / f_safe * data
+
+    psi.attrs = {
+        "units": "kg s-1",
+        "standard_name": "ocean_barotropic_mass_streamfunction",
+        "long_name": "Ocean Barotropic Mass Streamfunction",
+        "processing_note": (
+            f"Geostrophic SSH approx: psi = rho_0*g*H/f*eta. "
+            f"rho_0={rho_0} kg/m3, g={g} m/s2, omega={omega} rad/s, "
+            f"f_min={f_min} 1/s (NaN in equatorial band |lat| < ~4 deg)."
+        ),
+    }
+    psi.name = "msftbarot"
+    return psi
+
+
 # ============================================================
 # Sea ice multi-variable compute steps
 # These load a second variable from an auxiliary file specified

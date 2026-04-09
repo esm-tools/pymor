@@ -48,8 +48,9 @@ thkcello, masscello).
   BLOCKED: FESOM does not split virtual salt flux by component
 - [ ] **wfcorr** — Water Flux Correction (`kg m-2 s-1`, mon)
   BLOCKED: no water flux correction in standard FESOM2 config
-- [ ] **msftbarot** — Ocean Barotropic Mass Streamfunction (`kg s-1`, mon)
-  Compute: from ssh or vertically-integrated horizontal transport; complex post-processing
+- [x] **msftbarot** — Ocean Barotropic Mass Streamfunction (`kg s-1`, mon)
+  DONE: geostrophic SSH approximation psi = rho_0*g*H/f*eta (compute_msftbarot in custom_steps.py,
+  msftbarot_pipeline + rule in cmip7_awiesm3-veg-hr_cap7_ocean.yaml). NaN in equatorial band |f|<1e-5.
 
 ## Monthly 2D surface (Omon) — atmosphere-coupled fluxes
 
@@ -302,12 +303,12 @@ thkcello, masscello).
 | Medium (bottom extract, integration, volcello) | ~10 | 9 | mostly done |
 | Yearly diffusivity | 3 | 3 | DONE |
 | Decadal | ~10 | 9 | mostly done |
-| Hard (streamfunction, tendencies) | ~4 | 1 | 1 done, 2 commented, 1 blocked |
+| Hard (streamfunction, tendencies) | ~4 | 2 | 2 done, 1 commented (sfx/sfy), 1 blocked |
 | Needs namelist.io additions | 5 | 5 | DONE (rules written, awaiting model re-run) |
 | FESOM2 source changes (tendencies + SW) | 7 | 7 | DONE (code added, needs compile+test) |
 | Needs basin masks (external data) | ~12 | 0 | BLOCKED |
 | Requires online diagnostics (remaining) | ~8 | 0 | BLOCKED |
 | Not applicable (conservative T / isotopes / unstructured) | ~26 | — | SKIPPED |
 
-Total rules written: **45** (+ 2 commented placeholders for sfx/sfy, msftbarot)
+Total rules written: **46** (+ 1 commented placeholder for sfx/sfy)
 FESOM2 source additions: **6** new diagnostic outputs (osalttend, opottempdiff, opottemprmadvect, osaltdiff, osaltrmadvect, rsdoabsorb)
