@@ -49,12 +49,16 @@ No new rules needed.
 
 ---
 
-## Implemented — new cap7 rules (3)
+## Implemented — new cap7 rules (7)
 
 - [x] **tossq** (day, 2D) — `ocean.tossq.tavg-u-hxy-sea.day.glb` — Square of SST. Daily SST from FESOM (`sst`, daily output), squared via `compute_square`. Same approach as monthly tossq in lrcs_ocean but at daily frequency.
 - [x] **volcello** (mon, 3D) — `ocean.volcello.tavg-ol-hxy-sea.mon.glb` — Monthly ocean cell volume from `hnode` (layer thickness) x cell area. Same approach as `volcello_dec` in lrcs_ocean but averaged to monthly.
 - [x] **friver** (mon, 2D) — `ocean.friver.tavg-u-hxy-sea.mon.glb` — River water flux from `runoff` (newly enabled in namelist.io). Units: m/s -> kg m-2 s-1 (x 1000) via scale_pipeline.
 - [x] **msftbarot** (mon, 2D) — `ocean.msftbarot.tavg-u-hxy-sea.mon.glb` — Barotropic mass streamfunction via geostrophic SSH approx: psi = rho_0*g*H/f*eta (`compute_msftbarot` in custom_steps.py). NaN in equatorial band |f| < 1e-5. **Rule and pipeline live in lrcs_ocean.**
+- [x] **hfx** (mon, 3D) — `ocean.hfx.tavg-ol-hxy-sea.mon.glb` — 3D ocean heat X transport from FESOM `utemp` (u×T, m/s·°C), scaled by rho_0·cp = 4.096e6 to get W m-2. Requires `ldiag_trflx=.true.` in namelist.
+- [x] **hfxint** (mon, 2D) — `ocean.hfx.tavg-u-hxy-sea.mon.glb` — Vertically integrated ocean heat X transport. Same `utemp` input, scale then sum over depth. Requires `ldiag_trflx=.true.`.
+- [x] **hfy** (mon, 3D) — `ocean.hfy.tavg-ol-hxy-sea.mon.glb` — 3D ocean heat Y transport from FESOM `vtemp` (v×T, m/s·°C), scaled by rho_0·cp = 4.096e6. Requires `ldiag_trflx=.true.`.
+- [x] **hfyint** (mon, 2D) — `ocean.hfy.tavg-u-hxy-sea.mon.glb` — Vertically integrated ocean heat Y transport. Same `vtemp` input, scale then sum over depth. Requires `ldiag_trflx=.true.`.
 
 ---
 
@@ -84,9 +88,9 @@ These variables exist in FESOM but are not currently enabled in `namelist.io`.
 Enabling them requires rerunning the model with updated configuration.
 
 - [x] **friver** (mon, 2D) — `ocean.friver.tavg-u-hxy-sea.mon.glb` — River water flux. **Resolved**: `runoff` now enabled in namelist.io. Moved to implemented section above.
-- [ ] **hfx** (mon, 3D) — `ocean.hfx.tavg-ol-hxy-sea.mon.glb` — 3D ocean heat X transport. Requires `ldiag_trflx=.true.` in namelist (currently `.false.`). Uses FESOM `utemp`.
-- [ ] **hfxint** (mon, 2D) — `ocean.hfx.tavg-u-hxy-sea.mon.glb` — Vertically integrated heat X transport. Same `ldiag_trflx=.true.` requirement + vertical integration.
-- [ ] **hfy** (mon, 3D) — `ocean.hfy.tavg-ol-hxy-sea.mon.glb` — 3D ocean heat Y transport. Same `ldiag_trflx=.true.` requirement, uses FESOM `vtemp`.
-- [ ] **hfyint** (mon, 2D) — `ocean.hfy.tavg-u-hxy-sea.mon.glb` — Vertically integrated heat Y transport. Same as hfy + vertical integration.
+- [x] **hfx** (mon, 3D) — `ocean.hfx.tavg-ol-hxy-sea.mon.glb` — Rule written. Moved to implemented section above.
+- [x] **hfxint** (mon, 2D) — `ocean.hfx.tavg-u-hxy-sea.mon.glb` — Rule written. Moved to implemented section above.
+- [x] **hfy** (mon, 3D) — `ocean.hfy.tavg-ol-hxy-sea.mon.glb` — Rule written. Moved to implemented section above.
+- [x] **hfyint** (mon, 2D) — `ocean.hfy.tavg-u-hxy-sea.mon.glb` — Rule written. Moved to implemented section above.
 - [ ] **tauuo** (3hr, 2D) — `ocean.tauuo.tavg-u-hxy-sea.3hr.glb` — Surface X stress at 3-hourly. FESOM outputs `tx_sur` but at **one frequency per variable** — currently monthly. Changing to 3hr would require deriving monthly from 3hr in post-processing.
 - [ ] **tauvo** (3hr, 2D) — `ocean.tauvo.tavg-u-hxy-sea.3hr.glb` — Surface Y stress at 3-hourly. Same one-frequency constraint as tauuo.
