@@ -75,7 +75,7 @@ def compute_deptho(data, rule):
         result = data["zbar_n_bottom"]
     else:
         raise ValueError("Mesh file must contain 'depth'+'depth_lev' or 'zbar_n_bottom'")
-    result.name = "deptho"
+    result.name = rule.model_variable
     return result
 
 
@@ -94,7 +94,7 @@ def compute_sftof(data, rule):
     depth_lev = data["depth_lev"]
     result = xr.where(depth_lev > 0, 100.0, 0.0)
     result.attrs = {"units": "%", "standard_name": "sea_area_fraction"}
-    result.name = "sftof"
+    result.name = rule.model_variable
     return result
 
 
@@ -119,7 +119,7 @@ def compute_thkcello_fx(data, rule):
         )
     else:
         raise ValueError("Mesh file must contain 'depth_bnds' for thkcello computation")
-    result.name = "thkcello"
+    result.name = rule.model_variable
     return result
 
 
@@ -148,7 +148,7 @@ def compute_masscello_fx(data, rule):
         )
     else:
         raise ValueError("Mesh file must contain 'depth_bnds' for masscello computation")
-    result.name = "masscello"
+    result.name = rule.model_variable
     return result
 
 
@@ -189,7 +189,7 @@ def compute_sitimefrac(data, rule):
         "long_name": "Fraction of Time Steps with Sea Ice",
         "processing_note": "Computed from monthly siconc; 1 where siconc>0, 0 otherwise",
     }
-    result.name = "sitimefrac"
+    result.name = rule.model_variable
     return result
 
 
@@ -243,7 +243,7 @@ def compute_siflcondtop(data, rule):
         "long_name": "Net Conductive Heat Flux in Sea Ice at the Surface",
         "processing_note": f"k_ice={k_ice}, T_base=freezing_point(SSS), T_surface=ist",
     }
-    result.name = "siflcondtop"
+    result.name = rule.model_variable
     return result
 
 
@@ -300,7 +300,7 @@ def compute_sihc(data, rule):
         "long_name": "Sea-Ice Heat Content",
         "processing_note": f"rho_ice={rho_ice}, c_ice={c_ice}, L_f={L_f}, T_mean=(ist+T_freeze)/2",
     }
-    result.name = "sihc"
+    result.name = rule.model_variable
     return result
 
 
@@ -330,7 +330,7 @@ def compute_sisnhc(data, rule):
         "long_name": "Snow Heat Content",
         "processing_note": f"sisnhc = -rho_snow*L_f*h_snow, rho_snow={rho_snow}, L_f={L_f}",
     }
-    result.name = "sisnhc"
+    result.name = rule.model_variable
     return result
 
 
@@ -375,7 +375,7 @@ def compute_sisnhc_from_msnow(data, rule):
             f"sisnhc = -L_f*m_snow/a_ice, rho_snow={rho_snow}, L_f={L_f}, " "derived from daily m_snow and a_ice"
         ),
     }
-    result.name = "sisnhc"
+    result.name = rule.model_variable
     return result
 
 
@@ -414,7 +414,7 @@ def compute_snd_from_msnow(data, rule):
         "long_name": "Snow Depth",
         "processing_note": "snd = m_snow / a_ice, derived from daily m_snow and a_ice",
     }
-    result.name = "snd"
+    result.name = rule.model_variable
     return result
 
 
@@ -434,7 +434,7 @@ def compute_sitempbot(data, rule):
         "long_name": "Temperature at Ice-Ocean Interface",
         "processing_note": "Computed as freezing point: T_f = -0.054 * SSS + 273.15",
     }
-    result.name = "sitempbot"
+    result.name = rule.model_variable
     return result
 
 
@@ -472,7 +472,7 @@ def compute_sifb(data, rule):
         "long_name": "Sea-Ice Freeboard",
         "processing_note": f"freeboard = h_ice*(1-{rho_ice}/{rho_water}) - h_snow*{rho_snow}/{rho_water}",
     }
-    result.name = "sifb"
+    result.name = rule.model_variable
     return result
 
 
@@ -605,7 +605,7 @@ def compute_simpeffconc(data, rule):
         "long_name": "Fraction of Sea Ice Covered by Effective Melt Pond",
         "processing_note": "simpeffconc = apnd * (1 - ipnd/hpnd) * 100",
     }
-    result.name = "simpeffconc"
+    result.name = rule.model_variable
     return result
 
 
@@ -905,7 +905,7 @@ def compute_sispeed(data, rule):
         "standard_name": "sea_ice_speed",
         "long_name": "Sea-Ice Speed",
     }
-    result.name = "sispeed"
+    result.name = rule.model_variable
     return result
 
 
@@ -961,7 +961,7 @@ def compute_sistressave(data, rule):
         "standard_name": "average_normal_stress_in_sea_ice",
         "long_name": "Average Normal Stress in Sea Ice",
     }
-    result.name = "sistressave"
+    result.name = rule.model_variable
     return result
 
 
@@ -995,7 +995,7 @@ def compute_sistressmax(data, rule):
         "standard_name": "maximum_shear_stress_in_sea_ice",
         "long_name": "Maximum Shear Stress in Sea Ice",
     }
-    result.name = "sistressmax"
+    result.name = rule.model_variable
     return result
 
 
@@ -1055,7 +1055,7 @@ def compute_density(data, rule):
     rho = gsw.rho(SA, CT, pressure)
 
     result = xr.DataArray(rho, dims=temp.dims, coords=temp.coords)
-    result.name = "rho"
+    result.name = rule.model_variable
     result.attrs = {"units": "kg m-3", "standard_name": "sea_water_density"}
     return result
 
@@ -1114,6 +1114,20 @@ def compute_mass_transport(data, rule):
     # Build thickness array matching the vertical dimension
     nz_data = data.sizes[vertical_dim]
     if len(dz) >= nz_data:
+        thickness = xr.DataArray(dz[:nz_data], dims=[vertical_dim])
+    elif nz_data == len(dz) + 1:
+        # Data is on W-levels (interfaces), e.g. w with nz=48 vs 47 cell centers.
+        # Average from interfaces to cell centers before multiplying by dz.
+        logger.info(
+            f"W-level data detected ({nz_data} levels vs {len(dz)} layers). "
+            f"Averaging interfaces to cell centers."
+        )
+        upper = data.isel({vertical_dim: slice(None, -1)})
+        lower = data.isel({vertical_dim: slice(1, None)})
+        # Align by dropping the vertical coordinate so broadcasting works
+        lower = lower.assign_coords({vertical_dim: upper[vertical_dim].values})
+        data = 0.5 * (upper + lower)
+        nz_data = len(dz)
         thickness = xr.DataArray(dz[:nz_data], dims=[vertical_dim])
     else:
         raise ValueError(f"Mesh has {len(dz)} levels but data has {nz_data}")
@@ -1223,7 +1237,8 @@ def compute_zostoga(data, rule):
     total_area = area.sum()
     zostoga = (steric_height * area).sum(dim=horizontal_dim) / total_area
 
-    zostoga.name = "zostoga"
+    # Keep the model_variable name so set_variable can find and rename it
+    zostoga.name = rule.model_variable
     zostoga.attrs = {
         "units": "m",
         "standard_name": "global_average_thermosteric_sea_level_change",
@@ -1423,7 +1438,7 @@ def compute_volcello_fx(data, rule):
 
     result = cell_area * dz
     result.attrs = {"units": "m3", "standard_name": "ocean_volume", "long_name": "Ocean Grid-Cell Volume"}
-    result.name = "volcello"
+    result.name = rule.model_variable
     return result
 
 
@@ -1530,7 +1545,7 @@ def compute_sfcwind(data, rule):
         "standard_name": "wind_speed",
         "long_name": "Near-Surface Wind Speed",
     }
-    result.name = "sfcWind"
+    result.name = rule.model_variable
     return result
 
 
@@ -1571,7 +1586,7 @@ def compute_hurs(data, rule):
         "standard_name": "relative_humidity",
         "long_name": "Near-Surface Relative Humidity",
     }
-    result.name = "hurs"
+    result.name = rule.model_variable
     return result
 
 
@@ -1607,7 +1622,7 @@ def compute_huss(data, rule):
         "standard_name": "specific_humidity",
         "long_name": "Near-Surface Specific Humidity",
     }
-    result.name = "huss"
+    result.name = rule.model_variable
     return result
 
 
@@ -1632,7 +1647,7 @@ def compute_clwvi(data, rule):
         "standard_name": "atmosphere_mass_content_of_cloud_condensed_water",
         "long_name": "Condensed Water Path",
     }
-    result.name = "clwvi"
+    result.name = rule.model_variable
     return result
 
 
@@ -1657,7 +1672,7 @@ def compute_snc(data, rule):
         "standard_name": "surface_snow_area_fraction",
         "long_name": "Snow Area Fraction",
     }
-    result.name = "snc"
+    result.name = rule.model_variable
     return result
 
 
@@ -1708,7 +1723,7 @@ def compute_areacella(data, rule):
         "standard_name": "cell_area",
         "long_name": "Grid-Cell Area for Atmospheric Grid Variables",
     }
-    result.name = "areacella"
+    result.name = rule.model_variable
     return result
 
 
@@ -1735,7 +1750,7 @@ def compute_slthick(data, rule):
         "standard_name": "cell_thickness",
         "long_name": "Thickness of Soil Layers",
     }
-    result.name = "slthick"
+    result.name = rule.model_variable
     return result
 
 
@@ -2135,7 +2150,7 @@ def compute_mrtws(data, rule):
         + data["src"] * 1000.0
     )
     mrtws.attrs["units"] = "kg m-2"
-    mrtws.name = "mrtws"
+    mrtws.name = rule.model_variable
 
     ds = mrtws.to_dataset()
     for coord in data.coords:
@@ -2157,7 +2172,7 @@ def compute_snd(data, rule):
     # Avoid division by zero: where rsn == 0, there's no snow
     snd = xr.where(rsn > 0, sd * 1000.0 / rsn, 0.0)
     snd.attrs["units"] = "m"
-    snd.name = "snd"
+    snd.name = rule.model_variable
 
     ds = snd.to_dataset()
     for coord in data.coords:
@@ -2261,7 +2276,7 @@ def compute_mrsow(data, rule):
     # Clip to [0, 1]
     result = result.clip(0.0, 1.0)
     result.attrs = {"units": "1", "long_name": "Total Soil Wetness"}
-    result.name = "mrsow"
+    result.name = rule.model_variable
 
     ds = result.to_dataset()
     for coord in data.coords:
@@ -2307,7 +2322,7 @@ def compute_sftgif(data, rule):
     result = glacier * 100.0  # fraction → percent
 
     result.attrs = {"units": "%", "long_name": "Fraction of Grid Cell Covered with Glacier"}
-    result.name = "sftgif"
+    result.name = rule.model_variable
 
     ds = result.to_dataset()
     for coord in data.coords:
@@ -2357,7 +2372,7 @@ def compute_mrsofc(data, rule):
         "units": "kg m-2",
         "long_name": "Soil Moisture at Field Capacity",
     }
-    result.name = "mrsofc"
+    result.name = rule.model_variable
 
     ds = result.to_dataset()
     for coord in data.coords:
@@ -2416,7 +2431,7 @@ def compute_rootd(data, rule):
     result = cvl * rootd_low + cvh * rootd_high
 
     result.attrs = {"units": "m", "long_name": "Maximum Root Depth"}
-    result.name = "rootd"
+    result.name = rule.model_variable
 
     ds = result.to_dataset()
     for coord in data.coords:
@@ -2450,7 +2465,7 @@ def compute_rtmt(data, rule):
         "standard_name": "net_downward_radiative_flux_at_top_of_atmosphere_model",
         "long_name": "Net Downward Radiative Flux at Top of Model",
     }
-    result.name = "rtmt"
+    result.name = rule.model_variable
     return result.to_dataset()
 
 
