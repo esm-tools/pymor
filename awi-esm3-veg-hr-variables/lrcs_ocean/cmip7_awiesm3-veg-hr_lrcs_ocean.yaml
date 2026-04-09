@@ -75,6 +75,22 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # Barotropic mass streamfunction from SSH (msftbarot)
+  - name: msftbarot_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_msftbarot
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   # Compute surface pressure from SSH (pso)
   - name: surface_pressure_pipeline
     steps:
@@ -606,19 +622,21 @@ rules:
       - scale_pipeline
 
   # ============================================================
-  # HARD: Barotropic streamfunction
+  # Barotropic streamfunction
   # ============================================================
 
-  # msftbarot — barotropic mass streamfunction from SSH
-  # Requires: vertically-integrated transport → streamfunction via Poisson solver
-  # or direct SSH-based computation for Boussinesq models.
-  # TODO: implement compute_msftbarot step
-  # - name: msftbarot
-  #   inputs:
-  #     - path: *dp
-  #       pattern: ssh.fesom.1350.nc
-  #   compound_name: ocean.msftbarot.tavg-u-hxy-sea.mon.GLB
-  #   model_variable: ssh
+  # msftbarot — barotropic mass streamfunction
+  # Geostrophic SSH approximation: psi = rho_0 * g * H / f * eta
+  # where H is local ocean depth (from mesh) and f is the Coriolis parameter.
+  # NaN is set in the equatorial band where |f| < f_min (~|lat| < 4 deg).
+  - name: msftbarot
+    inputs:
+      - path: *dp
+        pattern: ssh.fesom.1350.nc
+    compound_name: ocean.msftbarot.tavg-u-hxy-sea.mon.GLB
+    model_variable: ssh
+    pipelines:
+      - msftbarot_pipeline
 
   # ============================================================
   # HARD: Temperature tendency (opottemptend from ldiag_cmor)

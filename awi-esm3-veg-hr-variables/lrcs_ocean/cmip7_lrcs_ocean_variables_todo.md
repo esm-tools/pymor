@@ -50,7 +50,7 @@ thkcello, masscello).
   BLOCKED: no water flux correction in standard FESOM2 config
 - [x] **msftbarot** — Ocean Barotropic Mass Streamfunction (`kg s-1`, mon)
   DONE: geostrophic SSH approximation psi = rho_0*g*H/f*eta (compute_msftbarot in custom_steps.py,
-  msftbarot_pipeline + rule in cmip7_awiesm3-veg-hr_cap7_ocean.yaml). NaN in equatorial band |f|<1e-5.
+  msftbarot_pipeline + rule in cmip7_awiesm3-veg-hr_lrcs_ocean.yaml). NaN in equatorial band |f|<1e-5.
 
 ## Monthly 2D surface (Omon) — atmosphere-coupled fluxes
 
