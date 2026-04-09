@@ -57,6 +57,7 @@ inherit:
   grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
   nominal_resolution: "25 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
+  time_dimname: time_counter
   output_directory: ./cmorized_output/awiesm3
 
 rules:
@@ -65,8 +66,8 @@ rules:
   - name: od550aer_mon
     inputs:
       - path: *dp
-        pattern: atmos_1m_macv2sp_taod550_*.nc
-    compound_name: aerosol.od550aer.tavg-u-hxy-u.mon.glb
+        pattern: atmos_1m_macv2sp_taod550_.*\.nc
+    compound_name: aerosol.od550aer.tavg-u-hxy-u.mon.GLB
     model_variable: macv2sp_taod550
 
   # toz: total column ozone from IFS prescribed ozone
@@ -74,8 +75,8 @@ rules:
   - name: toz_mon
     inputs:
       - path: *dp
-        pattern: atmos_1m_tco3_*.nc
-    compound_name: aerosol.toz.tavg-u-hxy-u.mon.glb
+        pattern: atmos_1m_tco3_.*\.nc
+    compound_name: aerosol.toz.tavg-u-hxy-u.mon.GLB
     model_variable: tco3
     scale_factor: 0.46697
     pipeline: toz_pipeline

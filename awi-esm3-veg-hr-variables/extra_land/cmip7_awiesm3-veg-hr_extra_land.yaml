@@ -130,6 +130,7 @@ inherit:
   grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
   nominal_resolution: "25 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
+  time_dimname: time_counter
   output_directory: ./cmorized_output/awiesm3
 
 rules:
@@ -141,8 +142,8 @@ rules:
   - name: areacellr
     inputs:
       - path: *dp
-        pattern: atm_remapped_1m_lsm_1m_*.nc
-    compound_name: land.areacellr.ti-u-hxy-u.fx.glb
+        pattern: atm_remapped_1m_lsm_1m_.*\.nc
+    compound_name: land.areacellr.ti-u-hxy-u.fx.GLB
     model_variable: lsm
     pipelines:
       - areacella_pipeline
@@ -151,7 +152,7 @@ rules:
   - name: orog_south30
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_orog_mon_land_*.nc
+        pattern: atmos_mon_land_orog_mon_land_.*\.nc
     compound_name: land.orog.ti-u-hxy-u.fx.30S-90S
     model_variable: orog
     pipelines:
@@ -166,7 +167,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/grassFracC3_monthly.out"
-    compound_name: land.c3PftFrac.tavg-u-hxy-u.mon.glb
+    compound_name: land.c3PftFrac.tavg-u-hxy-u.mon.GLB
     model_variable: grassFracC3
     additional_files: "treeFracBdlDcd_monthly.out,treeFracBdlEvg_monthly.out,treeFracNdlDcd_monthly.out,treeFracNdlEvg_monthly.out"
     additional_pattern_prefix: "*/run1/"
@@ -179,7 +180,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/grassFracC4_monthly.out"
-    compound_name: land.c4PftFrac.tavg-u-hxy-u.mon.glb
+    compound_name: land.c4PftFrac.tavg-u-hxy-u.mon.GLB
     model_variable: grassFracC4
     pipelines:
       - lpjg_monthly_pipeline
@@ -189,7 +190,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/cropFracC3_monthly.out"
-    compound_name: land.cropFracC3.tavg-u-hxy-u.mon.glb
+    compound_name: land.cropFracC3.tavg-u-hxy-u.mon.GLB
     model_variable: cropFracC3
     pipelines:
       - lpjg_monthly_pipeline
@@ -199,7 +200,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/cropFracC4_monthly.out"
-    compound_name: land.cropFracC4.tavg-u-hxy-u.mon.glb
+    compound_name: land.cropFracC4.tavg-u-hxy-u.mon.GLB
     model_variable: cropFracC4
     pipelines:
       - lpjg_monthly_pipeline
@@ -209,7 +210,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/pastureFracC3_monthly.out"
-    compound_name: land.pastureFracC3.tavg-u-hxy-u.mon.glb
+    compound_name: land.pastureFracC3.tavg-u-hxy-u.mon.GLB
     model_variable: pastureFracC3
     pipelines:
       - lpjg_monthly_pipeline
@@ -219,7 +220,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/pastureFracC4_monthly.out"
-    compound_name: land.pastureFracC4.tavg-u-hxy-u.mon.glb
+    compound_name: land.pastureFracC4.tavg-u-hxy-u.mon.GLB
     model_variable: pastureFracC4
     pipelines:
       - lpjg_monthly_pipeline
@@ -233,7 +234,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/lai_monthly.out"
-    compound_name: land.lai.tavg-u-hxy-lnd.day.glb
+    compound_name: land.lai.tavg-u-hxy-lnd.day.GLB
     model_variable: lai
     pipelines:
       - lpjg_monthly_pipeline
@@ -246,8 +247,8 @@ rules:
   - name: dcw_day
     inputs:
       - path: *dp
-        pattern: atmos_day_land_*.nc
-    compound_name: land.dcw.tavg-u-hxy-lnd.day.glb
+        pattern: atmos_day_land_.*\.nc
+    compound_name: land.dcw.tavg-u-hxy-lnd.day.GLB
     model_variable: skin_reservoir
     pipeline: temporal_diff_pipeline
 
@@ -255,8 +256,8 @@ rules:
   - name: dslw_day
     inputs:
       - path: *dp
-        pattern: atmos_day_land_*.nc
-    compound_name: land.dslw.tavg-u-hxy-lnd.day.glb
+        pattern: atmos_day_land_.*\.nc
+    compound_name: land.dslw.tavg-u-hxy-lnd.day.GLB
     model_variable: soil_moisture
     pipeline: temporal_diff_pipeline
 
@@ -264,8 +265,8 @@ rules:
   - name: mrsow_day
     inputs:
       - path: *dp
-        pattern: atmos_day_land_*.nc
-    compound_name: land.mrsow.tavg-u-hxy-lnd.day.glb
+        pattern: atmos_day_land_.*\.nc
+    compound_name: land.mrsow.tavg-u-hxy-lnd.day.GLB
     model_variable: mrsow
     porosity: 0.472
     pipelines:
@@ -279,7 +280,7 @@ rules:
   - name: tas_1hr_south30
     inputs:
       - path: *dp
-        pattern: atmos_1h_tas_*.nc
+        pattern: atmos_1h_tas_.*\.nc
     compound_name: land.tas.tavg-h2m-hxy-u.1hr.30S-90S
     model_variable: 2t
     pipelines:

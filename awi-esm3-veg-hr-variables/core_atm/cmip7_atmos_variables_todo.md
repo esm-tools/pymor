@@ -163,7 +163,7 @@ Pycmor rules then read the CMOR-ready output and just add metadata + save.
 
 ## Blockers / verification needed
 
-1. **ssrdc/strdc** — IFS params 228129/228130 (clear-sky downwelling). Fields added to field_def and file_def, but need to verify OIFS actually outputs them (check FullPos/XIOS coupling)
+1. **ssrdc/strdc** — IFS params 228129/228130 (clear-sky downwelling). Fields added to field_def and file_def, but **NOT registered in the XIOS GRIB→field-name mapping table**. In `oifs-48r1/ifs-source/arpifs/module/yomxios.F90`, the `CSFCFLD`/`IGRBSFCFLD` arrays (126 entries) do not include GRIB codes 228129 (ssrdc) or 228130 (strdc). IFS computes these fields internally (`cpedia.F90` lines 596/599/647/650, via `PFRSODC`/`PFRTHDC`), they are registered as surface diagnostic fields (`field_definitions.F90` `vd_ssrdc`/`vd_strdc`, indices 3072/3073), and they pass through FullPos (`su_surf_flds.F90`, `postphy_layer.F90`). However, when the FullPos output reaches `cxios.F90`, the GRIB code lookup against `IGRBSFCFLD` fails and the field is silently skipped ("UNKNOWN GRIB CODE SKIPPED"). **Fix required**: add `'ssrdc'`/228129 and `'strdc'`/228130 to `CSFCFLD`/`IGRBSFCFLD` in `yomxios.F90` and bump `NSFCFLD` from 126 to 128. The net clear-sky fields `ssrc` (210) and `strc` (211) ARE already in the table and work correctly. This blocks rsdscs, rsuscs, rldscs, rluscs (4 core Amon variables)
 2. **Model-level interpolation** — cl/cli/clw use `regular_ml` grid (interpolation from Gaussian to regular). Verify this works in practice and check computational cost
 3. **plev3 axis** — Added 3-level pressure axis (850/500/250 hPa) to axis_def.xml for 6hr ta/ua/va. Verify XIOS FullPos can interpolate to arbitrary pressure level sets
 

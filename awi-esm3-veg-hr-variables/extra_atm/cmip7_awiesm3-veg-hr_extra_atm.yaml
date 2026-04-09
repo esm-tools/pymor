@@ -124,6 +124,7 @@ inherit:
   grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
   nominal_resolution: "25 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
+  time_dimname: time_counter
   output_directory: ./cmorized_output/awiesm3
 
 rules:
@@ -134,39 +135,39 @@ rules:
   - name: hfls_1hr
     inputs:
       - path: *dp
-        pattern: atmos_1h_sfc_hfls_*.nc
-    compound_name: atmos.hfls.tavg-u-hxy-u.1hr.glb
+        pattern: atmos_1h_sfc_hfls_.*\.nc
+    compound_name: atmos.hfls.tavg-u-hxy-u.1hr.GLB
     model_variable: hfls
 
   - name: hfss_1hr
     inputs:
       - path: *dp
-        pattern: atmos_1h_sfc_hfss_*.nc
-    compound_name: atmos.hfss.tavg-u-hxy-u.1hr.glb
+        pattern: atmos_1h_sfc_hfss_.*\.nc
+    compound_name: atmos.hfss.tavg-u-hxy-u.1hr.GLB
     model_variable: hfss
 
   - name: rlus_1hr
     inputs:
       - path: *dp
-        pattern: atmos_1h_sfc_rlus_*.nc
-    compound_name: atmos.rlus.tavg-u-hxy-u.1hr.glb
+        pattern: atmos_1h_sfc_rlus_.*\.nc
+    compound_name: atmos.rlus.tavg-u-hxy-u.1hr.GLB
     model_variable: rlus
 
   - name: rsus_1hr
     inputs:
       - path: *dp
-        pattern: atmos_1h_sfc_rsus_*.nc
-    compound_name: atmos.rsus.tavg-u-hxy-u.1hr.glb
+        pattern: atmos_1h_sfc_rsus_.*\.nc
+    compound_name: atmos.rsus.tavg-u-hxy-u.1hr.GLB
     model_variable: rsus
 
   - name: hurs_1hr_glb
     inputs:
       - path: *dp
-        pattern: atmos_1h_sfc_2t_*.nc
-    compound_name: atmos.hurs.tavg-h2m-hxy-u.1hr.glb
+        pattern: atmos_1h_sfc_2t_.*\.nc
+    compound_name: atmos.hurs.tavg-h2m-hxy-u.1hr.GLB
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atmos_1h_sfc_2d_*.nc
+    second_input_pattern: atmos_1h_sfc_2d_.*\.nc
     second_variable: 2d
     pipelines:
       - hurs_pipeline
@@ -174,8 +175,8 @@ rules:
   - name: bldep_1hr
     inputs:
       - path: *dp
-        pattern: atmos_1h_bldep_*.nc
-    compound_name: atmos.bldep.tavg-u-hxy-u.1hr.glb
+        pattern: atmos_1h_bldep_.*\.nc
+    compound_name: atmos.bldep.tavg-u-hxy-u.1hr.GLB
     model_variable: bldep
 
   # ============================================================
@@ -185,7 +186,7 @@ rules:
   - name: clt_1hr_south30
     inputs:
       - path: *dp
-        pattern: atmos_1h_sfc_clt_*.nc
+        pattern: atmos_1h_sfc_clt_.*\.nc
     compound_name: atmos.clt.tavg-u-hxy-u.1hr.30S-90S
     model_variable: clt
     pipelines:
@@ -194,11 +195,11 @@ rules:
   - name: hurs_1hr_south30
     inputs:
       - path: *dp
-        pattern: atmos_1h_sfc_2t_*.nc
+        pattern: atmos_1h_sfc_2t_.*\.nc
     compound_name: atmos.hurs.tavg-h2m-hxy-u.1hr.30S-90S
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atmos_1h_sfc_2d_*.nc
+    second_input_pattern: atmos_1h_sfc_2d_.*\.nc
     second_variable: 2d
     pipelines:
       - hurs_south_pipeline
@@ -206,7 +207,7 @@ rules:
   - name: pr_1hr_south30
     inputs:
       - path: *dp
-        pattern: atmos_1h_pr_*.nc
+        pattern: atmos_1h_pr_.*\.nc
     compound_name: atmos.pr.tavg-u-hxy-u.1hr.30S-90S
     model_variable: pr
     pipelines:
@@ -215,7 +216,7 @@ rules:
   - name: ps_1hr_south30
     inputs:
       - path: *dp
-        pattern: atmos_1h_sfc_sp_*.nc
+        pattern: atmos_1h_sfc_sp_.*\.nc
     compound_name: atmos.ps.tpt-u-hxy-u.1hr.30S-90S
     model_variable: sp
     pipelines:
@@ -224,7 +225,7 @@ rules:
   - name: rlds_1hr_south30
     inputs:
       - path: *dp
-        pattern: atmos_1h_sfc_rlds_*.nc
+        pattern: atmos_1h_sfc_rlds_.*\.nc
     compound_name: atmos.rlds.tavg-u-hxy-u.1hr.30S-90S
     model_variable: rlds
     pipelines:
@@ -233,7 +234,7 @@ rules:
   - name: rsds_1hr_south30
     inputs:
       - path: *dp
-        pattern: atmos_1h_sfc_rsds_*.nc
+        pattern: atmos_1h_sfc_rsds_.*\.nc
     compound_name: atmos.rsds.tavg-u-hxy-u.1hr.30S-90S
     model_variable: rsds
     pipelines:
@@ -242,11 +243,11 @@ rules:
   - name: sfcWind_1hr_south30
     inputs:
       - path: *dp
-        pattern: atmos_1h_sfc_10u_*.nc
+        pattern: atmos_1h_sfc_10u_.*\.nc
     compound_name: atmos.sfcWind.tavg-h10m-hxy-u.1hr.30S-90S
     model_variable: 10u
     second_input_path: *dp
-    second_input_pattern: atmos_1h_sfc_10v_*.nc
+    second_input_pattern: atmos_1h_sfc_10v_.*\.nc
     second_variable: 10v
     pipelines:
       - sfcwind_south_pipeline
@@ -259,11 +260,11 @@ rules:
   - name: hurs_3hr
     inputs:
       - path: *dp
-        pattern: atmos_3h_pt_2t_3h_pt_*.nc
-    compound_name: atmos.hurs.tpt-h2m-hxy-u.3hr.glb
+        pattern: atmos_3h_pt_2t_3h_pt_.*\.nc
+    compound_name: atmos.hurs.tpt-h2m-hxy-u.3hr.GLB
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atmos_3h_pt_2d_3h_pt_*.nc
+    second_input_pattern: atmos_3h_pt_2d_3h_pt_.*\.nc
     second_variable: 2d
     pipelines:
       - hurs_pipeline
@@ -272,8 +273,8 @@ rules:
   - name: ts_3hr
     inputs:
       - path: *dp
-        pattern: atmos_3h_ts_*.nc
-    compound_name: atmos.ts.tpt-u-hxy-u.3hr.glb
+        pattern: atmos_3h_ts_.*\.nc
+    compound_name: atmos.ts.tpt-u-hxy-u.3hr.GLB
     model_variable: ts
 
   # ============================================================
@@ -284,40 +285,40 @@ rules:
   - name: cl_day
     inputs:
       - path: *dp
-        pattern: atmos_day_ml_cl_*.nc
-    compound_name: atmos.cl.tavg-al-hxy-u.day.glb
+        pattern: atmos_day_ml_cl_.*\.nc
+    compound_name: atmos.cl.tavg-al-hxy-u.day.GLB
     model_variable: cl
 
   # pfull daily on model levels
   - name: pfull_day
     inputs:
       - path: *dp
-        pattern: atmos_day_ml_pfull_*.nc
-    compound_name: atmos.pfull.tavg-al-hxy-u.day.glb
+        pattern: atmos_day_ml_pfull_.*\.nc
+    compound_name: atmos.pfull.tavg-al-hxy-u.day.GLB
     model_variable: pfull
 
   # rls daily (net longwave surface radiation)
   - name: rls_day
     inputs:
       - path: *dp
-        pattern: atmos_day_rad_rls_*.nc
-    compound_name: atmos.rls.tavg-u-hxy-u.day.glb
+        pattern: atmos_day_rad_rls_.*\.nc
+    compound_name: atmos.rls.tavg-u-hxy-u.day.GLB
     model_variable: rls
 
   # rss daily (net shortwave surface radiation)
   - name: rss_day
     inputs:
       - path: *dp
-        pattern: atmos_day_rad_rss_*.nc
-    compound_name: atmos.rss.tavg-u-hxy-u.day.glb
+        pattern: atmos_day_rad_rss_.*\.nc
+    compound_name: atmos.rss.tavg-u-hxy-u.day.GLB
     model_variable: rss
 
   # evspsbl daily
   - name: evspsbl_day
     inputs:
       - path: *dp
-        pattern: atmos_day_rad_evspsbl_*.nc
-    compound_name: atmos.evspsbl.tavg-u-hxy-lnd.day.glb
+        pattern: atmos_day_rad_evspsbl_.*\.nc
+    compound_name: atmos.evspsbl.tavg-u-hxy-lnd.day.GLB
     model_variable: evspsbl
 
   # ============================================================
@@ -328,6 +329,6 @@ rules:
   - name: wsg_10m_mon
     inputs:
       - path: *dp
-        pattern: atmos_mon_gust_wsg10_*.nc
-    compound_name: atmos.wsg.tmax-h10m-hxy-u.mon.glb
+        pattern: atmos_mon_gust_wsg10_.*\.nc
+    compound_name: atmos.wsg.tmax-h10m-hxy-u.mon.GLB
     model_variable: wsg10

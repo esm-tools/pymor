@@ -53,6 +53,7 @@ inherit:
   grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
   nominal_resolution: "25 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
+  time_dimname: time_counter
   output_directory: ./cmorized_output/awiesm3
 
 rules:
@@ -63,43 +64,43 @@ rules:
   - name: hfls_3hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_rad_hfls_*.nc
-    compound_name: atmos.hfls.tavg-u-hxy-u.3hr.glb
+        pattern: atm_remapped_3h_rad_hfls_.*\.nc
+    compound_name: atmos.hfls.tavg-u-hxy-u.3hr.GLB
     model_variable: hfls
 
   - name: hfss_3hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_rad_hfss_*.nc
-    compound_name: atmos.hfss.tavg-u-hxy-u.3hr.glb
+        pattern: atm_remapped_3h_rad_hfss_.*\.nc
+    compound_name: atmos.hfss.tavg-u-hxy-u.3hr.GLB
     model_variable: hfss
 
   - name: rlds_3hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_rad_rlds_*.nc
-    compound_name: atmos.rlds.tavg-u-hxy-u.3hr.glb
+        pattern: atm_remapped_3h_rad_rlds_.*\.nc
+    compound_name: atmos.rlds.tavg-u-hxy-u.3hr.GLB
     model_variable: rlds
 
   - name: rlus_3hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_rad_rlus_*.nc
-    compound_name: atmos.rlus.tavg-u-hxy-u.3hr.glb
+        pattern: atm_remapped_3h_rad_rlus_.*\.nc
+    compound_name: atmos.rlus.tavg-u-hxy-u.3hr.GLB
     model_variable: rlus
 
   - name: rsds_3hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_rad_rsds_*.nc
-    compound_name: atmos.rsds.tavg-u-hxy-u.3hr.glb
+        pattern: atm_remapped_3h_rad_rsds_.*\.nc
+    compound_name: atmos.rsds.tavg-u-hxy-u.3hr.GLB
     model_variable: rsds
 
   - name: rsus_3hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_rad_rsus_*.nc
-    compound_name: atmos.rsus.tavg-u-hxy-u.3hr.glb
+        pattern: atm_remapped_3h_rad_rsus_.*\.nc
+    compound_name: atmos.rsus.tavg-u-hxy-u.3hr.GLB
     model_variable: rsus
 
   # ============================================================
@@ -109,8 +110,8 @@ rules:
   - name: ps_3hrPt
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_pt_sp_*.nc
-    compound_name: atmos.ps.tpt-u-hxy-u.3hr.glb
+        pattern: atm_remapped_3h_pt_sp_.*\.nc
+    compound_name: atmos.ps.tpt-u-hxy-u.3hr.GLB
     model_variable: sp
 
   # ============================================================
@@ -120,36 +121,36 @@ rules:
   - name: ta_3hrPt_plev6
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_pl6_ta_*.nc
-    compound_name: atmos.ta.tpt-p6-hxy-air.3hr.glb
+        pattern: atm_remapped_3h_pl6_ta_.*\.nc
+    compound_name: atmos.ta.tpt-p6-hxy-air.3hr.GLB
     model_variable: ta
 
   - name: ua_3hrPt_plev6
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_pl6_ua_*.nc
-    compound_name: atmos.ua.tpt-p6-hxy-air.3hr.glb
+        pattern: atm_remapped_3h_pl6_ua_.*\.nc
+    compound_name: atmos.ua.tpt-p6-hxy-air.3hr.GLB
     model_variable: ua
 
   - name: va_3hrPt_plev6
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_pl6_va_*.nc
-    compound_name: atmos.va.tpt-p6-hxy-air.3hr.glb
+        pattern: atm_remapped_3h_pl6_va_.*\.nc
+    compound_name: atmos.va.tpt-p6-hxy-air.3hr.GLB
     model_variable: va
 
   - name: wap_3hrPt_plev6
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_pl6_wap_*.nc
-    compound_name: atmos.wap.tpt-p6-hxy-air.3hr.glb
+        pattern: atm_remapped_3h_pl6_wap_.*\.nc
+    compound_name: atmos.wap.tpt-p6-hxy-air.3hr.GLB
     model_variable: wap
 
   - name: hus_3hrPt_plev6
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_pl6_hus_*.nc
-    compound_name: atmos.hus.tpt-p6-hxy-air.3hr.glb
+        pattern: atm_remapped_3h_pl6_hus_.*\.nc
+    compound_name: atmos.hus.tpt-p6-hxy-air.3hr.GLB
     model_variable: hus
 
   # ============================================================
@@ -159,8 +160,8 @@ rules:
   - name: bldep_3hrPt
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_bldep_bldep_*.nc
-    compound_name: atmos.bldep.tpt-u-hxy-u.3hr.glb
+        pattern: atm_remapped_3h_bldep_bldep_.*\.nc
+    compound_name: atmos.bldep.tpt-u-hxy-u.3hr.GLB
     model_variable: bldep
 
   # ============================================================
@@ -170,8 +171,8 @@ rules:
   - name: prsn_6hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_6h_prsn_prsn_*.nc
-    compound_name: atmos.prsn.tavg-u-hxy-u.6hr.glb
+        pattern: atm_remapped_6h_prsn_prsn_.*\.nc
+    compound_name: atmos.prsn.tavg-u-hxy-u.6hr.GLB
     model_variable: prsn
 
   # ============================================================
@@ -181,15 +182,15 @@ rules:
   - name: rls_mon
     inputs:
       - path: *dp
-        pattern: atm_remapped_mon_netrad_rls_*.nc
-    compound_name: atmos.rls.tavg-u-hxy-u.mon.glb
+        pattern: atm_remapped_mon_netrad_rls_.*\.nc
+    compound_name: atmos.rls.tavg-u-hxy-u.mon.GLB
     model_variable: rls
 
   - name: rss_mon
     inputs:
       - path: *dp
-        pattern: atm_remapped_mon_netrad_rss_*.nc
-    compound_name: atmos.rss.tavg-u-hxy-u.mon.glb
+        pattern: atm_remapped_mon_netrad_rss_.*\.nc
+    compound_name: atmos.rss.tavg-u-hxy-u.mon.GLB
     model_variable: rss
 
   # ============================================================
@@ -199,8 +200,8 @@ rules:
   - name: lwp_mon
     inputs:
       - path: *dp
-        pattern: atm_remapped_mon_netrad_lwp_*.nc
-    compound_name: aerosol.lwp.tavg-u-hxy-u.mon.glb
+        pattern: atm_remapped_mon_netrad_lwp_.*\.nc
+    compound_name: aerosol.lwp.tavg-u-hxy-u.mon.GLB
     model_variable: lwp
 
   # ============================================================
@@ -210,15 +211,15 @@ rules:
   - name: tsns_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_day_snow_tsns_*.nc
-    compound_name: atmos.ts.tavg-u-hxy-lnd.day.glb
+        pattern: atm_remapped_day_snow_tsns_.*\.nc
+    compound_name: atmos.ts.tavg-u-hxy-lnd.day.GLB
     model_variable: tsns
 
   - name: snmsl_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_day_snow_snmsl_*.nc
-    compound_name: atmos.snmsl.tavg-u-hxy-lnd.day.glb
+        pattern: atm_remapped_day_snow_snmsl_.*\.nc
+    compound_name: atmos.snmsl.tavg-u-hxy-lnd.day.GLB
     model_variable: snmsl
 
   # ============================================================
@@ -232,7 +233,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/fFireAll_monthly.out"
-    compound_name: aerosol.emibbbc.tavg-u-hxy-u.mon.glb
+    compound_name: aerosol.emibbbc.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     emission_species: bc
     pipeline: fire_emission_pipeline
@@ -241,7 +242,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/fFireAll_monthly.out"
-    compound_name: aerosol.emibbch4.tavg-u-hxy-u.mon.glb
+    compound_name: aerosol.emibbch4.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     emission_species: ch4
     pipeline: fire_emission_pipeline
@@ -250,7 +251,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/fFireAll_monthly.out"
-    compound_name: aerosol.emibbco.tavg-u-hxy-u.mon.glb
+    compound_name: aerosol.emibbco.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     emission_species: co
     pipeline: fire_emission_pipeline
@@ -259,7 +260,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/fFireAll_monthly.out"
-    compound_name: aerosol.emibbdms.tavg-u-hxy-u.mon.glb
+    compound_name: aerosol.emibbdms.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     emission_species: dms
     pipeline: fire_emission_pipeline
@@ -268,7 +269,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/fFireAll_monthly.out"
-    compound_name: aerosol.emibboa.tavg-u-hxy-u.mon.glb
+    compound_name: aerosol.emibboa.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     emission_species: oa
     pipeline: fire_emission_pipeline
@@ -277,7 +278,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/fFireAll_monthly.out"
-    compound_name: aerosol.emibbso2.tavg-u-hxy-u.mon.glb
+    compound_name: aerosol.emibbso2.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     emission_species: so2
     pipeline: fire_emission_pipeline
@@ -286,7 +287,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/fFireAll_monthly.out"
-    compound_name: aerosol.emibbvoc.tavg-u-hxy-u.mon.glb
+    compound_name: aerosol.emibbvoc.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     emission_species: nmvoc
     pipeline: fire_emission_pipeline

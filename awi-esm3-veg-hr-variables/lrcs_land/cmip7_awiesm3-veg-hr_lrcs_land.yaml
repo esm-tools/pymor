@@ -91,6 +91,7 @@ inherit:
   grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
   nominal_resolution: "25 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
+  time_dimname: time_counter
   output_directory: ./cmorized_output/awiesm3
 
 rules:
@@ -99,7 +100,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/evspsblsoi_monthly.out"
-    compound_name: land.evspsblsoi.tavg-u-hxy-lnd.mon.glb
+    compound_name: land.evspsblsoi.tavg-u-hxy-lnd.mon.GLB
     model_variable: evspsblsoi
     pipelines:
       - lpjg_monthly_pipeline
@@ -109,7 +110,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/evspsblveg_monthly.out"
-    compound_name: land.evspsblveg.tavg-u-hxy-lnd.mon.glb
+    compound_name: land.evspsblveg.tavg-u-hxy-lnd.mon.GLB
     model_variable: evspsblveg
     pipelines:
       - lpjg_monthly_pipeline
@@ -119,7 +120,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/mrfso_monthly.out"
-    compound_name: landIce.mrfso.tavg-u-hxy-lnd.mon.glb
+    compound_name: landIce.mrfso.tavg-u-hxy-lnd.mon.GLB
     model_variable: mrfso
     pipelines:
       - lpjg_monthly_pipeline
@@ -132,8 +133,8 @@ rules:
   - name: sftgif
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_static_*.nc
-    compound_name: land.sftgif.ti-u-hxy-u.fx.glb
+        pattern: atmos_mon_land_static_.*\.nc
+    compound_name: land.sftgif.ti-u-hxy-u.fx.GLB
     model_variable: sftgif
     pipelines:
       - sftgif_pipeline
@@ -142,8 +143,8 @@ rules:
   - name: mrsofc
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_static_*.nc
-    compound_name: land.mrsofc.ti-u-hxy-lnd.fx.glb
+        pattern: atmos_mon_land_static_.*\.nc
+    compound_name: land.mrsofc.ti-u-hxy-lnd.fx.GLB
     model_variable: mrsofc
     pipelines:
       - mrsofc_pipeline
@@ -152,8 +153,8 @@ rules:
   - name: rootd
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_static_*.nc
-    compound_name: land.rootd.ti-u-hxy-lnd.fx.glb
+        pattern: atmos_mon_land_static_.*\.nc
+    compound_name: land.rootd.ti-u-hxy-lnd.fx.GLB
     model_variable: rootd
     pipelines:
       - rootd_pipeline

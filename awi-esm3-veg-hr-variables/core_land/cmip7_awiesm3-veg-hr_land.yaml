@@ -82,6 +82,7 @@ inherit:
   grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
   nominal_resolution: "25 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
+  time_dimname: time_counter
   output_directory: ./cmorized_output/awiesm3
 
 rules:
@@ -94,57 +95,57 @@ rules:
   - name: evspsbl
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_evspsbl_mon_land_*.nc
-    compound_name: atmos.evspsbl.tavg-u-hxy-u.mon.glb
+        pattern: atmos_mon_land_evspsbl_mon_land_.*\.nc
+    compound_name: atmos.evspsbl.tavg-u-hxy-u.mon.GLB
     model_variable: evspsbl
 
   - name: mrro
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_mrro_mon_land_*.nc
-    compound_name: land.mrro.tavg-u-hxy-lnd.mon.glb
+        pattern: atmos_mon_land_mrro_mon_land_.*\.nc
+    compound_name: land.mrro.tavg-u-hxy-lnd.mon.GLB
     model_variable: mrro
 
   - name: mrros
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_mrros_mon_land_*.nc
-    compound_name: land.mrros.tavg-u-hxy-lnd.mon.glb
+        pattern: atmos_mon_land_mrros_mon_land_.*\.nc
+    compound_name: land.mrros.tavg-u-hxy-lnd.mon.GLB
     model_variable: mrros
 
   - name: snw
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_snw_mon_land_*.nc
-    compound_name: landIce.snw.tavg-u-hxy-lnd.mon.glb
+        pattern: atmos_mon_land_snw_mon_land_.*\.nc
+    compound_name: landIce.snw.tavg-u-hxy-lnd.mon.GLB
     model_variable: snw
 
   - name: orog
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_orog_mon_land_*.nc
-    compound_name: land.orog.ti-u-hxy-u.fx.glb
+        pattern: atmos_mon_land_orog_mon_land_.*\.nc
+    compound_name: land.orog.ti-u-hxy-u.fx.GLB
     model_variable: orog
 
   - name: lai
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_lai_mon_land_*.nc
-    compound_name: land.lai.tavg-u-hxy-lnd.mon.glb
+        pattern: atmos_mon_land_lai_mon_land_.*\.nc
+    compound_name: land.lai.tavg-u-hxy-lnd.mon.GLB
     model_variable: lai
 
   - name: mrso
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_mrso_mon_land_*.nc
-    compound_name: land.mrso.tavg-u-hxy-lnd.mon.glb
+        pattern: atmos_mon_land_mrso_mon_land_.*\.nc
+    compound_name: land.mrso.tavg-u-hxy-lnd.mon.GLB
     model_variable: mrso
 
   - name: mrsol
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_mrsol_mon_land_*.nc
-    compound_name: land.mrsol.tavg-d10cm-hxy-lnd.mon.glb
+        pattern: atmos_mon_land_mrsol_mon_land_.*\.nc
+    compound_name: land.mrsol.tavg-d10cm-hxy-lnd.mon.GLB
     model_variable: mrsol
 
   # --- pycmor pipeline computed ---
@@ -152,8 +153,8 @@ rules:
   - name: snc
     inputs:
       - path: *dp
-        pattern: atm_remapped_1m_sd_1m_*.nc
-    compound_name: landIce.snc.tavg-u-hxy-lnd.mon.glb
+        pattern: atm_remapped_1m_sd_1m_.*\.nc
+    compound_name: landIce.snc.tavg-u-hxy-lnd.mon.GLB
     model_variable: sd
     pipelines:
       - snc_pipeline
@@ -165,8 +166,8 @@ rules:
   - name: areacella
     inputs:
       - path: *dp
-        pattern: atm_remapped_1m_lsm_1m_*.nc
-    compound_name: atmos.areacella.ti-u-hxy-u.fx.glb
+        pattern: atm_remapped_1m_lsm_1m_.*\.nc
+    compound_name: atmos.areacella.ti-u-hxy-u.fx.GLB
     model_variable: lsm
     pipelines:
       - areacella_pipeline
@@ -174,8 +175,8 @@ rules:
   - name: slthick
     inputs:
       - path: *dp
-        pattern: atm_remapped_1m_lsm_1m_*.nc
-    compound_name: land.slthick.ti-sl-hxy-lnd.fx.glb
+        pattern: atm_remapped_1m_lsm_1m_.*\.nc
+    compound_name: land.slthick.ti-sl-hxy-lnd.fx.GLB
     model_variable: lsm
     pipelines:
       - slthick_pipeline
