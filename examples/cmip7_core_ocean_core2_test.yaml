@@ -149,7 +149,7 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_005/outdata/fesom
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_006/outdata/fesom
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
@@ -416,7 +416,7 @@ rules:
         pattern: temp.fesom.1900.nc
     compound_name: ocean.zostoga.tavg-u-hm-sea.mon.GLB
     model_variable: temp
-    salt_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_005/outdata/fesom/salt.fesom.1900.nc
+    salt_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_006/outdata/fesom/salt.fesom.1900.nc
     salt_variable: salt
     reference_density: 1025.0
     pipelines:
