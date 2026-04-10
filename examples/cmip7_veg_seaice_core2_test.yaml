@@ -1,10 +1,10 @@
-# CMIP7 VEG Sea Ice Variables — AWI-ESM3-VEG-HR
-#
-# 1 producible variable (daily sisnhc); 3 blocked (see cmip7_veg_seaice_todo.md).
-# Daily sisnhc derived from daily m_snow and a_ice (h_snow not available daily).
+# CMIP7 VEG Sea Ice Variables — Test config with CORE2 mesh
+# Adapted from awi-esm3-veg-hr-variables/veg_seaice/cmip7_awiesm3-veg-hr_seaice.yaml
+# Uses low-resolution CORE2 (~100km) for quick testing.
+# 1 rule: daily sisnhc derived from m_snow + a_ice
 
 general:
-  name: "awiesm3-cmip7-veg-seaice"
+  name: "awiesm3-cmip7-veg-seaice-core2-test"
   cmor_version: "CMIP7"
   mip: "CMIP"
   CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
@@ -20,7 +20,7 @@ jobqueue:
   slurm:
     name: pycmor-worker
     queue: compute
-    account: bb1469
+    account: ba0989
     cores: 16
     memory: 256GB
     walltime: '00:30:00'
@@ -44,30 +44,32 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_006/outdata/fesom
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
   variant_label: r1i1p1f1
   grid_label: gn
-  mesh_path: /work/ab0246/a270092/input/fesom2/dars2
-  grid_file: /work/ab0246/a270092/input/fesom2/dars2/mesh.nc
-  grid: "FESOM 2.6 unstructured grid DARS (3146761 surface nodes)"
-  nominal_resolution: "10 km"
+  mesh_path: /work/ab0246/a270092/input/fesom2/core2
+  grid_file: /work/ab0246/a270092/input/fesom2/core2/mesh.nc
+  grid: "FESOM 2.6 unstructured grid CORE2 (126858 surface nodes)"
+  nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
-  output_directory: ./cmorized_output/awiesm3
+  output_directory: ./cmorized_output/veg_seaice_test
+  year_start: 1900
+  year_end: 1900
 
 rules:
   # Daily snow heat content: derived from daily m_snow and a_ice
-  # sisnhc = -L_f * m_snow / a_ice (latent heat dominates, sensible ≈ 0)
+  # sisnhc = -L_f * m_snow / a_ice (latent heat dominates, sensible ~ 0)
   - name: sisnhc_day
     inputs:
       - path: *dp
-        pattern: m_snow.fesom..*\.nc
+        pattern: m_snow.fesom.1900.nc
     compound_name: seaIce.sisnhc.tavg-u-hxy-si.day.GLB
     model_variable: m_snow
     second_input_path: *dp
-    second_input_pattern: a_ice.fesom..*\.nc
+    second_input_pattern: a_ice.fesom.1900.nc
     second_variable: a_ice
     rho_snow: 330.0
     L_f: 334000.0
