@@ -1,16 +1,12 @@
-# CMIP7 Core Sea Ice Variables — AWI-ESM3-VEG-HR
-# Generated from cmip7_all_core_variables_seaIce.csv + seaIce_ocean.csv
-#
-# Research notes:
-#   - a_ice is fraction (0-1), CMIP wants percentage → fraction_to_percent step
-#   - ist available because AWI-ESM3 compiled with __oifs
-#   - sitimefrac approximated from monthly siconc>0 (binary)
+# CMIP7 Core Sea Ice Variables — Test config with CORE2 mesh
+# Adapted from awi-esm3-veg-hr-variables/core_seaice/cmip7_awiesm3-veg-hr_seaice.yaml
+# Uses low-resolution CORE2 mesh (~100km) for quick testing.
 
 general:
-  name: "awiesm3-cmip7-core-seaice"
+  name: "awiesm3-cmip7-core-seaice-core2-test"
   cmor_version: "CMIP7"
   mip: "CMIP"
-  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/full_metadata.json"
 
 pycmor:
   warn_on_no_rule: False
@@ -23,7 +19,7 @@ jobqueue:
   slurm:
     name: pycmor-worker
     queue: compute
-    account: bb1469
+    account: ba0989
     cores: 16
     memory: 256GB
     walltime: '00:30:00'
@@ -80,18 +76,20 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
   variant_label: r1i1p1f1
   grid_label: gn
-  mesh_path: /work/ab0246/a270092/input/fesom2/dars2
-  grid_file: /work/ab0246/a270092/input/fesom2/dars2/mesh.nc
-  grid: "FESOM 2.6 unstructured grid DARS (3146761 surface nodes)"
-  nominal_resolution: "10 km"
+  mesh_path: &mp /work/ab0246/a270092/input/fesom2/core2
+  grid_file: /work/ab0246/a270092/input/fesom2/core2/mesh.nc
+  grid: "FESOM 2.6 unstructured grid CORE2 (126858 surface nodes)"
+  nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
-  output_directory: ./cmorized_output/awiesm3
+  output_directory: ./cmorized_output/core2_seaice_test
+  year_start: 1900
+  year_end: 1900
 
 rules:
   # ============================================================
@@ -101,7 +99,7 @@ rules:
   - name: simass
     inputs:
       - path: *dp
-        pattern: m_ice.fesom.1350.nc
+        pattern: m_ice\.fesom\..*\.nc
     compound_name: seaIce.simass.tavg-u-hxy-si.mon.GLB
     model_variable: m_ice
     scale_factor: 917.0
@@ -112,18 +110,16 @@ rules:
   - name: siu
     inputs:
       - path: *dp
-        pattern: uice.fesom.1350.nc
+        pattern: uice\.fesom\..*\.nc
     compound_name: seaIce.siu.tavg-u-hxy-si.mon.GLB
     model_variable: uice
-    # vec_autorotate=.true. set in namelist.io
 
   - name: siv
     inputs:
       - path: *dp
-        pattern: vice.fesom.1350.nc
+        pattern: vice\.fesom\..*\.nc
     compound_name: seaIce.siv.tavg-u-hxy-si.mon.GLB
     model_variable: vice
-    # vec_autorotate=.true. set in namelist.io
 
   # ============================================================
   # Monthly (SImon) — h_ice, h_snow, ist
@@ -132,24 +128,23 @@ rules:
   - name: sithick
     inputs:
       - path: *dp
-        pattern: h_ice.fesom.1350.nc
+        pattern: h_ice\.fesom\..*\.nc
     compound_name: seaIce.sithick.tavg-u-hxy-si.mon.GLB
     model_variable: h_ice
 
   - name: snd
     inputs:
       - path: *dp
-        pattern: h_snow.fesom.1350.nc
+        pattern: h_snow\.fesom\..*\.nc
     compound_name: seaIce.snd.tavg-u-hxy-sn.mon.GLB
     model_variable: h_snow
 
   - name: ts
     inputs:
       - path: *dp
-        pattern: ist.fesom.1350.nc
+        pattern: ist\.fesom\..*\.nc
     compound_name: seaIce.ts.tavg-u-hxy-si.mon.GLB
     model_variable: ist
-    # ist outputs in K, CMIP wants K — no conversion needed
 
   # ============================================================
   # Monthly (SImon) — custom pipelines
@@ -158,7 +153,7 @@ rules:
   - name: siconc
     inputs:
       - path: *dp
-        pattern: a_ice.fesom.1350.nc
+        pattern: a_ice\.fesom\..*\.nc
     compound_name: seaIce.siconc.tavg-u-hxy-u.mon.GLB
     model_variable: a_ice
     pipelines:
@@ -167,7 +162,7 @@ rules:
   - name: sitimefrac
     inputs:
       - path: *dp
-        pattern: a_ice.fesom.1350.nc
+        pattern: a_ice\.fesom\..*\.nc
     compound_name: seaIce.sitimefrac.tavg-u-hxy-sea.mon.GLB
     model_variable: a_ice
     pipelines:
@@ -180,7 +175,7 @@ rules:
   - name: siconc_day
     inputs:
       - path: *dp
-        pattern: a_ice.fesom.1350.nc
+        pattern: a_ice\.fesom\..*\.nc
     compound_name: seaIce.siconc.tavg-u-hxy-u.day.GLB
     model_variable: a_ice
     pipelines:
