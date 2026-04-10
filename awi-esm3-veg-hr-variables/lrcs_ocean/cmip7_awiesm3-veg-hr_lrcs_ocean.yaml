@@ -171,6 +171,24 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # Scale by constant then vertically integrate (hfx_int_day, hfy_int_day)
+  - name: scale_and_integrate_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:scale_by_constant
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:vertical_integrate
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   # 3D salt mass transport (sfx, sfy): velocity × salt × rho_0 × dz
   - name: salt_transport_pipeline
     steps:
@@ -419,6 +437,35 @@ rules:
     model_variable: vnod
     pipelines:
       - surface_extract_pipeline
+
+  # hfx_int_day — daily vertically integrated ocean heat X transport
+  # Same approach as monthly hfxint in cap7_ocean: utemp × rho_0*cp then integrate over depth.
+  # Requires: ldiag_trflx=.true. and a dedicated daily utemp output stream in namelist.io.
+  # WARNING: full 3D daily utemp on DARS (3.1M nodes × 47 levels) is very large.
+  - name: hfx_int_day
+    inputs:
+      - path: *dp
+        pattern: utemp.fesom.1350.nc  # daily output stream — update pattern as needed
+    compound_name: ocean.hfx.tavg-u-hxy-sea.day.GLB
+    model_variable: utemp
+    scale_factor: 4095900.0
+    scaled_units: "W m-2"
+    pipelines:
+      - scale_and_integrate_pipeline
+
+  # hfy_int_day — daily vertically integrated ocean heat Y transport
+  # Same approach as monthly hfyint: vtemp × rho_0*cp then integrate over depth.
+  # Requires: ldiag_trflx=.true. and a dedicated daily vtemp output stream in namelist.io.
+  - name: hfy_int_day
+    inputs:
+      - path: *dp
+        pattern: vtemp.fesom.1350.nc  # daily output stream — update pattern as needed
+    compound_name: ocean.hfy.tavg-u-hxy-sea.day.GLB
+    model_variable: vtemp
+    scale_factor: 4095900.0
+    scaled_units: "W m-2"
+    pipelines:
+      - scale_and_integrate_pipeline
 
   # ============================================================
   # EASY: Squaring steps (tossq, sossq, zossq, mlotstsq)

@@ -189,10 +189,10 @@ thkcello, masscello).
   Rule written: surface_extract_pipeline from daily unod. Needs daily 'unod' in namelist.io (WARNING: full 3D, expensive).
 - [x] **vos** — Daily Surface Y Velocity (`m s-1`, day)
   Rule written: surface_extract_pipeline from daily vnod. Needs daily 'vnod' in namelist.io (WARNING: full 3D, expensive).
-- [ ] **hfx** — Vertically Integrated Heat X Transport (`W`, day)
-  BLOCKED: requires online computation (temp × u × dz integrated), too expensive daily
-- [ ] **hfy** — Vertically Integrated Heat Y Transport (`W`, day)
-  BLOCKED: same as hfx
+- [x] **hfx** — Vertically Integrated Heat X Transport (`W`, day)
+  Rule written: `hfx_int_day` via `scale_and_integrate_pipeline`. Input: `utemp.fesom` (daily stream). Requires `ldiag_trflx=.true.` and a dedicated daily `utemp` output stream in namelist.io. WARNING: full 3D daily output on DARS is very large.
+- [x] **hfy** — Vertically Integrated Heat Y Transport (`W`, day)
+  Rule written: `hfy_int_day` via `scale_and_integrate_pipeline`. Input: `vtemp.fesom` (daily stream). Same prerequisites and data volume warning as hfx.
 
 ## Decadal (Odec)
 
@@ -384,7 +384,8 @@ thkcello, masscello).
 | **chcint / ocontemp*** | — | ❌ | — | FESOM uses potential temperature, not conservative |
 | **bigthetao** (all freq) | — | ❌ | — | FESOM uses potential temperature, not conservative |
 | **thetao200_day** | — | ❌ | — | No daily 3D output feasible |
-| **hfx / hfy** (day) | — | ❌ | — | Requires online computation, too expensive daily |
+| **hfx** (day, 2D int) | `ocean.hfx.tavg-u-hxy-sea.day.glb` | ✅ | `scale_and_integrate_pipeline` | `utemp` daily stream; needs `ldiag_trflx=.true.`; large data volume |
+| **hfy** (day, 2D int) | `ocean.hfy.tavg-u-hxy-sea.day.glb` | ✅ | `scale_and_integrate_pipeline` | `vtemp` daily stream; needs `ldiag_trflx=.true.`; large data volume |
 | **dispkexyfo / tnkebto / tnpeo** | — | ❌ | — | No KE/PE tendency diagnostics |
 | **difmxybo** | — | ❌ | — | Biharmonic diffusivity not output separately |
 | **sw17O / sw18O / sw2H** | — | ❌ | — | Isotopes not enabled (`lwiso=.false.`) |
