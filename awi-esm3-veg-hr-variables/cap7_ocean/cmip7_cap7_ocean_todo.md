@@ -7,11 +7,11 @@ Source: `cmip7_CAP7_variables_ocean.csv` (43 variable-frequency entries, unfilte
 | Status | Count |
 |--------|-------|
 | Already in core/lrcs | 26 |
-| Implemented (new cap7 rules) | 3 |
+| Implemented (new cap7 rules) | 10 |
 | Blocked — no physics | 5 |
 | Blocked — basin masks | 3 |
-| Blocked — namelist change needed | 6 |
-| **Total** | **43** |
+| Blocked — namelist change needed (all resolved) | 0 |
+| **Total** | **44** |
 
 ---
 
@@ -49,7 +49,7 @@ No new rules needed.
 
 ---
 
-## Implemented — new cap7 rules (7)
+## Implemented — new cap7 rules (10)
 
 - [x] **tossq** (day, 2D) — `ocean.tossq.tavg-u-hxy-sea.day.glb` — Square of SST. Daily SST from FESOM (`sst`, daily output), squared via `compute_square`. Same approach as monthly tossq in lrcs_ocean but at daily frequency.
 - [x] **volcello** (mon, 3D) — `ocean.volcello.tavg-ol-hxy-sea.mon.glb` — Monthly ocean cell volume from `hnode` (layer thickness) x cell area. Same approach as `volcello_dec` in lrcs_ocean but averaged to monthly.
@@ -59,6 +59,8 @@ No new rules needed.
 - [x] **hfxint** (mon, 2D) — `ocean.hfx.tavg-u-hxy-sea.mon.glb` — Vertically integrated ocean heat X transport. Same `utemp` input, scale then sum over depth. Requires `ldiag_trflx=.true.`.
 - [x] **hfy** (mon, 3D) — `ocean.hfy.tavg-ol-hxy-sea.mon.glb` — 3D ocean heat Y transport from FESOM `vtemp` (v×T, m/s·°C), scaled by rho_0·cp = 4.096e6. Requires `ldiag_trflx=.true.`.
 - [x] **hfyint** (mon, 2D) — `ocean.hfy.tavg-u-hxy-sea.mon.glb` — Vertically integrated ocean heat Y transport. Same `vtemp` input, scale then sum over depth. Requires `ldiag_trflx=.true.`.
+- [x] **tauuo** (3hr, 2D) — `ocean.tauuo.tavg-u-hxy-sea.3hr.glb` — Rule written (`tauuo_3hr`, DefaultPipeline). Uses `tx_sur` from a dedicated 3-hourly FESOM output stream. **Prerequisite**: enable 3-hourly `tx_sur` output in namelist.io (separate stream from monthly). Same elem-grid caveat as the monthly core rule applies.
+- [x] **tauvo** (3hr, 2D) — `ocean.tauvo.tavg-u-hxy-sea.3hr.glb` — Rule written (`tauvo_3hr`, DefaultPipeline). Uses `ty_sur` from a dedicated 3-hourly FESOM output stream. Same elem-grid caveat and namelist prerequisite as `tauuo_3hr`.
 
 ---
 
@@ -82,15 +84,15 @@ These require basin mask infrastructure not yet available for FESOM DARS mesh.
 
 ---
 
-## Blocked — namelist/config change needed (7)
+## Blocked — namelist/config change needed (all resolved)
 
-These variables exist in FESOM but are not currently enabled in `namelist.io`.
-Enabling them requires rerunning the model with updated configuration.
+All variables in this category now have rules written. The model must be rerun with the
+updated namelist.io to produce the required output streams before these rules can execute.
 
-- [x] **friver** (mon, 2D) — `ocean.friver.tavg-u-hxy-sea.mon.glb` — River water flux. **Resolved**: `runoff` now enabled in namelist.io. Moved to implemented section above.
-- [x] **hfx** (mon, 3D) — `ocean.hfx.tavg-ol-hxy-sea.mon.glb` — Rule written. Moved to implemented section above.
-- [x] **hfxint** (mon, 2D) — `ocean.hfx.tavg-u-hxy-sea.mon.glb` — Rule written. Moved to implemented section above.
-- [x] **hfy** (mon, 3D) — `ocean.hfy.tavg-ol-hxy-sea.mon.glb` — Rule written. Moved to implemented section above.
-- [x] **hfyint** (mon, 2D) — `ocean.hfy.tavg-u-hxy-sea.mon.glb` — Rule written. Moved to implemented section above.
-- [x] **tauuo** (3hr, 2D) — `ocean.tauuo.tavg-u-hxy-sea.3hr.glb` — Rule written (`tauuo_3hr`, DefaultPipeline). Uses `tx_sur` from a dedicated 3-hourly FESOM output stream. **Prerequisite**: enable 3-hourly `tx_sur` output in namelist.io (separate stream from monthly). Same elem-grid caveat as the monthly core rule applies.
-- [x] **tauvo** (3hr, 2D) — `ocean.tauvo.tavg-u-hxy-sea.3hr.glb` — Rule written (`tauvo_3hr`, DefaultPipeline). Uses `ty_sur` from a dedicated 3-hourly FESOM output stream. Same elem-grid caveat and namelist prerequisite as `tauuo_3hr`.
+- [x] **friver** (mon, 2D) — `ocean.friver.tavg-u-hxy-sea.mon.glb` — **Resolved**: `runoff` now enabled in namelist.io. See implemented section.
+- [x] **hfx** (mon, 3D) — `ocean.hfx.tavg-ol-hxy-sea.mon.glb` — Rule written. See implemented section.
+- [x] **hfxint** (mon, 2D) — `ocean.hfx.tavg-u-hxy-sea.mon.glb` — Rule written. See implemented section.
+- [x] **hfy** (mon, 3D) — `ocean.hfy.tavg-ol-hxy-sea.mon.glb` — Rule written. See implemented section.
+- [x] **hfyint** (mon, 2D) — `ocean.hfy.tavg-u-hxy-sea.mon.glb` — Rule written. See implemented section.
+- [x] **tauuo** (3hr, 2D) — `ocean.tauuo.tavg-u-hxy-sea.3hr.glb` — Rule written. See implemented section.
+- [x] **tauvo** (3hr, 2D) — `ocean.tauvo.tavg-u-hxy-sea.3hr.glb` — Rule written. See implemented section.
