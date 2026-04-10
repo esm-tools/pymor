@@ -1,11 +1,10 @@
-# CMIP7 LRCS Ocean Variables — AWI-ESM3-VEG-HR
-# Generated from cmip7_LRCSextra_variables_ocean.csv
-#
-# Excludes variables already in core_ocean config.
-# See cmip7_lrcs_ocean_variables_todo.md for full variable tracking.
+# CMIP7 LRCS Ocean Variables — Test config with CORE2 mesh
+# Adapted from awi-esm3-veg-hr-variables/lrcs_ocean/cmip7_awiesm3-veg-hr_lrcs_ocean.yaml
+# Uses low-resolution CORE2 mesh (~100km) for quick testing.
+# Excluded (not in CORE2 output): hfx_int_day (utemp), hfy_int_day (vtemp), opottemprmadvect
 
 general:
-  name: "awiesm3-cmip7-lrcs-ocean"
+  name: "awiesm3-cmip7-lrcs-ocean-core2-test"
   cmor_version: "CMIP7"
   mip: "CMIP"
   CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
@@ -21,7 +20,7 @@ jobqueue:
   slurm:
     name: pycmor-worker
     queue: compute
-    account: bb1469
+    account: ba0989
     cores: 16
     memory: 256GB
     walltime: '00:30:00'
@@ -224,53 +223,8 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # Meridional overturning in density space from FESOM dMOC output
-  - name: msftm_density_pipeline
-    steps:
-      - pycmor.core.gather_inputs.load_mfdataset
-      - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_msftm_density
-      - pycmor.std_lib.timeaverage.timeavg
-      - pycmor.std_lib.attributes.set_global
-      - pycmor.std_lib.attributes.set_variable
-      - pycmor.std_lib.attributes.set_coordinates
-      - pycmor.std_lib.dimensions.map_dimensions
-      - pycmor.core.caching.manual_checkpoint
-      - pycmor.std_lib.generic.trigger_compute
-      - pycmor.std_lib.generic.show_data
-      - pycmor.std_lib.files.save_dataset
-
-  # MOC due to parameterized mesoscale advection — depth-space (bolus_v → lat×depth)
-  - name: msftmmpa_depth_pipeline
-    steps:
-      - pycmor.core.gather_inputs.load_mfdataset
-      - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_msftmmpa_depth
-      - pycmor.std_lib.timeaverage.timeavg
-      - pycmor.std_lib.attributes.set_global
-      - pycmor.std_lib.attributes.set_variable
-      - pycmor.std_lib.attributes.set_coordinates
-      - pycmor.std_lib.dimensions.map_dimensions
-      - pycmor.core.caching.manual_checkpoint
-      - pycmor.std_lib.generic.trigger_compute
-      - pycmor.std_lib.generic.show_data
-      - pycmor.std_lib.files.save_dataset
-
-  # MOC due to parameterized mesoscale advection — density-space (bolus_v → lat×rho)
-  - name: msftmmpa_density_pipeline
-    steps:
-      - pycmor.core.gather_inputs.load_mfdataset
-      - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_msftmmpa_density
-      - pycmor.std_lib.timeaverage.timeavg
-      - pycmor.std_lib.attributes.set_global
-      - pycmor.std_lib.attributes.set_variable
-      - pycmor.std_lib.attributes.set_coordinates
-      - pycmor.std_lib.dimensions.map_dimensions
-      - pycmor.core.caching.manual_checkpoint
-      - pycmor.std_lib.generic.trigger_compute
-      - pycmor.std_lib.generic.show_data
-      - pycmor.std_lib.files.save_dataset
+  # msftm_density_pipeline, msftmmpa_depth_pipeline, msftmmpa_density_pipeline
+  # excluded: custom steps not yet implemented
 
   # Ofx: load grid file, extract variable
   - name: fx_extract_pipeline
@@ -286,18 +240,20 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
   variant_label: r1i1p1f1
   grid_label: gn
-  mesh_path: &mp /work/ab0246/a270092/input/fesom2/dars2
-  grid_file: /work/ab0246/a270092/input/fesom2/dars2/mesh.nc
-  grid: "FESOM 2.6 unstructured grid DARS (3146761 surface nodes)"
-  nominal_resolution: "10 km"
+  mesh_path: &mp /work/ab0246/a270092/input/fesom2/core2
+  grid_file: /work/ab0246/a270092/input/fesom2/core2/mesh.nc
+  grid: "FESOM 2.6 unstructured grid CORE2 (126858 surface nodes)"
+  nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   output_directory: ./cmorized_output/awiesm3
+  year_start: 1900
+  year_end: 1900
 
 rules:
   # ============================================================
@@ -308,7 +264,7 @@ rules:
   - name: pbo
     inputs:
       - path: *dp
-        pattern: pbo.fesom.1350.nc
+        pattern: pbo.fesom.1900.nc
     compound_name: ocean.pbo.tavg-u-hxy-sea.mon.GLB
     model_variable: pbo
 
@@ -316,7 +272,7 @@ rules:
   - name: volo
     inputs:
       - path: *dp
-        pattern: volo.fesom.1350.nc
+        pattern: volo.fesom.1900.nc
     compound_name: ocean.volo.tavg-u-hm-sea.mon.GLB
     model_variable: volo
 
@@ -324,7 +280,7 @@ rules:
   - name: tos_ga
     inputs:
       - path: *dp
-        pattern: thetaoga.fesom.1350.nc
+        pattern: thetaoga.fesom.1900.nc
     compound_name: ocean.tos.tavg-u-hm-sea.mon.GLB
     model_variable: thetaoga
 
@@ -332,7 +288,7 @@ rules:
   - name: sos_ga
     inputs:
       - path: *dp
-        pattern: soga.fesom.1350.nc
+        pattern: soga.fesom.1900.nc
     compound_name: ocean.sos.tavg-u-hm-sea.mon.GLB
     model_variable: soga
 
@@ -343,7 +299,7 @@ rules:
   - name: thetao_ga
     inputs:
       - path: *dp
-        pattern: thetaoga.fesom.1350.nc
+        pattern: thetaoga.fesom.1900.nc
     compound_name: ocean.thetao.tavg-ol-hm-sea.mon.GLB
     model_variable: thetaoga
 
@@ -351,7 +307,7 @@ rules:
   - name: so_ga
     inputs:
       - path: *dp
-        pattern: soga.fesom.1350.nc
+        pattern: soga.fesom.1900.nc
     compound_name: ocean.so.tavg-ol-hm-sea.mon.GLB
     model_variable: soga
 
@@ -359,7 +315,7 @@ rules:
   - name: obvfsq
     inputs:
       - path: *dp
-        pattern: N2.fesom.1350.nc
+        pattern: N2.fesom.1900.nc
     compound_name: ocean.obvfsq.tavg-ol-hxy-sea.mon.GLB
     model_variable: N2
 
@@ -367,7 +323,7 @@ rules:
   - name: wfo
     inputs:
       - path: *dp
-        pattern: fw.fesom.1350.nc
+        pattern: fw.fesom.1900.nc
     compound_name: ocean.wfo.tavg-u-hxy-sea.mon.GLB
     model_variable: fw
     scale_factor: 1000.0
@@ -379,7 +335,7 @@ rules:
   - name: vsf
     inputs:
       - path: *dp
-        pattern: virtsalt.fesom.1350.nc
+        pattern: virtsalt.fesom.1900.nc
     compound_name: ocean.vsf.tavg-u-hxy-sea.mon.GLB
     model_variable: virtsalt
     model_unit: "kg m-2 s-1"
@@ -392,7 +348,7 @@ rules:
   - name: evspsbl
     inputs:
       - path: *dp
-        pattern: evap.fesom.1350.nc
+        pattern: evap.fesom.1900.nc
     compound_name: ocean.evspsbl.tavg-u-hxy-ifs.mon.GLB
     model_variable: evap
     scale_factor: 1000.0
@@ -406,7 +362,7 @@ rules:
   - name: vsfcorr
     inputs:
       - path: *dp
-        pattern: relaxsalt.fesom.1350.nc
+        pattern: relaxsalt.fesom.1900.nc
     compound_name: ocean.vsfcorr.tavg-u-hxy-sea.mon.GLB
     model_variable: relaxsalt
     model_unit: "kg m-2 s-1"
@@ -418,14 +374,14 @@ rules:
   - name: mlotst_day
     inputs:
       - path: *dp
-        pattern: MLD3.fesom.1350.nc
+        pattern: MLD3.fesom.1900.nc
     compound_name: ocean.mlotst.tavg-u-hxy-sea.day.GLB
     model_variable: MLD3
 
   - name: uos
     inputs:
       - path: *dp
-        pattern: unod.fesom.1350.nc
+        pattern: unod.fesom.1900.nc
     compound_name: ocean.uos.tavg-u-hxy-sea.day.GLB
     model_variable: unod
     pipelines:
@@ -434,40 +390,13 @@ rules:
   - name: vos
     inputs:
       - path: *dp
-        pattern: vnod.fesom.1350.nc
+        pattern: vnod.fesom.1900.nc
     compound_name: ocean.vos.tavg-u-hxy-sea.day.GLB
     model_variable: vnod
     pipelines:
       - surface_extract_pipeline
 
-  # hfx_int_day — daily vertically integrated ocean heat X transport
-  # Same approach as monthly hfxint in cap7_ocean: utemp × rho_0*cp then integrate over depth.
-  # Requires: ldiag_trflx=.true. and a dedicated daily utemp output stream in namelist.io.
-  # WARNING: full 3D daily utemp on DARS (3.1M nodes × 47 levels) is very large.
-  - name: hfx_int_day
-    inputs:
-      - path: *dp
-        pattern: utemp.fesom.1350.nc  # daily output stream — update pattern as needed
-    compound_name: ocean.hfx.tavg-u-hxy-sea.day.GLB
-    model_variable: utemp
-    scale_factor: 4095900.0
-    scaled_units: "W m-2"
-    pipelines:
-      - scale_and_integrate_pipeline
-
-  # hfy_int_day — daily vertically integrated ocean heat Y transport
-  # Same approach as monthly hfyint: vtemp × rho_0*cp then integrate over depth.
-  # Requires: ldiag_trflx=.true. and a dedicated daily vtemp output stream in namelist.io.
-  - name: hfy_int_day
-    inputs:
-      - path: *dp
-        pattern: vtemp.fesom.1350.nc  # daily output stream — update pattern as needed
-    compound_name: ocean.hfy.tavg-u-hxy-sea.day.GLB
-    model_variable: vtemp
-    scale_factor: 4095900.0
-    scaled_units: "W m-2"
-    pipelines:
-      - scale_and_integrate_pipeline
+  # hfx_int_day, hfy_int_day excluded: utemp/vtemp not in CORE2 output
 
   # ============================================================
   # EASY: Squaring steps (tossq, sossq, zossq, mlotstsq)
@@ -476,7 +405,7 @@ rules:
   - name: tossq
     inputs:
       - path: *dp
-        pattern: sst.fesom.1350.nc
+        pattern: sst.fesom.1900.nc
     compound_name: ocean.tossq.tavg-u-hxy-sea.mon.GLB
     model_variable: sst
     squared_units: "degC2"
@@ -486,7 +415,7 @@ rules:
   - name: sossq
     inputs:
       - path: *dp
-        pattern: sss.fesom.1350.nc
+        pattern: sss.fesom.1900.nc
     compound_name: ocean.sossq.tavg-u-hxy-sea.mon.GLB
     model_variable: sss
     squared_units: "1E-06"
@@ -496,7 +425,7 @@ rules:
   - name: zossq
     inputs:
       - path: *dp
-        pattern: ssh.fesom.1350.nc
+        pattern: ssh.fesom.1900.nc
     compound_name: ocean.zossq.tavg-u-hxy-sea.mon.GLB
     model_variable: ssh
     squared_units: "m2"
@@ -506,7 +435,7 @@ rules:
   - name: mlotstsq
     inputs:
       - path: *dp
-        pattern: MLD3.fesom.1350.nc
+        pattern: MLD3.fesom.1900.nc
     compound_name: ocean.mlotstsq.tavg-u-hxy-sea.mon.GLB
     model_variable: MLD3
     squared_units: "m2"
@@ -520,7 +449,7 @@ rules:
   - name: tob
     inputs:
       - path: *dp
-        pattern: temp.fesom.1350.nc
+        pattern: temp.fesom.1900.nc
     compound_name: ocean.tob.tavg-u-hxy-sea.mon.GLB
     model_variable: temp
     pipelines:
@@ -529,7 +458,7 @@ rules:
   - name: sob
     inputs:
       - path: *dp
-        pattern: salt.fesom.1350.nc
+        pattern: salt.fesom.1900.nc
     compound_name: ocean.sob.tavg-u-hxy-sea.mon.GLB
     model_variable: salt
     pipelines:
@@ -539,11 +468,21 @@ rules:
   # MEDIUM: Computed from existing output
   # ============================================================
 
+  # msftbarot — barotropic mass streamfunction (before pso to avoid Prefect cache collision)
+  - name: msftbarot
+    inputs:
+      - path: *dp
+        pattern: ssh.fesom.1900.nc
+    compound_name: ocean.msftbarot.tavg-u-hxy-sea.mon.GLB
+    model_variable: ssh
+    pipelines:
+      - msftbarot_pipeline
+
   # pso — surface pressure from SSH
   - name: pso
     inputs:
       - path: *dp
-        pattern: ssh.fesom.1350.nc
+        pattern: ssh.fesom.1900.nc
     compound_name: ocean.pso.tavg-u-hxy-sea.mon.GLB
     model_variable: ssh
     reference_density: 1025.0
@@ -555,7 +494,7 @@ rules:
   - name: masso
     inputs:
       - path: *dp
-        pattern: volo.fesom.1350.nc
+        pattern: volo.fesom.1900.nc
     compound_name: ocean.masso.tavg-u-hm-sea.mon.GLB
     model_variable: volo
     scale_factor: 1025.0
@@ -572,7 +511,7 @@ rules:
   - name: phcint
     inputs:
       - path: *dp
-        pattern: temp.fesom.1350.nc
+        pattern: temp.fesom.1900.nc
     compound_name: ocean.phcint.tavg-op4-hxy-sea.mon.GLB
     model_variable: temp
     integration_attrs:
@@ -588,7 +527,7 @@ rules:
   - name: scint
     inputs:
       - path: *dp
-        pattern: salt.fesom.1350.nc
+        pattern: salt.fesom.1900.nc
     compound_name: ocean.scint.tavg-op4-hxy-sea.mon.GLB
     model_variable: salt
     integration_attrs:
@@ -603,7 +542,7 @@ rules:
   - name: opottempmint
     inputs:
       - path: *dp
-        pattern: temp.fesom.1350.nc
+        pattern: temp.fesom.1900.nc
     compound_name: ocean.opottempmint.tavg-u-hxy-sea.yr.GLB
     model_variable: temp
     integration_attrs:
@@ -619,7 +558,7 @@ rules:
   - name: somint
     inputs:
       - path: *dp
-        pattern: salt.fesom.1350.nc
+        pattern: salt.fesom.1900.nc
     compound_name: ocean.somint.tavg-u-hxy-sea.yr.GLB
     model_variable: salt
     integration_attrs:
@@ -650,7 +589,7 @@ rules:
   - name: difvho
     inputs:
       - path: *dp
-        pattern: Kv.fesom.1350.nc
+        pattern: Kv.fesom.1900.nc
     compound_name: ocean.difvho.tavg-ol-hxy-sea.yr.GLB
     model_variable: Kv
     # NOTE: monthly data, CMIP wants yearly average — needs yearly timeavg
@@ -659,7 +598,7 @@ rules:
   - name: difvso
     inputs:
       - path: *dp
-        pattern: Kv.fesom.1350.nc
+        pattern: Kv.fesom.1900.nc
     compound_name: ocean.difvso.tavg-ol-hxy-sea.yr.GLB
     model_variable: Kv
 
@@ -667,106 +606,13 @@ rules:
   - name: difmxylo
     inputs:
       - path: *dp
-        pattern: Av.fesom.1350.nc
+        pattern: Av.fesom.1900.nc
     compound_name: ocean.difmxylo.tavg-ol-hxy-sea.yr.GLB
     model_variable: Av
 
-  # ============================================================
-  # DECADAL: 10-year averages of existing variables
-  # These use DefaultPipeline with modified time averaging.
-  # Need multi-year input patterns (e.g. temp.fesom.*.nc)
-  # ============================================================
-
-  - name: thetao_dec
-    inputs:
-      - path: *dp
-        pattern: temp.fesom.1350.nc
-    compound_name: ocean.thetao.tavg-ol-hxy-sea.dec.GLB
-    model_variable: temp
-    # TODO: needs 10-year input pattern and decadal timeavg
-
-  - name: so_dec
-    inputs:
-      - path: *dp
-        pattern: salt.fesom.1350.nc
-    compound_name: ocean.so.tavg-ol-hxy-sea.dec.GLB
-    model_variable: salt
-
-  - name: tauuo_dec
-    inputs:
-      - path: *dp
-        pattern: tx_sur.fesom.1350.nc
-    compound_name: ocean.tauuo.tavg-u-hxy-sea.dec.GLB
-    model_variable: tx_sur
-
-  - name: tauvo_dec
-    inputs:
-      - path: *dp
-        pattern: ty_sur.fesom.1350.nc
-    compound_name: ocean.tauvo.tavg-u-hxy-sea.dec.GLB
-    model_variable: ty_sur
-
-  - name: thkcello_dec
-    inputs:
-      - path: *dp
-        pattern: hnode.fesom.1350.nc
-    compound_name: ocean.thkcello.tavg-ol-hxy-sea.dec.GLB
-    model_variable: hnode
-
-  - name: volo_dec
-    inputs:
-      - path: *dp
-        pattern: volo.fesom.1350.nc
-    compound_name: ocean.volo.tavg-u-hm-sea.dec.GLB
-    model_variable: volo
-
-  - name: masscello_dec
-    inputs:
-      - path: *dp
-        pattern: hnode.fesom.1350.nc
-    compound_name: ocean.masscello.tavg-ol-hxy-sea.dec.GLB
-    model_variable: hnode
-    scale_factor: 1025.0
-    scaled_units: "kg m-2"
-    pipelines:
-      - scale_pipeline
-
-  - name: volcello_dec
-    inputs:
-      - path: *dp
-        pattern: hnode.fesom.1350.nc
-    compound_name: ocean.volcello.tavg-ol-hxy-sea.dec.GLB
-    model_variable: hnode
-    pipelines:
-      - volcello_time_pipeline
-
-  - name: masso_dec
-    inputs:
-      - path: *dp
-        pattern: volo.fesom.1350.nc
-    compound_name: ocean.masso.tavg-u-hm-sea.dec.GLB
-    model_variable: volo
-    scale_factor: 1025.0
-    scaled_units: "kg"
-    pipelines:
-      - scale_pipeline
-
-  # ============================================================
-  # Barotropic streamfunction
-  # ============================================================
-
-  # msftbarot — barotropic mass streamfunction
-  # Geostrophic SSH approximation: psi = rho_0 * g * H / f * eta
-  # where H is local ocean depth (from mesh) and f is the Coriolis parameter.
-  # NaN is set in the equatorial band where |f| < f_min (~|lat| < 4 deg).
-  - name: msftbarot
-    inputs:
-      - path: *dp
-        pattern: ssh.fesom.1350.nc
-    compound_name: ocean.msftbarot.tavg-u-hxy-sea.mon.GLB
-    model_variable: ssh
-    pipelines:
-      - msftbarot_pipeline
+  # DECADAL rules excluded from single-year test — need 10+ years of input data
+  # thetao_dec, so_dec, tauuo_dec, tauvo_dec, thkcello_dec, volo_dec,
+  # masscello_dec, volcello_dec, masso_dec
 
   # ============================================================
   # HARD: Temperature tendency (opottemptend from ldiag_cmor)
@@ -777,7 +623,7 @@ rules:
   - name: opottemptend
     inputs:
       - path: *dp
-        pattern: opottemptend.fesom.1350.nc
+        pattern: opottemptend.fesom.1900.nc
     compound_name: ocean.opottemptend.tavg-ol-hxy-sea.yr.GLB
     model_variable: opottemptend
     # NOTE: monthly data, CMIP wants yearly — needs yearly timeavg
@@ -791,24 +637,18 @@ rules:
   - name: osalttend
     inputs:
       - path: *dp
-        pattern: osalttend.fesom.1350.nc
+        pattern: osalttend.fesom.1900.nc
     compound_name: ocean.osalttend.tavg-ol-hxy-sea.yr.GLB
     model_variable: osalttend
     model_unit: "kg m-2 s-1"
 
-  # opottemprmadvect — temperature tendency from residual mean advection
-  - name: opottemprmadvect
-    inputs:
-      - path: *dp
-        pattern: opottemprmadvect.fesom.1350.nc
-    compound_name: ocean.opottemprmadvect.tavg-ol-hxy-sea.yr.GLB
-    model_variable: opottemprmadvect
+  # opottemprmadvect excluded: not in CORE2 output
 
   # opottempdiff — temperature tendency from dianeutral mixing
   - name: opottempdiff
     inputs:
       - path: *dp
-        pattern: opottempdiff.fesom.1350.nc
+        pattern: opottempdiff.fesom.1900.nc
     compound_name: ocean.opottempdiff.tavg-ol-hxy-sea.yr.GLB
     model_variable: opottempdiff
 
@@ -816,7 +656,7 @@ rules:
   - name: osaltrmadvect
     inputs:
       - path: *dp
-        pattern: osaltrmadvect.fesom.1350.nc
+        pattern: osaltrmadvect.fesom.1900.nc
     compound_name: ocean.osaltrmadvect.tavg-ol-hxy-sea.yr.GLB
     model_variable: osaltrmadvect
     model_unit: "kg m-2 s-1"
@@ -825,7 +665,7 @@ rules:
   - name: osaltdiff
     inputs:
       - path: *dp
-        pattern: osaltdiff.fesom.1350.nc
+        pattern: osaltdiff.fesom.1900.nc
     compound_name: ocean.osaltdiff.tavg-ol-hxy-sea.yr.GLB
     model_variable: osaltdiff
     model_unit: "kg m-2 s-1"
@@ -834,7 +674,7 @@ rules:
   - name: rsdoabsorb
     inputs:
       - path: *dp
-        pattern: rsdoabsorb.fesom.1350.nc
+        pattern: rsdoabsorb.fesom.1900.nc
     compound_name: ocean.rsdoabsorb.tavg-ol-hxy-sea.yr.GLB
     model_variable: rsdoabsorb
 
@@ -842,44 +682,9 @@ rules:
   # Overturning streamfunctions (msftm, msftmmpa)
   # ============================================================
 
-  # msftm — meridional overturning in density space
-  # Input: dMOC from FESOM (ldiag_dMOC=.true.), already a (lat, rho) streamfunction field.
-  # Custom step maps dMOC bins to CMIP rho coordinate and computes cumulative streamfunction.
-  - name: msftm_mon
-    inputs:
-      - path: *dp
-        pattern: dMOC.fesom.1350.nc
-    compound_name: ocean.msftm.tavg-rho-hyb-sea.mon.GLB
-    model_variable: dMOC
-    reference_density: 1025.0
-    pipelines:
-      - msftm_density_pipeline
-
-  # msftmmpa — MOC due to parameterized mesoscale advection, depth-space
-  # Input: bolus_v (meridional bolus velocity from GM scheme, m/s).
-  # Requires fer_gm=.true. in namelist.io; zero field when GM is disabled.
-  # Custom step: integrate bolus_v zonally and cumulatively over depth → (lat, depth) streamfunction.
-  - name: msftmmpa_depth_mon
-    inputs:
-      - path: *dp
-        pattern: bolus_v.fesom.1350.nc
-    compound_name: ocean.msftmmpa.tavg-ol-hyb-sea.mon.GLB
-    model_variable: bolus_v
-    reference_density: 1025.0
-    pipelines:
-      - msftmmpa_depth_pipeline
-
-  # msftmmpa — MOC due to parameterized mesoscale advection, density-space
-  # Same bolus_v input; custom step bins into density classes instead of depth layers.
-  - name: msftmmpa_density_mon
-    inputs:
-      - path: *dp
-        pattern: bolus_v.fesom.1350.nc
-    compound_name: ocean.msftmmpa.tavg-rho-hyb-sea.mon.GLB
-    model_variable: bolus_v
-    reference_density: 1025.0
-    pipelines:
-      - msftmmpa_density_pipeline
+  # msftm_mon, msftmmpa_depth_mon, msftmmpa_density_mon excluded:
+  # custom steps compute_msftm_density, compute_msftmmpa_depth, compute_msftmmpa_density
+  # not yet implemented
 
   # ============================================================
   # HARD: 3D salt transport (sfx, sfy)
@@ -893,11 +698,11 @@ rules:
   - name: sfx
     inputs:
       - path: *dp
-        pattern: unod.fesom.1350.nc
+        pattern: unod.fesom.1900.nc
     compound_name: ocean.sfx.tavg-ol-hxy-sea.mon.GLB
     model_variable: unod
     salt_path: *dp
-    salt_pattern: salt.fesom.1350.nc
+    salt_pattern: salt.fesom.1900.nc
     salt_variable: salt
     reference_density: 1025.0
     transport_component: x
@@ -907,11 +712,11 @@ rules:
   - name: sfx_int
     inputs:
       - path: *dp
-        pattern: unod.fesom.1350.nc
+        pattern: unod.fesom.1900.nc
     compound_name: ocean.sfx.tavg-u-hxy-sea.mon.GLB
     model_variable: unod
     salt_path: *dp
-    salt_pattern: salt.fesom.1350.nc
+    salt_pattern: salt.fesom.1900.nc
     salt_variable: salt
     reference_density: 1025.0
     transport_component: x
@@ -921,11 +726,11 @@ rules:
   - name: sfy
     inputs:
       - path: *dp
-        pattern: vnod.fesom.1350.nc
+        pattern: vnod.fesom.1900.nc
     compound_name: ocean.sfy.tavg-ol-hxy-sea.mon.GLB
     model_variable: vnod
     salt_path: *dp
-    salt_pattern: salt.fesom.1350.nc
+    salt_pattern: salt.fesom.1900.nc
     salt_variable: salt
     reference_density: 1025.0
     transport_component: y
@@ -935,11 +740,11 @@ rules:
   - name: sfy_int
     inputs:
       - path: *dp
-        pattern: vnod.fesom.1350.nc
+        pattern: vnod.fesom.1900.nc
     compound_name: ocean.sfy.tavg-u-hxy-sea.mon.GLB
     model_variable: vnod
     salt_path: *dp
-    salt_pattern: salt.fesom.1350.nc
+    salt_pattern: salt.fesom.1900.nc
     salt_variable: salt
     reference_density: 1025.0
     transport_component: y

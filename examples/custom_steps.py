@@ -717,9 +717,11 @@ def extract_bottom(data, rule):
         bottom_idx = mesh["nlevels_nod2D"].values - 2  # 0-based, last valid midpoint
     elif "nlevels" in mesh:
         bottom_idx = mesh["nlevels"].values - 2
+    elif "depth_lev" in mesh:
+        bottom_idx = mesh["depth_lev"].values.astype(int) - 2
     else:
         mesh.close()
-        raise ValueError("Mesh file must contain 'nlevels_nod2D' or 'nlevels'")
+        raise ValueError("Mesh file must contain 'nlevels_nod2D', 'nlevels', or 'depth_lev'")
     mesh.close()
 
     # Clamp to valid range
@@ -885,7 +887,8 @@ def compute_msftbarot(data, rule):
             f"f_min={f_min} 1/s (NaN in equatorial band |lat| < ~4 deg)."
         ),
     }
-    psi.name = "msftbarot"
+    # Keep original model_variable name; set_variable_attrs will rename to cmor_variable
+    psi.name = rule.model_variable
     return psi
 
 
@@ -1221,9 +1224,12 @@ def compute_salt_transport(data, rule):
     # Load salinity as secondary field
     salt = _load_secondary_mf(rule, "salt_path", "salt_pattern", "salt_variable")
 
-    # Align time axis if needed (salt may have different time coverage)
+    # Align time axis if needed (salt may have different time resolution)
     if "time" in data.dims and "time" in salt.dims:
-        salt = salt.sel(time=data.time, method="nearest")
+        if len(salt.time) == len(data.time):
+            salt = salt.assign_coords(time=data.time)
+        else:
+            salt = salt.reindex(time=data.time, method="ffill")
 
     # Convert psu → kg/kg, then compute transport
     # sfx [kg s-1 per cell face] = u [m/s] * S [kg/kg] * rho_0 [kg/m3] * dz [m]

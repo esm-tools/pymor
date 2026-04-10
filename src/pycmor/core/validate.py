@@ -287,6 +287,12 @@ PIPELINES_SCHEMA = {
                     "excludes": "uses",
                     "schema": {"type": "string", "is_qualname_or_script": True},
                 },
+                "workflow_backend": {
+                    "type": "string",
+                    "required": False,
+                    "allowed": ["prefect", "native"],
+                },
+                "cache_expiration": {"required": False},
             },
         },
     },

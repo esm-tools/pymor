@@ -38,12 +38,20 @@ class InputFileCollection:
     def __init__(self, path, pattern, frequency=None, time_dim_name=None):
         self.path = pathlib.Path(path)
         self.pattern_str = pattern  # Store original pattern string
-        self.pattern = re.compile(pattern)  # Compile the regex pattern
+        try:
+            self.pattern = re.compile(pattern)  # Compile the regex pattern
+        except re.error:
+            # Pattern may be a glob (e.g. LPJ-GUESS "*/run1/*.out") — not valid regex.
+            # Store None; pipelines using glob will read pattern_str directly.
+            self.pattern = None
         self.frequency = frequency
         self.time_dim_name = time_dim_name
 
     @property
     def files(self):
+        if self.pattern is None:
+            # Glob-style pattern — use pathlib.glob instead of regex
+            return sorted(self.path.glob(self.pattern_str))
         files = []
         for file in list(self.path.iterdir()):
             if self.pattern.match(file.name):  # Check if the filename matches the pattern
