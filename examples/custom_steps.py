@@ -230,6 +230,22 @@ def compute_siflcondtop(data, rule):
     h_ice = ds_hice[rule.get("hice_variable", "h_ice")]
     ds_hice.close()
 
+    # Align secondary data time coordinates with primary data.
+    # If same length: just overwrite the coordinate to preserve DatetimeIndex type.
+    # If different length (e.g. monthly h_ice vs daily ist): reindex with
+    # forward-fill so monthly values are broadcast to daily timesteps.
+    if "time" in data.dims and "time" in sss.dims:
+        if len(sss.time) == len(data.time):
+            sss = sss.assign_coords(time=data.time)
+        else:
+            sss = sss.reindex(time=data.time, method="ffill")
+
+    if "time" in data.dims and "time" in h_ice.dims:
+        if len(h_ice.time) == len(data.time):
+            h_ice = h_ice.assign_coords(time=data.time)
+        else:
+            h_ice = h_ice.reindex(time=data.time, method="ffill")
+
     # Freezing point at ice base
     t_base = -0.054 * sss + 273.15
 
@@ -505,6 +521,9 @@ def integrate_over_hemisphere(data, rule):
 
     result = sum(data * cell_area) for nodes in the selected hemisphere.
 
+    Memory-efficient: masks and weights are applied via indexing (isel)
+    rather than broadcasting, so only hemisphere nodes are loaded.
+
     Generic step — works for any variable that needs hemisphere
     integration: snow mass, ice volume, ice area, etc.
 
@@ -536,13 +555,7 @@ def integrate_over_hemisphere(data, rule):
         raise ValueError("Mesh must contain 'lat' or 'latitude'")
     mesh.close()
 
-    # Select hemisphere
-    if hemisphere.upper() == "N":
-        mask = lat >= 0
-    else:
-        mask = lat < 0
-
-    # Integrate: sum(data * cell_area) over hemisphere nodes
+    # Find horizontal dimension
     horizontal_dim = None
     for dim in ["nod2", "ncells", "node"]:
         if dim in data.dims:
@@ -551,7 +564,18 @@ def integrate_over_hemisphere(data, rule):
     if horizontal_dim is None:
         raise ValueError(f"Cannot identify horizontal dim. Available: {list(data.dims)}")
 
-    result = (data * cell_area * mask).sum(dim=horizontal_dim)
+    # Select hemisphere nodes by index — avoids broadcasting a full mask
+    if hemisphere.upper() == "N":
+        hemi_idx = np.where(lat.values >= 0)[0]
+    else:
+        hemi_idx = np.where(lat.values < 0)[0]
+
+    # Subset data and area to hemisphere only (halves memory)
+    data_hemi = data.isel({horizontal_dim: hemi_idx})
+    area_hemi = cell_area.values[hemi_idx]
+
+    # Integrate: sum(data * cell_area) over hemisphere nodes
+    result = (data_hemi * area_hemi).sum(dim=horizontal_dim)
     result.attrs = data.attrs.copy()
     result.name = data.name
     return result
@@ -1946,23 +1970,16 @@ def load_lpjguess_monthly(data, rule):
     n_times = len(times)
     values = np.full((n_times, ncells), np.nan, dtype=np.float64)
 
-    # Fill values
+    # Fill values — Jan..Dec columns ARE the monthly data for all LPJ-GUESS .out files
     model_variable = rule.get("model_variable", "Total")
-    if model_variable == "Total":
-        # Sum all month columns — they are the data columns
-        for _, row in df_all.iterrows():
-            cell_idx = cell_map.get((row["Lon"], row["Lat"]))
-            if cell_idx is None:
-                continue
-            yr_idx = np.searchsorted(years, row["Year"])
-            for m_idx, month in enumerate(months):
-                t_idx = yr_idx * 12 + m_idx
-                values[t_idx, cell_idx] = row[month]
-    else:
-        raise ValueError(
-            f"model_variable '{model_variable}' not supported for LPJ-GUESS .out files. "
-            f"Use 'Total' for fire emission variables."
-        )
+    for _, row in df_all.iterrows():
+        cell_idx = cell_map.get((row["Lon"], row["Lat"]))
+        if cell_idx is None:
+            continue
+        yr_idx = np.searchsorted(years, row["Year"])
+        for m_idx, month in enumerate(months):
+            t_idx = yr_idx * 12 + m_idx
+            values[t_idx, cell_idx] = row[month]
 
     # Create xarray Dataset
     da = xr.DataArray(
@@ -1975,7 +1992,7 @@ def load_lpjguess_monthly(data, rule):
         },
         name=model_variable,
     )
-    da.attrs["units"] = "kg C m-2 s-1"
+    da.attrs["units"] = rule.get("source_units", "kg C m-2 s-1")
 
     ds = da.to_dataset()
     return ds

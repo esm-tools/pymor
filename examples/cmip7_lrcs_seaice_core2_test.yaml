@@ -1,14 +1,13 @@
-# CMIP7 LRCS Sea Ice Variables — AWI-ESM3-VEG-HR
-# Generated from cmip7_LRCSextra_variables_seaIce.csv + ocean_seaIce.csv
-#
-# Variables NOT included (not available in this configuration):
-#   See cmip7_lrcs_seaice_variables_todo.md for full list of blocked variables.
+# CMIP7 LRCS Sea Ice Variables — Test config with CORE2 mesh
+# Adapted from awi-esm3-veg-hr-variables/lrcs_seaice/cmip7_awiesm3-veg-hr_lrcs_seaice.yaml
+# Uses low-resolution CORE2 mesh (~100km) for quick testing.
+# snm (thdgrsn) excluded: not available in CORE2 output.
 
 general:
-  name: "awiesm3-cmip7-lrcs-seaice"
+  name: "awiesm3-cmip7-lrcs-seaice-core2-test"
   cmor_version: "CMIP7"
   mip: "CMIP"
-  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/full_metadata.json"
 
 pycmor:
   warn_on_no_rule: False
@@ -21,7 +20,7 @@ jobqueue:
   slurm:
     name: pycmor-worker
     queue: compute
-    account: bb1469
+    account: ba0989
     cores: 16
     memory: 256GB
     walltime: '00:30:00'
@@ -255,18 +254,20 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
   variant_label: r1i1p1f1
   grid_label: gn
-  mesh_path: /work/ab0246/a270092/input/fesom2/dars2
-  grid_file: /work/ab0246/a270092/input/fesom2/dars2/mesh.nc
-  grid: "FESOM 2.6 unstructured grid DARS (3146761 surface nodes)"
-  nominal_resolution: "10 km"
+  mesh_path: &mp /work/ab0246/a270092/input/fesom2/core2
+  grid_file: /work/ab0246/a270092/input/fesom2/core2/mesh.nc
+  grid: "FESOM 2.6 unstructured grid CORE2 (126858 surface nodes)"
+  nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
-  output_directory: ./cmorized_output/awiesm3
+  output_directory: ./cmorized_output/core2_lrcs_seaice_test
+  year_start: 1900
+  year_end: 1900
 
 rules:
   # ============================================================
@@ -278,7 +279,7 @@ rules:
   - name: sidconcdyn
     inputs:
       - path: *dp
-        pattern: dyngrarea.fesom.1350.nc
+        pattern: dyngrarea\.fesom\..*\.nc
     compound_name: seaIce.sidconcdyn.tavg-u-hxy-sea.mon.GLB
     model_variable: dyngrarea
     model_unit: "s-1"
@@ -286,7 +287,7 @@ rules:
   - name: sidconcth
     inputs:
       - path: *dp
-        pattern: thdgrarea.fesom.1350.nc
+        pattern: thdgrarea\.fesom\..*\.nc
     compound_name: seaIce.sidconcth.tavg-u-hxy-sea.mon.GLB
     model_variable: thdgrarea
     model_unit: "s-1"
@@ -296,7 +297,7 @@ rules:
   - name: sicompstren
     inputs:
       - path: *dp
-        pattern: strength_ice.fesom.1350.nc
+        pattern: strength_ice\.fesom\..*\.nc
     compound_name: seaIce.sicompstren.tavg-u-hxy-si.mon.GLB
     model_variable: strength_ice
     model_unit: "N m-1"
@@ -306,14 +307,14 @@ rules:
   - name: sistrxdtop
     inputs:
       - path: *dp
-        pattern: atmice_x.fesom.1350.nc
+        pattern: atmice_x\.fesom\..*\.nc
     compound_name: seaIce.sistrxdtop.tavg-u-hxy-si.mon.GLB
     model_variable: atmice_x
 
   - name: sistrydtop
     inputs:
       - path: *dp
-        pattern: atmice_y.fesom.1350.nc
+        pattern: atmice_y\.fesom\..*\.nc
     compound_name: seaIce.sistrydtop.tavg-u-hxy-si.mon.GLB
     model_variable: atmice_y
 
@@ -322,14 +323,14 @@ rules:
   - name: sistrxubot
     inputs:
       - path: *dp
-        pattern: iceoce_x.fesom.1350.nc
+        pattern: iceoce_x\.fesom\..*\.nc
     compound_name: seaIce.sistrxubot.tavg-u-hxy-si.mon.GLB
     model_variable: iceoce_x
 
   - name: sistryubot
     inputs:
       - path: *dp
-        pattern: iceoce_y.fesom.1350.nc
+        pattern: iceoce_y\.fesom\..*\.nc
     compound_name: seaIce.sistryubot.tavg-u-hxy-si.mon.GLB
     model_variable: iceoce_y
 
@@ -338,7 +339,7 @@ rules:
   - name: siflcondbot
     inputs:
       - path: *dp
-        pattern: qcon.fesom.1350.nc
+        pattern: qcon\.fesom\..*\.nc
     compound_name: seaIce.siflcondbot.tavg-u-hxy-si.mon.GLB
     model_variable: qcon
 
@@ -351,7 +352,7 @@ rules:
   - name: sidmassdyn
     inputs:
       - path: *dp
-        pattern: dyngrice.fesom.1350.nc
+        pattern: dyngrice\.fesom\..*\.nc
     compound_name: seaIce.sidmassdyn.tavg-u-hxy-si.mon.GLB
     model_variable: dyngrice
     scale_factor: 910.0
@@ -364,7 +365,7 @@ rules:
   - name: sidmassth
     inputs:
       - path: *dp
-        pattern: thdgrice.fesom.1350.nc
+        pattern: thdgrice\.fesom\..*\.nc
     compound_name: seaIce.sidmassth.tavg-u-hxy-si.mon.GLB
     model_variable: thdgrice
     scale_factor: 910.0
@@ -372,25 +373,14 @@ rules:
     pipelines:
       - scale_pipeline
 
-  # --- Snow melt rate: thdgrsn [m/s] × rho_snow → kg m-2 s-1 ---
-
-  - name: snm
-    inputs:
-      - path: *dp
-        pattern: thdgrsn.fesom.1350.nc
-    compound_name: seaIce.snm.tavg-u-hxy-si.mon.GLB
-    model_variable: thdgrsn
-    scale_factor: 330.0
-    scaled_units: "kg m-2 s-1"
-    pipelines:
-      - scale_pipeline
+  # --- snm (thdgrsn) excluded: not available in CORE2 output ---
 
   # --- Freshwater flux from sea ice: fw_ice [m/s] × rho_water → kg m-2 s-1 ---
 
   - name: siflfwbot
     inputs:
       - path: *dp
-        pattern: fw_ice.fesom.1350.nc
+        pattern: fw_ice\.fesom\..*\.nc
     compound_name: seaIce.siflfwbot.tavg-u-hxy-si.mon.GLB
     model_variable: fw_ice
     scale_factor: 1000.0
@@ -403,7 +393,7 @@ rules:
   - name: siflfwdrain
     inputs:
       - path: *dp
-        pattern: fw_snw.fesom.1350.nc
+        pattern: fw_snw\.fesom\..*\.nc
     compound_name: seaIce.siflfwdrain.tavg-u-hxy-si.mon.GLB
     model_variable: fw_snw
     scale_factor: 1000.0
@@ -412,12 +402,11 @@ rules:
       - scale_pipeline
 
   # --- Salt mass in sea ice: sice [psu=g/kg] / 1000 × m_ice [kg/m2] → kg m-2 ---
-  #     sice = 4.0 psu (from namelist.ice), so factor = 0.004
 
   - name: sisaltmass
     inputs:
       - path: *dp
-        pattern: m_ice.fesom.1350.nc
+        pattern: m_ice\.fesom\..*\.nc
     compound_name: seaIce.sisaltmass.tavg-u-hxy-si.mon.GLB
     model_variable: m_ice
     scale_factor: 0.004
@@ -432,10 +421,10 @@ rules:
   - name: sispeed
     inputs:
       - path: *dp
-        pattern: uice.fesom.1350.nc
+        pattern: uice\.fesom\..*\.nc
     compound_name: seaIce.sispeed.tavg-u-hxy-si.mon.GLB
     model_variable: uice
-    second_input_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/vice.fesom.1350.nc
+    second_input_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom/vice.fesom.1900.nc
     second_variable: vice
     pipelines:
       - sispeed_pipeline
@@ -443,20 +432,20 @@ rules:
   - name: sidmasstranx
     inputs:
       - path: *dp
-        pattern: uice.fesom.1350.nc
+        pattern: uice\.fesom\..*\.nc
     compound_name: seaIce.sidmasstranx.tavg-u-hxy-u.mon.GLB
     model_variable: uice
-    mice_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/m_ice.fesom.1350.nc
+    mice_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom/m_ice.fesom.1900.nc
     pipelines:
       - ice_mass_transport_pipeline
 
   - name: sidmasstrany
     inputs:
       - path: *dp
-        pattern: vice.fesom.1350.nc
+        pattern: vice\.fesom\..*\.nc
     compound_name: seaIce.sidmasstrany.tavg-u-hxy-u.mon.GLB
     model_variable: vice
-    mice_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/m_ice.fesom.1350.nc
+    mice_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom/m_ice.fesom.1900.nc
     pipelines:
       - ice_mass_transport_pipeline
 
@@ -465,21 +454,21 @@ rules:
   - name: sistressave
     inputs:
       - path: *dp
-        pattern: sgm11.fesom.1350.nc
+        pattern: sgm11\.fesom\..*\.nc
     compound_name: seaIce.sistressave.tpt-u-hxy-si.mon.GLB
     model_variable: sgm11
-    sgm22_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/sgm22.fesom.1350.nc
+    sgm22_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom/sgm22.fesom.1900.nc
     pipelines:
       - sistressave_pipeline
 
   - name: sistressmax
     inputs:
       - path: *dp
-        pattern: sgm11.fesom.1350.nc
+        pattern: sgm11\.fesom\..*\.nc
     compound_name: seaIce.sistressmax.tpt-u-hxy-si.mon.GLB
     model_variable: sgm11
-    sgm22_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/sgm22.fesom.1350.nc
-    sgm12_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/sgm12.fesom.1350.nc
+    sgm22_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom/sgm22.fesom.1900.nc
+    sgm12_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom/sgm12.fesom.1900.nc
     pipelines:
       - sistressmax_pipeline
 
@@ -487,25 +476,21 @@ rules:
   # SImon — cross-realm (ocean seaIce) freshwater/salt fluxes
   # ============================================================
 
-  # Downward sea ice basal salt flux (using realsalt, not virtual)
   - name: sfdsi
     inputs:
       - path: *dp
-        pattern: realsalt.fesom.1350.nc
+        pattern: realsalt\.fesom\..*\.nc
     compound_name: ocean.sfdsi.tavg-u-hxy-sea.mon.GLB
     model_variable: realsalt
-    # realsalt is in [m/s*psu]; conversion to [kg m-2 s-1]:
-    # NOTE: verify units from FESOM source before production use
     scale_factor: 1.0
     scaled_units: "kg m-2 s-1"
     pipelines:
       - scale_pipeline
 
-  # Virtual salt flux into sea water from ice thermodynamics
   - name: vsfsit
     inputs:
       - path: *dp
-        pattern: virtsalt.fesom.1350.nc
+        pattern: virtsalt\.fesom\..*\.nc
     compound_name: ocean.vsfsit.tavg-u-hxy-sea.mon.GLB
     model_variable: virtsalt
     scale_factor: 1.0
@@ -513,11 +498,10 @@ rules:
     pipelines:
       - scale_pipeline
 
-  # Water flux into ocean from ice thermodynamics (Omon table)
   - name: siflfwbot_omon
     inputs:
       - path: *dp
-        pattern: fw_ice.fesom.1350.nc
+        pattern: fw_ice\.fesom\..*\.nc
     compound_name: ocean.siflfwbot.tavg-u-hxy-sea.mon.GLB
     model_variable: fw_ice
     scale_factor: 1000.0
@@ -529,40 +513,36 @@ rules:
   # SImon — post-processed from available output
   # ============================================================
 
-  # Conductive heat flux at ice surface
-  # qcond_top = k_ice * (T_base - T_surface) / h_ice
   - name: siflcondtop
     inputs:
       - path: *dp
-        pattern: ist.fesom.1350.nc
+        pattern: ist\.fesom\..*\.nc
     compound_name: seaIce.siflcondtop.tavg-u-hxy-si.mon.GLB
     model_variable: ist
-    sss_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/sss.fesom.1350.nc
-    hice_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/h_ice.fesom.1350.nc
+    sss_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom/sss.fesom.1900.nc
+    hice_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom/h_ice.fesom.1900.nc
     k_ice: 2.1656
     pipelines:
       - siflcondtop_pipeline
 
-  # Sea ice heat content
   - name: sihc
     inputs:
       - path: *dp
-        pattern: h_ice.fesom.1350.nc
+        pattern: h_ice\.fesom\..*\.nc
     compound_name: seaIce.sihc.tavg-u-hxy-sea.mon.GLB
     model_variable: h_ice
-    ist_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/ist.fesom.1350.nc
-    sss_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/sss.fesom.1350.nc
+    ist_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom/ist.fesom.1900.nc
+    sss_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom/sss.fesom.1900.nc
     rho_ice: 910.0
     c_ice: 2090.0
     L_f: 334000.0
     pipelines:
       - sihc_pipeline
 
-  # Snow heat content: -rho_snow * L_f * h_snow (latent heat dominates)
   - name: sisnhc
     inputs:
       - path: *dp
-        pattern: h_snow.fesom.1350.nc
+        pattern: h_snow\.fesom\..*\.nc
     compound_name: seaIce.sisnhc.tavg-u-hxy-si.mon.GLB
     model_variable: h_snow
     rho_snow: 330.0
@@ -570,24 +550,22 @@ rules:
     pipelines:
       - sisnhc_pipeline
 
-  # Temperature at ice-ocean interface (freezing point from SSS)
   - name: sitempbot
     inputs:
       - path: *dp
-        pattern: sss.fesom.1350.nc
+        pattern: sss\.fesom\..*\.nc
     compound_name: seaIce.sitempbot.tavg-u-hxy-si.mon.GLB
     model_variable: sss
     pipelines:
       - sitempbot_pipeline
 
-  # Sea ice freeboard from h_ice and h_snow
   - name: sifb
     inputs:
       - path: *dp
-        pattern: h_ice.fesom.1350.nc
+        pattern: h_ice\.fesom\..*\.nc
     compound_name: seaIce.sifb.tavg-u-hxy-si.mon.GLB
     model_variable: h_ice
-    snow_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/h_snow.fesom.1350.nc
+    snow_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom/h_snow.fesom.1900.nc
     snow_variable: h_snow
     rho_ice: 910.0
     rho_snow: 330.0
@@ -595,11 +573,10 @@ rules:
     pipelines:
       - sifb_pipeline
 
-  # Ocean drag coefficient (constant from namelist.ice: cd_oce_ice=0.0055)
   - name: sidragbot
     inputs:
       - path: *dp
-        pattern: a_ice.fesom.1350.nc
+        pattern: a_ice\.fesom\..*\.nc
     compound_name: seaIce.sidragbot.tavg-u-hxy-si.mon.GLB
     model_variable: a_ice
     constant_value: 0.0055
@@ -607,11 +584,10 @@ rules:
     pipelines:
       - constant_field_pipeline
 
-  # Snow mass on sea ice — Northern Hemisphere
   - name: sisnmass_north
     inputs:
       - path: *dp
-        pattern: m_snow.fesom.1350.nc
+        pattern: m_snow\.fesom\..*\.nc
     compound_name: seaIce.sisnmass.tavg-u-hm-u.mon.NH
     model_variable: m_snow
     hemisphere: "N"
@@ -621,7 +597,7 @@ rules:
   - name: sisnmass_south
     inputs:
       - path: *dp
-        pattern: m_snow.fesom.1350.nc
+        pattern: m_snow\.fesom\..*\.nc
     compound_name: seaIce.sisnmass.tavg-u-hm-u.mon.SH
     model_variable: m_snow
     hemisphere: "S"
@@ -630,13 +606,12 @@ rules:
 
   # ============================================================
   # SImon — melt ponds (use_meltponds=.true.)
-  # FESOM outputs: apnd (area frac), hpnd (depth), ipnd (lid thickness)
   # ============================================================
 
   - name: simpconc
     inputs:
       - path: *dp
-        pattern: apnd.fesom.1350.nc
+        pattern: apnd\.fesom\..*\.nc
     compound_name: seaIce.simpconc.tavg-u-hxy-si.mon.GLB
     model_variable: apnd
     pipelines:
@@ -645,25 +620,25 @@ rules:
   - name: simpthick
     inputs:
       - path: *dp
-        pattern: hpnd.fesom.1350.nc
+        pattern: hpnd\.fesom\..*\.nc
     compound_name: seaIce.simpthick.tavg-u-hxy-simp.mon.GLB
     model_variable: hpnd
 
   - name: simprefrozen
     inputs:
       - path: *dp
-        pattern: ipnd.fesom.1350.nc
+        pattern: ipnd\.fesom\..*\.nc
     compound_name: seaIce.simprefrozen.tavg-u-hxy-simp.mon.GLB
     model_variable: ipnd
 
   - name: simpeffconc
     inputs:
       - path: *dp
-        pattern: apnd.fesom.1350.nc
+        pattern: apnd\.fesom\..*\.nc
     compound_name: seaIce.simpeffconc.tavg-u-hxy-si.mon.GLB
     model_variable: apnd
-    ipnd_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/ipnd.fesom.1350.nc
-    hpnd_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/hpnd.fesom.1350.nc
+    ipnd_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom/ipnd.fesom.1900.nc
+    hpnd_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom/hpnd.fesom.1900.nc
     pipelines:
       - simpeffconc_pipeline
 
@@ -674,42 +649,42 @@ rules:
   - name: siarea_north
     inputs:
       - path: *dp
-        pattern: siarean.fesom.1350.nc
+        pattern: siarean\.fesom\..*\.nc
     compound_name: seaIce.siarea.tavg-u-hm-u.mon.NH
     model_variable: siarean
 
   - name: siarea_south
     inputs:
       - path: *dp
-        pattern: siareas.fesom.1350.nc
+        pattern: siareas\.fesom\..*\.nc
     compound_name: seaIce.siarea.tavg-u-hm-u.mon.SH
     model_variable: siareas
 
   - name: siextent_north
     inputs:
       - path: *dp
-        pattern: siextentn.fesom.1350.nc
+        pattern: siextentn\.fesom\..*\.nc
     compound_name: seaIce.siextent.tavg-u-hm-u.mon.NH
     model_variable: siextentn
 
   - name: siextent_south
     inputs:
       - path: *dp
-        pattern: siextents.fesom.1350.nc
+        pattern: siextents\.fesom\..*\.nc
     compound_name: seaIce.siextent.tavg-u-hm-u.mon.SH
     model_variable: siextents
 
   - name: sivol_north
     inputs:
       - path: *dp
-        pattern: sivoln.fesom.1350.nc
+        pattern: sivoln\.fesom\..*\.nc
     compound_name: seaIce.sivol.tavg-u-hm-u.mon.NH
     model_variable: sivoln
 
   - name: sivol_south
     inputs:
       - path: *dp
-        pattern: sivols.fesom.1350.nc
+        pattern: sivols\.fesom\..*\.nc
     compound_name: seaIce.sivol.tavg-u-hm-u.mon.SH
     model_variable: sivols
 
@@ -720,10 +695,10 @@ rules:
   - name: sispeed_day
     inputs:
       - path: *dp
-        pattern: uice.fesom.1350.nc
+        pattern: uice\.fesom\..*\.nc
     compound_name: seaIce.sispeed.tavg-u-hxy-si.day.GLB
     model_variable: uice
-    second_input_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/vice.fesom.1350.nc
+    second_input_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_003/outdata/fesom/vice.fesom.1900.nc
     second_variable: vice
     pipelines:
       - sispeed_pipeline
@@ -731,7 +706,7 @@ rules:
   - name: sitimefrac_day
     inputs:
       - path: *dp
-        pattern: a_ice.fesom.1350.nc
+        pattern: a_ice\.fesom\..*\.nc
     compound_name: seaIce.sitimefrac.tavg-u-hxy-sea.day.GLB
     model_variable: a_ice
     model_unit: "1"
@@ -739,14 +714,14 @@ rules:
   - name: ts_day
     inputs:
       - path: *dp
-        pattern: ist.fesom.1350.nc
+        pattern: ist\.fesom\..*\.nc
     compound_name: seaIce.ts.tavg-u-hxy-si.day.GLB
     model_variable: ist
 
   - name: sisnmass_north_day
     inputs:
       - path: *dp
-        pattern: m_snow.fesom.1350.nc
+        pattern: m_snow\.fesom\..*\.nc
     compound_name: seaIce.sisnmass.tavg-u-hm-u.day.NH
     model_variable: m_snow
     hemisphere: "N"
@@ -756,7 +731,7 @@ rules:
   - name: sisnmass_south_day
     inputs:
       - path: *dp
-        pattern: m_snow.fesom.1350.nc
+        pattern: m_snow\.fesom\..*\.nc
     compound_name: seaIce.sisnmass.tavg-u-hm-u.day.SH
     model_variable: m_snow
     hemisphere: "S"

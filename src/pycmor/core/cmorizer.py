@@ -992,18 +992,41 @@ class CMORizer:
             logger.error("Timeout reached waiting for dask cluster, sorry...")
 
     def serial_process(self):
-        data = {}
+        succeeded = []
         failed = {}
         for rule in track(self.rules, description="Processing rules"):
             try:
-                data[rule.name] = self._process_rule(rule)
+                self._process_rule(rule)
+                succeeded.append(rule.name)
             except Exception as e:
                 logger.error(f"Rule '{rule.name}' failed: {e}")
                 failed[rule.name] = e
+            # Free Dask worker memory between rules to prevent accumulation
+            self._cleanup_dask_workers()
         if failed:
             logger.warning(f"{len(failed)} rule(s) failed: {', '.join(failed.keys())}")
-        logger.success(f"Processing completed. {len(data)} succeeded, {len(failed)} failed.")
-        return data
+        logger.success(f"Processing completed. {len(succeeded)} succeeded, {len(failed)} failed.")
+        return {name: True for name in succeeded}
+
+    def _cleanup_dask_workers(self):
+        """Release cached Dask task results and trigger garbage collection on workers."""
+        if self._cluster is None:
+            return
+        try:
+            client = Client.current()
+        except ValueError:
+            try:
+                client = Client(self._cluster, set_as_default=False)
+            except Exception:
+                return
+        try:
+            import gc as _gc
+
+            client.run(_gc.collect)
+            client.run(lambda: __import__("ctypes").CDLL("libc.so.6").malloc_trim(0))
+            logger.debug("Dask worker memory cleanup completed")
+        except Exception as e:
+            logger.debug(f"Dask worker cleanup skipped: {e}")
 
     @flow
     def check_prefect(self):
