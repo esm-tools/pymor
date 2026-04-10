@@ -270,6 +270,44 @@ def _validate_rule_has_marked_regex(rule: dict, required_marks: List[str] = ["ye
     return all(re.search(rf"\(\?P<{mark}>", pattern) for mark in required_marks)
 
 
+def _filter_files_by_year_range(files, year_start, year_end):
+    """
+    Filter files whose year range overlaps with [year_start, year_end].
+
+    Extracts all 4-digit numbers from each filename and checks if any
+    fall within the requested range. Filenames like ``var_1900-1905.nc``
+    will match if any year in their range overlaps.
+
+    Parameters
+    ----------
+    files : list of pathlib.Path
+        Files to filter.
+    year_start : int
+        First year to include.
+    year_end : int
+        Last year to include.
+
+    Returns
+    -------
+    list of pathlib.Path
+        Filtered and sorted list of files.
+    """
+    year_pattern = re.compile(r"\d{4}")
+    filtered = []
+    for f in files:
+        years = [int(y) for y in year_pattern.findall(f.name)]
+        if not years:
+            # No years in filename — include to be safe
+            filtered.append(f)
+            continue
+        file_start = min(years)
+        file_end = max(years)
+        # Include if the file's year range overlaps with the requested range
+        if file_start <= year_end and file_end >= year_start:
+            filtered.append(f)
+    return sorted(filtered, key=lambda f: f.name)
+
+
 def load_mfdataset(data, rule_spec):
     """
     Load a dataset from a list of files using xarray.
@@ -288,6 +326,12 @@ def load_mfdataset(data, rule_spec):
         for f in file_collection.files:
             all_files.append(f)
     all_files = _resolve_symlinks(all_files)
+    # Filter by year range if specified in rule or inherit
+    year_start = rule_spec.get("year_start", None)
+    year_end = rule_spec.get("year_end", None)
+    if year_start is not None and year_end is not None:
+        all_files = _filter_files_by_year_range(all_files, int(year_start), int(year_end))
+        logger.info(f"Year filter: {year_start}–{year_end}, {len(all_files)} files after filtering")
     logger.info(f"Loading {len(all_files)} files using {engine} backend on xarray...")
     for f in all_files:
         logger.info(f"  * {f}")

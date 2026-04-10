@@ -377,6 +377,15 @@ def convert(
     to = to_unit_dimensionless_mapping or to_unit
     handle_chemicals(to)
 
+    # Strip coordinate units that pint cannot parse (e.g. "-" for dimensionless
+    # model levels written by XIOS). pint.quantify tries to parse all coordinate
+    # unit attributes and chokes on non-standard strings like "-".
+    _unparseable_units = {"-", ""}
+    for coord_name in list(da.coords):
+        coord_units = da.coords[coord_name].attrs.get("units", None)
+        if coord_units in _unparseable_units:
+            da.coords[coord_name].attrs.pop("units")
+
     try:
         new_da = da.pint.quantify(from_unit).pint.to(to).pint.dequantify()
     except ValueError as e:

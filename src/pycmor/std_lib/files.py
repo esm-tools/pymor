@@ -531,6 +531,9 @@ def save_dataset(da: xr.DataArray, rule):
             encoding=chunk_encoding if chunk_encoding else None,
         )
     time_label = get_time_label(da)
+    # Update unlimited_dims to use actual time dimension name (may be time1, time2, etc.)
+    if time_unlimited and time_label:
+        extra_kwargs["unlimited_dims"] = [time_label]
     if is_scalar(da[time_label]):
         filepath = create_filepath(da, rule)
         # Calculate chunking encoding
@@ -670,7 +673,7 @@ def save_dataset(da: xr.DataArray, rule):
                 **extra_kwargs,
             )
         else:
-            groups = da.resample(time=file_timespan)
+            groups = da.resample({time_label: file_timespan})
             paths = []
             datasets = []
             for group_name, group_ds in groups:

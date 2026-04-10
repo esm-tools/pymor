@@ -993,9 +993,16 @@ class CMORizer:
 
     def serial_process(self):
         data = {}
+        failed = {}
         for rule in track(self.rules, description="Processing rules"):
-            data[rule.name] = self._process_rule(rule)
-        logger.success("Processing completed.")
+            try:
+                data[rule.name] = self._process_rule(rule)
+            except Exception as e:
+                logger.error(f"Rule '{rule.name}' failed: {e}")
+                failed[rule.name] = e
+        if failed:
+            logger.warning(f"{len(failed)} rule(s) failed: {', '.join(failed.keys())}")
+        logger.success(f"Processing completed. {len(data)} succeeded, {len(failed)} failed.")
         return data
 
     @flow

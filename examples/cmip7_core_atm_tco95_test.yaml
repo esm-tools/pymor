@@ -119,6 +119,8 @@ inherit:
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   time_dimname: time_counter
   output_directory: ./cmorized_output/tco95_test
+  year_start: 1900
+  year_end: 1900
 
 rules:
   # ============================================================

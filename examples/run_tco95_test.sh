@@ -18,12 +18,12 @@ conda activate pycmor_py312
 
 cd /work/ab0246/a270092/software/pycmor
 
-# Move Prefect home and results to local /tmp to avoid NFS SQLite locking
-# and $HOME quota issues
-export PREFECT_HOME=/tmp/prefect_$$
-export PREFECT_LOCAL_STORAGE_PATH=/tmp/prefect_$$/storage
-mkdir -p $PREFECT_HOME $PREFECT_LOCAL_STORAGE_PATH
-export TMPDIR=/tmp
+# Use scratch for Prefect DB and temp files to avoid $HOME quota and /tmp size limits
+PYCMOR_SCRATCH=/scratch/a/a270092/pycmor_tmp/$$
+mkdir -p $PYCMOR_SCRATCH/prefect/storage
+export PREFECT_HOME=$PYCMOR_SCRATCH/prefect
+export PREFECT_LOCAL_STORAGE_PATH=$PYCMOR_SCRATCH/prefect/storage
+export TMPDIR=$PYCMOR_SCRATCH
 export HDF5_USE_FILE_LOCKING=FALSE
 export OMP_NUM_THREADS=1
 
@@ -31,6 +31,6 @@ export OMP_NUM_THREADS=1
 # Limit Dask to 4 workers (64 GB each) so 3D daily plev data fits in memory
 sed -e 's/dask_cluster: "slurm"/dask_cluster: "local"/' \
     -e '/dask_cluster:/a\  dask_n_workers: 4' \
-    examples/cmip7_core_atm_tco95_test.yaml > /tmp/tco95_test_local.yaml
+    examples/cmip7_core_atm_tco95_test.yaml > $PYCMOR_SCRATCH/tco95_test_local.yaml
 
-pycmor process /tmp/tco95_test_local.yaml
+pycmor process $PYCMOR_SCRATCH/tco95_test_local.yaml
