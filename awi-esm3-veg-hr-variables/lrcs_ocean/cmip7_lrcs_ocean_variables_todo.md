@@ -346,12 +346,12 @@ thkcello, masscello).
 | **volo** (dec) | `ocean.volo.tavg-u-hm-sea.dec.glb` | ✅ | DefaultPipeline | |
 | **masso** (dec) | `ocean.masso.tavg-u-hm-sea.dec.glb` | ✅ | `scale_pipeline` | |
 | **opottemptend** | `ocean.opottemptend.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | from `opottemptend.fesom` (ldiag_cmor) |
-| **osalttend** | `ocean.osalttend.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | FESOM2 source previously modified |
-| **opottemprmadvect** | `ocean.opottemprmadvect.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | FESOM2 source previously modified |
-| **opottempdiff** | `ocean.opottempdiff.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | FESOM2 source previously modified |
-| **osaltrmadvect** | `ocean.osaltrmadvect.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | FESOM2 source previously modified |
-| **osaltdiff** | `ocean.osaltdiff.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | FESOM2 source previously modified |
-| **rsdoabsorb** | `ocean.rsdoabsorb.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | FESOM2 source previously modified |
+| **osalttend** | `ocean.osalttend.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | ⚠️ Needs FESOM2 source change (see below) |
+| **opottemprmadvect** | `ocean.opottemprmadvect.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | ⚠️ Needs FESOM2 source change (see below) |
+| **opottempdiff** | `ocean.opottempdiff.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | ⚠️ Needs FESOM2 source change (see below) |
+| **osaltrmadvect** | `ocean.osaltrmadvect.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | ⚠️ Needs FESOM2 source change (see below) |
+| **osaltdiff** | `ocean.osaltdiff.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | ⚠️ Needs FESOM2 source change (see below) |
+| **rsdoabsorb** | `ocean.rsdoabsorb.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | ⚠️ Needs FESOM2 source change (see below) |
 | **sfx** (3D) | `ocean.sfx.tavg-ol-hxy-sea.mon.glb` | ✅ | `salt_transport_pipeline` | u × S × rho_0 × dz |
 | **sfx** (2D int) | `ocean.sfx.tavg-u-hxy-sea.mon.glb` | ✅ | `salt_transport_integrated_pipeline` | vertically integrated |
 | **sfy** (3D) | `ocean.sfy.tavg-ol-hxy-sea.mon.glb` | ✅ | `salt_transport_pipeline` | v × S × rho_0 × dz |
@@ -399,6 +399,41 @@ thkcello, masscello).
 |----------|-------|--------|
 | Rules written | ~53 | ✅ Done |
 | Needs namelist.io / model re-run to produce data | 5 | Rules ready, awaiting data |
-| Needs FESOM2 source recompile | 6 | Previously modified, needs compile+test |
+| ⚠️ Needs FESOM2 source changes + recompile | 6 | Not yet implemented in `gen_modules_cmor_diag.F90` — see required changes below |
 | Blocked — no physics / no diagnostic in FESOM | ~30 | ❌ Cannot implement |
 | Not applicable (conservative T, isotopes, unstructured-grid) | ~15 | — Skipped |
+
+---
+
+## Required FESOM2 source changes
+
+The 6 variables `osalttend`, `opottempdiff`, `opottemprmadvect`, `osaltdiff`, `osaltrmadvect`, `rsdoabsorb`
+are **not yet present** in `gen_modules_cmor_diag.F90` (confirmed by git grep, 2026-04-10).
+The pycmor rules are written and will work once the FESOM2 output files exist.
+
+### Files to modify
+
+- `src/gen_modules_cmor_diag.F90` — add diagnostics (main work)
+- `src/io_meandata.F90` — register new output streams
+
+### Summary of changes needed in `gen_modules_cmor_diag.F90`
+
+1. **Add `use` statements**: `use oce_modules` (for `vcpw`) and `use gen_modules_forcing` (for `sw_3d`)
+2. **Make `opottemptend` 3D**: change from `allocatable(:)` to `allocatable(:,:)` — shape `(nl-1, myDim_nod2D)`
+3. **Add 6 new 3D arrays**: `osalttend`, `opottempdiff`, `opottemprmadvect`, `osaltdiff`, `osaltrmadvect`, `rsdoabsorb` — all shape `(nl-1, myDim_nod2D)`
+4. **Add `previous_salt(:,:)`** auxiliary array for salinity tendency
+5. **In `init_cmor_diag`**: allocate and zero-initialise all new arrays
+6. **In `compute_cmor_diag`**, per-level computation inside the `do k` loop:
+   - `opottemptend(k,n2) = (temp - prev_temp)/dt * vcpw * hnode`
+   - `osalttend(k,n2) = (salt - prev_salt)/dt * density_0 * hnode`
+   - `opottemprmadvect(k,n2) = (del_ttf_advhoriz + del_ttf_advvert)[tracer 1] / dt * vcpw * hnode`
+   - `osaltrmadvect(k,n2)` — same for tracer 2 with `density_0`
+   - `opottempdiff = opottemptend - opottemprmadvect`
+   - `osaltdiff = osalttend - osaltrmadvect`
+   - `rsdoabsorb(k,n2) = (sw_3d(k,n2) - sw_3d(k+1,n2)) * vcpw`  (bottom layer: `sw_3d(k,n2) * vcpw`)
+7. **Update `previous_salt`** at end of `compute_cmor_diag`
+
+### Changes needed in `io_meandata.F90`
+
+- Change the two existing `def_stream` calls for `opottemptend` from 2D (`nod2D, myDim_nod2D`) to 3D (`(/nl-1, nod2D/), (/nl-1, myDim_nod2D/)`)
+- Add `def_stream` calls for all 6 new variables (3D, same shape as `opottemptend`) at both registration locations (~line 274 and ~line 1693)
