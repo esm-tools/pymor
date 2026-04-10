@@ -1146,6 +1146,114 @@ def compute_mass_transport(data, rule):
     return transport
 
 
+def compute_salt_transport(data, rule):
+    """
+    Compute 3D ocean salt mass transport from velocity and salinity.
+
+    sfx = u * S * rho_0 * dz  (x-component, from unod + salt)
+    sfy = v * S * rho_0 * dz  (y-component, from vnod + salt)
+
+    Salt (S) from FESOM is in psu (g/kg); converted to kg/kg by * 1e-3.
+    Result is transport per grid-cell vertical face [kg s-1] on the native
+    unstructured grid, following the same Boussinesq approximation as
+    compute_mass_transport.
+
+    Rule attributes:
+      - grid_file: path to mesh file (for depth_bnds)
+      - salt_path: directory containing salt files
+      - salt_pattern: glob pattern for salt files (e.g. salt.fesom.*.nc)
+      - salt_variable: variable name in salt files (default: 'salt')
+      - reference_density: Boussinesq rho_0 (default 1025.0 kg/m3)
+      - transport_component: 'x' or 'y' (for metadata only)
+    """
+    rho_0 = float(rule.get("reference_density", 1025.0))
+    grid_file = rule.get("grid_file")
+
+    if not isinstance(data, xr.DataArray):
+        raise ValueError("compute_salt_transport expects velocity as xr.DataArray")
+
+    # Load layer thickness from mesh
+    mesh = xr.open_dataset(grid_file)
+    if "depth_bnds" not in mesh:
+        raise ValueError("Mesh file must contain 'depth_bnds' for layer thickness")
+    dz = np.diff(mesh["depth_bnds"].values)
+    mesh.close()
+
+    # Detect vertical dimension
+    vertical_dim = None
+    for dim in ["nz1", "nz", "depth", "lev"]:
+        if dim in data.dims:
+            vertical_dim = dim
+            break
+    if vertical_dim is None:
+        raise ValueError(f"No vertical dimension found in data. Dims: {list(data.dims)}")
+
+    nz_data = data.sizes[vertical_dim]
+    if len(dz) >= nz_data:
+        thickness = xr.DataArray(dz[:nz_data], dims=[vertical_dim])
+    else:
+        raise ValueError(f"Mesh has {len(dz)} levels but data has {nz_data}")
+
+    # Load salinity as secondary field
+    salt = _load_secondary_mf(rule, "salt_path", "salt_pattern", "salt_variable")
+
+    # Align time axis if needed (salt may have different time coverage)
+    if "time" in data.dims and "time" in salt.dims:
+        salt = salt.sel(time=data.time, method="nearest")
+
+    # Convert psu → kg/kg, then compute transport
+    # sfx [kg s-1 per cell face] = u [m/s] * S [kg/kg] * rho_0 [kg/m3] * dz [m]
+    salt_kgkg = salt * 1e-3
+    transport = data * salt_kgkg * rho_0 * thickness
+
+    component = rule.get("transport_component", "")
+    transport.name = data.name
+    transport.attrs = {
+        "units": "kg s-1",
+        "processing_note": (
+            f"Computed as velocity * (salt*1e-3) * rho_0({rho_0}) * dz. "
+            f"Salt transport per grid-cell {component}-face."
+        ),
+    }
+    return transport
+
+
+def compute_salt_transport_integrated(data, rule):
+    """
+    Compute 2D vertically integrated ocean salt mass transport.
+
+    sfx_int = sum_z( u * S * rho_0 * dz )  (x-component)
+    sfy_int = sum_z( v * S * rho_0 * dz )  (y-component)
+
+    Calls compute_salt_transport to get the 3D field, then sums over the
+    vertical dimension to produce a 2D (lat/lon or unstructured node) field.
+
+    Rule attributes: same as compute_salt_transport.
+    """
+    transport_3d = compute_salt_transport(data, rule)
+
+    # Detect vertical dimension on the result
+    vertical_dim = None
+    for dim in ["nz1", "nz", "depth", "lev"]:
+        if dim in transport_3d.dims:
+            vertical_dim = dim
+            break
+    if vertical_dim is None:
+        raise ValueError(f"No vertical dimension on transport field. Dims: {list(transport_3d.dims)}")
+
+    transport_2d = transport_3d.sum(dim=vertical_dim)
+    transport_2d.name = transport_3d.name
+    component = rule.get("transport_component", "")
+    transport_2d.attrs = {
+        "units": "kg s-1",
+        "processing_note": (
+            f"Vertically integrated salt transport (sum over depth). "
+            f"Component: {component}."
+        ),
+    }
+    return transport_2d
+
+
 def compute_zostoga(data, rule):
     """
     Compute global average thermosteric sea level change.

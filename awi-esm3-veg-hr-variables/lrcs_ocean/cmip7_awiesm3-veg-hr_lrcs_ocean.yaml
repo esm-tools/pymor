@@ -171,6 +171,38 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # 3D salt mass transport (sfx, sfy): velocity × salt × rho_0 × dz
+  - name: salt_transport_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_salt_transport
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # 2D vertically integrated salt mass transport (sfx_int, sfy_int)
+  - name: salt_transport_integrated_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_salt_transport_integrated
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   # Meridional overturning in density space from FESOM dMOC output
   - name: msftm_density_pipeline
     steps:
@@ -801,20 +833,63 @@ rules:
   # HARD: 3D salt transport (sfx, sfy)
   # ============================================================
 
-  # sfx/sfy — 3D salt mass transport
-  # Compute: velocity × salinity × cell cross-section
-  # Requires: unod × salt + dz weighting; complex multi-field pipeline
-  # TODO: implement compute_salt_transport step
-  # - name: sfx
-  #   inputs:
-  #     - path: *dp
-  #       pattern: unod.fesom.1350.nc
-  #   compound_name: ocean.sfx.tavg-ol-hxy-sea.mon.GLB
-  #   model_variable: unod
+  # sfx/sfy — 3D and depth-integrated salt mass transport
+  # sfx = u × S × rho_0 × dz; sfy = v × S × rho_0 × dz
+  # Primary input: unod/vnod. Salinity loaded as secondary field via
+  # salt_path / salt_pattern / salt_variable rule attributes.
 
-  # - name: sfy
-  #   inputs:
-  #     - path: *dp
-  #       pattern: vnod.fesom.1350.nc
-  #   compound_name: ocean.sfy.tavg-ol-hxy-sea.mon.GLB
-  #   model_variable: vnod
+  - name: sfx
+    inputs:
+      - path: *dp
+        pattern: unod.fesom.1350.nc
+    compound_name: ocean.sfx.tavg-ol-hxy-sea.mon.GLB
+    model_variable: unod
+    salt_path: *dp
+    salt_pattern: salt.fesom.1350.nc
+    salt_variable: salt
+    reference_density: 1025.0
+    transport_component: x
+    pipelines:
+      - salt_transport_pipeline
+
+  - name: sfx_int
+    inputs:
+      - path: *dp
+        pattern: unod.fesom.1350.nc
+    compound_name: ocean.sfx.tavg-u-hxy-sea.mon.GLB
+    model_variable: unod
+    salt_path: *dp
+    salt_pattern: salt.fesom.1350.nc
+    salt_variable: salt
+    reference_density: 1025.0
+    transport_component: x
+    pipelines:
+      - salt_transport_integrated_pipeline
+
+  - name: sfy
+    inputs:
+      - path: *dp
+        pattern: vnod.fesom.1350.nc
+    compound_name: ocean.sfy.tavg-ol-hxy-sea.mon.GLB
+    model_variable: vnod
+    salt_path: *dp
+    salt_pattern: salt.fesom.1350.nc
+    salt_variable: salt
+    reference_density: 1025.0
+    transport_component: y
+    pipelines:
+      - salt_transport_pipeline
+
+  - name: sfy_int
+    inputs:
+      - path: *dp
+        pattern: vnod.fesom.1350.nc
+    compound_name: ocean.sfy.tavg-u-hxy-sea.mon.GLB
+    model_variable: vnod
+    salt_path: *dp
+    salt_pattern: salt.fesom.1350.nc
+    salt_variable: salt
+    reference_density: 1025.0
+    transport_component: y
+    pipelines:
+      - salt_transport_integrated_pipeline

@@ -111,10 +111,14 @@ thkcello, masscello).
 
 ## Monthly — transport and overturning
 
-- [ ] **sfx** — 3D Ocean Salt Mass X Transport (`kg s-1`, mon, 3D)
-  Compute: unod × salt × cell cross-section area; complex
-- [ ] **sfy** — 3D Ocean Salt Mass Y Transport (`kg s-1`, mon, 3D)
-  Compute: vnod × salt × cell cross-section area; complex
+- [x] **sfx** — 3D Ocean Salt Mass X Transport (`kg s-1`, mon, 3D)
+  Rule written: `sfx` via `salt_transport_pipeline` (`compute_salt_transport` in custom_steps.py). Input: `unod` + secondary `salt`. Computes u × S × rho_0 × dz.
+- [x] **sfx** — Vertically Integrated Salt Mass X Transport (`kg s-1`, mon, 2D)
+  Rule written: `sfx_int` via `salt_transport_integrated_pipeline` (`compute_salt_transport_integrated`). Same inputs, sums over depth.
+- [x] **sfy** — 3D Ocean Salt Mass Y Transport (`kg s-1`, mon, 3D)
+  Rule written: `sfy` via `salt_transport_pipeline`. Input: `vnod` + secondary `salt`.
+- [x] **sfy** — Vertically Integrated Salt Mass Y Transport (`kg s-1`, mon, 2D)
+  Rule written: `sfy_int` via `salt_transport_integrated_pipeline`. Same inputs, sums over depth.
 - [x] **msftmmpa** — MOC Due to Parameterized Mesoscale Advection, depth-space (`kg s-1`, mon)
   Rule written: `msftmmpa_depth_mon` via `msftmmpa_depth_pipeline` (`compute_msftmmpa_depth` in custom_steps.py). Input: `bolus_v.fesom` (meridional GM bolus velocity). Requires `fer_gm=.true.` in namelist.io; will be zero field if GM is disabled.
 - [x] **msftmmpa** — MOC Due to Parameterized Mesoscale Advection, density-space (`kg s-1`, mon)
@@ -297,20 +301,104 @@ thkcello, masscello).
 
 ---
 
+## Variable Status Table
+
+| Variable | compound_name | Rule? | Pipeline | Notes |
+|----------|--------------|-------|----------|-------|
+| **tob** | `ocean.tob.tavg-u-hxy-sea.mon.glb` | ✅ | `bottom_extract_pipeline` | |
+| **sob** | `ocean.sob.tavg-u-hxy-sea.mon.glb` | ✅ | `bottom_extract_pipeline` | |
+| **pbo** | `ocean.pbo.tavg-u-hxy-sea.mon.glb` | ✅ | DefaultPipeline | direct from `pbo.fesom` |
+| **pso** | `ocean.pso.tavg-u-hxy-sea.mon.glb` | ✅ | `surface_pressure_pipeline` | computed from SSH |
+| **tossq** | `ocean.tossq.tavg-u-hxy-sea.mon.glb` | ✅ | `square_pipeline` | |
+| **sossq** | `ocean.sossq.tavg-u-hxy-sea.mon.glb` | ✅ | `square_pipeline` | |
+| **zossq** | `ocean.zossq.tavg-u-hxy-sea.mon.glb` | ✅ | `square_pipeline` | |
+| **mlotstsq** | `ocean.mlotstsq.tavg-u-hxy-sea.mon.glb` | ✅ | `square_pipeline` | |
+| **wfo** | `ocean.wfo.tavg-u-hxy-sea.mon.glb` | ✅ | `scale_pipeline` | fw × 1000 |
+| **evspsbl** | `ocean.evspsbl.tavg-u-hxy-sea.mon.glb` | ✅ | `scale_pipeline` | evap × 1000; needs `evap` in namelist.io |
+| **vsf** | `ocean.vsf.tavg-u-hxy-sea.mon.glb` | ✅ | DefaultPipeline | direct from `virtsalt.fesom` |
+| **vsfcorr** | `ocean.vsfcorr.tavg-u-hxy-sea.mon.glb` | ✅ | DefaultPipeline | from `relaxsalt.fesom`; verify units |
+| **msftbarot** | `ocean.msftbarot.tavg-u-hxy-sea.mon.glb` | ✅ | `msftbarot_pipeline` | geostrophic SSH approx |
+| **obvfsq** | `ocean.obvfsq.tavg-ol-hxy-sea.mon.glb` | ✅ | DefaultPipeline | direct from `N2.fesom` |
+| **tos_ga** | `ocean.tos.tavg-u-hm-sea.mon.glb` | ✅ | DefaultPipeline | from `thetaoga.fesom` |
+| **sos_ga** | `ocean.sos.tavg-u-hm-sea.mon.glb` | ✅ | DefaultPipeline | from `soga.fesom` |
+| **thetao_ga** | `ocean.thetao.tavg-ol-hm-sea.mon.glb` | ✅ | DefaultPipeline | scalar `thetaoga.fesom` |
+| **so_ga** | `ocean.so.tavg-ol-hm-sea.mon.glb` | ✅ | DefaultPipeline | scalar `soga.fesom` |
+| **masso** | `ocean.masso.tavg-u-hm-sea.mon.glb` | ✅ | `scale_pipeline` | volo × rho_0 |
+| **volo** | `ocean.volo.tavg-u-hm-sea.mon.glb` | ✅ | DefaultPipeline | direct from `volo.fesom` |
+| **mlotst** (day) | `ocean.mlotst.tavg-u-hxy-sea.day.glb` | ✅ | DefaultPipeline | needs daily MLD3 in namelist.io |
+| **uos** | `ocean.uos.tavg-u-hxy-sea.day.glb` | ✅ | `surface_extract_pipeline` | expensive daily 3D input |
+| **vos** | `ocean.vos.tavg-u-hxy-sea.day.glb` | ✅ | `surface_extract_pipeline` | expensive daily 3D input |
+| **scint** | `ocean.scint.tavg-op4-hxy-sea.mon.glb` | ✅ | `ocean_vertical_integration_pipeline` | |
+| **phcint** | `ocean.phcint.tavg-op4-hxy-sea.mon.glb` | ✅ | `ocean_vertical_integration_pipeline` | needs rho_0×cp post-scale |
+| **opottempmint** | `ocean.opottempmint.tavg-op4-hxy-sea.yr.glb` | ✅ | `ocean_vertical_integration_pipeline` | needs rho_0 post-scale |
+| **somint** | `ocean.somint.tavg-op4-hxy-sea.yr.glb` | ✅ | `ocean_vertical_integration_pipeline` | needs rho_0×1000 post-scale |
+| **volcello** (fx) | `ocean.volcello.point-ol-hxy-sea.fx.glb` | ✅ | `volcello_fx_pipeline` | static from mesh |
+| **volcello** (dec) | `ocean.volcello.tavg-ol-hxy-sea.dec.glb` | ✅ | `volcello_time_pipeline` | hnode × cell_area |
+| **difvho** | `ocean.difvho.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | from `Kv.fesom` |
+| **difvso** | `ocean.difvso.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | from `Kv.fesom` |
+| **difmxylo** | `ocean.difmxylo.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | from `Av.fesom` |
+| **thetao** (dec) | `ocean.thetao.tavg-ol-hxy-sea.dec.glb` | ✅ | DefaultPipeline | |
+| **so** (dec) | `ocean.so.tavg-ol-hxy-sea.dec.glb` | ✅ | DefaultPipeline | |
+| **tauuo** (dec) | `ocean.tauuo.tavg-u-hxy-sea.dec.glb` | ✅ | DefaultPipeline | |
+| **tauvo** (dec) | `ocean.tauvo.tavg-u-hxy-sea.dec.glb` | ✅ | DefaultPipeline | |
+| **thkcello** (dec) | `ocean.thkcello.tavg-ol-hxy-sea.dec.glb` | ✅ | DefaultPipeline | |
+| **masscello** (dec) | `ocean.masscello.tavg-ol-hxy-sea.dec.glb` | ✅ | `scale_pipeline` | hnode × rho_0 |
+| **volo** (dec) | `ocean.volo.tavg-u-hm-sea.dec.glb` | ✅ | DefaultPipeline | |
+| **masso** (dec) | `ocean.masso.tavg-u-hm-sea.dec.glb` | ✅ | `scale_pipeline` | |
+| **opottemptend** | `ocean.opottemptend.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | from `opottemptend.fesom` (ldiag_cmor) |
+| **osalttend** | `ocean.osalttend.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | FESOM2 source previously modified |
+| **opottemprmadvect** | `ocean.opottemprmadvect.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | FESOM2 source previously modified |
+| **opottempdiff** | `ocean.opottempdiff.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | FESOM2 source previously modified |
+| **osaltrmadvect** | `ocean.osaltrmadvect.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | FESOM2 source previously modified |
+| **osaltdiff** | `ocean.osaltdiff.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | FESOM2 source previously modified |
+| **rsdoabsorb** | `ocean.rsdoabsorb.tavg-ol-hxy-sea.yr.glb` | ✅ | DefaultPipeline | FESOM2 source previously modified |
+| **sfx** (3D) | `ocean.sfx.tavg-ol-hxy-sea.mon.glb` | ✅ | `salt_transport_pipeline` | u × S × rho_0 × dz |
+| **sfx** (2D int) | `ocean.sfx.tavg-u-hxy-sea.mon.glb` | ✅ | `salt_transport_integrated_pipeline` | vertically integrated |
+| **sfy** (3D) | `ocean.sfy.tavg-ol-hxy-sea.mon.glb` | ✅ | `salt_transport_pipeline` | v × S × rho_0 × dz |
+| **sfy** (2D int) | `ocean.sfy.tavg-u-hxy-sea.mon.glb` | ✅ | `salt_transport_integrated_pipeline` | vertically integrated |
+| **msftm** | `ocean.msftm.tavg-rho-hyb-sea.mon.glb` | ✅ | `msftm_density_pipeline` | from `dMOC.fesom`; needs `ldiag_dMOC=.true.` |
+| **msftmmpa** (depth) | `ocean.msftmmpa.tavg-ol-hyb-sea.mon.glb` | ✅ | `msftmmpa_depth_pipeline` | from `bolus_v`; needs `fer_gm=.true.` |
+| **msftmmpa** (density) | `ocean.msftmmpa.tavg-rho-hyb-sea.mon.glb` | ✅ | `msftmmpa_density_pipeline` | from `bolus_v`; needs `fer_gm=.true.` |
+| **sfriver** | — | ❌ | — | No river salt flux diagnostic in FESOM2 |
+| **vsfevap** | — | ❌ | — | FESOM does not split virtual salt flux by component |
+| **vsfpr** | — | ❌ | — | FESOM does not split virtual salt flux by component |
+| **vsfriver** | — | ❌ | — | FESOM does not split virtual salt flux by component |
+| **wfcorr** | — | ❌ | — | No water flux correction in standard FESOM2 |
+| **hfevapds** | — | ❌ | — | Requires atmosphere-side heat flux decomposition |
+| **hfrainds** | — | ❌ | — | Requires atmosphere-side heat flux decomposition |
+| **rsus** | — | ❌ | — | FESOM does not output reflected shortwave separately |
+| **ficeberg** | — | ❌ | — | No iceberg model (`use_icebergs=.false.`) |
+| **hfibthermds** | — | ❌ | — | Requires `use_icebergs=.true.` |
+| **hfrunoffds** | — | ❌ | — | Requires runoff temperature, not output by FESOM |
+| **hfsnthermds** | — | ❌ | — | No snow thermodynamic heat flux diagnostic |
+| **hfgeou** | — | ❌ | — | Not implemented in FESOM 2.7 |
+| **msftmsmpa** | — | ❌ | — | No submesoscale parameterization output |
+| **msftypa / msfty** | — | ❌ | — | Needs structured grid or regridding + basin masks |
+| **msftmz / msftyz / basin** | — | ❌ | — | Basin masks not available for DARS mesh |
+| **htovgyre / htovovrt** | — | ❌ | — | Needs basin masks + gyre/overturning decomposition |
+| **hfbasin*** | — | ❌ | — | Needs basin masks |
+| **sltbasin / sltovgyre / sltovovrt** | — | ❌ | — | Needs basin masks |
+| **hfacrossline / sfacrossline / mfo** | — | ❌ | — | Requires predefined ocean transect lines (oline) |
+| **dxto/dyto/dxuo/dyuo/dxvo/dyvo** | — | ❌ | — | No dx/dy concept on unstructured FESOM mesh |
+| **pfscint** | — | ❌ | — | No preformed salinity tracer in FESOM |
+| **chcint / ocontemp*** | — | ❌ | — | FESOM uses potential temperature, not conservative |
+| **bigthetao** (all freq) | — | ❌ | — | FESOM uses potential temperature, not conservative |
+| **thetao200_day** | — | ❌ | — | No daily 3D output feasible |
+| **hfx / hfy** (day) | — | ❌ | — | Requires online computation, too expensive daily |
+| **dispkexyfo / tnkebto / tnpeo** | — | ❌ | — | No KE/PE tendency diagnostics |
+| **difmxybo** | — | ❌ | — | Biharmonic diffusivity not output separately |
+| **sw17O / sw18O / sw2H** | — | ❌ | — | Isotopes not enabled (`lwiso=.false.`) |
+| **opottemppadvect / pmdiff / psmadvect** | — | ❌ | — | Zero field (`fer_gm=.false.`, no submesoscale) |
+| **osaltpadvect / pmdiff / psmadvect** | — | ❌ | — | Zero field (`fer_gm=.false.`, no submesoscale) |
+
+---
+
 ## Summary
 
-| Category | Count | Done | Status |
-|----------|-------|------|--------|
-| Feasible from existing output | ~16 | 16 | DONE |
-| Medium (bottom extract, integration, volcello) | ~10 | 9 | mostly done |
-| Yearly diffusivity | 3 | 3 | DONE |
-| Decadal | ~10 | 9 | mostly done |
-| Hard (streamfunction, tendencies) | ~4 | 2 | 2 done, 1 commented (sfx/sfy), 1 blocked |
-| Needs namelist.io additions | 5 | 5 | DONE (rules written, awaiting model re-run) |
-| FESOM2 source changes (tendencies + SW) | 7 | 7 | DONE (code added, needs compile+test) |
-| Needs basin masks (external data) | ~12 | 0 | BLOCKED |
-| Requires online diagnostics (remaining) | ~8 | 0 | BLOCKED |
-| Not applicable (conservative T / isotopes / unstructured) | ~26 | — | SKIPPED |
-
-Total rules written: **46** (+ 1 commented placeholder for sfx/sfy)
-FESOM2 source additions: **6** new diagnostic outputs (osalttend, opottempdiff, opottemprmadvect, osaltdiff, osaltrmadvect, rsdoabsorb)
+| Category | Count | Status |
+|----------|-------|--------|
+| Rules written | ~53 | ✅ Done |
+| Needs namelist.io / model re-run to produce data | 5 | Rules ready, awaiting data |
+| Needs FESOM2 source recompile | 6 | Previously modified, needs compile+test |
+| Blocked — no physics / no diagnostic in FESOM | ~30 | ❌ Cannot implement |
+| Not applicable (conservative T, isotopes, unstructured-grid) | ~15 | — Skipped |
