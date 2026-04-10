@@ -115,16 +115,18 @@ thkcello, masscello).
   Compute: unod × salt × cell cross-section area; complex
 - [ ] **sfy** — 3D Ocean Salt Mass Y Transport (`kg s-1`, mon, 3D)
   Compute: vnod × salt × cell cross-section area; complex
-- [ ] **msftmmpa** — MOC Due to Parameterized Mesoscale Advection (`kg s-1`, mon)
-  Possible: compute from bolus_u/bolus_v (GM velocities in namelist.io); needs basin masks
+- [x] **msftmmpa** — MOC Due to Parameterized Mesoscale Advection, depth-space (`kg s-1`, mon)
+  Rule written: `msftmmpa_depth_mon` via `msftmmpa_depth_pipeline` (`compute_msftmmpa_depth` in custom_steps.py). Input: `bolus_v.fesom` (meridional GM bolus velocity). Requires `fer_gm=.true.` in namelist.io; will be zero field if GM is disabled.
+- [x] **msftmmpa** — MOC Due to Parameterized Mesoscale Advection, density-space (`kg s-1`, mon)
+  Rule written: `msftmmpa_density_mon` via `msftmmpa_density_pipeline` (`compute_msftmmpa_density` in custom_steps.py). Same `bolus_v` input; bins into density classes instead of depth layers.
 - [ ] **msftmsmpa** — MOC Due to Parameterized Submesoscale Advection (`kg s-1`, mon)
   BLOCKED: no submesoscale parameterization output
 - [ ] **msftypa** — Ocean Y Overturning Due to Mesoscale (`kg s-1`, mon)
   BLOCKED: needs structured grid or regridding + basin masks
 - [ ] **msfty** — Ocean Y Overturning Mass Streamfunction (`kg s-1`, mon)
   BLOCKED: needs structured grid or regridding + basin masks
-- [ ] **msftm** — Meridional Overturning in Density Space (`kg s-1`, mon)
-  Possible: ldiag_dMOC=.true. enabled, outputs dMOC; needs post-processing to match CMIP format
+- [x] **msftm** — Meridional Overturning in Density Space (`kg s-1`, mon)
+  Rule written: `msftm_mon` via `msftm_density_pipeline` (`compute_msftm_density` in custom_steps.py). Input: `dMOC.fesom` (requires `ldiag_dMOC=.true.`). Custom step maps dMOC bins to CMIP rho coordinate.
 
 ## Monthly — basin-zonal heat/salt transport
 
