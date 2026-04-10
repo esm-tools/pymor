@@ -92,5 +92,5 @@ Enabling them requires rerunning the model with updated configuration.
 - [x] **hfxint** (mon, 2D) — `ocean.hfx.tavg-u-hxy-sea.mon.glb` — Rule written. Moved to implemented section above.
 - [x] **hfy** (mon, 3D) — `ocean.hfy.tavg-ol-hxy-sea.mon.glb` — Rule written. Moved to implemented section above.
 - [x] **hfyint** (mon, 2D) — `ocean.hfy.tavg-u-hxy-sea.mon.glb` — Rule written. Moved to implemented section above.
-- [ ] **tauuo** (3hr, 2D) — `ocean.tauuo.tavg-u-hxy-sea.3hr.glb` — Surface X stress at 3-hourly. FESOM outputs `tx_sur` but at **one frequency per variable** — currently monthly. Changing to 3hr would require deriving monthly from 3hr in post-processing.
-- [ ] **tauvo** (3hr, 2D) — `ocean.tauvo.tavg-u-hxy-sea.3hr.glb` — Surface Y stress at 3-hourly. Same one-frequency constraint as tauuo.
+- [x] **tauuo** (3hr, 2D) — `ocean.tauuo.tavg-u-hxy-sea.3hr.glb` — Rule written (`tauuo_3hr`, DefaultPipeline). Uses `tx_sur` from a dedicated 3-hourly FESOM output stream. **Prerequisite**: enable 3-hourly `tx_sur` output in namelist.io (separate stream from monthly). Same elem-grid caveat as the monthly core rule applies.
+- [x] **tauvo** (3hr, 2D) — `ocean.tauvo.tavg-u-hxy-sea.3hr.glb` — Rule written (`tauvo_3hr`, DefaultPipeline). Uses `ty_sur` from a dedicated 3-hourly FESOM output stream. Same elem-grid caveat and namelist prerequisite as `tauuo_3hr`.
