@@ -1,12 +1,10 @@
-# CMIP7 VEG Land Variables — AWI-ESM3-VEG-HR
-# Generated from 3 CSVs in veg_land/
-#
-# Part 1: IFS/HTESSEL variables via XIOS (3hr, daily, monthly)
-# Part 2: LPJ-GUESS variables from plain-text .out files
-# ~58 producible out of 88 total variables
+# CMIP7 VEG Land Variables — Test config with TCo95
+# Adapted from awi-esm3-veg-hr-variables/veg_land/cmip7_awiesm3-veg-hr_land.yaml
+# Uses low-resolution TCo95 (~100km) experiment for quick testing.
+# ~55 rules: IFS/HTESSEL (3hr, daily, monthly) + LPJ-GUESS (monthly, yearly)
 
 general:
-  name: "awiesm3-cmip7-veg-land"
+  name: "awiesm3-cmip7-veg-land-tco95-test"
   cmor_version: "CMIP7"
   mip: "CMIP"
   CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
@@ -22,7 +20,7 @@ jobqueue:
   slurm:
     name: pycmor-worker
     queue: compute
-    account: bb1469
+    account: ba0989
     cores: 16
     memory: 256GB
     walltime: '00:30:00'
@@ -130,17 +128,20 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/oifs
-  lpjg_data_path: &ldp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/lpj_guess
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_006/outdata/oifs
+  lpjg_data_path: &ldp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_006/outdata/lpj_guess
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
   variant_label: r1i1p1f1
   grid_label: gn
-  grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
-  nominal_resolution: "25 km"
+  grid: "OpenIFS TCo95 reduced Gaussian, interpolated to 1deg regular grid"
+  nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
-  output_directory: ./cmorized_output/awiesm3
+  time_dimname: time_counter
+  output_directory: ./cmorized_output/veg_land_test
+  year_start: 1900
+  year_end: 1900
 
 rules:
   # ============================================================
@@ -198,7 +199,6 @@ rules:
     compound_name: land.mrsol.tavg-d100cm-hxy-lnd.3hr.GLB
     model_variable: mrsol
 
-  # 3hr instant mrsol at 10cm (reuse existing core_land mrsol field)
   - name: mrsol_3hr_10cm
     inputs:
       - path: *dp
@@ -298,9 +298,11 @@ rules:
 
   # ============================================================
   # Part 2: LPJ-GUESS variables (plain-text .out files)
+  # Units verified from CMIPoutput.cpp declare_parameter comments.
   # ============================================================
 
   # --- Yearly fraction variables (Eyr) ---
+  # Source: [-] but values are 0-100 → already in %
 
   - name: baresoilFrac_yr
     inputs:
@@ -529,6 +531,11 @@ rules:
       - lpjg_monthly_lut_pipeline
 
   # --- Monthly nitrogen/carbon variables (Emon, Jan..Dec format) ---
+  # Source units from CMIPoutput.cpp: N fluxes are kg N m-2 s-1,
+  # C fluxes are kg C m-2 s-1, N stocks are kg N m-2.
+  # CMIP7 target is kg m-2 s-1 / kg m-2 (no element qualifier).
+  # Values are already in correct magnitude — source_units set to
+  # match CMIP target so handle_unit_conversion is a no-op.
 
   - name: fBNF_mon
     inputs:

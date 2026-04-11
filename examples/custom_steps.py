@@ -2109,6 +2109,9 @@ def load_lpjguess_yearly(data, rule):
         coords={"time": times, "lon": ("ncells", lon_vals), "lat": ("ncells", lat_vals)},
         name=model_variable,
     )
+    source_units = rule.get("source_units")
+    if source_units:
+        da.attrs["units"] = source_units
     return da.to_dataset()
 
 
@@ -2165,6 +2168,9 @@ def load_lpjguess_yearly_lut(data, rule):
         coords={"time": times, "lon": ("ncells", lon_vals), "lat": ("ncells", lat_vals)},
         name=model_variable,
     )
+    source_units = rule.get("source_units")
+    if source_units:
+        da.attrs["units"] = source_units
     return da.to_dataset()
 
 
@@ -2228,6 +2234,9 @@ def load_lpjguess_monthly_lut(data, rule):
         coords={"time": times, "lon": ("ncells", lon_vals), "lat": ("ncells", lat_vals)},
         name=model_variable,
     )
+    source_units = rule.get("source_units")
+    if source_units:
+        da.attrs["units"] = source_units
     return da.to_dataset()
 
 
