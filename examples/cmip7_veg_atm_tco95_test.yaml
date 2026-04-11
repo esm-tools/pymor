@@ -1,12 +1,10 @@
-# CMIP7 VEG Atmosphere/Aerosol Variables — AWI-ESM3-VEG-HR
-# Generated from 5 CSVs in veg_atm/
-#
-# Covers additional 3hr radiation/fluxes, plev6 fields, 6hr snowfall,
-# monthly net radiation, boundary layer depth, daily snow diagnostics,
-# and LPJ-GUESS fire emission variables.
+# CMIP7 VEG Atmosphere/Aerosol Variables — Test config with TCo95
+# Adapted from awi-esm3-veg-hr-variables/veg_atm/cmip7_awiesm3-veg-hr_veg_atm.yaml
+# Uses low-resolution TCo95 (~100km) experiment for quick testing.
+# 26 rules: IFS 3hr/6hr/daily/monthly + LPJ-GUESS fire emission (monthly)
 
 general:
-  name: "awiesm3-cmip7-veg-atm"
+  name: "awiesm3-cmip7-veg-atm-tco95-test"
   cmor_version: "CMIP7"
   mip: "CMIP"
   CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
@@ -22,7 +20,7 @@ jobqueue:
   slurm:
     name: pycmor-worker
     queue: compute
-    account: bb1469
+    account: ba0989
     cores: 16
     memory: 256GB
     walltime: '00:30:00'
@@ -43,18 +41,19 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/oifs
-  lpjg_data_path: &ldp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/lpj_guess
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_006/outdata/oifs
+  lpjg_data_path: &ldp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_006/outdata/lpj_guess
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
   variant_label: r1i1p1f1
   grid_label: gn
-  grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
-  nominal_resolution: "25 km"
+  grid: "OpenIFS TCo95 reduced Gaussian, interpolated to 1deg regular grid"
+  nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   time_dimname: time_counter
-  output_directory: ./cmorized_output/awiesm3
+  output_directory: ./cmorized_output/veg_atm_test
+  year_start: 1900
 
 rules:
   # ============================================================
@@ -64,53 +63,53 @@ rules:
   - name: hfls_3hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_rad_hfls_.*\.nc
+        pattern: atmos_3h_rad_hfls_.*\.nc
     compound_name: atmos.hfls.tavg-u-hxy-u.3hr.GLB
     model_variable: hfls
 
   - name: hfss_3hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_rad_hfss_.*\.nc
+        pattern: atmos_3h_rad_hfss_.*\.nc
     compound_name: atmos.hfss.tavg-u-hxy-u.3hr.GLB
     model_variable: hfss
 
   - name: rlds_3hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_rad_rlds_.*\.nc
+        pattern: atmos_3h_rad_rlds_.*\.nc
     compound_name: atmos.rlds.tavg-u-hxy-u.3hr.GLB
     model_variable: rlds
 
   - name: rlus_3hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_rad_rlus_.*\.nc
+        pattern: atmos_3h_rad_rlus_.*\.nc
     compound_name: atmos.rlus.tavg-u-hxy-u.3hr.GLB
     model_variable: rlus
 
   - name: rsds_3hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_rad_rsds_.*\.nc
+        pattern: atmos_3h_rad_rsds_.*\.nc
     compound_name: atmos.rsds.tavg-u-hxy-u.3hr.GLB
     model_variable: rsds
 
   - name: rsus_3hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_rad_rsus_.*\.nc
+        pattern: atmos_3h_rad_rsus_.*\.nc
     compound_name: atmos.rsus.tavg-u-hxy-u.3hr.GLB
     model_variable: rsus
 
   # ============================================================
-  # 3hr instantaneous surface (already in _3h_pt file)
+  # 3hr instantaneous surface
   # ============================================================
 
   - name: ps_3hrPt
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_pt_sp_.*\.nc
+        pattern: atmos_3h_pt_sp_.*\.nc
     compound_name: atmos.ps.tpt-u-hxy-u.3hr.GLB
     model_variable: sp
 
@@ -121,35 +120,35 @@ rules:
   - name: ta_3hrPt_plev6
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_pl6_ta_.*\.nc
+        pattern: atmos_3h_pl6_ta_.*\.nc
     compound_name: atmos.ta.tpt-p6-hxy-air.3hr.GLB
     model_variable: ta
 
   - name: ua_3hrPt_plev6
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_pl6_ua_.*\.nc
+        pattern: atmos_3h_pl6_ua_.*\.nc
     compound_name: atmos.ua.tpt-p6-hxy-air.3hr.GLB
     model_variable: ua
 
   - name: va_3hrPt_plev6
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_pl6_va_.*\.nc
+        pattern: atmos_3h_pl6_va_.*\.nc
     compound_name: atmos.va.tpt-p6-hxy-air.3hr.GLB
     model_variable: va
 
   - name: wap_3hrPt_plev6
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_pl6_wap_.*\.nc
+        pattern: atmos_3h_pl6_wap_.*\.nc
     compound_name: atmos.wap.tpt-p6-hxy-air.3hr.GLB
     model_variable: wap
 
   - name: hus_3hrPt_plev6
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_pl6_hus_.*\.nc
+        pattern: atmos_3h_pl6_hus_.*\.nc
     compound_name: atmos.hus.tpt-p6-hxy-air.3hr.GLB
     model_variable: hus
 
@@ -160,7 +159,7 @@ rules:
   - name: bldep_3hrPt
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_bldep_bldep_.*\.nc
+        pattern: atmos_3h_bldep_bldep_.*\.nc
     compound_name: atmos.bldep.tpt-u-hxy-u.3hr.GLB
     model_variable: bldep
 
@@ -171,7 +170,7 @@ rules:
   - name: prsn_6hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_6h_prsn_prsn_.*\.nc
+        pattern: atmos_6h_prsn_prsn_.*\.nc
     compound_name: atmos.prsn.tavg-u-hxy-u.6hr.GLB
     model_variable: prsn
 
@@ -182,14 +181,14 @@ rules:
   - name: rls_mon
     inputs:
       - path: *dp
-        pattern: atm_remapped_mon_netrad_rls_.*\.nc
+        pattern: atmos_mon_netrad_rls_.*\.nc
     compound_name: atmos.rls.tavg-u-hxy-u.mon.GLB
     model_variable: rls
 
   - name: rss_mon
     inputs:
       - path: *dp
-        pattern: atm_remapped_mon_netrad_rss_.*\.nc
+        pattern: atmos_mon_netrad_rss_.*\.nc
     compound_name: atmos.rss.tavg-u-hxy-u.mon.GLB
     model_variable: rss
 
@@ -200,7 +199,7 @@ rules:
   - name: lwp_mon
     inputs:
       - path: *dp
-        pattern: atm_remapped_mon_netrad_lwp_.*\.nc
+        pattern: atmos_mon_netrad_lwp_.*\.nc
     compound_name: aerosol.lwp.tavg-u-hxy-u.mon.GLB
     model_variable: lwp
 
@@ -211,22 +210,22 @@ rules:
   - name: tsns_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_day_snow_tsns_.*\.nc
+        pattern: atmos_day_snow_tsns_.*\.nc
     compound_name: atmos.ts.tavg-u-hxy-sn.day.GLB
     model_variable: tsns
 
   - name: snmsl_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_day_snow_snmsl_.*\.nc
+        pattern: atmos_day_snow_snmsl_.*\.nc
     compound_name: atmos.snmsl.tavg-u-hxy-lnd.day.GLB
     model_variable: snmsl
 
   # ============================================================
   # LPJ-GUESS fire emission variables (AERmon)
-  # These use fire_emission_pipeline to apply species-specific
-  # emission factors to total fire carbon flux (fFireAll).
-  # Emission factors from Andreae (2019) Table 1 for savanna/grassland.
+  # Source: fFireAll is kg C m-2 s-1 (verified from CMIPoutput.cpp)
+  # compute_fire_emission applies species-specific emission factors
+  # and sets units to "kg m-2 s-1"
   # ============================================================
 
   - name: emibbbc_mon

@@ -1,12 +1,10 @@
-# CMIP7 Extra Land Variables — AWI-ESM3-VEG-HR
-# Generated from cmip7_set2_extra_variables_land.csv
-#
-# 13 producible out of 19 total variables.
-# 6 blocked: 4 irrigation (no irrigation scheme), 1 river (no river routing),
-#            1 root zone moisture (no root-depth info from HTESSEL).
+# CMIP7 Extra Land Variables — Test config with TCo95
+# Adapted from awi-esm3-veg-hr-variables/extra_land/cmip7_awiesm3-veg-hr_extra_land.yaml
+# Uses low-resolution TCo95 (~100km) experiment for quick testing.
+# 13 rules: fx fields, LPJ-GUESS PFT fracs, LAI, IFS hydrology, hourly tas
 
 general:
-  name: "awiesm3-cmip7-extra-land"
+  name: "awiesm3-cmip7-extra-land-tco95-test"
   cmor_version: "CMIP7"
   mip: "CMIP"
   CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
@@ -22,7 +20,7 @@ jobqueue:
   slurm:
     name: pycmor-worker
     queue: compute
-    account: bb1469
+    account: ba0989
     cores: 16
     memory: 256GB
     walltime: '00:30:00'
@@ -119,18 +117,19 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/oifs
-  lpjg_data_path: &ldp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/lpj_guess
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_006/outdata/oifs
+  lpjg_data_path: &ldp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_006/outdata/lpj_guess
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
   variant_label: r1i1p1f1
   grid_label: gn
-  grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
-  nominal_resolution: "25 km"
+  grid: "OpenIFS TCo95 reduced Gaussian, interpolated to 1deg regular grid"
+  nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   time_dimname: time_counter
-  output_directory: ./cmorized_output/awiesm3
+  output_directory: ./cmorized_output/extra_land_test
+  year_start: 1900
 
 rules:
   # ============================================================
@@ -141,7 +140,7 @@ rules:
   - name: areacellr
     inputs:
       - path: *dp
-        pattern: atm_remapped_1m_lsm_1m_.*\.nc
+        pattern: atm_remapped_1m_lsm_.*\.nc
     compound_name: land.areacellr.ti-u-hxy-u.fx.GLB
     model_variable: lsm
     pipelines:
@@ -151,7 +150,7 @@ rules:
   - name: orog_south30
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_orog_mon_land_.*\.nc
+        pattern: atmos_mon_land_orog_.*\.nc
     compound_name: land.orog.ti-u-hxy-u.fx.30S-90S
     model_variable: orog
     pipelines:
@@ -159,6 +158,7 @@ rules:
 
   # ============================================================
   # Part 2: LPJ-GUESS PFT fractions (monthly, Jan..Dec format)
+  # Source: all PFT fracs are [%] (verified from CMIPoutput.cpp)
   # ============================================================
 
   # c3PftFrac = grassFracC3 + treeFracBdlDcd + treeFracBdlEvg + treeFracNdlDcd + treeFracNdlEvg
@@ -231,10 +231,10 @@ rules:
       - lpjg_monthly_pipeline
 
   # ============================================================
-  # Part 3: LPJ-GUESS LAI (monthly, daily not available)
+  # Part 3: LPJ-GUESS LAI (monthly)
+  # Source: lai is [m2 m-2] (verified from CMIPoutput.cpp)
   # ============================================================
 
-  # lai monthly (daily requested but LPJ-GUESS only outputs monthly)
   - name: lai_mon
     inputs:
       - path: *ldp
