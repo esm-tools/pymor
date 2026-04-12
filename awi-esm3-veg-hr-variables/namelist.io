@@ -29,7 +29,7 @@ ldiag_DVD         = .false.  ! enables 'DVD' output (Discrete Variance Decay dia
 ldiag_forc        = .false.  ! enables 'FORC' output (comprehensive forcing diagnostics)
 ldiag_extflds     = .false.  ! enables extended field diagnostics
 ldiag_destine     = .false.  ! enables heat content computation ('hc300m', 'hc700m', 'hc')
-ldiag_trflx       = .false.  ! enables tracer flux diagnostics ('utemp', 'vtemp', 'usalt', 'vsalt')
+ldiag_trflx       = .true.   ! enables tracer flux diagnostics ('utemp', 'vtemp', 'usalt', 'vsalt')
 ldiag_uvw_sqr     = .false.  ! enables 'UVW_SQR' output (squared velocities: u2, v2, w2)
 ldiag_trgrd_xyz   = .false.  ! enables 'TRGRD_XYZ' output (horizontal & vertical tracer gradients)
 ldiag_cmor        = .true.  ! enables CMOR diagnostics for CMIP6/CMIP7 ('tos', 'sos', 'pbo', 'volo', etc.)
@@ -122,6 +122,8 @@ io_list =  'sst       ',1, 'd', 4,
            'osaltrmadvect',1, 'm', 8,
            'osaltdiff ',1, 'm', 8,
            'rsdoabsorb',1, 'm', 4,
+           'utemp     ',1, 'm', 4,
+           'vtemp     ',1, 'm', 4,
 /
 
 ! ============================================================================
