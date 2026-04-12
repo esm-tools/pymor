@@ -1,7 +1,7 @@
 # CMIP7 LRCS Ocean Variables — Test config with CORE2 mesh
 # Adapted from awi-esm3-veg-hr-variables/lrcs_ocean/cmip7_awiesm3-veg-hr_lrcs_ocean.yaml
 # Uses low-resolution CORE2 mesh (~100km) for quick testing.
-# Excluded (not in CORE2 output): hfx_int_day (utemp), hfy_int_day (vtemp), opottemprmadvect
+# Excluded: hfx_int_day / hfy_int_day (would require daily utemp/vtemp ~30 GB each, too expensive for quick test)
 
 general:
   name: "awiesm3-cmip7-lrcs-ocean-core2-test"
@@ -642,7 +642,13 @@ rules:
     model_variable: osalttend
     model_unit: "kg m-2 s-1"
 
-  # opottemprmadvect excluded: not in CORE2 output
+  # opottemprmadvect — temperature tendency from residual mean advection
+  - name: opottemprmadvect
+    inputs:
+      - path: *dp
+        pattern: opottemprmadvect.fesom.1900.nc
+    compound_name: ocean.opottemprmadvect.tavg-ol-hxy-sea.yr.GLB
+    model_variable: opottemprmadvect
 
   # opottempdiff — temperature tendency from dianeutral mixing
   - name: opottempdiff
