@@ -1,12 +1,10 @@
-# CMIP7 CAP7 Ocean Variables — AWI-ESM3-VEG-HR
-# Generated from cmip7_CAP7_variables_ocean.csv
-#
-# 3 new rules — 26 of 43 variables are already in core/lrcs,
-# 14 blocked (no physics, basin masks, or further namelist changes needed).
-# See cmip7_cap7_ocean_todo.md for full variable tracking.
+# CMIP7 CAP7 Ocean Variables — Test config with CORE2 mesh
+# Adapted from awi-esm3-veg-hr-variables/cap7_ocean/cmip7_awiesm3-veg-hr_cap7_ocean.yaml
+# Uses low-resolution CORE2 (~100km, 126858 nodes) experiment for quick testing.
+# 9 rules: tossq_day, volcello_mon, friver, hfx, hfxint, hfy, hfyint, tauuo_mon, tauvo_mon
 
 general:
-  name: "awiesm3-cmip7-cap7-ocean"
+  name: "awiesm3-cmip7-cap7-ocean-core2-test"
   cmor_version: "CMIP7"
   mip: "CMIP"
   CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
@@ -22,7 +20,7 @@ jobqueue:
   slurm:
     name: pycmor-worker
     queue: compute
-    account: bb1469
+    account: ba0989
     cores: 16
     memory: 256GB
     walltime: '00:30:00'
@@ -142,18 +140,20 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_007/outdata/fesom
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
   variant_label: r1i1p1f1
   grid_label: gn
-  mesh_path: &mp /work/ab0246/a270092/input/fesom2/dars2
-  grid_file: /work/ab0246/a270092/input/fesom2/dars2/mesh.nc
-  grid: "FESOM 2.6 unstructured grid DARS (3146761 surface nodes)"
-  nominal_resolution: "10 km"
+  mesh_path: &mp /work/ab0246/a270092/input/fesom2/core2
+  grid_file: /work/ab0246/a270092/input/fesom2/core2/mesh.nc
+  grid: "FESOM 2.6 unstructured grid CORE2 (126858 surface nodes)"
+  nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
-  output_directory: ./cmorized_output/awiesm3
+  output_directory: ./cmorized_output/cap7_ocean_test
+  year_start: 1900
+  year_end: 1900
 
 rules:
   # ============================================================
@@ -165,7 +165,7 @@ rules:
   - name: tossq_day
     inputs:
       - path: *dp
-        pattern: sst.fesom.1350.nc
+        pattern: sst.fesom.1900.nc
     compound_name: ocean.tossq.tavg-u-hxy-sea.day.GLB
     model_variable: sst
     squared_units: "degC2"
@@ -181,7 +181,7 @@ rules:
   - name: volcello_mon
     inputs:
       - path: *dp
-        pattern: hnode.fesom.1350.nc
+        pattern: hnode.fesom.1900.nc
     compound_name: ocean.volcello.tavg-ol-hxy-sea.mon.GLB
     model_variable: hnode
     lazy_write: true
@@ -197,7 +197,7 @@ rules:
   - name: friver
     inputs:
       - path: *dp
-        pattern: runoff.fesom.1350.nc
+        pattern: runoff.fesom.1900.nc
     compound_name: ocean.friver.tavg-u-hxy-sea.mon.GLB
     model_variable: runoff
     scale_factor: 1000.0
@@ -214,28 +214,29 @@ rules:
   - name: hfx
     inputs:
       - path: *dp
-        pattern: utemp.fesom.1350.nc
+        pattern: utemp.fesom.1900.nc
     compound_name: ocean.hfx.tavg-ol-hxy-sea.mon.GLB
     model_variable: utemp
     scale_factor: 4095900.0
     scaled_units: "W"
     hnode_path: *dp
-    hnode_pattern: hnode.fesom.1350.nc
+    hnode_pattern: hnode.fesom.1900.nc
     hnode_variable: hnode
     lazy_write: true
     pipelines:
       - heat_transport_pipeline
 
+  # hfxint — column-integrated heat X transport (W); vertical_sum applied in step.
   - name: hfxint
     inputs:
       - path: *dp
-        pattern: utemp.fesom.1350.nc
+        pattern: utemp.fesom.1900.nc
     compound_name: ocean.hfx.tavg-u-hxy-sea.mon.GLB
     model_variable: utemp
     scale_factor: 4095900.0
     scaled_units: "W"
     hnode_path: *dp
-    hnode_pattern: hnode.fesom.1350.nc
+    hnode_pattern: hnode.fesom.1900.nc
     hnode_variable: hnode
     vertical_sum: true
     pipelines:
@@ -244,13 +245,13 @@ rules:
   - name: hfy
     inputs:
       - path: *dp
-        pattern: vtemp.fesom.1350.nc
+        pattern: vtemp.fesom.1900.nc
     compound_name: ocean.hfy.tavg-ol-hxy-sea.mon.GLB
     model_variable: vtemp
     scale_factor: 4095900.0
     scaled_units: "W"
     hnode_path: *dp
-    hnode_pattern: hnode.fesom.1350.nc
+    hnode_pattern: hnode.fesom.1900.nc
     hnode_variable: hnode
     lazy_write: true
     pipelines:
@@ -259,13 +260,13 @@ rules:
   - name: hfyint
     inputs:
       - path: *dp
-        pattern: vtemp.fesom.1350.nc
+        pattern: vtemp.fesom.1900.nc
     compound_name: ocean.hfy.tavg-u-hxy-sea.mon.GLB
     model_variable: vtemp
     scale_factor: 4095900.0
     scaled_units: "W"
     hnode_path: *dp
-    hnode_pattern: hnode.fesom.1350.nc
+    hnode_pattern: hnode.fesom.1900.nc
     hnode_variable: hnode
     vertical_sum: true
     pipelines:
@@ -282,18 +283,19 @@ rules:
   # NOTE: tx_sur is on the elem grid (6.2M elements); same elem→node
   # caveat as the monthly tauuo rule in core_ocean applies here.
 
-  - name: tauuo_3hr
+  # Test with monthly data (3hr not available in CORE2 test output)
+  - name: tauuo_mon
     inputs:
       - path: *dp
-        pattern: tx_sur.fesom.*.nc  # 3hr output stream — update year/glob as needed
-    compound_name: ocean.tauuo.tavg-u-hxy-sea.3hr.GLB
+        pattern: tx_sur.fesom.1900.nc
+    compound_name: ocean.tauuo.tavg-u-hxy-sea.mon.GLB
     model_variable: tx_sur
 
-  - name: tauvo_3hr
+  - name: tauvo_mon
     inputs:
       - path: *dp
-        pattern: ty_sur.fesom.*.nc  # 3hr output stream — update year/glob as needed
-    compound_name: ocean.tauvo.tavg-u-hxy-sea.3hr.GLB
+        pattern: ty_sur.fesom.1900.nc
+    compound_name: ocean.tauvo.tavg-u-hxy-sea.mon.GLB
     model_variable: ty_sur
 
   # ============================================================
@@ -307,13 +309,13 @@ rules:
   # - name: sfx
   #   inputs:
   #     - path: *dp
-  #       pattern: unod.fesom.1350.nc
+  #       pattern: unod.fesom.1900.nc
   #   compound_name: ocean.sfx.tavg-ol-hxy-sea.mon.GLB
   #   model_variable: unod
 
   # - name: sfy
   #   inputs:
   #     - path: *dp
-  #       pattern: vnod.fesom.1350.nc
+  #       pattern: vnod.fesom.1900.nc
   #   compound_name: ocean.sfy.tavg-ol-hxy-sea.mon.GLB
   #   model_variable: vnod
