@@ -129,7 +129,7 @@ rules:
         pattern: evap.fesom.1350.nc
     compound_name: seaIce.evspsbl.tavg-u-hxy-si.mon.GLB
     model_variable: evap
-    scale_factor: 1000.0
+    scale_factor: -1000.0  # FESOM evap is negative-up; CMIP7 evspsbl positive=upward
     scaled_units: "kg m-2 s-1"
     pipelines:
       - scale_pipeline

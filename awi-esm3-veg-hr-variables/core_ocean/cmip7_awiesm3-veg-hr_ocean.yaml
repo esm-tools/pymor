@@ -99,6 +99,19 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # Ofx pipeline: basin mask pass-through
+  - name: basin_pipeline
+    steps:
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_basin_mask
+      - pycmor.std_lib.generic.get_variable
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   # Ofx pipeline: compute static mass per area (rho_0 * thkcello)
   - name: fx_masscello_pipeline
     steps:
@@ -214,6 +227,10 @@ rules:
         pattern: MLD3.fesom.1350.nc
     compound_name: ocean.mlotst.tavg-u-hxy-sea.mon.GLB
     model_variable: MLD3
+    scale_factor: -1.0  # FESOM MLD3 is negative depth; CMIP7 mlotst is positive-down
+    scaled_units: "m"
+    pipelines:
+      - scale_pipeline
     # MLD3 = Griffies 2016 (sigma_t=0.03 kg/m3) = CMIP-compliant mlotst
 
   - name: tauuo
@@ -380,7 +397,17 @@ rules:
     pipelines:
       - fx_masscello_pipeline
 
-  # basin (Ofx) — NOT POSSIBLE: needs external basin mask data, not in mesh
+  # basin (Ofx) — loaded from external mask on DARS mesh
+  - name: basin
+    inputs:
+      - path: *mp
+        pattern: basin_mask.nc
+    compound_name: ocean.basin.ti-u-hxy-u.fx.GLB
+    model_variable: basin
+    basin_mask_file: /work/ab0246/a270092/input/fesom2/dars2/basin_mask.nc
+    pipelines:
+      - basin_pipeline
+
   # hfgeou (Ofx) — NOT POSSIBLE: not in FESOM output or config
 
   # ============================================================

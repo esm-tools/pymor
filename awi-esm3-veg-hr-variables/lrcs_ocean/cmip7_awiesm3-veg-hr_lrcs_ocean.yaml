@@ -396,7 +396,7 @@ rules:
         pattern: evap.fesom.1350.nc
     compound_name: ocean.evspsbl.tavg-u-hxy-ifs.mon.GLB
     model_variable: evap
-    scale_factor: 1000.0
+    scale_factor: -1000.0  # FESOM evap is negative-up; CMIP7 evspsbl positive=upward
     scaled_units: "kg m-2 s-1"
     pipelines:
       - scale_pipeline
@@ -422,6 +422,10 @@ rules:
         pattern: MLD3.fesom.1350.nc
     compound_name: ocean.mlotst.tavg-u-hxy-sea.day.GLB
     model_variable: MLD3
+    scale_factor: -1.0  # FESOM MLD3 is negative depth; CMIP7 mlotst is positive-down
+    scaled_units: "m"
+    pipelines:
+      - scale_pipeline
 
   - name: uos
     inputs:
