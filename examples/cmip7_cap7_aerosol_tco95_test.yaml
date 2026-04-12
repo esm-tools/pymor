@@ -8,7 +8,7 @@
 # See cmip7_cap7_aerosol_todo.md for full variable tracking.
 
 general:
-  name: "awiesm3-cmip7-cap7-aerosol"
+  name: "awiesm3-cmip7-cap7-aerosol-tco95-test"
   cmor_version: "CMIP7"
   mip: "CMIP"
   CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
@@ -24,7 +24,7 @@ jobqueue:
   slurm:
     name: pycmor-worker
     queue: compute
-    account: bb1469
+    account: ba0989
     cores: 16
     memory: 256GB
     walltime: '00:30:00'
@@ -48,17 +48,19 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/oifs
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_007/outdata/oifs
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
   variant_label: r1i1p1f1
   grid_label: gn
-  grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
-  nominal_resolution: "25 km"
+  grid: "OpenIFS TCo95 reduced Gaussian, interpolated to 1deg regular grid"
+  nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   time_dimname: time_counter
-  output_directory: ./cmorized_output/awiesm3
+  output_directory: ./cmorized_output/cap7_aerosol_tco95_test
+  year_start: 1900
+  year_end: 1900
 
 rules:
   # od550aer: total aerosol optical depth at 550nm from MACv2-SP
@@ -66,7 +68,7 @@ rules:
   - name: od550aer_mon
     inputs:
       - path: *dp
-        pattern: atmos_1m_macv2sp_taod550_.*\.nc
+        pattern: atm_remapped_1m_macv2sp_taod550_.*\.nc
     compound_name: aerosol.od550aer.tavg-u-hxy-u.mon.GLB
     model_variable: macv2sp_taod550
 
@@ -75,7 +77,7 @@ rules:
   - name: toz_mon
     inputs:
       - path: *dp
-        pattern: atmos_1m_tco3_.*\.nc
+        pattern: atm_remapped_1m_tco3_.*\.nc
     compound_name: aerosol.toz.tavg-u-hxy-u.mon.GLB
     model_variable: tco3
     scale_factor: 0.46697

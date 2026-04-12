@@ -2099,6 +2099,14 @@ def load_lpjguess_monthly(data, rule):
 
     df_all = pd.concat(frames, ignore_index=True)
 
+    # Detect PFT-breakdown format: has 'Mth' column instead of Jan..Dec.
+    # Sum all non-coordinate columns to produce a per-cell/per-month total.
+    is_pft_format = "Mth" in df_all.columns and "Jan" not in df_all.columns
+    if is_pft_format:
+        coord_cols = {"Lon", "Lat", "Year", "Mth"}
+        pft_cols = [c for c in df_all.columns if c not in coord_cols]
+        df_all["_total"] = df_all[pft_cols].sum(axis=1)
+
     # Get sorted unique years
     years = np.sort(df_all["Year"].unique())
 
@@ -2125,14 +2133,23 @@ def load_lpjguess_monthly(data, rule):
 
     # Fill values — Jan..Dec columns ARE the monthly data for all LPJ-GUESS .out files
     model_variable = rule.get("model_variable", "Total")
-    for _, row in df_all.iterrows():
-        cell_idx = cell_map.get((row["Lon"], row["Lat"]))
-        if cell_idx is None:
-            continue
-        yr_idx = np.searchsorted(years, row["Year"])
-        for m_idx, month in enumerate(months):
-            t_idx = yr_idx * 12 + m_idx
-            values[t_idx, cell_idx] = row[month]
+    if is_pft_format:
+        for _, row in df_all.iterrows():
+            cell_idx = cell_map.get((row["Lon"], row["Lat"]))
+            if cell_idx is None:
+                continue
+            yr_idx = np.searchsorted(years, row["Year"])
+            t_idx = yr_idx * 12 + (int(row["Mth"]) - 1)
+            values[t_idx, cell_idx] = row["_total"]
+    else:
+        for _, row in df_all.iterrows():
+            cell_idx = cell_map.get((row["Lon"], row["Lat"]))
+            if cell_idx is None:
+                continue
+            yr_idx = np.searchsorted(years, row["Year"])
+            for m_idx, month in enumerate(months):
+                t_idx = yr_idx * 12 + m_idx
+                values[t_idx, cell_idx] = row[month]
 
     # Create xarray Dataset
     da = xr.DataArray(
@@ -2145,7 +2162,7 @@ def load_lpjguess_monthly(data, rule):
         },
         name=model_variable,
     )
-    da.attrs["units"] = rule.get("source_units", "kg C m-2 s-1")
+    da.attrs["units"] = rule.get("source_units", "kg m-2 s-1")
 
     ds = da.to_dataset()
     return ds
