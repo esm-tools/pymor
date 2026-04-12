@@ -265,7 +265,7 @@ inherit:
   grid: "FESOM 2.6 unstructured grid CORE2 (126858 surface nodes)"
   nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
-  output_directory: ./cmorized_output/core2_lrcs_seaice_test
+  output_directory: ./cmorized_output/lrcs_seaice_core2_test
   year_start: 1900
   year_end: 1900
 

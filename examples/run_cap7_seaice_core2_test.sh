@@ -1,17 +1,17 @@
 #!/bin/bash
-#SBATCH --job-name=pycmor-cap7-atm-test
+#SBATCH --job-name=pycmor-cap7-seaice-core2-test
 #SBATCH --partition=compute
 #SBATCH --account=ba0989
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=256G
-#SBATCH --time=08:00:00
-#SBATCH --output=pycmor_cap7_atm_test_%j.log
-#SBATCH --error=pycmor_cap7_atm_test_%j.log
+#SBATCH --time=02:00:00
+#SBATCH --output=pycmor_cap7_seaice_core2_test_%j.log
+#SBATCH --error=pycmor_cap7_seaice_core2_test_%j.log
 
-# Run pycmor cap7_atm test on compute node
-# 66 rules: daily/3hr/1hr/6hr/monthly cap7 atmosphere variables
+# Run pycmor process entirely on compute node (including Prefect server)
+# Rules are processed serially (parallel: False) to avoid HDF5/Prefect issues.
 
 source ~/loadconda.sh
 conda activate pycmor_py312
@@ -27,9 +27,9 @@ export TMPDIR=$PYCMOR_SCRATCH
 export HDF5_USE_FILE_LOCKING=FALSE
 export OMP_NUM_THREADS=1
 
-# Use local Dask cluster with 4 workers (64 GB each)
+# Use local Dask cluster since we're already on a compute node
 sed -e 's/dask_cluster: "slurm"/dask_cluster: "local"/' \
     -e '/dask_cluster:/a\  dask_n_workers: 4' \
-    examples/cmip7_cap7_atm_tco95_test.yaml > $PYCMOR_SCRATCH/cap7_atm_test_local.yaml
+    examples/cmip7_cap7_seaice_core2_test.yaml > $PYCMOR_SCRATCH/cap7_seaice_core2_test_local.yaml
 
-pycmor process $PYCMOR_SCRATCH/cap7_atm_test_local.yaml
+pycmor process $PYCMOR_SCRATCH/cap7_seaice_core2_test_local.yaml

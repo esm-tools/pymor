@@ -1,17 +1,17 @@
 #!/bin/bash
-#SBATCH --job-name=pycmor-extra-atm-test
+#SBATCH --job-name=pycmor-lrcs-seaice-core2-test
 #SBATCH --partition=compute
 #SBATCH --account=ba0989
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=256G
-#SBATCH --time=04:00:00
-#SBATCH --output=pycmor_extra_atm_test_%j.log
-#SBATCH --error=pycmor_extra_atm_test_%j.log
+#SBATCH --time=02:00:00
+#SBATCH --output=pycmor_lrcs_seaice_core2_test_%j.log
+#SBATCH --error=pycmor_lrcs_seaice_core2_test_%j.log
 
 # Run pycmor process entirely on compute node (including Prefect server)
-# 21 rules: 1hr global/south30, 3hr, daily, monthly
+# Rules are processed serially (parallel: False) to avoid HDF5/Prefect issues.
 
 source ~/loadconda.sh
 conda activate pycmor_py312
@@ -29,7 +29,7 @@ export OMP_NUM_THREADS=1
 
 # Use local Dask cluster since we're already on a compute node
 sed -e 's/dask_cluster: "slurm"/dask_cluster: "local"/' \
-    -e '/dask_cluster:/a\  dask_n_workers: 12' \
-    examples/cmip7_extra_atm_tco95_test.yaml > $PYCMOR_SCRATCH/extra_atm_test_local.yaml
+    -e '/dask_cluster:/a\  dask_n_workers: 4' \
+    examples/cmip7_lrcs_seaice_core2_test.yaml > $PYCMOR_SCRATCH/lrcs_seaice_core2_test_local.yaml
 
-pycmor process $PYCMOR_SCRATCH/extra_atm_test_local.yaml
+pycmor process $PYCMOR_SCRATCH/lrcs_seaice_core2_test_local.yaml

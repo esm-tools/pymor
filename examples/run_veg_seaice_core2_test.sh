@@ -1,17 +1,16 @@
 #!/bin/bash
-#SBATCH --job-name=pycmor-veg-atm-test
+#SBATCH --job-name=pycmor-veg-seaice-core2-test
 #SBATCH --partition=compute
 #SBATCH --account=ba0989
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=256G
-#SBATCH --time=04:00:00
-#SBATCH --output=pycmor_veg_atm_test_%j.log
-#SBATCH --error=pycmor_veg_atm_test_%j.log
+#SBATCH --time=01:00:00
+#SBATCH --output=pycmor_veg_seaice_core2_test_%j.log
+#SBATCH --error=pycmor_veg_seaice_core2_test_%j.log
 
 # Run pycmor process entirely on compute node (including Prefect server)
-# 26 rules: IFS 3hr/6hr/daily/monthly + LPJ-GUESS fire emission
 
 source ~/loadconda.sh
 conda activate pycmor_py312
@@ -30,6 +29,6 @@ export OMP_NUM_THREADS=1
 # Use local Dask cluster since we're already on a compute node
 sed -e 's/dask_cluster: "slurm"/dask_cluster: "local"/' \
     -e '/dask_cluster:/a\  dask_n_workers: 4' \
-    examples/cmip7_veg_atm_tco95_test.yaml > $PYCMOR_SCRATCH/veg_atm_test_local.yaml
+    examples/cmip7_veg_seaice_core2_test.yaml > $PYCMOR_SCRATCH/veg_seaice_core2_test_local.yaml
 
-pycmor process $PYCMOR_SCRATCH/veg_atm_test_local.yaml
+pycmor process $PYCMOR_SCRATCH/veg_seaice_core2_test_local.yaml

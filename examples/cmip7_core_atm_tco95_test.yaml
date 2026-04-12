@@ -5,7 +5,7 @@
 # ssrdc/strdc not yet sent to XIOS (fix pending in oifs48r1 MR#70).
 
 general:
-  name: "awiesm3-cmip7-core-atmos-tco95-test"
+  name: "awiesm3-cmip7-core-atm-tco95-test"
   cmor_version: "CMIP7"
   mip: "CMIP"
   CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
@@ -118,7 +118,7 @@ inherit:
   nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   time_dimname: time_counter
-  output_directory: ./cmorized_output/tco95_test
+  output_directory: ./cmorized_output/core_atm_tco95_test
   year_start: 1900
   year_end: 1900
 

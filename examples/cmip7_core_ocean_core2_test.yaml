@@ -3,7 +3,7 @@
 # Uses low-resolution core2 mesh (~127k nodes) for quick testing.
 
 general:
-  name: "awiesm3-cmip7-core-ocean-test"
+  name: "awiesm3-cmip7-core-ocean-core2-test"
   cmor_version: "CMIP7"
   mip: "CMIP"
   CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
@@ -160,7 +160,7 @@ inherit:
   grid: "FESOM 2.6 unstructured grid CORE2 (126858 surface nodes)"
   nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
-  output_directory: ./cmorized_output/core2_test
+  output_directory: ./cmorized_output/core_ocean_core2_test
 
 rules:
   # ============================================================

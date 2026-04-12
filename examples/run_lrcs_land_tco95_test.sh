@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=pycmor-lrcs-land-test
+#SBATCH --job-name=pycmor-lrcs-land-tco95-test
 #SBATCH --partition=compute
 #SBATCH --account=ba0989
 #SBATCH --nodes=1
@@ -7,8 +7,8 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=256G
 #SBATCH --time=02:00:00
-#SBATCH --output=pycmor_lrcs_land_test_%j.log
-#SBATCH --error=pycmor_lrcs_land_test_%j.log
+#SBATCH --output=pycmor_lrcs_land_tco95_test_%j.log
+#SBATCH --error=pycmor_lrcs_land_tco95_test_%j.log
 
 # Run pycmor lrcs_land test on compute node
 # 3 LPJ-GUESS monthly + 3 IFS fx variables
@@ -30,6 +30,6 @@ export OMP_NUM_THREADS=1
 # Use local Dask cluster with 4 workers (64 GB each)
 sed -e 's/dask_cluster: "slurm"/dask_cluster: "local"/' \
     -e '/dask_cluster:/a\  dask_n_workers: 4' \
-    examples/cmip7_lrcs_land_tco95_test.yaml > $PYCMOR_SCRATCH/lrcs_land_test_local.yaml
+    examples/cmip7_lrcs_land_tco95_test.yaml > $PYCMOR_SCRATCH/lrcs_land_tco95_test_local.yaml
 
-pycmor process $PYCMOR_SCRATCH/lrcs_land_test_local.yaml
+pycmor process $PYCMOR_SCRATCH/lrcs_land_tco95_test_local.yaml
