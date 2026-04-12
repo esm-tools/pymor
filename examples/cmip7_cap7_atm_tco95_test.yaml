@@ -26,6 +26,30 @@ jobqueue:
     walltime: '00:30:00'
 
 pipelines:
+  # deaccumulate_pipeline: IFS accumulated-flux correction.
+  # Applied to rules using IFS running-accumulator fields that have been
+  # pre-divided by 3600 in field_def_cmip7.xml (ssrd, ssr, strd, str,
+  # slhf, sshf, tisr, tsr, tsrc, cp, sf, lsp, e, ro, sro, pev, ssrdc,
+  # ssrc, strdc, strc, ewss, nsss, smlt). The step multiplies by 3600 to
+  # undo the pre-division, diffs along time, divides by inter-sample dt,
+  # and (for precip-like fields) multiplies by 1000 kg m-3 for water
+  # density. Set rule.deaccumulate_mode to "energy", "precip", or "flux".
+  - name: deaccumulate_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:deaccumulate_ifs
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   # hurs: Magnus formula from 2t + 2d
   - name: hurs_pipeline
     steps:
@@ -177,7 +201,7 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_007/outdata/oifs
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_013/outdata/oifs
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
@@ -202,6 +226,8 @@ rules:
         pattern: atmos_day_cap7_hfls_.*\.nc
     compound_name: atmos.hfls.tavg-u-hxy-u.day.GLB
     model_variable: hfls
+    deaccumulate_mode: energy
+    pipelines: [deaccumulate_pipeline]
 
   - name: hfss_day
     inputs:
@@ -209,6 +235,8 @@ rules:
         pattern: atmos_day_cap7_hfss_.*\.nc
     compound_name: atmos.hfss.tavg-u-hxy-u.day.GLB
     model_variable: hfss
+    deaccumulate_mode: energy
+    pipelines: [deaccumulate_pipeline]
 
   - name: rlus_day
     inputs:
@@ -216,6 +244,8 @@ rules:
         pattern: atmos_day_cap7_rlus_.*\.nc
     compound_name: atmos.rlus.tavg-u-hxy-u.day.GLB
     model_variable: rlus
+    deaccumulate_mode: energy
+    pipelines: [deaccumulate_pipeline]
 
   - name: rsus_day
     inputs:
@@ -223,6 +253,8 @@ rules:
         pattern: atmos_day_cap7_rsus_.*\.nc
     compound_name: atmos.rsus.tavg-u-hxy-u.day.GLB
     model_variable: rsus
+    deaccumulate_mode: energy
+    pipelines: [deaccumulate_pipeline]
 
   - name: rluscs_day
     inputs:
@@ -230,6 +262,8 @@ rules:
         pattern: atmos_day_cap7_rluscs_.*\.nc
     compound_name: atmos.rluscs.tavg-u-hxy-u.day.GLB
     model_variable: rluscs
+    deaccumulate_mode: energy
+    pipelines: [deaccumulate_pipeline]
 
   - name: rsuscs_day
     inputs:
@@ -237,6 +271,8 @@ rules:
         pattern: atmos_day_cap7_rsuscs_.*\.nc
     compound_name: atmos.rsuscs.tavg-u-hxy-u.day.GLB
     model_variable: rsuscs
+    deaccumulate_mode: energy
+    pipelines: [deaccumulate_pipeline]
 
   - name: rlds_day
     inputs:
@@ -244,6 +280,8 @@ rules:
         pattern: atmos_day_cap7_rlds_.*\.nc
     compound_name: atmos.rlds.tavg-u-hxy-u.day.GLB
     model_variable: rlds
+    deaccumulate_mode: energy
+    pipelines: [deaccumulate_pipeline]
 
   - name: rldscs_day
     inputs:
@@ -251,6 +289,8 @@ rules:
         pattern: atmos_day_cap7_rldscs_.*\.nc
     compound_name: atmos.rldscs.tavg-u-hxy-u.day.GLB
     model_variable: rldscs
+    deaccumulate_mode: energy
+    pipelines: [deaccumulate_pipeline]
 
   - name: rsdscs_day
     inputs:
@@ -258,6 +298,8 @@ rules:
         pattern: atmos_day_cap7_rsdscs_.*\.nc
     compound_name: atmos.rsdscs.tavg-u-hxy-u.day.GLB
     model_variable: rsdscs
+    deaccumulate_mode: energy
+    pipelines: [deaccumulate_pipeline]
 
   - name: rlut_day
     inputs:
@@ -279,6 +321,8 @@ rules:
         pattern: atmos_day_cap7_rsdt_.*\.nc
     compound_name: atmos.rsdt.tavg-u-hxy-u.day.GLB
     model_variable: rsdt
+    deaccumulate_mode: energy
+    pipelines: [deaccumulate_pipeline]
 
   - name: rsut_day
     inputs:
@@ -286,6 +330,8 @@ rules:
         pattern: atmos_day_cap7_rsut_.*\.nc
     compound_name: atmos.rsut.tavg-u-hxy-u.day.GLB
     model_variable: rsut
+    deaccumulate_mode: energy
+    pipelines: [deaccumulate_pipeline]
 
   - name: rsutcs_day
     inputs:
@@ -293,6 +339,8 @@ rules:
         pattern: atmos_day_cap7_rsutcs_.*\.nc
     compound_name: atmos.rsutcs.tavg-u-hxy-u.day.GLB
     model_variable: rsutcs
+    deaccumulate_mode: energy
+    pipelines: [deaccumulate_pipeline]
 
   - name: prc_day
     inputs:
@@ -300,6 +348,8 @@ rules:
         pattern: atmos_day_cap7_prc_.*\.nc
     compound_name: atmos.prc.tavg-u-hxy-u.day.GLB
     model_variable: prc
+    deaccumulate_mode: precip
+    pipelines: [deaccumulate_pipeline]
 
   - name: prsn_day
     inputs:
@@ -307,6 +357,8 @@ rules:
         pattern: atmos_day_cap7_prsn_.*\.nc
     compound_name: atmos.prsn.tavg-u-hxy-u.day.GLB
     model_variable: prsn
+    deaccumulate_mode: precip
+    pipelines: [deaccumulate_pipeline]
 
   - name: prw_day
     inputs:
@@ -419,6 +471,8 @@ rules:
         pattern: atmos_3h_prsn_prsn_.*\.nc
     compound_name: atmos.prsn.tavg-u-hxy-u.3hr.GLB
     model_variable: prsn
+    deaccumulate_mode: precip
+    pipelines: [deaccumulate_pipeline]
 
   # ============================================================
   # Part 5: 1hr fields
@@ -477,6 +531,8 @@ rules:
         pattern: atmos_1h_sfc_rlds_.*\.nc
     compound_name: atmos.rlds.tavg-u-hxy-u.1hr.GLB
     model_variable: rlds
+    deaccumulate_mode: energy
+    pipelines: [deaccumulate_pipeline]
 
   - name: rsds_1hr
     inputs:
@@ -484,6 +540,8 @@ rules:
         pattern: atmos_1h_sfc_rsds_.*\.nc
     compound_name: atmos.rsds.tavg-u-hxy-u.1hr.GLB
     model_variable: rsds
+    deaccumulate_mode: energy
+    pipelines: [deaccumulate_pipeline]
 
   - name: sfcWind_1hr
     inputs:

@@ -274,25 +274,23 @@ rules:
   # ============================================================
   # Part N: 3-hourly tauuo — surface X wind stress
   # ============================================================
-  # Input: tx_sur from FESOM at 3-hourly output frequency.
-  # Prerequisite: enable 3-hourly tx_sur output in namelist.io
-  # (one output stream per variable, separate from the monthly stream).
-  # The DefaultPipeline timeavg step is a no-op at 3hr target frequency;
-  # the data should already be 3-hourly averages from FESOM.
+  # Input: tx_sur/ty_sur from FESOM at 3-hourly output frequency.
+  # Namelist.io sets tx_sur/ty_sur to '3, h' — single stream shared with the
+  # monthly tauuo/tauvo rules in core_ocean (pycmor timeavgs 3hr → monthly).
   # NOTE: tx_sur is on the elem grid (6.2M elements); same elem→node
   # caveat as the monthly tauuo rule in core_ocean applies here.
 
   - name: tauuo_3hr
     inputs:
       - path: *dp
-        pattern: tx_sur.fesom.*.nc  # 3hr output stream — update year/glob as needed
+        pattern: tx_sur.fesom.*.nc
     compound_name: ocean.tauuo.tavg-u-hxy-sea.3hr.GLB
     model_variable: tx_sur
 
   - name: tauvo_3hr
     inputs:
       - path: *dp
-        pattern: ty_sur.fesom.*.nc  # 3hr output stream — update year/glob as needed
+        pattern: ty_sur.fesom.*.nc
     compound_name: ocean.tauvo.tavg-u-hxy-sea.3hr.GLB
     model_variable: ty_sur
 

@@ -5,6 +5,47 @@ Steps are organized by reusability:
 - Generic steps (load_gridfile): work with any model/realm
 - Ocean fx steps (compute_deptho, etc.): FESOM-specific but pattern is reusable
 - Vertical integration: generic ocean/atmosphere
+
+Function index (keep this list in sync when adding/removing steps; helps avoid duplicates):
+
+  Loaders / generic
+    load_basin_mask, load_gridfile, _load_secondary_mf,
+    load_lpjguess_monthly, load_lpjguess_yearly,
+    load_lpjguess_yearly_lut, load_lpjguess_monthly_lut,
+    sum_lpjguess_monthly_files
+
+  Generic scaling / arithmetic / selection
+    scale_by_constant, fraction_to_percent, compute_square,
+    compute_constant_field, compute_temporal_diff,
+    extract_bottom, extract_surface, extract_single_plevel,
+    select_southern_hemisphere, integrate_over_hemisphere, vertical_integrate
+
+  Ocean fx (FESOM mesh)
+    compute_deptho, compute_sftof, compute_thkcello_fx,
+    compute_masscello_fx, compute_volcello_fx, compute_volcello_time
+
+  Ocean diagnostics
+    compute_density, compute_zostoga, compute_msftbarot,
+    compute_mass_transport, compute_salt_transport,
+    compute_salt_transport_integrated, compute_heat_transport,
+    compute_msftmz, compute_hfbasin, compute_sltbasin,
+    _node_edge_length, _elem_geometry,
+    _load_basin_nodes, _mesh_nodes, _elem_lat_area, _basin_lat_sum
+
+  Sea ice
+    compute_sitimefrac, compute_siflcondtop, compute_sihc,
+    compute_sisnhc, compute_sisnhc_from_msnow, compute_snd_from_msnow,
+    compute_sitempbot, compute_sifb, compute_simpeffconc,
+    compute_sispeed, compute_ice_mass_transport,
+    compute_sistressave, compute_sistressmax, compute_slthick
+
+  Atmosphere
+    compute_surface_pressure, compute_sfcwind, compute_hurs, compute_hur_ml,
+    compute_huss, compute_clwvi, compute_snc, compute_areacella, compute_rtmt
+
+  Land / LPJ-GUESS
+    compute_fire_emission, compute_mrtws, compute_snd,
+    compute_mrsow, compute_sftgif, compute_mrsofc, compute_rootd
 """
 
 import glob as _glob
@@ -21,6 +62,25 @@ logger = logging.getLogger(__name__)
 # ============================================================
 # Generic steps — reusable across models and realms
 # ============================================================
+
+
+def load_basin_mask(data, rule):
+    """
+    Load a FESOM basin mask file as an xarray Dataset.
+
+    Reads the path from rule.basin_mask_file. Renames the horizontal
+    dimension ``ncells`` (as used in the mask file) to ``nod2`` so the
+    result matches FESOM output and downstream steps (map_dimensions,
+    set_coordinates) treat it as a surface field on the unstructured mesh.
+    """
+    basin_file = rule.get("basin_mask_file")
+    if basin_file is None:
+        raise ValueError("Rule must specify 'basin_mask_file' for load_basin_mask step")
+    logger.info(f"Loading basin mask file: {basin_file}")
+    ds = xr.open_dataset(basin_file)
+    if "ncells" in ds.dims:
+        ds = ds.rename({"ncells": "nod2"})
+    return ds
 
 
 def load_gridfile(data, rule):
@@ -1882,6 +1942,57 @@ def compute_hurs(data, rule):
     return result
 
 
+def compute_hur_ml(data, rule):
+    """
+    Compute relative humidity on model levels from ta, hus, pfull.
+
+    OpenIFS on native model levels does not fill the `r` field (FullPos only
+    emits `r` on pressure levels), so we reconstruct it from temperature,
+    specific humidity and pressure using the Magnus/Tetens formula for
+    saturation vapour pressure over water:
+
+      e_sat(T) = 611.2 * exp(17.67 * (T - 273.15) / (T - 29.65))   [Pa]
+
+    Vapour pressure from specific humidity:
+
+      e = q * p / (0.622 + 0.378 * q)                              [Pa]
+
+    Relative humidity:
+
+      RH = 100 * e / e_sat
+
+    Primary input (data) is ta (air temperature on model levels, K).
+    Specific humidity and pressure are loaded from rule attributes.
+
+    Rule attributes:
+      - second_input_path: directory containing hus files
+      - second_input_pattern: glob pattern for hus files
+      - second_variable: variable name in hus files (e.g. "hus")
+      - third_input_path: directory containing pfull files
+      - third_input_pattern: glob pattern for pfull files
+      - third_variable: variable name in pfull files (e.g. "pfull")
+    """
+    hus = _load_secondary_mf(rule, "second_input_path", "second_input_pattern", "second_variable")
+    pfull = _load_secondary_mf(rule, "third_input_path", "third_input_pattern", "third_variable")
+
+    # Saturation vapour pressure over water (Bolton 1980 / Magnus form)
+    e_sat = 611.2 * np.exp(17.67 * (data - 273.15) / (data - 29.65))
+
+    # Actual vapour pressure from specific humidity and pressure
+    e = hus * pfull / (0.622 + 0.378 * hus)
+
+    result = 100.0 * e / e_sat
+    result = result.clip(0, 100)
+
+    result.attrs = {
+        "units": "%",
+        "standard_name": "relative_humidity",
+        "long_name": "Relative Humidity",
+    }
+    result.name = rule.model_variable
+    return result
+
+
 def compute_huss(data, rule):
     """
     Compute near-surface specific humidity from dewpoint and surface pressure.
@@ -2937,3 +3048,506 @@ def extract_single_plevel(data, rule):
     result = da.sel({plev_dim: plevel}, method="nearest")
     result = result.drop_vars(plev_dim, errors="ignore")
     return result.to_dataset()
+
+
+# ============================================================
+# Basin-latitude binned diagnostics (msftmz, hfbasin, sltbasin)
+# Algorithms adapted from tripyview (calc_zmoc, calc_mhflx_box_fast)
+# and pyfesom2 (xmoc_data). No external dependencies required.
+# ============================================================
+
+
+_BASIN_IDS = (1, 2, 3, 10, 11)  # Atl, Pac, Ind, Arctic, SO — matches basin_mask.nc
+_BASIN_NAMES = ("atlantic", "pacific", "indian", "arctic", "southern")
+# CMIP basin axis (CMIP6_coordinate.json → 'basin') requires exactly three names.
+_CMIP_BASIN_NAMES = ("atlantic_arctic_ocean", "indian_pacific_ocean", "global_ocean")
+_CMIP_BASIN_AGG = {
+    "atlantic_arctic_ocean": (0, 3),           # atlantic + arctic
+    "indian_pacific_ocean":  (1, 2),           # pacific + indian
+    "global_ocean":          (0, 1, 2, 3, 4),  # all
+}
+# Subdivided basins are only meaningful north of this; south of it only global_ocean
+# is reported. CMIP convention ~34°S.
+_BASIN_SOUTH_CUTOFF = -34.0
+
+
+def _aggregate_to_cmip_basins(binned, lat_centers, cutoff=_BASIN_SOUTH_CUTOFF):
+    """Collapse 5-basin intermediate → 3 CMIP basins.
+
+    binned: array shape (..., 5, nlat) ordered per _BASIN_NAMES.
+    Returns array shape (..., 3, nlat) ordered per _CMIP_BASIN_NAMES.
+    atlantic_arctic & indian_pacific → NaN south of cutoff; global_ocean untouched.
+    """
+    south = np.asarray(lat_centers) < cutoff
+    out_shape = binned.shape[:-2] + (3, binned.shape[-1])
+    out = np.zeros(out_shape, dtype=np.float64)
+    for j, name in enumerate(_CMIP_BASIN_NAMES):
+        idxs = list(_CMIP_BASIN_AGG[name])
+        out[..., j, :] = binned[..., idxs, :].sum(axis=-2)
+        if name != "global_ocean":
+            out[..., j, south] = np.nan
+    return out
+_RHO0 = 1030.0
+_CP = 3900.0
+
+
+def _load_basin_nodes(rule):
+    """Return node→basin-id array from rule.basin_mask_file (rename ncells→nod2)."""
+    path = rule.get("basin_mask_file")
+    if path is None:
+        raise ValueError("Rule must specify 'basin_mask_file'")
+    ds = xr.open_dataset(path)
+    b = ds["basin"].values
+    ds.close()
+    return b
+
+
+def _mesh_nodes(grid_file):
+    """Return (lat_nodes, cell_area, depth_bnds, tri) from FESOM mesh.nc.
+
+    tri is int64 (3, ntriags), 0-based.
+    """
+    m = xr.open_dataset(grid_file)
+    lat = m["lat"].values
+    area = m["cell_area"].values
+    dbnds = m["depth_bnds"].values
+    tri_raw = m["triag_nodes"].values
+    m.close()
+    tri = np.where(np.isfinite(tri_raw), tri_raw, 0).astype(np.int64)
+    if tri.shape[0] != 3 and tri.shape[1] == 3:
+        tri = tri.T
+    tri = tri - 1
+    return lat, area, dbnds, tri
+
+
+def _elem_lat_area(lat_nodes, cell_area, tri):
+    """Per-element latitude (triangle centroid), horizontal area (m²), and
+    zonal width dx = area / dy_elem where dy_elem is the triangle's meridional extent (m)."""
+    elem_lat = lat_nodes[tri].mean(axis=0)
+    elem_area = (cell_area[tri[0]] + cell_area[tri[1]] + cell_area[tri[2]]) / 3.0
+    lat_min = lat_nodes[tri].min(axis=0)
+    lat_max = lat_nodes[tri].max(axis=0)
+    dy_elem_m = np.maximum(np.deg2rad(lat_max - lat_min) * 6_371_000.0, 1.0)
+    elem_dx = elem_area / dy_elem_m  # effective zonal width (m)
+    return elem_lat, elem_area, elem_dx
+
+
+def _lat_edges(dlat=1.0):
+    return np.arange(-90.0, 90.0 + dlat / 2, dlat)
+
+
+def _basin_lat_crossing_sum(values, min_lat, max_lat, loc_basin, lat_centers, basin_ids=_BASIN_IDS):
+    """Sum values over (basin, lat_bin) for elements whose [min_lat, max_lat]
+    contains lat_centers[j]. Vectorized via interval-scatter + cumsum.
+    values shape (..., nelem)."""
+    nlat = lat_centers.size
+    nb = len(basin_ids)
+    lead = values.shape[:-1]
+    flat_lead = int(np.prod(lead)) if lead else 1
+    vals_flat = values.reshape(flat_lead, values.shape[-1])  # (L, nelem)
+
+    # For each element, find contiguous range of lat bin indices it straddles
+    lo = np.searchsorted(lat_centers, min_lat, side="left")
+    hi = np.searchsorted(lat_centers, max_lat, side="right")  # exclusive
+    # valid elements: lo < nlat and hi > 0 and lo < hi
+    valid = (lo < nlat) & (hi > lo)
+
+    out = np.zeros((flat_lead, nb, nlat), dtype=np.float64)
+    for bi, bid in enumerate(basin_ids):
+        sel = valid & (loc_basin == bid)
+        if not sel.any():
+            continue
+        lo_s = np.clip(lo[sel], 0, nlat)
+        hi_s = np.clip(hi[sel], 0, nlat)
+        vs = vals_flat[:, sel]  # (L, nsel)
+        # interval scatter: add vs at lo_s, subtract at hi_s; cumsum on lat axis
+        delta = np.zeros((flat_lead, nlat + 1), dtype=np.float64)
+        np.add.at(delta, (slice(None), lo_s), vs)
+        np.add.at(delta, (slice(None), hi_s), -vs)
+        out[:, bi, :] = np.cumsum(delta[:, :nlat], axis=1)
+    return out.reshape(lead + (nb, nlat))
+
+
+def _basin_lat_sum(values, loc_lat, loc_basin, lat_edges, basin_ids=_BASIN_IDS):
+    """Sum values over (basin, lat_bin). values shape (..., nloc).
+
+    Returns array shape (..., n_basins, n_lat_bins-1) with leading dims preserved.
+    """
+    nlat = lat_edges.size - 1
+    nb = len(basin_ids)
+    lat_idx = np.clip(np.searchsorted(lat_edges, loc_lat, side="right") - 1, 0, nlat - 1)
+    lead = values.shape[:-1]
+    flat_lead = int(np.prod(lead)) if lead else 1
+    vals_flat = values.reshape(flat_lead, values.shape[-1])  # (L, nloc)
+    out = np.zeros((flat_lead, nb, nlat), dtype=np.float64)
+    for bi, bid in enumerate(basin_ids):
+        sel = loc_basin == bid
+        if not sel.any():
+            continue
+        sub_vals = vals_flat[:, sel]  # (L, nsel)
+        sub_lat = lat_idx[sel]        # (nsel,)
+        # accumulate column-wise into out[:, bi, sub_lat]
+        # np.add.at with (row_idx, col_idx) broadcasts shapes
+        rows = np.arange(flat_lead)[:, None]
+        cols = sub_lat[None, :]
+        np.add.at(out[:, bi, :], (rows, cols), sub_vals)
+    return out.reshape(lead + (nb, nlat))
+
+
+def compute_msftmz(data, rule):
+    """
+    Ocean meridional overturning mass streamfunction (CMIP msftmz), kg s-1.
+
+    Wraps tripyview's calc_zmoc for the three CMIP basin options:
+      atlantic_arctic_ocean → 'aamoc'
+      indian_pacific_ocean  → 'ipmoc'
+      global_ocean          → 'gmoc'
+
+    Each basin call returns ψ on its own basin-specific lat grid (shapefile-based);
+    here we align them onto a single 1°-dlat global latitude axis and fill missing
+    lat bands with NaN (already CMIP-compliant: subdivided basins NaN south of ~34°S).
+
+    Inputs:
+      data: xr.Dataset with 'w' (time, nz, nod2) — 3D vertical velocity on nodes.
+      rule.mesh_path: FESOM mesh directory (for tpv.load_mesh_fesom2).
+      Optional rule.diag_file: path to fesom.mesh.diag.nc; else inferred from mesh_path.
+    Output: DataArray (time, lev, basin, lat) in kg s-1 (tripyview returns Sv;
+    we scale by ρ₀·10⁹ to get kg s-1).
+    """
+    import tripyview as tpv
+    mesh_path = rule.get("mesh_path")
+    if mesh_path is None:
+        raise ValueError("compute_msftmz requires 'mesh_path' (FESOM mesh directory)")
+    diagpath = rule.get("diag_file", f"{mesh_path}/fesom.mesh.diag.nc")
+
+    mesh = tpv.load_mesh_fesom2(mesh_path, do_info=False)
+    w = data[["w"]] if isinstance(data, xr.Dataset) else data.to_dataset()
+    if "time" not in w.dims:
+        w = w.expand_dims("time")
+    # tripyview propagates data.chunksizes onto mesh-area arrays (dims 'nz','nod2'),
+    # which fails if w has a 'time' chunk. Drop chunks by loading into memory.
+    w = w.load()
+    w = w.assign_coords(lat=("nod2", mesh.n_y), lon=("nod2", mesh.n_x))
+
+    basin_to_key = {
+        "atlantic_arctic_ocean": "aamoc",
+        "indian_pacific_ocean":  "ipmoc",
+        "global_ocean":          "gmoc",
+    }
+
+    # Global 1° lat grid matching tripyview's integer-lat convention
+    dlat = 1.0
+    lat_centers = np.arange(-90.0, 90.0 + dlat, dlat)  # -90, -89, ..., 89, 90
+
+    per_basin = {}
+    for name, key in basin_to_key.items():
+        moc = tpv.calc_zmoc(mesh, w, dlat=dlat, which_moc=key,
+                            diagpath=diagpath, do_info=False, do_compute=True)
+        # moc['zmoc']: dims (nz, lat) or (time, nz, lat) if time dim was kept
+        per_basin[name] = moc["zmoc"]
+
+    # Figure out time + nz from the first basin result
+    first = next(iter(per_basin.values()))
+    has_time = "time" in first.dims
+    nz = first.sizes["nz"]
+    ntime = first.sizes["time"] if has_time else 1
+
+    # Match target nz=nz from tripyview; use interface depths from mesh
+    lev = np.asarray(mesh.zlev[:nz])  # negative-down, in metres
+
+    out = np.full((ntime, nz, 3, lat_centers.size), np.nan, dtype=np.float64)
+    for j, name in enumerate(_CMIP_BASIN_NAMES):
+        da = per_basin[name]
+        # Align to target lat grid via reindex (NaN outside basin extent)
+        da = da.reindex(lat=lat_centers)
+        vals = da.values  # (nz,nlat) or (time,nz,nlat)
+        if vals.ndim == 2:
+            out[0, :, j, :] = vals
+        else:
+            out[:, :, j, :] = vals
+
+    # tripyview zmoc is in Sv; convert to kg s-1 (1 Sv = 1e9 kg s-1 since ρ₀~1000)
+    out_kg = out * 1.0e9
+
+    time_coord = (data["time"].values if isinstance(data, xr.Dataset) and "time" in data.coords
+                  else np.arange(ntime))
+    # If tripyview collapsed the time dim (because input had none), use 1-element
+    if not has_time and ntime == 1 and isinstance(time_coord, np.ndarray) and time_coord.size != 1:
+        time_coord = time_coord[:1]
+
+    da_out = xr.DataArray(
+        out_kg,
+        dims=("time", "lev", "basin", "lat"),
+        coords={
+            "time": time_coord,
+            "lev": lev,
+            "basin": list(_CMIP_BASIN_NAMES),
+            "lat": lat_centers,
+        },
+        name=rule.model_variable,
+        attrs={"units": "kg s-1",
+               "long_name": "Ocean Meridional Overturning Mass Streamfunction"},
+    )
+    return da_out.to_dataset()
+
+
+def compute_hfbasin(data, rule):
+    """
+    Northward ocean heat transport by basin (CMIP hfbasin), W.
+
+    From element-based vtemp (= v·T) produced by FESOM with ldiag_trflx=.true.:
+      HT(basin, lat) = ρ₀ · cp · Σ_elems[basin, lat_bin] vtemp · dz · element_area^{1/2}
+
+    This is a zonally-integrated, latitude-binned meridional heat transport.
+    Element basin assignment: majority of its 3 node-basins (first non-zero).
+
+    Inputs:
+      data: xr.Dataset or DataArray with vtemp (time, nz1, elem)
+      rule.grid_file: mesh.nc (for elem lat, area, triangle indices)
+      rule.basin_mask_file: node-basin mask
+    Output: DataArray (time, basin, lat) in W.
+    """
+    grid_file = rule.get("grid_file")
+    if grid_file is None:
+        raise ValueError("compute_hfbasin requires 'grid_file'")
+    vt = data["vtemp"] if isinstance(data, xr.Dataset) and "vtemp" in data else data
+    ntime = vt.shape[0]
+    nz1 = vt.shape[1]
+
+    lat_nodes, area_nodes, depth_bnds, tri = _mesh_nodes(grid_file)
+    dz = np.diff(depth_bnds)[:nz1]
+    elem_lat, elem_area, elem_dx = _elem_lat_area(lat_nodes, area_nodes, tri)
+    min_lat = lat_nodes[tri].min(axis=0)
+    max_lat = lat_nodes[tri].max(axis=0)
+    basin_nodes = _load_basin_nodes(rule)
+    elem_basin = basin_nodes[tri[0]]
+    weight_1d = dz[:, None] * elem_dx[None, :] * (_RHO0 * _CP)  # (nz1, elem)
+
+    # stream time-by-time → per-element depth-summed flux, then crossing-sum
+    lat_edges = _lat_edges(1.0)
+    lat_centers = 0.5 * (lat_edges[:-1] + lat_edges[1:])
+    flux2d = np.empty((ntime, tri.shape[1]), dtype=np.float64)
+    for t in range(ntime):
+        vt_t = np.asarray(vt.isel(time=t).values)  # (nz1, elem)
+        vt_t = np.where(np.isfinite(vt_t), vt_t, 0.0)
+        flux2d[t] = (vt_t * weight_1d).sum(axis=0)
+    binned = _basin_lat_crossing_sum(flux2d, min_lat, max_lat, elem_basin, lat_centers)
+    binned = _aggregate_to_cmip_basins(binned, lat_centers)
+
+    out = xr.DataArray(
+        binned,
+        dims=("time", "basin", "lat"),
+        coords={
+            "time": vt["time"].values if "time" in vt.coords else np.arange(binned.shape[0]),
+            "basin": list(_CMIP_BASIN_NAMES),
+            "lat": lat_centers,
+        },
+        name=rule.model_variable,
+        attrs={"units": "W", "long_name": "Northward Ocean Heat Transport by Basin"},
+    )
+    return out.to_dataset()
+
+
+def compute_sltbasin(data, rule):
+    """Northward ocean salt transport by basin (CMIP sltbasin), kg s-1.
+
+    Same structure as compute_hfbasin but using usalt/vsalt = v·S (g/kg·m/s).
+    Output: ρ₀ · Σ_elems vsalt · dz · edge  [g/s], scaled to kg/s.
+    """
+    grid_file = rule.get("grid_file")
+    if grid_file is None:
+        raise ValueError("compute_sltbasin requires 'grid_file'")
+    vs = data["vsalt"] if isinstance(data, xr.Dataset) and "vsalt" in data else data
+    ntime = vs.shape[0]
+    nz1 = vs.shape[1]
+
+    lat_nodes, area_nodes, depth_bnds, tri = _mesh_nodes(grid_file)
+    dz = np.diff(depth_bnds)[:nz1]
+    elem_lat, elem_area, elem_dx = _elem_lat_area(lat_nodes, area_nodes, tri)
+    min_lat = lat_nodes[tri].min(axis=0)
+    max_lat = lat_nodes[tri].max(axis=0)
+    basin_nodes = _load_basin_nodes(rule)
+    elem_basin = basin_nodes[tri[0]]
+    # vsalt in psu·m/s = g/kg·m/s; ρ₀·dx·dz·v·S → g/s; /1000 → kg/s
+    weight_1d = dz[:, None] * elem_dx[None, :] * _RHO0 / 1000.0
+
+    lat_edges = _lat_edges(1.0)
+    lat_centers = 0.5 * (lat_edges[:-1] + lat_edges[1:])
+    flux2d = np.empty((ntime, tri.shape[1]), dtype=np.float64)
+    for t in range(ntime):
+        vs_t = np.asarray(vs.isel(time=t).values)
+        vs_t = np.where(np.isfinite(vs_t), vs_t, 0.0)
+        flux2d[t] = (vs_t * weight_1d).sum(axis=0)
+    binned = _basin_lat_crossing_sum(flux2d, min_lat, max_lat, elem_basin, lat_centers)
+    binned = _aggregate_to_cmip_basins(binned, lat_centers)
+
+    out = xr.DataArray(
+        binned,
+        dims=("time", "basin", "lat"),
+        coords={
+            "time": vs["time"].values if "time" in vs.coords else np.arange(binned.shape[0]),
+            "basin": list(_CMIP_BASIN_NAMES),
+            "lat": lat_centers,
+        },
+        name=rule.model_variable,
+        attrs={"units": "kg s-1", "long_name": "Northward Ocean Salt Transport by Basin"},
+    )
+    return out.to_dataset()
+
+
+# ============================================================
+# IFS accumulated-flux deaccumulation
+# ============================================================
+
+
+def deaccumulate_ifs(data, rule):
+    """
+    Deaccumulate IFS accumulated-flux fields written by XIOS 2.5.
+
+    Background
+    ----------
+    IFS 48r1 emits fluxes (radiation, turbulent, precipitation, runoff, ...)
+    as running accumulations since run start. The accumulator is *not* reset
+    per XIOS output step. XIOS 2.5 has no delta/diff operator, so the current
+    ``field_def_cmip7.xml`` divides each accumulated field by 3600 s, which
+    is only correct if the output interval equals 1 hr AND the accumulator
+    were reset between samples -- neither holds.
+
+    This step fixes the resulting per-timestep NetCDFs inside pycmor:
+
+        1. Multiply by 3600 to undo the XIOS ``/3600`` (giving back the true
+           accumulator, in the source units documented in
+           ``field_def_cmip7.xml``: J m-2 for energy fluxes, m for water
+           fluxes).
+        2. ``data.diff("time")`` to obtain per-interval accumulated values.
+        3. Divide by the inter-sample interval ``dt`` (seconds) to get a
+           rate.
+        4. For precipitation/water variables also multiply by 1000 kg m-3
+           (liquid-water density) to go from m s-1 to kg m-2 s-1.
+
+    Modes (``rule.deaccumulate_mode``)
+    ----------------------------------
+    - ``"energy"``  : J m-2 running accum  -> W m-2 rate.
+    - ``"precip"``  : m (w.e.) running accum  -> kg m-2 s-1.
+    - ``"flux"``    : already in rate units in the file but still a running
+                      accumulator per sample (rare); diff/dt, no density.
+
+    Sign convention
+    ---------------
+    ``field_def_cmip7.xml`` already applies the sign flip (e.g.
+    ``-slhf/3600`` for hfls) so incoming data is already oriented with the
+    CMIP7 positive direction (e.g. upward for hfls/hfss). Since multiplying
+    by 3600 and taking ``diff`` is linear and monotone-preserving, signs
+    are preserved.
+
+    Time axis
+    ---------
+    ``diff("time")`` removes the first sample. To keep the time axis
+    aligned with the input file we prepend a zero-valued slice at the
+    original t[0] (no prior accumulator available). Set
+    ``rule.deaccumulate_drop_first: True`` to drop it instead.
+
+    Time-step inference
+    -------------------
+    ``dt`` is determined in order:
+        1. ``rule.source_timestep_seconds`` if set.
+        2. The median of ``np.diff(time)`` (in seconds) otherwise.
+
+    Parameters
+    ----------
+    data : xarray.Dataset or xarray.DataArray
+        Input data, already restricted to a single model variable.
+    rule : Rule
+        Must carry ``deaccumulate_mode`` in {"energy", "precip", "flux"}.
+        Optional: ``source_timestep_seconds`` (float),
+        ``deaccumulate_drop_first`` (bool, default False).
+
+    Returns
+    -------
+    xarray.Dataset or xarray.DataArray
+        Deaccumulated rate with updated units metadata.
+    """
+    mode = rule.get("deaccumulate_mode", "energy")
+    if mode not in ("energy", "precip", "flux"):
+        raise ValueError(
+            f"deaccumulate_ifs: unknown deaccumulate_mode={mode!r}; "
+            "expected 'energy', 'precip', or 'flux'."
+        )
+
+    # Determine the time coordinate name.
+    time_name = "time"
+    dims = getattr(data, "dims", ())
+    if time_name not in dims:
+        cand = rule.get("time_dimname", "time_counter")
+        if cand in dims:
+            time_name = cand
+        else:
+            raise ValueError(
+                "deaccumulate_ifs: no 'time' (or rule.time_dimname) dim on data."
+            )
+
+    # Inter-sample dt in seconds.
+    dt_user = rule.get("source_timestep_seconds", None)
+    if dt_user is not None:
+        dt_seconds = float(dt_user)
+    else:
+        t = data[time_name].values
+        if len(t) < 2:
+            raise ValueError(
+                "deaccumulate_ifs: need >=2 time samples to infer dt; "
+                "set rule.source_timestep_seconds."
+            )
+        deltas = np.diff(t).astype("timedelta64[ns]").astype("int64") / 1e9
+        dt_seconds = float(np.median(deltas))
+        logger.info(
+            "deaccumulate_ifs: inferred source dt = %.1f s from time coord",
+            dt_seconds,
+        )
+
+    # Step 1: undo the XIOS pre-division by 3600 to recover the true
+    # accumulator.
+    accum = data * 3600.0
+
+    # Step 2 + 3: diff along time and divide by dt.
+    diffed = accum.diff(time_name) / dt_seconds
+
+    # Step 4: water-density factor for precip-like fields (m w.e. ->
+    # kg m-2 s-1).
+    if mode == "precip":
+        diffed = diffed * 1000.0
+
+    # Re-align the time axis: diff drops the first sample. Prepend a zero
+    # slice at the original t[0] so downstream steps see the same axis as
+    # input. Set rule.deaccumulate_drop_first: True to instead drop it.
+    drop_first = bool(rule.get("deaccumulate_drop_first", False))
+    if not drop_first:
+        first = (data.isel({time_name: 0}) * 0.0).expand_dims(time_name)
+        first = first.assign_coords(
+            {time_name: data[time_name].isel({time_name: [0]}).values}
+        )
+        result = xr.concat([first, diffed], dim=time_name)
+    else:
+        result = diffed
+
+    # Stamp new units per mode and propagate attributes.
+    new_units = {
+        "energy": "W m-2",
+        "precip": "kg m-2 s-1",
+        "flux": "W m-2",
+    }[mode]
+
+    if isinstance(data, xr.Dataset):
+        for v in result.data_vars:
+            src_attrs = dict(data[v].attrs) if v in data.data_vars else {}
+            src_attrs["units"] = new_units
+            src_attrs["cell_methods"] = src_attrs.get("cell_methods", "time: mean")
+            src_attrs["pycmor_deaccumulated"] = f"mode={mode}, dt={dt_seconds}s"
+            result[v].attrs = src_attrs
+    else:
+        src_attrs = dict(getattr(data, "attrs", {}))
+        src_attrs["units"] = new_units
+        src_attrs["cell_methods"] = src_attrs.get("cell_methods", "time: mean")
+        src_attrs["pycmor_deaccumulated"] = f"mode={mode}, dt={dt_seconds}s"
+        result.attrs = src_attrs
+
+    return result

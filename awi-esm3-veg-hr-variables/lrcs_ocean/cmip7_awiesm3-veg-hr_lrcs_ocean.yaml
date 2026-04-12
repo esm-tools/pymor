@@ -449,12 +449,13 @@ rules:
 
   # hfx_int_day — daily vertically integrated ocean heat X transport
   # Same approach as monthly hfxint in cap7_ocean: utemp × rho_0*cp then integrate over depth.
-  # Requires: ldiag_trflx=.true. and a dedicated daily utemp output stream in namelist.io.
+  # Requires: ldiag_trflx=.true. and utemp at daily frequency in namelist.io
+  # (single stream shared with monthly hfx/hfxint rules; pycmor timeavgs daily → monthly).
   # WARNING: full 3D daily utemp on DARS (3.1M nodes × 47 levels) is very large.
   - name: hfx_int_day
     inputs:
       - path: *dp
-        pattern: utemp.fesom.1350.nc  # daily output stream — update pattern as needed
+        pattern: utemp.fesom.1350.nc
     compound_name: ocean.hfx.tavg-u-hxy-sea.day.GLB
     model_variable: utemp
     scale_factor: 4095900.0
@@ -465,11 +466,11 @@ rules:
 
   # hfy_int_day — daily vertically integrated ocean heat Y transport
   # Same approach as monthly hfyint: vtemp × rho_0*cp then integrate over depth.
-  # Requires: ldiag_trflx=.true. and a dedicated daily vtemp output stream in namelist.io.
+  # Requires: ldiag_trflx=.true. and vtemp at daily frequency in namelist.io.
   - name: hfy_int_day
     inputs:
       - path: *dp
-        pattern: vtemp.fesom.1350.nc  # daily output stream — update pattern as needed
+        pattern: vtemp.fesom.1350.nc
     compound_name: ocean.hfy.tavg-u-hxy-sea.day.GLB
     model_variable: vtemp
     scale_factor: 4095900.0
