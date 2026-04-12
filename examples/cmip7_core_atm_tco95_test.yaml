@@ -1,8 +1,6 @@
 # CMIP7 Core Atmosphere Variables — Test config with TCo95 mesh
 # Adapted from awi-esm3-veg-hr-variables/core_atm/cmip7_awiesm3-veg-hr_atmos.yaml
 # Uses low-resolution TCo95 (~100km) for quick testing.
-# 4 clear-sky surface radiation rules (rsdscs/rsuscs/rldscs/rluscs) excluded:
-# ssrdc/strdc not yet sent to XIOS (fix pending in oifs48r1 MR#70).
 
 general:
   name: "awiesm3-cmip7-core-atm-tco95-test"
@@ -194,8 +192,35 @@ rules:
     compound_name: atmos.rlus.tavg-u-hxy-u.mon.GLB
     model_variable: rlus
 
-  # --- Radiation (surface, clear-sky) — EXCLUDED: ssrdc/strdc not in XIOS mapping ---
-  # rsdscs, rsuscs, rldscs, rluscs removed pending oifs48r1 MR#70
+  # --- Radiation (surface, clear-sky) ---
+
+  - name: rsdscs
+    inputs:
+      - path: *dp
+        pattern: atmos_mon_rsdscs_mon_.*\.nc
+    compound_name: atmos.rsdscs.tavg-u-hxy-u.mon.GLB
+    model_variable: rsdscs
+
+  - name: rsuscs
+    inputs:
+      - path: *dp
+        pattern: atmos_mon_rsuscs_mon_.*\.nc
+    compound_name: atmos.rsuscs.tavg-u-hxy-u.mon.GLB
+    model_variable: rsuscs
+
+  - name: rldscs
+    inputs:
+      - path: *dp
+        pattern: atmos_mon_rldscs_mon_.*\.nc
+    compound_name: atmos.rldscs.tavg-u-hxy-u.mon.GLB
+    model_variable: rldscs
+
+  - name: rluscs
+    inputs:
+      - path: *dp
+        pattern: atmos_mon_rluscs_mon_.*\.nc
+    compound_name: atmos.rluscs.tavg-u-hxy-u.mon.GLB
+    model_variable: rluscs
 
   # --- Turbulent fluxes ---
 

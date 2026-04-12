@@ -1,7 +1,6 @@
 # CMIP7 LRCS Sea Ice Variables — Test config with CORE2 mesh
 # Adapted from awi-esm3-veg-hr-variables/lrcs_seaice/cmip7_awiesm3-veg-hr_lrcs_seaice.yaml
 # Uses low-resolution CORE2 mesh (~100km) for quick testing.
-# snm (thdgrsn) excluded: not available in CORE2 output.
 
 general:
   name: "awiesm3-cmip7-lrcs-seaice-core2-test"
@@ -373,7 +372,18 @@ rules:
     pipelines:
       - scale_pipeline
 
-  # --- snm (thdgrsn) excluded: not available in CORE2 output ---
+  # --- Snow melt rate: thdgrsn [m/s] × rho_snow → kg m-2 s-1 ---
+
+  - name: snm
+    inputs:
+      - path: *dp
+        pattern: thdgrsn\.fesom\..*\.nc
+    compound_name: seaIce.snm.tavg-u-hxy-si.mon.GLB
+    model_variable: thdgrsn
+    scale_factor: 330.0
+    scaled_units: "kg m-2 s-1"
+    pipelines:
+      - scale_pipeline
 
   # --- Freshwater flux from sea ice: fw_ice [m/s] × rho_water → kg m-2 s-1 ---
 
