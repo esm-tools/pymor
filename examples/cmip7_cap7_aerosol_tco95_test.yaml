@@ -63,14 +63,7 @@ inherit:
   year_end: 1900
 
 rules:
-  # od550aer: total aerosol optical depth at 550nm from MACv2-SP
-  # MACv2-SP provides total AOD, already dimensionless (unit "1")
-  - name: od550aer_mon
-    inputs:
-      - path: *dp
-        pattern: atm_remapped_1m_macv2sp_taod550_.*\.nc
-    compound_name: aerosol.od550aer.tavg-u-hxy-u.mon.GLB
-    model_variable: macv2sp_taod550
+  # od550aer dropped: MACv2-SP is anthropogenic-only, not total AOD.
 
   # toz: total column ozone from IFS prescribed ozone
   # tco3 (kg m-2) -> toz (m) via division by O3 density at STP (2.1415 kg/m3)
