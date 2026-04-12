@@ -1,7 +1,6 @@
 # CMIP7 LRCS Ocean Variables — Test config with CORE2 mesh
 # Adapted from awi-esm3-veg-hr-variables/lrcs_ocean/cmip7_awiesm3-veg-hr_lrcs_ocean.yaml
 # Uses low-resolution CORE2 mesh (~100km) for quick testing.
-# Excluded: hfx_int_day / hfy_int_day (would require daily utemp/vtemp ~30 GB each, too expensive for quick test)
 
 general:
   name: "awiesm3-cmip7-lrcs-ocean-core2-test"
@@ -396,7 +395,31 @@ rules:
     pipelines:
       - surface_extract_pipeline
 
-  # hfx_int_day, hfy_int_day excluded: utemp/vtemp not in CORE2 output
+  # hfx_int_day — daily vertically integrated ocean heat X transport
+  - name: hfx_int_day
+    inputs:
+      - path: *dp
+        pattern: utemp\.fesom\..*\.nc
+    compound_name: ocean.hfx.tavg-u-hxy-sea.day.GLB
+    model_variable: utemp
+    scale_factor: 4095900.0
+    scaled_units: "W m-2"
+    lazy_write: true
+    pipelines:
+      - scale_and_integrate_pipeline
+
+  # hfy_int_day — daily vertically integrated ocean heat Y transport
+  - name: hfy_int_day
+    inputs:
+      - path: *dp
+        pattern: vtemp\.fesom\..*\.nc
+    compound_name: ocean.hfy.tavg-u-hxy-sea.day.GLB
+    model_variable: vtemp
+    scale_factor: 4095900.0
+    scaled_units: "W m-2"
+    lazy_write: true
+    pipelines:
+      - scale_and_integrate_pipeline
 
   # ============================================================
   # EASY: Squaring steps (tossq, sossq, zossq, mlotstsq)
