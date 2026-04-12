@@ -467,7 +467,7 @@ class PycmorConfig:
             parser=_parse_bool,
         )
         netcdf_compression_level = Option(
-            default=4,
+            default=1,
             doc="Compression level for NetCDF files (1-9). Higher values give better compression but slower I/O.",
             parser=int,
         )

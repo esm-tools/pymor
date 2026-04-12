@@ -214,7 +214,7 @@ class CMORizer:
         cluster_kwargs = {}
         if cluster_name == "local":
             n_workers = self._pymor_cfg.get("dask_n_workers", None)
-            if n_workers is not None:
+            if n_workers is not None and str(n_workers) != "None":
                 cluster_kwargs["n_workers"] = int(n_workers)
         self._cluster = ClusterClass(**cluster_kwargs)
         set_dashboard_link(self._cluster)

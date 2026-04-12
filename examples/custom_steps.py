@@ -638,6 +638,137 @@ def compute_simpeffconc(data, rule):
 # ============================================================
 
 
+_EDGE_LENGTH_CACHE = {}
+
+
+def _node_edge_length(grid_file):
+    """Mean great-circle edge length per node (m), derived from node_node_links."""
+    if grid_file in _EDGE_LENGTH_CACHE:
+        return _EDGE_LENGTH_CACHE[grid_file]
+    mesh = xr.open_dataset(grid_file)
+    lon = np.deg2rad(mesh["lon"].values)
+    lat = np.deg2rad(mesh["lat"].values)
+    links_raw = mesh["node_node_links"].values  # (nlinks_max, ncells), 1-based; NaN/0 = unused
+    links = np.where(np.isfinite(links_raw), links_raw, 0).astype(np.int64)
+    mesh.close()
+    R = 6_371_000.0
+    if links.shape[0] != lon.size and links.shape[1] == lon.size:
+        pass  # already (nlinks_max, ncells)
+    else:
+        links = links.T
+    nlinks_max, ncells = links.shape
+    sums = np.zeros(ncells)
+    counts = np.zeros(ncells)
+    for k in range(nlinks_max):
+        nbr = links[k] - 1  # to 0-based; invalid → -1
+        valid = nbr >= 0
+        if not valid.any():
+            continue
+        idx = np.where(valid)[0]
+        j = nbr[idx]
+        dlon = lon[j] - lon[idx]
+        dlat = lat[j] - lat[idx]
+        a = np.sin(dlat / 2) ** 2 + np.cos(lat[idx]) * np.cos(lat[j]) * np.sin(dlon / 2) ** 2
+        d = 2 * R * np.arcsin(np.sqrt(np.clip(a, 0, 1)))
+        sums[idx] += d
+        counts[idx] += 1
+    counts[counts == 0] = 1
+    edge = sums / counts
+    _EDGE_LENGTH_CACHE[grid_file] = edge
+    return edge
+
+
+_ELEM_GEOM_CACHE = {}
+
+
+def _elem_geometry(grid_file):
+    """Per-element characteristic length (m) and triangle node indices (0-based).
+
+    Returns (edge_length[ntriags], triag_nodes[3, ntriags]).
+    """
+    if grid_file in _ELEM_GEOM_CACHE:
+        return _ELEM_GEOM_CACHE[grid_file]
+    mesh = xr.open_dataset(grid_file)
+    lon = np.deg2rad(mesh["lon"].values)
+    lat = np.deg2rad(mesh["lat"].values)
+    tri_raw = mesh["triag_nodes"].values
+    mesh.close()
+    tri = np.where(np.isfinite(tri_raw), tri_raw, 0).astype(np.int64)
+    if tri.shape[0] != 3 and tri.shape[1] == 3:
+        tri = tri.T
+    tri = tri - 1  # 1-based → 0-based
+    R = 6_371_000.0
+
+    # Cartesian coords of triangle vertices
+    def xyz(lon_, lat_):
+        return np.stack([np.cos(lat_) * np.cos(lon_), np.cos(lat_) * np.sin(lon_), np.sin(lat_)], axis=-1)
+
+    p0 = xyz(lon[tri[0]], lat[tri[0]])
+    p1 = xyz(lon[tri[1]], lat[tri[1]])
+    p2 = xyz(lon[tri[2]], lat[tri[2]])
+    # flat-triangle area on unit sphere scaled by R^2
+    cross = np.cross(p1 - p0, p2 - p0)
+    area = 0.5 * np.linalg.norm(cross, axis=-1) * R * R
+    edge = np.sqrt(np.maximum(area, 0.0))
+    _ELEM_GEOM_CACHE[grid_file] = (edge, tri)
+    return edge, tri
+
+
+def compute_heat_transport(data, rule):
+    """
+    Compute oceanic heat transport across cell faces in watts.
+
+    hfx = utemp * rho_0 * cp * hnode * edge_length     [W]
+
+    where utemp = u*T [m/s*K], scale_factor provides rho_0*cp,
+    hnode is time-varying layer thickness, and edge_length is the
+    mean great-circle distance to neighbor nodes (proxy for cell-face width).
+
+    Rule attributes:
+      - scale_factor: rho_0 * cp (e.g. 4095900.0)
+      - grid_file: mesh file with lon/lat/node_node_links
+      - hnode_path, hnode_pattern, hnode_variable: secondary input for hnode
+    """
+    factor = float(rule.get("scale_factor"))
+    grid_file = rule.get("grid_file")
+    if grid_file is None:
+        raise ValueError("compute_heat_transport requires 'grid_file'")
+    hnode = _load_secondary_mf(rule, "hnode_path", "hnode_pattern", "hnode_variable")
+
+    horiz_dim = next((d for d in ("elem", "nod2", "ncells") if d in data.dims), data.dims[-1])
+
+    if horiz_dim in ("elem",) or data.sizes[horiz_dim] > 200000 and data.sizes[horiz_dim] != hnode.sizes.get("nod2", -1):
+        # Element-based: utemp/vtemp live on triangles; interpolate hnode from 3 corner nodes.
+        edge_arr, tri = _elem_geometry(grid_file)
+        hnode_node_dim = next((d for d in hnode.dims if hnode.sizes[d] == tri.max() + 1 or d in ("nod2", "ncells")), None)
+        if hnode_node_dim is None:
+            raise ValueError(f"Cannot find node dim in hnode with dims {hnode.dims}")
+        hnode_elem = (hnode.isel({hnode_node_dim: xr.DataArray(tri[0], dims=[horiz_dim])})
+                      + hnode.isel({hnode_node_dim: xr.DataArray(tri[1], dims=[horiz_dim])})
+                      + hnode.isel({hnode_node_dim: xr.DataArray(tri[2], dims=[horiz_dim])})) / 3.0
+        edge = xr.DataArray(edge_arr, dims=[horiz_dim])
+        result = data * factor * hnode_elem * edge
+    else:
+        node_dim = horiz_dim
+        if node_dim not in hnode.dims:
+            for d in hnode.dims:
+                if hnode.sizes[d] == data.sizes[node_dim]:
+                    hnode = hnode.rename({d: node_dim})
+                    break
+        edge_arr = _node_edge_length(grid_file)
+        edge = xr.DataArray(edge_arr, dims=[node_dim])
+        result = data * factor * hnode * edge
+    if rule.get("vertical_sum", False):
+        for vdim in ("nz1", "nz", "depth", "lev"):
+            if vdim in result.dims:
+                result = result.sum(dim=vdim)
+                break
+    result.attrs = data.attrs.copy()
+    result.attrs["units"] = "W"
+    result.name = data.name
+    return result
+
+
 def scale_by_constant(data, rule):
     """
     Multiply data by a constant factor from rule.scale_factor.
@@ -1606,6 +1737,10 @@ def compute_volcello_time(data, rule):
         raise ValueError("Mesh must contain 'cell_area' or 'cluster_area'")
     mesh.close()
 
+    node_dim = "nod2" if "nod2" in data.dims else ("ncells" if "ncells" in data.dims else data.dims[-1])
+    if cell_area.ndim == 1 and cell_area.dims[0] != node_dim:
+        cell_area = cell_area.rename({cell_area.dims[0]: node_dim})
+
     result = data * cell_area
     result.attrs = data.attrs.copy()
     result.attrs["units"] = "m3"
@@ -2313,18 +2448,20 @@ def compute_snd(data, rule):
     snd = sd * 1000 / rsn  (SWE in m water equiv → physical depth in m)
     Where rsn = 0, snd = 0 (no snow).
     """
-    sd = data["sd"]
-    rsn = data["rsn"]
+    if isinstance(data, xr.Dataset):
+        sd = data["sd"]
+    else:
+        sd = data
+    rsn = _load_secondary_mf(rule, "second_input_path", "second_input_pattern", "second_variable")
 
-    # Avoid division by zero: where rsn == 0, there's no snow
     snd = xr.where(rsn > 0, sd * 1000.0 / rsn, 0.0)
     snd.attrs["units"] = "m"
     snd.name = rule.model_variable
 
     ds = snd.to_dataset()
-    for coord in data.coords:
+    for coord in sd.coords:
         if coord not in ds.coords:
-            ds.coords[coord] = data.coords[coord]
+            ds.coords[coord] = sd.coords[coord]
     return ds
 
 
@@ -2627,7 +2764,8 @@ def extract_single_plevel(data, rule):
     var = rule.model_variable
     plevel = float(rule.target_plevel)
 
-    da = data[var]
+    import xarray as xr
+    da = data if isinstance(data, xr.DataArray) else data[var]
     # Find the pressure level dimension
     plev_dim = None
     for dim in da.dims:

@@ -410,7 +410,7 @@ def calculate_chunks_simple(
 def get_encoding_with_chunks(
     ds: xr.Dataset,
     chunks: Dict[str, int] = None,
-    compression_level: int = 4,
+    compression_level: int = 1,
     enable_compression: bool = True,
 ) -> Dict[str, Dict]:
     """

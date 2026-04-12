@@ -53,6 +53,45 @@ from .chunking import (
 )
 from .dataset_helpers import get_time_label, has_time_axis
 
+import dask
+
+
+def _is_dask_backed(ds):
+    """Check if any variable in a dataset/dataarray is backed by dask arrays."""
+    if isinstance(ds, xr.DataArray):
+        return ds.chunks is not None
+    return any(v.chunks is not None for v in ds.data_vars.values())
+
+
+def _encoding_from_dask_chunks(ds, rule):
+    """
+    Build netCDF encoding that matches existing dask chunks.
+
+    Aligning netCDF chunks with dask chunks avoids expensive rechunking
+    and makes the write a pure stream: each dask task writes exactly one
+    netCDF chunk with zero read amplification.
+    """
+    compression_level = rule._pycmor_cfg("netcdf_compression_level")
+    compression_level = getattr(rule, "netcdf_compression_level", compression_level)
+    enable_compression = rule._pycmor_cfg("netcdf_enable_compression")
+    enable_compression = getattr(rule, "netcdf_enable_compression", enable_compression)
+
+    encoding = {}
+    for var in ds.data_vars:
+        var_encoding = {}
+        da = ds[var]
+        if da.chunks is not None:
+            # Use the max chunk size per dimension (chunks may be uneven at boundaries)
+            var_encoding["chunksizes"] = tuple(max(c) for c in da.chunks)
+        if enable_compression:
+            var_encoding["zlib"] = True
+            var_encoding["complevel"] = compression_level
+            var_encoding["shuffle"] = True
+        encoding[var] = var_encoding
+
+    logger.info(f"Using dask-aligned netCDF chunks: {encoding.get(list(ds.data_vars)[0], {}).get('chunksizes', 'none')}")
+    return encoding
+
 
 def _filename_time_range(ds, rule) -> str:
     """
@@ -376,13 +415,32 @@ def _save_dataset_with_native_timespan(
 
         paths.append(create_filepath(ds, rule))
 
-    # Don't pass encoding to save_mfdataset since we've already encoded the time values
-    # and set the attributes - let xarray use what we've provided
-    xr.save_mfdataset(
-        datasets,
-        paths,
-        **extra_kwargs,
-    )
+    # Calculate chunking/compression encoding
+    # For dask-backed data, align netCDF chunks with existing dask chunks to avoid
+    # expensive rechunking. This makes the write a pure stream: each dask task
+    # writes exactly one netCDF chunk with zero read amplification.
+    is_dask = any(_is_dask_backed(ds) for ds in datasets)
+    if is_dask:
+        chunk_encoding = _encoding_from_dask_chunks(datasets[0], rule)
+    else:
+        chunk_encoding = _calculate_netcdf_chunks(datasets[0], rule)
+
+    # Use synchronous scheduler for dask-backed data to avoid HDF5 thread-safety issues
+    if is_dask:
+        with dask.config.set(scheduler="synchronous"):
+            xr.save_mfdataset(
+                datasets,
+                paths,
+                encoding=chunk_encoding if chunk_encoding else None,
+                **extra_kwargs,
+            )
+    else:
+        xr.save_mfdataset(
+            datasets,
+            paths,
+            encoding=chunk_encoding if chunk_encoding else None,
+            **extra_kwargs,
+        )
     return da
 
 
@@ -679,16 +737,29 @@ def save_dataset(da: xr.DataArray, rule):
             for group_name, group_ds in groups:
                 paths.append(create_filepath(group_ds, rule))
                 datasets.append(group_ds)
-            # Calculate chunking encoding for the first dataset (assume all similar)
-            chunk_encoding = _calculate_netcdf_chunks(datasets[0], rule)
+            # Calculate chunking encoding — align with dask chunks for streaming writes
+            is_dask = any(_is_dask_backed(ds) for ds in datasets)
+            if is_dask:
+                chunk_encoding = _encoding_from_dask_chunks(datasets[0], rule)
+            else:
+                chunk_encoding = _calculate_netcdf_chunks(datasets[0], rule)
             # Merge time encoding with chunk encoding
             final_encoding = {time_label: time_encoding}
             if chunk_encoding:
                 final_encoding.update(chunk_encoding)
-            xr.save_mfdataset(
-                datasets,
-                paths,
-                encoding=final_encoding,
-                **extra_kwargs,
-            )
+            if is_dask:
+                with dask.config.set(scheduler="synchronous"):
+                    xr.save_mfdataset(
+                        datasets,
+                        paths,
+                        encoding=final_encoding,
+                        **extra_kwargs,
+                    )
+            else:
+                xr.save_mfdataset(
+                    datasets,
+                    paths,
+                    encoding=final_encoding,
+                    **extra_kwargs,
+                )
             return da
