@@ -244,6 +244,7 @@ rules:
         pattern: temp.fesom.1350.nc
     compound_name: ocean.thetao.tavg-ol-hxy-sea.mon.GLB
     model_variable: temp
+    lazy_write: true
 
   # bigthetao: SKIPPED — FESOM2 uses potential temperature, not conservative.
   # Only thetao should be reported.
@@ -254,6 +255,7 @@ rules:
         pattern: salt.fesom.1350.nc
     compound_name: ocean.so.tavg-ol-hxy-sea.mon.GLB
     model_variable: salt
+    lazy_write: true
 
   - name: uo
     inputs:
@@ -261,6 +263,7 @@ rules:
         pattern: unod.fesom.1350.nc
     compound_name: ocean.uo.tavg-ol-hxy-sea.mon.GLB
     model_variable: unod
+    lazy_write: true
     # Using unod (nodal velocity, nod2 grid) instead of u (elem grid).
     # vec_autorotate=.true. set in namelist.io
 
@@ -270,6 +273,7 @@ rules:
         pattern: vnod.fesom.1350.nc
     compound_name: ocean.vo.tavg-ol-hxy-sea.mon.GLB
     model_variable: vnod
+    lazy_write: true
     # Using vnod (nodal velocity, nod2 grid) instead of v (elem grid).
     # vec_autorotate=.true. set in namelist.io
 
@@ -279,6 +283,7 @@ rules:
         pattern: w.fesom.1350.nc
     compound_name: ocean.wo.tavg-ol-hxy-sea.mon.GLB
     model_variable: w
+    lazy_write: true
     # NOTE: w is on nz (57 interfaces), not nz1 (56 midpoints).
     # May need vertical coordinate handling different from tracers.
 
@@ -292,6 +297,7 @@ rules:
         pattern: salt.fesom.1350.nc
     compound_name: ocean.absscint.tavg-op4-hxy-sea.mon.GLB
     model_variable: salt
+    lazy_write: true
     integration_attrs:
       long_name: "Integral wrt depth of seawater absolute salinity expressed as salt mass content"
       standard_name: "integral_wrt_depth_of_sea_water_absolute_salinity_expressed_as_salt_mass_content"
@@ -387,6 +393,7 @@ rules:
         pattern: hnode.fesom.1350.nc
     compound_name: ocean.thkcello.tavg-ol-hxy-sea.mon.GLB
     model_variable: hnode
+    lazy_write: true
 
   - name: masscello
     inputs:
@@ -394,6 +401,7 @@ rules:
         pattern: hnode.fesom.1350.nc
     compound_name: ocean.masscello.tavg-ol-hxy-sea.mon.GLB
     model_variable: hnode
+    lazy_write: true
     scale_factor: 1025.0
     scaled_units: "kg m-2"
     pipelines:
@@ -410,6 +418,7 @@ rules:
         pattern: unod.fesom.1350.nc
     compound_name: ocean.umo.tavg-ol-hxy-sea.mon.GLB
     model_variable: unod
+    lazy_write: true
     reference_density: 1025.0
     transport_component: x
     pipelines:
@@ -421,6 +430,7 @@ rules:
         pattern: vnod.fesom.1350.nc
     compound_name: ocean.vmo.tavg-ol-hxy-sea.mon.GLB
     model_variable: vnod
+    lazy_write: true
     reference_density: 1025.0
     transport_component: y
     pipelines:
@@ -432,6 +442,7 @@ rules:
         pattern: w.fesom.1350.nc
     compound_name: ocean.wmo.tavg-ol-hxy-sea.mon.GLB
     model_variable: w
+    lazy_write: true
     reference_density: 1025.0
     transport_component: z
     pipelines:

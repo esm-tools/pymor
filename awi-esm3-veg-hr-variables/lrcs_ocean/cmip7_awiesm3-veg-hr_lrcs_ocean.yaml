@@ -362,6 +362,7 @@ rules:
         pattern: N2.fesom.1350.nc
     compound_name: ocean.obvfsq.tavg-ol-hxy-sea.mon.GLB
     model_variable: N2
+    lazy_write: true
 
   # wfo — water flux into sea water (fw × rho_water)
   - name: wfo
@@ -428,6 +429,7 @@ rules:
         pattern: unod.fesom.1350.nc
     compound_name: ocean.uos.tavg-u-hxy-sea.day.GLB
     model_variable: unod
+    lazy_write: true
     pipelines:
       - surface_extract_pipeline
 
@@ -437,6 +439,7 @@ rules:
         pattern: vnod.fesom.1350.nc
     compound_name: ocean.vos.tavg-u-hxy-sea.day.GLB
     model_variable: vnod
+    lazy_write: true
     pipelines:
       - surface_extract_pipeline
 
@@ -452,6 +455,7 @@ rules:
     model_variable: utemp
     scale_factor: 4095900.0
     scaled_units: "W m-2"
+    lazy_write: true
     pipelines:
       - scale_and_integrate_pipeline
 
@@ -466,6 +470,7 @@ rules:
     model_variable: vtemp
     scale_factor: 4095900.0
     scaled_units: "W m-2"
+    lazy_write: true
     pipelines:
       - scale_and_integrate_pipeline
 
@@ -523,6 +528,7 @@ rules:
         pattern: temp.fesom.1350.nc
     compound_name: ocean.tob.tavg-u-hxy-sea.mon.GLB
     model_variable: temp
+    lazy_write: true
     pipelines:
       - bottom_extract_pipeline
 
@@ -532,6 +538,7 @@ rules:
         pattern: salt.fesom.1350.nc
     compound_name: ocean.sob.tavg-u-hxy-sea.mon.GLB
     model_variable: salt
+    lazy_write: true
     pipelines:
       - bottom_extract_pipeline
 
@@ -575,6 +582,7 @@ rules:
         pattern: temp.fesom.1350.nc
     compound_name: ocean.phcint.tavg-op4-hxy-sea.mon.GLB
     model_variable: temp
+    lazy_write: true
     integration_attrs:
       long_name: "Depth integrated ocean heat content from potential temperature"
       standard_name: "integral_wrt_depth_of_product_of_sea_water_density_and_potential_temperature"
@@ -591,6 +599,7 @@ rules:
         pattern: salt.fesom.1350.nc
     compound_name: ocean.scint.tavg-op4-hxy-sea.mon.GLB
     model_variable: salt
+    lazy_write: true
     integration_attrs:
       long_name: "Integral wrt depth of seawater practical salinity expressed as salt mass content"
       standard_name: "integral_wrt_depth_of_sea_water_practical_salinity_expressed_as_salt_mass_content"
@@ -606,6 +615,7 @@ rules:
         pattern: temp.fesom.1350.nc
     compound_name: ocean.opottempmint.tavg-u-hxy-sea.yr.GLB
     model_variable: temp
+    lazy_write: true
     integration_attrs:
       long_name: "Depth integral of product of sea water density and potential temperature"
       standard_name: "integral_wrt_depth_of_product_of_sea_water_density_and_potential_temperature"
@@ -622,6 +632,7 @@ rules:
         pattern: salt.fesom.1350.nc
     compound_name: ocean.somint.tavg-u-hxy-sea.yr.GLB
     model_variable: salt
+    lazy_write: true
     integration_attrs:
       long_name: "Integral wrt depth of product of sea water density and salinity"
       standard_name: "integral_wrt_depth_of_product_of_sea_water_density_and_salinity"
@@ -638,6 +649,7 @@ rules:
         pattern: mesh.nc
     compound_name: ocean.volcello.ti-ol-hxy-sea.fx.GLB
     model_variable: volcello
+    lazy_write: true
     pipelines:
       - volcello_fx_pipeline
 
@@ -653,6 +665,7 @@ rules:
         pattern: Kv.fesom.1350.nc
     compound_name: ocean.difvho.tavg-ol-hxy-sea.yr.GLB
     model_variable: Kv
+    lazy_write: true
     # NOTE: monthly data, CMIP wants yearly average — needs yearly timeavg
 
   # difvso — vertical salt diffusivity (same Kv)
@@ -662,6 +675,7 @@ rules:
         pattern: Kv.fesom.1350.nc
     compound_name: ocean.difvso.tavg-ol-hxy-sea.yr.GLB
     model_variable: Kv
+    lazy_write: true
 
   # difmxylo — momentum XY Laplacian diffusivity (Av from namelist.io)
   - name: difmxylo
@@ -670,6 +684,7 @@ rules:
         pattern: Av.fesom.1350.nc
     compound_name: ocean.difmxylo.tavg-ol-hxy-sea.yr.GLB
     model_variable: Av
+    lazy_write: true
 
   # ============================================================
   # DECADAL: 10-year averages of existing variables
@@ -683,6 +698,7 @@ rules:
         pattern: temp.fesom.1350.nc
     compound_name: ocean.thetao.tavg-ol-hxy-sea.dec.GLB
     model_variable: temp
+    lazy_write: true
     # TODO: needs 10-year input pattern and decadal timeavg
 
   - name: so_dec
@@ -691,6 +707,7 @@ rules:
         pattern: salt.fesom.1350.nc
     compound_name: ocean.so.tavg-ol-hxy-sea.dec.GLB
     model_variable: salt
+    lazy_write: true
 
   - name: tauuo_dec
     inputs:
@@ -712,6 +729,7 @@ rules:
         pattern: hnode.fesom.1350.nc
     compound_name: ocean.thkcello.tavg-ol-hxy-sea.dec.GLB
     model_variable: hnode
+    lazy_write: true
 
   - name: volo_dec
     inputs:
@@ -728,6 +746,7 @@ rules:
     model_variable: hnode
     scale_factor: 1025.0
     scaled_units: "kg m-2"
+    lazy_write: true
     pipelines:
       - scale_pipeline
 
@@ -737,6 +756,7 @@ rules:
         pattern: hnode.fesom.1350.nc
     compound_name: ocean.volcello.tavg-ol-hxy-sea.dec.GLB
     model_variable: hnode
+    lazy_write: true
     pipelines:
       - volcello_time_pipeline
 
@@ -780,6 +800,7 @@ rules:
         pattern: opottemptend.fesom.1350.nc
     compound_name: ocean.opottemptend.tavg-ol-hxy-sea.yr.GLB
     model_variable: opottemptend
+    lazy_write: true
     # NOTE: monthly data, CMIP wants yearly — needs yearly timeavg
 
   # ============================================================
@@ -795,6 +816,7 @@ rules:
     compound_name: ocean.osalttend.tavg-ol-hxy-sea.yr.GLB
     model_variable: osalttend
     model_unit: "kg m-2 s-1"
+    lazy_write: true
 
   # opottemprmadvect — temperature tendency from residual mean advection
   - name: opottemprmadvect
@@ -803,6 +825,7 @@ rules:
         pattern: opottemprmadvect.fesom.1350.nc
     compound_name: ocean.opottemprmadvect.tavg-ol-hxy-sea.yr.GLB
     model_variable: opottemprmadvect
+    lazy_write: true
 
   # opottempdiff — temperature tendency from dianeutral mixing
   - name: opottempdiff
@@ -811,6 +834,7 @@ rules:
         pattern: opottempdiff.fesom.1350.nc
     compound_name: ocean.opottempdiff.tavg-ol-hxy-sea.yr.GLB
     model_variable: opottempdiff
+    lazy_write: true
 
   # osaltrmadvect — salinity tendency from residual mean advection
   - name: osaltrmadvect
@@ -820,6 +844,7 @@ rules:
     compound_name: ocean.osaltrmadvect.tavg-ol-hxy-sea.yr.GLB
     model_variable: osaltrmadvect
     model_unit: "kg m-2 s-1"
+    lazy_write: true
 
   # osaltdiff — salinity tendency from dianeutral mixing
   - name: osaltdiff
@@ -829,6 +854,7 @@ rules:
     compound_name: ocean.osaltdiff.tavg-ol-hxy-sea.yr.GLB
     model_variable: osaltdiff
     model_unit: "kg m-2 s-1"
+    lazy_write: true
 
   # rsdoabsorb — net rate of absorption of shortwave energy in ocean layer (3D)
   - name: rsdoabsorb
@@ -837,6 +863,7 @@ rules:
         pattern: rsdoabsorb.fesom.1350.nc
     compound_name: ocean.rsdoabsorb.tavg-ol-hxy-sea.yr.GLB
     model_variable: rsdoabsorb
+    lazy_write: true
 
   # ============================================================
   # Overturning streamfunctions (msftm, msftmmpa)
@@ -866,6 +893,7 @@ rules:
     compound_name: ocean.msftmmpa.tavg-ol-hyb-sea.mon.GLB
     model_variable: bolus_v
     reference_density: 1025.0
+    lazy_write: true
     pipelines:
       - msftmmpa_depth_pipeline
 
@@ -878,6 +906,7 @@ rules:
     compound_name: ocean.msftmmpa.tavg-rho-hyb-sea.mon.GLB
     model_variable: bolus_v
     reference_density: 1025.0
+    lazy_write: true
     pipelines:
       - msftmmpa_density_pipeline
 
@@ -901,6 +930,7 @@ rules:
     salt_variable: salt
     reference_density: 1025.0
     transport_component: x
+    lazy_write: true
     pipelines:
       - salt_transport_pipeline
 
@@ -915,6 +945,7 @@ rules:
     salt_variable: salt
     reference_density: 1025.0
     transport_component: x
+    lazy_write: true
     pipelines:
       - salt_transport_integrated_pipeline
 
@@ -929,6 +960,7 @@ rules:
     salt_variable: salt
     reference_density: 1025.0
     transport_component: y
+    lazy_write: true
     pipelines:
       - salt_transport_pipeline
 
@@ -943,5 +975,6 @@ rules:
     salt_variable: salt
     reference_density: 1025.0
     transport_component: y
+    lazy_write: true
     pipelines:
       - salt_transport_integrated_pipeline

@@ -95,33 +95,36 @@ inherit:
   output_directory: ./cmorized_output/awiesm3
 
 rules:
-  # Bare soil evaporation (monthly, from LPJ-GUESS)
+  # Bare soil evaporation (monthly, from LPJ-GUESS; outputs kg m-2 s-1)
   - name: evspsblsoi
     inputs:
       - path: *ldp
         pattern: "*/run1/evspsblsoi_monthly.out"
     compound_name: land.evspsblsoi.tavg-u-hxy-lnd.mon.GLB
     model_variable: evspsblsoi
+    source_units: "kg m-2 s-1"
     pipelines:
       - lpjg_monthly_pipeline
 
-  # Canopy water evaporation (monthly, from LPJ-GUESS)
+  # Canopy water evaporation (monthly, from LPJ-GUESS; outputs kg m-2 s-1)
   - name: evspsblveg
     inputs:
       - path: *ldp
         pattern: "*/run1/evspsblveg_monthly.out"
     compound_name: land.evspsblveg.tavg-u-hxy-lnd.mon.GLB
     model_variable: evspsblveg
+    source_units: "kg m-2 s-1"
     pipelines:
       - lpjg_monthly_pipeline
 
-  # Soil frozen water content (monthly, from LPJ-GUESS)
+  # Soil frozen water content (monthly, from LPJ-GUESS; outputs kg m-2)
   - name: mrfso
     inputs:
       - path: *ldp
         pattern: "*/run1/mrfso_monthly.out"
     compound_name: landIce.mrfso.tavg-u-hxy-lnd.mon.GLB
     model_variable: mrfso
+    source_units: "kg m-2"
     pipelines:
       - lpjg_monthly_pipeline
 

@@ -1,13 +1,10 @@
-# CMIP7 CAP7 Atmosphere Variables — AWI-ESM3-VEG-HR
-# Generated from 4 CSVs in cap7_atm/
-#
-# 62 producible out of 154 total variables.
-# 92 blocked: 17 COSP, 21 tendencies, 9 aerosol, 5 CO2, 4 effective radii,
-#             ~40 IFS source changes needed (convective, radiation profiles,
-#             100m wind, diffuse radiation, tropopause, cloud droplet number).
+# CMIP7 CAP7 Atmosphere Variables — Test config with TCo95
+# Adapted from awi-esm3-veg-hr-variables/cap7_atm/cmip7_awiesm3-veg-hr_cap7_atm.yaml
+# Uses low-resolution TCo95 (~100km) experiment (run 005) for quick testing.
+# 66 rules covering daily/3hr/1hr/6hr/monthly cap7 variables
 
 general:
-  name: "awiesm3-cmip7-cap7-atm"
+  name: "awiesm3-cmip7-cap7-atm-tco95-test"
   cmor_version: "CMIP7"
   mip: "CMIP"
   CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
@@ -23,7 +20,7 @@ jobqueue:
   slurm:
     name: pycmor-worker
     queue: compute
-    account: bb1469
+    account: ba0989
     cores: 16
     memory: 256GB
     walltime: '00:30:00'
@@ -152,6 +149,7 @@ pipelines:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
       - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:scale_by_constant
+      - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -179,17 +177,19 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/oifs
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_007/outdata/oifs
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
   variant_label: r1i1p1f1
   grid_label: gn
-  grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
-  nominal_resolution: "25 km"
+  grid: "OpenIFS TCo95 reduced Gaussian, interpolated to 1deg regular grid"
+  nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   time_dimname: time_counter
-  output_directory: ./cmorized_output/awiesm3
+  output_directory: ./cmorized_output/tco95_cap7_atm_test
+  year_start: 1900
+  year_end: 1900
 
 rules:
   # ============================================================
@@ -340,7 +340,7 @@ rules:
     compound_name: atmos.clwvi.tavg-u-hxy-u.day.GLB
     model_variable: tclw
     second_input_path: *dp
-    second_input_pattern: atmos_day_cap7_clivi_*.nc
+    second_input_pattern: "atmos_day_cap7_clivi_*.nc"
     second_variable: clivi
     pipelines:
       - clwvi_pipeline
@@ -357,11 +357,11 @@ rules:
   - name: hurs_day_max
     inputs:
       - path: *dp
-        pattern: atmos_1d_cmip7_2t_.*\.nc
+        pattern: atm_remapped_1d_cmip7_2t_.*\.nc
     compound_name: atmos.hurs.tmax-h2m-hxy-u.day.GLB
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atmos_1d_cmip7_2d_*.nc
+    second_input_pattern: "atm_remapped_1d_cmip7_2d_*.nc"
     second_variable: 2d
     pipelines:
       - hurs_pipeline
@@ -369,11 +369,11 @@ rules:
   - name: hurs_day_min
     inputs:
       - path: *dp
-        pattern: atmos_1d_cmip7_2t_.*\.nc
+        pattern: atm_remapped_1d_cmip7_2t_.*\.nc
     compound_name: atmos.hurs.tmin-h2m-hxy-u.day.GLB
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atmos_1d_cmip7_2d_*.nc
+    second_input_pattern: "atm_remapped_1d_cmip7_2d_*.nc"
     second_variable: 2d
     pipelines:
       - hurs_pipeline
@@ -392,7 +392,7 @@ rules:
   - name: ta_day_700hPa
     inputs:
       - path: *dp
-        pattern: atmos_1d_pl_cmip7_t_.*\.nc
+        pattern: atm_remapped_1d_pl_cmip7_t_.*\.nc
     compound_name: atmos.ta.tavg-700hPa-hxy-air.day.GLB
     model_variable: t
     target_plevel: 70000
@@ -402,7 +402,7 @@ rules:
   - name: wap_day_500hPa
     inputs:
       - path: *dp
-        pattern: atmos_1d_pl_cmip7_w_.*\.nc
+        pattern: atm_remapped_1d_pl_cmip7_w_.*\.nc
     compound_name: atmos.wap.tavg-500hPa-hxy-air.day.GLB
     model_variable: w
     target_plevel: 50000
@@ -427,11 +427,11 @@ rules:
   - name: huss_1hr
     inputs:
       - path: *dp
-        pattern: atmos_1h_pt_2d_.*\.nc
+        pattern: atmos_1h_sfc_2d_.*\.nc
     compound_name: atmos.huss.tpt-h2m-hxy-u.1hr.GLB
     model_variable: 2d
     second_input_path: *dp
-    second_input_pattern: atmos_1h_sfc_sp_*.nc
+    second_input_pattern: "atmos_1h_sfc_sp_*.nc"
     second_variable: sp
     pipelines:
       - huss_pipeline
@@ -492,7 +492,7 @@ rules:
     compound_name: atmos.sfcWind.tavg-h10m-hxy-u.1hr.GLB
     model_variable: 10u
     second_input_path: *dp
-    second_input_pattern: atmos_1h_sfc_10v_*.nc
+    second_input_pattern: "atmos_1h_sfc_10v_*.nc"
     second_variable: 10v
     pipelines:
       - sfcwind_pipeline
@@ -621,6 +621,7 @@ rules:
     pipelines:
       - geopotential_height_pipeline
 
+
   # ============================================================
   # Part 9: Monthly surface fields
   # ============================================================
@@ -683,6 +684,7 @@ rules:
     compound_name: atmos.hur.tavg-al-hxy-u.mon.GLB
     model_variable: hur
     lazy_write: true
+
 
   # ============================================================
   # Part 11: Land/ice variables (from existing pipelines)

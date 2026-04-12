@@ -416,6 +416,7 @@ rules:
         pattern: atm_remapped_1m_pl_t_1m_pl_.*\.nc
     compound_name: atmos.ta.tavg-p19-hxy-air.mon.GLB
     model_variable: t
+    lazy_write: true
 
   - name: ua
     inputs:
@@ -423,6 +424,7 @@ rules:
         pattern: atm_remapped_1m_pl_u_1m_pl_.*\.nc
     compound_name: atmos.ua.tavg-p19-hxy-air.mon.GLB
     model_variable: u
+    lazy_write: true
 
   - name: va
     inputs:
@@ -430,6 +432,7 @@ rules:
         pattern: atm_remapped_1m_pl_v_1m_pl_.*\.nc
     compound_name: atmos.va.tavg-p19-hxy-air.mon.GLB
     model_variable: v
+    lazy_write: true
 
   - name: hus
     inputs:
@@ -437,6 +440,7 @@ rules:
         pattern: atm_remapped_1m_pl_q_1m_pl_.*\.nc
     compound_name: atmos.hus.tavg-p19-hxy-u.mon.GLB
     model_variable: q
+    lazy_write: true
 
   - name: wap
     inputs:
@@ -444,6 +448,7 @@ rules:
         pattern: atm_remapped_1m_pl_w_1m_pl_.*\.nc
     compound_name: atmos.wap.tavg-p19-hxy-air.mon.GLB
     model_variable: w
+    lazy_write: true
 
   - name: zg
     inputs:
@@ -451,6 +456,7 @@ rules:
         pattern: atmos_mon_pl_zg_mon_pl_.*\.nc
     compound_name: atmos.zg.tavg-p19-hxy-air.mon.GLB
     model_variable: zg
+    lazy_write: true
 
   - name: hur
     inputs:
@@ -458,6 +464,7 @@ rules:
         pattern: atmos_mon_pl_hur_mon_pl_.*\.nc
     compound_name: atmos.hur.tavg-p19-hxy-air.mon.GLB
     model_variable: hur
+    lazy_write: true
 
   # ============================================================
   # Daily 2D surface (day)
@@ -565,6 +572,7 @@ rules:
         pattern: atm_remapped_1d_pl_cmip7_t_1d_pl_cmip7_.*\.nc
     compound_name: atmos.ta.tavg-p19-hxy-air.day.GLB
     model_variable: t
+    lazy_write: true
 
   - name: ua_day
     inputs:
@@ -572,6 +580,7 @@ rules:
         pattern: atm_remapped_1d_pl_cmip7_u_1d_pl_cmip7_.*\.nc
     compound_name: atmos.ua.tavg-p19-hxy-air.day.GLB
     model_variable: u
+    lazy_write: true
 
   - name: va_day
     inputs:
@@ -579,6 +588,7 @@ rules:
         pattern: atm_remapped_1d_pl_cmip7_v_1d_pl_cmip7_.*\.nc
     compound_name: atmos.va.tavg-p19-hxy-air.day.GLB
     model_variable: v
+    lazy_write: true
 
   - name: hus_day
     inputs:
@@ -586,6 +596,7 @@ rules:
         pattern: atm_remapped_1d_pl_cmip7_q_1d_pl_cmip7_.*\.nc
     compound_name: atmos.hus.tavg-p19-hxy-u.day.GLB
     model_variable: q
+    lazy_write: true
 
   - name: wap_day
     inputs:
@@ -593,6 +604,7 @@ rules:
         pattern: atm_remapped_1d_pl_cmip7_w_1d_pl_cmip7_.*\.nc
     compound_name: atmos.wap.tavg-p19-hxy-u.day.GLB
     model_variable: w
+    lazy_write: true
 
   - name: zg_day
     inputs:
@@ -600,6 +612,7 @@ rules:
         pattern: atmos_day_pl_zg_day_pl_.*\.nc
     compound_name: atmos.zg.tavg-p19-hxy-air.day.GLB
     model_variable: zg
+    lazy_write: true
 
   - name: hur_day
     inputs:
@@ -607,6 +620,7 @@ rules:
         pattern: atmos_day_pl_hur_day_pl_.*\.nc
     compound_name: atmos.hur.tavg-p19-hxy-u.day.GLB
     model_variable: hur
+    lazy_write: true
 
   # ============================================================
   # Daily tasmax / tasmin
@@ -654,6 +668,7 @@ rules:
         pattern: atmos_mon_ml_cl_mon_ml_.*\.nc
     compound_name: atmos.cl.tavg-al-hxy-u.mon.GLB
     model_variable: cl
+    lazy_write: true
 
   - name: cli
     inputs:
@@ -661,6 +676,7 @@ rules:
         pattern: atmos_mon_ml_cli_mon_ml_.*\.nc
     compound_name: atmos.cli.tavg-al-hxy-u.mon.GLB
     model_variable: cli
+    lazy_write: true
 
   - name: clw
     inputs:
@@ -668,6 +684,7 @@ rules:
         pattern: atmos_mon_ml_clw_mon_ml_.*\.nc
     compound_name: atmos.clw.tavg-al-hxy-u.mon.GLB
     model_variable: clw
+    lazy_write: true
 
   # ============================================================
   # 3-hourly instantaneous surface (3hrPt)
@@ -754,6 +771,7 @@ rules:
         pattern: atmos_6h_pl3_t_6h_pl3_.*\.nc
     compound_name: atmos.ta.tpt-p3-hxy-air.6hr.GLB
     model_variable: t
+    lazy_write: true
 
   - name: ua_6hr
     inputs:
@@ -761,6 +779,7 @@ rules:
         pattern: atmos_6h_pl3_u_6h_pl3_.*\.nc
     compound_name: atmos.ua.tpt-p3-hxy-air.6hr.GLB
     model_variable: u
+    lazy_write: true
 
   - name: va_6hr
     inputs:
@@ -768,3 +787,4 @@ rules:
         pattern: atmos_6h_pl3_v_6h_pl3_.*\.nc
     compound_name: atmos.va.tpt-p3-hxy-air.6hr.GLB
     model_variable: v
+    lazy_write: true

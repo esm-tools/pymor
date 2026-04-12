@@ -67,7 +67,7 @@ rules:
     compound_name: seaIce.sisnhc.tavg-u-hxy-si.day.GLB
     model_variable: m_snow
     second_input_path: *dp
-    second_input_pattern: a_ice.fesom..*\.nc
+    second_input_pattern: a_ice.fesom.*.nc
     second_variable: a_ice
     rho_snow: 330.0
     L_f: 334000.0
