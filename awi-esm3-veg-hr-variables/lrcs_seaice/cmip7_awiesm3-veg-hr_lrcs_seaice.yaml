@@ -411,7 +411,7 @@ rules:
   - name: snm
     inputs:
       - path: *dp
-        pattern: thdgrsn.fesom.1350.nc
+        pattern: thdgrsnw.fesom.1350.nc
     compound_name: seaIce.snm.tavg-u-hxy-si.mon.GLB
     model_variable: thdgrsn
     scale_factor: 330.0

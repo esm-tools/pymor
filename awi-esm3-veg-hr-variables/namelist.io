@@ -73,8 +73,8 @@ io_list =  'sst       ',1, 'd', 4,
            'h_snow    ',1, 'd', 4,
            'MLD1      ',1, 'm', 4,
            'MLD2      ',1, 'm', 4,
-           'tx_sur    ',1, 'm', 4,
-           'ty_sur    ',1, 'm', 4,
+           'tx_sur    ',3, 'h', 4,
+           'ty_sur    ',3, 'h', 4,
            'temp      ',1, 'm', 4,
            'salt      ',1, 'm', 8,
            'N2        ',1, 'm', 4,
@@ -94,7 +94,7 @@ io_list =  'sst       ',1, 'd', 4,
            'dyngrarea ',1, 'm', 4,
            'thdgrice  ',1, 'm', 4,
            'dyngrice  ',1, 'm', 4,
-           'thdgrsn   ',1, 'm', 4,
+           'thdgrsnw  ',1, 'm', 4,
            'strength_ice',1, 'm', 4,
            'atmice_x  ',1, 'm', 4,
            'atmice_y  ',1, 'm', 4,
@@ -122,8 +122,8 @@ io_list =  'sst       ',1, 'd', 4,
            'osaltrmadvect',1, 'm', 8,
            'osaltdiff ',1, 'm', 8,
            'rsdoabsorb',1, 'm', 4,
-           'utemp     ',1, 'm', 4,
-           'vtemp     ',1, 'm', 4,
+           'utemp     ',1, 'd', 4,
+           'vtemp     ',1, 'd', 4,
 /
 
 ! ============================================================================
@@ -171,7 +171,7 @@ io_list =  'sst       ',1, 'd', 4,
 ! 'thdgrarea ',1, 'm', 4,  ! thermodynamic growth rate ice concentration [frac/s]
 ! 'dyngrarea' ,1, 'm', 4,  ! dynamic growth rate ice concentration [frac/s]
 ! 'dyngrice  ',1, 'm', 4,  ! dynamic growth rate ice [m/s]
-! 'thdgrsn   ',1, 'm', 4,  ! thermodynamic growth rate snow [m/s]
+! 'thdgrsnw  ',1, 'm', 4,  ! thermodynamic growth rate snow [m/s]
 ! 'dyngrsnw  ',1, 'm', 4,  ! dynamic growth rate snow [m/s] 
 ! 'flice     ',1, 'm', 4,  ! flooding growth rate ice [m/s]
 ! 'm_snow    ',1, 'm', 4,  ! snow height per unit area [m]
