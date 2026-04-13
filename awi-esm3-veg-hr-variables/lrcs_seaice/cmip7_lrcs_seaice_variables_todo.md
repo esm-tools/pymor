@@ -47,7 +47,7 @@ Sources: cmip7_LRCSextra_variables_seaIce.csv, cmip7_LRCSextra_variables_ocean_s
 - [ ] **sidmassmelttop** — Mass Change Through Surface Melting (`kg m-2 s-1`, high) — NOT AVAILABLE
 
 ### Freshwater and salt fluxes
-- [ ] **sbl** — Snow Sublimation Rate (`kg m-2 s-1`, high) — not directly output; part of atmosphere coupling
+- [x] **sbl** — Snow Sublimation Rate (`kg m-2 s-1`, high) — OpenIFS total sbl (atmos_mon_land_sbl) regridded to FESOM nodes then masked by a_ice (regrid_atm_to_fesom_seaice_mask_pipeline); note: total sublimation from all surfaces, not ice-tile-specific
 - [x] **snm** — Snow Melt Rate (`kg m-2 s-1`, high) — thdgrsn × rho_snow=330 (scale_pipeline)
 - [x] **sfdsi** — Salt Flux from Sea Ice (`kg m-2 s-1`, medium) — realsalt (scale_pipeline, factor needs verification)
 - [x] **siflfwbot** — Freshwater Flux from Sea Ice (`kg m-2 s-1`, medium) — fw_ice × rho_water=1000 (scale_pipeline)

@@ -238,6 +238,39 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # Regrid from OpenIFS regular grid to FESOM unstructured nodes
+  - name: regrid_atm_to_fesom_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:regrid_regular_to_fesom
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # Regrid from OpenIFS regular grid to FESOM unstructured nodes, then mask to sea-ice-covered nodes
+  - name: regrid_atm_to_fesom_seaice_mask_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:regrid_regular_to_fesom
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:mask_where_no_seaice
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   # Generic hemisphere integral (snow mass, ice area, etc.)
   - name: hemisphere_integral_pipeline
     steps:
@@ -717,6 +750,20 @@ rules:
   # ============================================================
   # SImon — atmosphere-grid variables (from OpenIFS output)
   # ============================================================
+
+  # Snow sublimation over sea ice: OpenIFS total sbl (es) regridded to FESOM nodes.
+  # Note: OpenIFS 'sbl' is total snow sublimation from all surfaces (land + sea ice);
+  # no ice-tile-specific sublimation diagnostic is available.
+  - name: sbl_seaice
+    inputs:
+      - path: *odp
+        pattern: atmos_mon_land_sbl_.*\.nc
+    compound_name: seaIce.sbl.tavg-u-hxy-si.mon.GLB
+    model_variable: sbl
+    time_dimname: time_counter
+    aice_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/a_ice.fesom.*.nc
+    pipelines:
+      - regrid_atm_to_fesom_seaice_mask_pipeline
 
   # Sea ice concentration on atmosphere grid: ci [1] → siconca [%]
   - name: siconca

@@ -2753,6 +2753,136 @@ def compute_rtmt(data, rule):
     return result.to_dataset()
 
 
+def regrid_regular_to_fesom(data, rule):
+    """
+    Interpolate data from a regular lat/lon grid onto FESOM unstructured nodes.
+
+    Reads FESOM node coordinates from rule.grid_file and uses bilinear
+    interpolation (scipy RegularGridInterpolator) to map each timestep.
+
+    Rule attributes:
+      - grid_file: path to FESOM mesh.nc (required, contains 'lon'/'lat' node coords)
+      - fesom_node_dim: name of node dimension in output (default: 'nod2')
+    """
+    from scipy.interpolate import RegularGridInterpolator
+
+    grid_file = rule.get("grid_file")
+    if grid_file is None:
+        raise ValueError("Rule must specify 'grid_file' for regrid_regular_to_fesom")
+
+    node_dim = rule.get("fesom_node_dim", "nod2")
+
+    # Read FESOM node coordinates from mesh.nc
+    mesh = xr.open_dataset(grid_file)
+    fesom_lon = None
+    fesom_lat = None
+    for name in ["lon", "longitude"]:
+        if name in mesh:
+            fesom_lon = mesh[name].values
+            break
+    for name in ["lat", "latitude"]:
+        if name in mesh:
+            fesom_lat = mesh[name].values
+            break
+    mesh.close()
+    if fesom_lon is None or fesom_lat is None:
+        raise ValueError(f"Cannot find lon/lat in grid_file: {grid_file}")
+
+    # Identify source grid coordinate names and dims
+    src_lat = src_lon = src_lat_dim = src_lon_dim = None
+    for name in ["lat", "latitude"]:
+        if name in data.coords:
+            src_lat = data.coords[name].values
+            src_lat_dim = name
+            break
+    for name in ["lon", "longitude"]:
+        if name in data.coords:
+            src_lon = data.coords[name].values
+            src_lon_dim = name
+            break
+    if src_lat is None or src_lon is None:
+        raise ValueError(f"Cannot find lat/lon coords in data. Available: {list(data.coords)}")
+
+    # Normalise FESOM lons to match the source grid range
+    if src_lon.max() > 180:
+        # source is 0..360
+        fesom_lon_q = fesom_lon % 360.0
+    else:
+        # source is -180..180
+        fesom_lon_q = ((fesom_lon + 180.0) % 360.0) - 180.0
+
+    query_pts = np.column_stack([fesom_lat, fesom_lon_q])
+
+    def _interp_timestep(arr2d):
+        interp = RegularGridInterpolator(
+            (src_lat, src_lon), arr2d,
+            method="linear", bounds_error=False, fill_value=np.nan,
+        )
+        return interp(query_pts).astype(np.float32)
+
+    # Apply interpolation over time
+    time_dim = "time"
+    if time_dim not in data.dims:
+        result_np = _interp_timestep(data.values)
+        result = xr.DataArray(result_np, dims=[node_dim], attrs=data.attrs)
+    else:
+        slices = [_interp_timestep(data.isel({time_dim: t}).values)
+                  for t in range(len(data[time_dim]))]
+        result = xr.DataArray(
+            np.array(slices),
+            dims=[time_dim, node_dim],
+            coords={time_dim: data[time_dim]},
+            attrs=data.attrs,
+        )
+
+    result.name = data.name
+    return result
+
+
+def mask_where_no_seaice(data, rule):
+    """
+    Mask data to NaN wherever there is no sea ice (a_ice == 0).
+
+    Loads FESOM sea ice concentration from rule.aice_file and sets data values
+    to NaN at all FESOM nodes where a_ice is zero, matching by time coordinate.
+
+    Rule attributes:
+      - aice_file: path (or glob pattern) to FESOM a_ice file(s), e.g.
+          /path/to/outdata/fesom/a_ice.fesom.*.nc  (required)
+      - fesom_node_dim: name of node dimension (default: 'nod2')
+    """
+    import glob as _glob
+
+    aice_file = rule.get("aice_file")
+    if aice_file is None:
+        raise ValueError("Rule must specify 'aice_file' for mask_where_no_seaice")
+
+    node_dim = rule.get("fesom_node_dim", "nod2")
+
+    # Support glob patterns
+    paths = sorted(_glob.glob(aice_file))
+    if not paths:
+        raise FileNotFoundError(f"No files matched aice_file pattern: {aice_file}")
+
+    a_ice = xr.open_mfdataset(paths, combine="by_coords")["a_ice"]
+
+    # Align time coordinates: match data times to a_ice times
+    # Both should be on monthly cadence; use sel with tolerance
+    time_dim = "time"
+    if time_dim in data.dims and time_dim in a_ice.dims:
+        a_ice = a_ice.sel({time_dim: data[time_dim]}, method="nearest")
+
+    # Mask: set to NaN where a_ice == 0 (no sea ice)
+    mask = a_ice > 0  # True where sea ice present
+    if hasattr(data, "name"):
+        result = data.where(mask)
+        result.name = data.name
+    else:
+        result = data.where(mask)
+
+    return result
+
+
 def extract_single_plevel(data, rule):
     """
     Extract a single pressure level from a multi-level dataset.
