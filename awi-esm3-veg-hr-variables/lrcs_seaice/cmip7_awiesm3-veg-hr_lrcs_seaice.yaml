@@ -256,6 +256,7 @@ pipelines:
 
 inherit:
   data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+  oifs_data_path: &odp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/oifs
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
@@ -712,6 +713,35 @@ rules:
         pattern: sivols.fesom.1350.nc
     compound_name: seaIce.sivol.tavg-u-hm-u.mon.SH
     model_variable: sivols
+
+  # ============================================================
+  # SImon — atmosphere-grid variables (from OpenIFS output)
+  # ============================================================
+
+  # Sea ice concentration on atmosphere grid: ci [1] → siconca [%]
+  - name: siconca
+    inputs:
+      - path: *odp
+        pattern: atm_remapped_1m_ci_.*\.nc
+    compound_name: seaIce.siconca.tavg-u-hxy-u.mon.GLB
+    model_variable: ci
+    grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
+    nominal_resolution: "25 km"
+    time_dimname: time_counter
+    pipelines:
+      - fraction_to_percent_pipeline
+
+  - name: siconca_day
+    inputs:
+      - path: *odp
+        pattern: atm_remapped_1d_cmip7_ci_.*\.nc
+    compound_name: seaIce.siconca.tavg-u-hxy-u.day.GLB
+    model_variable: ci
+    grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
+    nominal_resolution: "25 km"
+    time_dimname: time_counter
+    pipelines:
+      - fraction_to_percent_pipeline
 
   # ============================================================
   # SIday — Daily variables

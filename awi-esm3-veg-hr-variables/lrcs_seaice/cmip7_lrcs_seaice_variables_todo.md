@@ -122,7 +122,7 @@ Sources: cmip7_LRCSextra_variables_seaIce.csv, cmip7_LRCSextra_variables_ocean_s
 - [ ] **rsds** — Downwelling Shortwave (`W m-2`, high) — from atmosphere
 - [ ] **rsus** — Upwelling Shortwave (`W m-2`, high) — from atmosphere
 - [ ] **siage** — Ice Age (`s`, high) — NOT AVAILABLE: tr_iage=.false.
-- [ ] **siconca** — Ice Area on Atm Grid (`%`, high) — needs regridding a_ice to atmosphere grid
+- [x] **siconca** (mon+day) — Ice Area on Atm Grid (`%`, high) — ci from OpenIFS remapped by OASIS; monthly: atm_remapped_1m_ci, daily: atm_remapped_1d_cmip7_ci (added to file_def) (fraction_to_percent_pipeline)
 - [x] **sispeed** — Ice Speed (`m s-1`, high) — sqrt(uice²+vice²) (sispeed_pipeline, daily uice/vice added to namelist)
 - [x] **sitimefrac** — Fraction of Time with Ice (`1`, high) — daily a_ice>0 (more accurate than monthly)
 - [x] **ts** — Surface Temperature (`K`, high) — daily ist (added to namelist)
