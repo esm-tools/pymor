@@ -815,6 +815,22 @@ rules:
     compound_name: seaIce.sivol.tavg-u-hm-u.mon.SH
     model_variable: sivols
 
+  # Daily sivol: using ldiag_cmor scalar files (same as monthly); if daily scalar output not available,
+  # enable daily m_ice in namelist.io and switch to m_ice + hemisphere_integral_pipeline
+  - name: sivol_north_day
+    inputs:
+      - path: *dp
+        pattern: sivoln.fesom.1350.nc
+    compound_name: seaIce.sivol.tavg-u-hm-u.day.NH
+    model_variable: sivoln
+
+  - name: sivol_south_day
+    inputs:
+      - path: *dp
+        pattern: sivols.fesom.1350.nc
+    compound_name: seaIce.sivol.tavg-u-hm-u.day.SH
+    model_variable: sivols
+
   # ============================================================
   # SImon — atmosphere-grid variables (from OpenIFS output)
   # ============================================================

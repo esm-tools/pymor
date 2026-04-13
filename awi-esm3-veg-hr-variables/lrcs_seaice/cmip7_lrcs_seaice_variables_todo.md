@@ -128,7 +128,7 @@ Sources: cmip7_LRCSextra_variables_seaIce.csv, cmip7_LRCSextra_variables_ocean_s
 - [x] **ts** — Surface Temperature (`K`, high) — daily ist (added to namelist)
 - [x] **siarea (N/S)** — daily hemisphere areas — computed from daily a_ice via hemisphere_integral_pipeline (ldiag_cmor scalars are monthly-only)
 - [x] **siextent (N/S)** — daily hemisphere extents — computed from daily a_ice with 15% threshold via hemisphere_integral_pipeline (extent_threshold: 0.15; ldiag_cmor scalars are monthly-only)
-- [ ] **sivol (N/S)** — daily hemisphere volumes — ldiag_cmor scalars (need to verify daily output)
+- [x] **sivol (N/S)** — daily hemisphere volumes — sivoln/sivols ldiag_cmor scalar files (sivol_north/south_day); if daily scalar output not available, enable daily m_ice and switch to hemisphere_integral_pipeline
 - [x] **sisnmass (N/S)** — daily hemisphere snow mass — hemisphere_integral_pipeline (daily m_snow added to namelist); hm-u (sisnmass_north/south_day) and hm-si (sisnmass_north/south_day_si) variants
 
 ## SImon — cross-realm (ocean seaIce)
