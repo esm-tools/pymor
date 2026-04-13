@@ -25,9 +25,9 @@ Sources: cmip7_LRCSextra_variables_seaIce.csv, cmip7_LRCSextra_variables_ocean_s
 ### Heat fluxes
 - [x] **siflcondbot** — Net Conductive Heat Flux at Ice Base (`W m-2`, high) — qcon (DefaultPipeline)
 - [x] **siflcondtop** — Net Conductive Heat Flux at Ice Surface (`W m-2`, high) — k_ice*(T_base-ist)/h_ice (siflcondtop_pipeline)
-- [ ] **sifllattop** — Net Latent Heat Flux over Sea Ice (`W m-2`, high) — from atmosphere coupling
+- [x] **sifllattop** — Net Latent Heat Flux over Sea Ice (`W m-2`, high) — OpenIFS total slhf (atmos_mon_land_slhf) regridded to FESOM nodes then masked by a_ice (regrid_atm_to_fesom_seaice_mask_pipeline); note: total flux over all surfaces, not ice-tile-specific; verify units (IFS slhf is accumulated J/m²)
 - [ ] **siflsensbot** — Net Upward Sensible Heat Flux under Sea Ice (`W m-2`, high) — ocean-ice interface
-- [ ] **siflsenstop** — Net Downward Sensible Heat Flux over Sea Ice (`W m-2`, high) — atmosphere-ice interface
+- [x] **siflsenstop** — Net Downward Sensible Heat Flux over Sea Ice (`W m-2`, high) — OpenIFS total sshf (atmos_mon_land_sshf) regridded to FESOM nodes then masked by a_ice (regrid_atm_to_fesom_seaice_mask_pipeline); note: total flux over all surfaces, not ice-tile-specific; verify units (IFS sshf is accumulated J/m²)
 - [ ] **siflswdbot** — Downwelling Shortwave Flux under Sea Ice (`W m-2`, high) — transmitted through ice
 - [x] **sihc** — Sea-Ice Heat Content (`J m-2`, high) — rho_ice*h_ice*(c_ice*(T_mean-T_melt)-L_f) (sihc_pipeline)
 

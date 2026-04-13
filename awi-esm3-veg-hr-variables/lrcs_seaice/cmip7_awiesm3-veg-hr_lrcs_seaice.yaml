@@ -833,6 +833,34 @@ rules:
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
+  # Net latent heat flux over sea ice: OpenIFS total slhf regridded to FESOM nodes.
+  # Note: OpenIFS 'slhf' is total latent heat flux over all surfaces; no ice-tile-specific
+  # diagnostic is available. Units: verify (IFS slhf is accumulated J/m², check XIOS output units).
+  - name: sifllattop
+    inputs:
+      - path: *odp
+        pattern: atmos_mon_land_slhf_.*\.nc
+    compound_name: seaIce.sifllattop.tavg-u-hxy-si.mon.GLB
+    model_variable: slhf
+    time_dimname: time_counter
+    aice_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/a_ice.fesom.*.nc
+    pipelines:
+      - regrid_atm_to_fesom_seaice_mask_pipeline
+
+  # Net sensible heat flux over sea ice: OpenIFS total sshf regridded to FESOM nodes.
+  # Note: OpenIFS 'sshf' is total sensible heat flux over all surfaces; no ice-tile-specific
+  # diagnostic is available. Units: verify (IFS sshf is accumulated J/m², check XIOS output units).
+  - name: siflsenstop
+    inputs:
+      - path: *odp
+        pattern: atmos_mon_land_sshf_.*\.nc
+    compound_name: seaIce.siflsenstop.tavg-u-hxy-si.mon.GLB
+    model_variable: sshf
+    time_dimname: time_counter
+    aice_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/a_ice.fesom.*.nc
+    pipelines:
+      - regrid_atm_to_fesom_seaice_mask_pipeline
+
   # Sea ice concentration on atmosphere grid: ci [1] → siconca [%]
   - name: siconca
     inputs:
