@@ -935,3 +935,43 @@ rules:
     hemisphere: "S"
     pipelines:
       - hemisphere_integral_pipeline
+
+  - name: sisnmass_north_day_si
+    inputs:
+      - path: *dp
+        pattern: m_snow.fesom.1350.nc
+    compound_name: seaIce.sisnmass.tavg-u-hm-si.day.NH
+    model_variable: m_snow
+    hemisphere: "N"
+    pipelines:
+      - hemisphere_integral_pipeline
+
+  - name: sisnmass_south_day_si
+    inputs:
+      - path: *dp
+        pattern: m_snow.fesom.1350.nc
+    compound_name: seaIce.sisnmass.tavg-u-hm-si.day.SH
+    model_variable: m_snow
+    hemisphere: "S"
+    pipelines:
+      - hemisphere_integral_pipeline
+
+  - name: sisnmass_north_si
+    inputs:
+      - path: *dp
+        pattern: m_snow.fesom.1350.nc
+    compound_name: seaIce.sisnmass.tavg-u-hm-si.mon.NH
+    model_variable: m_snow
+    hemisphere: "N"
+    pipelines:
+      - hemisphere_integral_pipeline
+
+  - name: sisnmass_south_si
+    inputs:
+      - path: *dp
+        pattern: m_snow.fesom.1350.nc
+    compound_name: seaIce.sisnmass.tavg-u-hm-si.mon.SH
+    model_variable: m_snow
+    hemisphere: "S"
+    pipelines:
+      - hemisphere_integral_pipeline

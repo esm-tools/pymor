@@ -91,8 +91,8 @@ Sources: cmip7_LRCSextra_variables_seaIce.csv, cmip7_LRCSextra_variables_ocean_s
 - [x] **siextent (S)** — Sea-Ice Extent South (`1e6 km2`, high) — siextents (DefaultPipeline)
 - [x] **sivol (N)** — Sea-Ice Volume North (`1e3 km3`, high) — sivoln (DefaultPipeline)
 - [x] **sivol (S)** — Sea-Ice Volume South (`1e3 km3`, high) — sivols (DefaultPipeline)
-- [x] **sisnmass (N)** — Snow Mass on Sea Ice North (`kg`, high) — m_snow × cell_area, lat≥0 (sisnmass_pipeline)
-- [x] **sisnmass (S)** — Snow Mass on Sea Ice South (`kg`, high) — m_snow × cell_area, lat<0 (sisnmass_pipeline)
+- [x] **sisnmass (N)** — Snow Mass on Sea Ice North (`kg`, high) — m_snow × cell_area, lat≥0 (hemisphere_integral_pipeline); hm-u (sisnmass_north) and hm-si (sisnmass_north_si) variants
+- [x] **sisnmass (S)** — Snow Mass on Sea Ice South (`kg`, high) — m_snow × cell_area, lat<0 (hemisphere_integral_pipeline); hm-u (sisnmass_south) and hm-si (sisnmass_south_si) variants
 
 ### Melt ponds (use_meltponds=.true.)
 - [x] **simpconc** — Melt Pond Fraction (`%`, high) — apnd × 100 (fraction_to_percent_pipeline)
@@ -129,7 +129,7 @@ Sources: cmip7_LRCSextra_variables_seaIce.csv, cmip7_LRCSextra_variables_ocean_s
 - [x] **siarea (N/S)** — daily hemisphere areas — computed from daily a_ice via hemisphere_integral_pipeline (ldiag_cmor scalars are monthly-only)
 - [x] **siextent (N/S)** — daily hemisphere extents — computed from daily a_ice with 15% threshold via hemisphere_integral_pipeline (extent_threshold: 0.15; ldiag_cmor scalars are monthly-only)
 - [ ] **sivol (N/S)** — daily hemisphere volumes — ldiag_cmor scalars (need to verify daily output)
-- [x] **sisnmass (N/S)** — daily hemisphere snow mass — hemisphere_integral_pipeline (daily m_snow added to namelist)
+- [x] **sisnmass (N/S)** — daily hemisphere snow mass — hemisphere_integral_pipeline (daily m_snow added to namelist); hm-u (sisnmass_north/south_day) and hm-si (sisnmass_north/south_day_si) variants
 
 ## SImon — cross-realm (ocean seaIce)
 - [x] **sfdsi** — Downward Sea Ice Basal Salt Flux (`kg m-2 s-1`, medium) — realsalt (scale_pipeline, factor needs verification)
