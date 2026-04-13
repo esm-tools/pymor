@@ -535,6 +535,18 @@ rules:
     pipelines:
       - scale_pipeline
 
+  # Same field in SImon table (realsalt is only non-zero where sea ice exists — no explicit masking needed)
+  - name: sfdsi_seaice
+    inputs:
+      - path: *dp
+        pattern: realsalt.fesom.1350.nc
+    compound_name: seaIce.sfdsi.tavg-u-hxy-si.mon.GLB
+    model_variable: realsalt
+    scale_factor: 1.0
+    scaled_units: "kg m-2 s-1"
+    pipelines:
+      - scale_pipeline
+
   # Virtual salt flux into sea water from ice thermodynamics
   - name: vsfsit
     inputs:
@@ -718,6 +730,27 @@ rules:
         pattern: siareas.fesom.1350.nc
     compound_name: seaIce.siarea.tavg-u-hm-u.mon.SH
     model_variable: siareas
+
+  # Daily siarea: ldiag_cmor scalars are monthly-only; compute from gridded a_ice
+  - name: siarea_north_day
+    inputs:
+      - path: *dp
+        pattern: a_ice.fesom.1350.nc
+    compound_name: seaIce.siarea.tavg-u-hm-u.day.NH
+    model_variable: a_ice
+    hemisphere: "N"
+    pipelines:
+      - hemisphere_integral_pipeline
+
+  - name: siarea_south_day
+    inputs:
+      - path: *dp
+        pattern: a_ice.fesom.1350.nc
+    compound_name: seaIce.siarea.tavg-u-hm-u.day.SH
+    model_variable: a_ice
+    hemisphere: "S"
+    pipelines:
+      - hemisphere_integral_pipeline
 
   - name: siextent_north
     inputs:

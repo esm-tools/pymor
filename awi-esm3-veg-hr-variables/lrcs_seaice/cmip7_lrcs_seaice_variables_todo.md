@@ -49,7 +49,7 @@ Sources: cmip7_LRCSextra_variables_seaIce.csv, cmip7_LRCSextra_variables_ocean_s
 ### Freshwater and salt fluxes
 - [x] **sbl** — Snow Sublimation Rate (`kg m-2 s-1`, high) — OpenIFS total sbl (atmos_mon_land_sbl) regridded to FESOM nodes then masked by a_ice (regrid_atm_to_fesom_seaice_mask_pipeline); note: total sublimation from all surfaces, not ice-tile-specific
 - [x] **snm** — Snow Melt Rate (`kg m-2 s-1`, high) — thdgrsn × rho_snow=330 (scale_pipeline)
-- [x] **sfdsi** — Salt Flux from Sea Ice (`kg m-2 s-1`, medium) — realsalt (scale_pipeline, factor needs verification)
+- [x] **sfdsi** — Salt Flux from Sea Ice (`kg m-2 s-1`, medium) — realsalt (sfdsi_seaice rule, scale_pipeline; same data as ocean.sfdsi, no masking needed as realsalt is zero where no sea ice)
 - [x] **siflfwbot** — Freshwater Flux from Sea Ice (`kg m-2 s-1`, medium) — fw_ice × rho_water=1000 (scale_pipeline)
 - [x] **siflfwdrain** — Freshwater Flux from Sea-Ice Surface (`kg m-2 s-1`, medium) — fw_snw × rho_water=1000 (scale_pipeline)
 - [x] **sisaltmass** — Mass of Salt in Sea Ice (`kg m-2`, high) — m_ice × 0.004 (sice=4 psu, scale_pipeline)
@@ -126,7 +126,7 @@ Sources: cmip7_LRCSextra_variables_seaIce.csv, cmip7_LRCSextra_variables_ocean_s
 - [x] **sispeed** — Ice Speed (`m s-1`, high) — sqrt(uice²+vice²) (sispeed_pipeline, daily uice/vice added to namelist)
 - [x] **sitimefrac** — Fraction of Time with Ice (`1`, high) — daily a_ice>0 (more accurate than monthly)
 - [x] **ts** — Surface Temperature (`K`, high) — daily ist (added to namelist)
-- [ ] **siarea (N/S)** — daily hemisphere areas — ldiag_cmor scalars (need to verify daily output)
+- [x] **siarea (N/S)** — daily hemisphere areas — computed from daily a_ice via hemisphere_integral_pipeline (ldiag_cmor scalars are monthly-only)
 - [ ] **siextent (N/S)** — daily hemisphere extents — ldiag_cmor scalars (need to verify daily output)
 - [ ] **sivol (N/S)** — daily hemisphere volumes — ldiag_cmor scalars (need to verify daily output)
 - [x] **sisnmass (N/S)** — daily hemisphere snow mass — hemisphere_integral_pipeline (daily m_snow added to namelist)
