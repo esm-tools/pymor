@@ -102,18 +102,29 @@ class CMIP6GlobalAttributes(GlobalAttributes):
     def get_source_id(self):
         return self.rule_dict["source_id"]
 
+    def _get_cv_source_id(self):
+        source_id = self.get_source_id()
+        return self.cv.get("source_id", {}).get(source_id)
+
     def get_source(self):
         # TODO: extend this to include all model components
         model_component = self.get_realm()
-        source_id = self.get_source_id()
-        cv_source_id = self.cv["source_id"][source_id]
+        cv_source_id = self._get_cv_source_id()
+        if cv_source_id is None:
+            return self.rule_dict.get("source", self.get_source_id())
         release_year = cv_source_id["release_year"]
         # return f"{source_id} ({release_year})"
         return f"{model_component} ({release_year})"
 
     def get_institution_id(self):
-        source_id = self.get_source_id()
-        cv_source_id = self.cv["source_id"][source_id]
+        cv_source_id = self._get_cv_source_id()
+        if cv_source_id is None:
+            institution_id = self.rule_dict.get("institution_id", None)
+            if institution_id is None:
+                raise KeyError(
+                    f"Source ID '{self.get_source_id()}' is not present in the CV and no institution_id was provided in the rule"
+                )
+            return institution_id
         institution_ids = cv_source_id["institution_id"]
         if len(institution_ids) > 1:
             user_institution_id = self.rule_dict.get("institution_id", None)
@@ -130,6 +141,8 @@ class CMIP6GlobalAttributes(GlobalAttributes):
         return institution_ids[0]
 
     def get_institution(self):
+        if self._get_cv_source_id() is None:
+            return self.rule_dict.get("institution", self.get_institution_id())
         institution_id = self.get_institution_id()
         return self.cv["institution_id"][institution_id]
 
@@ -149,8 +162,12 @@ class CMIP6GlobalAttributes(GlobalAttributes):
         return self.rule_dict["grid_label"]
 
     def get_grid(self):
-        source_id = self.get_source_id()
-        cv_source_id = self.cv["source_id"][source_id]
+        cv_source_id = self._get_cv_source_id()
+        if cv_source_id is None:
+            return self.rule_dict.get(
+                "grid",
+                self.rule_dict.get("description", self.get_grid_label()),
+            )
         model_component = self.get_realm()
         grid_description = cv_source_id["model_component"][model_component][
             "description"
@@ -165,8 +182,12 @@ class CMIP6GlobalAttributes(GlobalAttributes):
         return grid_description
 
     def get_nominal_resolution(self):
-        source_id = self.get_source_id()
-        cv_source_id = self.cv["source_id"][source_id]
+        cv_source_id = self._get_cv_source_id()
+        if cv_source_id is None:
+            return self.rule_dict.get(
+                "nominal_resolution",
+                self.rule_dict.get("resolution", "unknown"),
+            )
         model_component = self.get_realm()
         cv_model_component = cv_source_id["model_component"][model_component]
         if "native_nominal_resolution" in cv_model_component:
@@ -183,9 +204,10 @@ class CMIP6GlobalAttributes(GlobalAttributes):
         return nominal_resolution
 
     def get_license(self):
+        if self._get_cv_source_id() is None:
+            return self.rule_dict.get("license", "")
         institution_id = self.get_institution_id()
-        source_id = self.get_source_id()
-        cv_source_id = self.cv["source_id"][source_id]
+        cv_source_id = self._get_cv_source_id()
         license_id = cv_source_id["license_info"]["id"]
         license_url = self.cv["license"]["license_options"][license_id]["license_url"]
         license_id = self.cv["license"]["license_options"][license_id]["license_id"]

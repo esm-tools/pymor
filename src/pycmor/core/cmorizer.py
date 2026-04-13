@@ -708,8 +708,11 @@ class CMORizer:
 
     def serial_process(self):
         data = {}
+        # In serial mode we execute the raw function to avoid Prefect orchestration
+        # overhead and transient server dependencies.
+        process_rule_fn = getattr(self._process_rule, "fn", self._process_rule)
         for rule in track(self.rules, description="Processing rules"):
-            data[rule.name] = self._process_rule(rule)
+            data[rule.name] = process_rule_fn(rule)
         logger.success("Processing completed.")
         return data
 

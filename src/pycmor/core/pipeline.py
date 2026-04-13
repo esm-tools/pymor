@@ -76,6 +76,9 @@ class Pipeline:
 
     def __setstate__(self, state):
         self.__dict__.update(state)
+        # __getstate__ drops _cluster to avoid pickling cluster internals.
+        # Ensure the attribute exists after unpickling, even if no cluster is active.
+        self._cluster = None
         if self._workflow_backend == "prefect":
             self._prefectize_steps()
         logger.info("Restoring from pickled state!")

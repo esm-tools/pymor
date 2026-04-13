@@ -105,7 +105,8 @@ def process(config_file):
     with open(config_file, "r") as f:
         cfg = yaml.safe_load(f)
     cmorizer = CMORizer.from_dict(cfg)
-    client = Client(cmorizer._cluster)  # noqa: F841
+    if cmorizer._cluster is not None:
+        client = Client(cmorizer._cluster)  # noqa: F841
     cmorizer.process()
 
 

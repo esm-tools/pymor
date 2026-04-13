@@ -76,6 +76,8 @@ def _get_units(
                 to_unit_dimensionless_mapping is None
                 or to_unit_dimensionless_mapping == ""
             ):
+                if from_unit == to_unit:
+                    return from_unit, to_unit, None
                 raise ValueError(
                     f"Empty dimensionless mapping found for variable '{cmor_variable}' with unit '{to_unit}'. "
                     f"Please update the {dimless_mapping} file with an appropriate value. "
