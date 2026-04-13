@@ -849,6 +849,18 @@ rules:
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
+  # Downwelling longwave flux over sea ice: OpenIFS rlds regridded to FESOM nodes.
+  # Note: total downwelling LW over all surfaces; no ice-tile-specific diagnostic available.
+  - name: rlds_seaice
+    inputs:
+      - path: *odp
+        pattern: atmos_mon_rlds_.*\.nc
+    compound_name: seaIce.rlds.tavg-u-hxy-si.mon.GLB
+    model_variable: rlds
+    aice_file: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom/a_ice.fesom.*.nc
+    pipelines:
+      - regrid_atm_to_fesom_seaice_mask_pipeline
+
   # Net latent heat flux over sea ice: OpenIFS total slhf regridded to FESOM nodes.
   # Note: OpenIFS 'slhf' is total latent heat flux over all surfaces; no ice-tile-specific
   # diagnostic is available. Units: verify (IFS slhf is accumulated J/m², check XIOS output units).

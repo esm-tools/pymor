@@ -17,7 +17,7 @@ Sources: cmip7_LRCSextra_variables_seaIce.csv, cmip7_LRCSextra_variables_ocean_s
 ## SImon — Monthly variables
 
 ### Radiation fluxes over sea ice (from atmosphere coupling)
-- [ ] **rlds** — Downwelling Longwave Flux over Sea Ice (`W m-2`, high) — likely from OpenIFS, not FESOM output
+- [x] **rlds** — Downwelling Longwave Flux over Sea Ice (`W m-2`, high) — OpenIFS rlds (atmos_mon_rlds) regridded to FESOM nodes then masked by a_ice (regrid_atm_to_fesom_seaice_mask_pipeline); total LW over all surfaces, not ice-tile-specific
 - [ ] **rlus** — Upwelling Longwave Flux over Sea Ice (`W m-2`, high) — likely from OpenIFS, not FESOM output
 - [ ] **rsds** — Downwelling Shortwave Flux over Sea Ice (`W m-2`, high) — likely from OpenIFS; FESOM has `qsi` (ice heat flux) under __oifs
 - [ ] **rsus** — Upwelling Shortwave Flux over Sea Ice (`W m-2`, high) — likely from OpenIFS
