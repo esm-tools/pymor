@@ -766,6 +766,29 @@ rules:
     compound_name: seaIce.siextent.tavg-u-hm-u.mon.SH
     model_variable: siextents
 
+  # Daily siextent: ldiag_cmor scalars are monthly-only; compute from gridded a_ice with 15% threshold
+  - name: siextent_north_day
+    inputs:
+      - path: *dp
+        pattern: a_ice.fesom.1350.nc
+    compound_name: seaIce.siextent.tavg-u-hm-u.day.NH
+    model_variable: a_ice
+    hemisphere: "N"
+    extent_threshold: 0.15
+    pipelines:
+      - hemisphere_integral_pipeline
+
+  - name: siextent_south_day
+    inputs:
+      - path: *dp
+        pattern: a_ice.fesom.1350.nc
+    compound_name: seaIce.siextent.tavg-u-hm-u.day.SH
+    model_variable: a_ice
+    hemisphere: "S"
+    extent_threshold: 0.15
+    pipelines:
+      - hemisphere_integral_pipeline
+
   - name: sivol_north
     inputs:
       - path: *dp

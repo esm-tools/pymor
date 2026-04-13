@@ -521,18 +521,26 @@ def integrate_over_hemisphere(data, rule):
 
     result = sum(data * cell_area) for nodes in the selected hemisphere.
 
+    If `extent_threshold` is set, data is first binarised (1 where data >
+    threshold, 0 elsewhere) before multiplying by cell_area. This allows
+    computing sea-ice extent (sum of cell areas where a_ice > 0.15) as well
+    as sea-ice area (sum of a_ice * cell_area).
+
     Memory-efficient: masks and weights are applied via indexing (isel)
     rather than broadcasting, so only hemisphere nodes are loaded.
 
     Generic step — works for any variable that needs hemisphere
-    integration: snow mass, ice volume, ice area, etc.
+    integration: snow mass, ice volume, ice area, ice extent, etc.
 
     Rule attributes:
       - grid_file: path to mesh file (for cell_area and lat)
       - hemisphere: 'N' or 'S'
+      - extent_threshold: float, optional — if set, binarise data > threshold
+            before integrating (default: None, i.e. use data as-is)
     """
     grid_file = rule.get("grid_file")
     hemisphere = rule.get("hemisphere", "N")
+    extent_threshold = rule.get("extent_threshold", None)
     if grid_file is None:
         raise ValueError("Rule must specify 'grid_file' for integrate_over_hemisphere")
 
@@ -573,6 +581,10 @@ def integrate_over_hemisphere(data, rule):
     # Subset data and area to hemisphere only (halves memory)
     data_hemi = data.isel({horizontal_dim: hemi_idx})
     area_hemi = cell_area.values[hemi_idx]
+
+    # For extent: binarise to 1 where data > threshold (e.g. a_ice > 0.15)
+    if extent_threshold is not None:
+        data_hemi = (data_hemi > float(extent_threshold)).astype(float)
 
     # Integrate: sum(data * cell_area) over hemisphere nodes
     result = (data_hemi * area_hemi).sum(dim=horizontal_dim)

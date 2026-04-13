@@ -127,7 +127,7 @@ Sources: cmip7_LRCSextra_variables_seaIce.csv, cmip7_LRCSextra_variables_ocean_s
 - [x] **sitimefrac** — Fraction of Time with Ice (`1`, high) — daily a_ice>0 (more accurate than monthly)
 - [x] **ts** — Surface Temperature (`K`, high) — daily ist (added to namelist)
 - [x] **siarea (N/S)** — daily hemisphere areas — computed from daily a_ice via hemisphere_integral_pipeline (ldiag_cmor scalars are monthly-only)
-- [ ] **siextent (N/S)** — daily hemisphere extents — ldiag_cmor scalars (need to verify daily output)
+- [x] **siextent (N/S)** — daily hemisphere extents — computed from daily a_ice with 15% threshold via hemisphere_integral_pipeline (extent_threshold: 0.15; ldiag_cmor scalars are monthly-only)
 - [ ] **sivol (N/S)** — daily hemisphere volumes — ldiag_cmor scalars (need to verify daily output)
 - [x] **sisnmass (N/S)** — daily hemisphere snow mass — hemisphere_integral_pipeline (daily m_snow added to namelist)
 
