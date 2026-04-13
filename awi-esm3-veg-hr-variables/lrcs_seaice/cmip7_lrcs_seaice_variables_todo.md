@@ -18,9 +18,9 @@ Sources: cmip7_LRCSextra_variables_seaIce.csv, cmip7_LRCSextra_variables_ocean_s
 
 ### Radiation fluxes over sea ice (from atmosphere coupling)
 - [x] **rlds** — Downwelling Longwave Flux over Sea Ice (`W m-2`, high) — OpenIFS rlds (atmos_mon_rlds) regridded to FESOM nodes then masked by a_ice (regrid_atm_to_fesom_seaice_mask_pipeline); total LW over all surfaces, not ice-tile-specific
-- [ ] **rlus** — Upwelling Longwave Flux over Sea Ice (`W m-2`, high) — likely from OpenIFS, not FESOM output
-- [ ] **rsds** — Downwelling Shortwave Flux over Sea Ice (`W m-2`, high) — likely from OpenIFS; FESOM has `qsi` (ice heat flux) under __oifs
-- [ ] **rsus** — Upwelling Shortwave Flux over Sea Ice (`W m-2`, high) — likely from OpenIFS
+- [x] **rlus** — Upwelling Longwave Flux over Sea Ice (`W m-2`, high) — OpenIFS rlus (atmos_mon_rlus) regridded to FESOM nodes then masked by a_ice (regrid_atm_to_fesom_seaice_mask_pipeline); total LW over all surfaces, not ice-tile-specific
+- [x] **rsds** — Downwelling Shortwave Flux over Sea Ice (`W m-2`, high) — OpenIFS rsds (atmos_mon_rsds / atmos_day_cap7_rsds) regridded to FESOM nodes then masked by a_ice (regrid_atm_to_fesom_seaice_mask_pipeline); rsds added to daily _day_cap7 file group in file_def
+- [x] **rsus** — Upwelling Shortwave Flux over Sea Ice (`W m-2`, high) — OpenIFS rsus (atmos_mon_rsus / atmos_day_cap7_rsus) regridded to FESOM nodes then masked by a_ice (regrid_atm_to_fesom_seaice_mask_pipeline)
 
 ### Heat fluxes
 - [x] **siflcondbot** — Net Conductive Heat Flux at Ice Base (`W m-2`, high) — qcon (DefaultPipeline)
@@ -119,8 +119,8 @@ Sources: cmip7_LRCSextra_variables_seaIce.csv, cmip7_LRCSextra_variables_ocean_s
 - [ ] **sisndmasswind** — Snow Mass Change from Wind Drift — not output (no wind redistribution)
 
 ## SIday — Daily variables
-- [ ] **rsds** — Downwelling Shortwave (`W m-2`, high) — from atmosphere
-- [ ] **rsus** — Upwelling Shortwave (`W m-2`, high) — from atmosphere
+- [x] **rsds** — Downwelling Shortwave (`W m-2`, high) — atmos_day_cap7_rsds (rsds added to daily _day_cap7 file group); regrid_atm_to_fesom_seaice_mask_pipeline
+- [x] **rsus** — Upwelling Shortwave (`W m-2`, high) — atmos_day_cap7_rsus; regrid_atm_to_fesom_seaice_mask_pipeline
 - [ ] **siage** — Ice Age (`s`, high) — NOT AVAILABLE: tr_iage=.false.
 - [x] **siconca** (mon+day) — Ice Area on Atm Grid (`%`, high) — ci from OpenIFS remapped by OASIS; monthly: atm_remapped_1m_ci, daily: atm_remapped_1d_cmip7_ci (added to file_def) (fraction_to_percent_pipeline)
 - [x] **sispeed** — Ice Speed (`m s-1`, high) — sqrt(uice²+vice²) (sispeed_pipeline, daily uice/vice added to namelist)
