@@ -641,6 +641,18 @@ rules:
     pipelines:
       - sifb_pipeline
 
+  # Atmospheric drag coefficient (constant from namelist.ice: cd_atm_ice=0.0012 — verify against runtime namelist)
+  - name: sidragtop
+    inputs:
+      - path: *dp
+        pattern: a_ice.fesom.1350.nc
+    compound_name: seaIce.sidragtop.tavg-u-hxy-si.mon.GLB
+    model_variable: a_ice
+    constant_value: 0.0012
+    constant_units: "1"
+    pipelines:
+      - constant_field_pipeline
+
   # Ocean drag coefficient (constant from namelist.ice: cd_oce_ice=0.0055)
   - name: sidragbot
     inputs:

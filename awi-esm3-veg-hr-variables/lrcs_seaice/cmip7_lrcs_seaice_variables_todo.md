@@ -82,7 +82,7 @@ Sources: cmip7_LRCSextra_variables_seaIce.csv, cmip7_LRCSextra_variables_ocean_s
 - [x] **sitempbot** — Temperature at Ice-Ocean Interface (`K`, medium) — T_freeze from SSS (sitempbot_pipeline)
 - [x] **sifb** — Sea-Ice Freeboard (`m`, medium) — from h_ice, h_snow, densities (sifb_pipeline)
 - [x] **sidragbot** — Ocean Drag Coefficient (`1`, medium) — constant 0.0055 (constant_field_pipeline)
-- [ ] **sidragtop** — Atmospheric Drag Coefficient (`1`, medium) — from atmosphere coupling, may be constant
+- [x] **sidragtop** — Atmospheric Drag Coefficient (`1`, medium) — constant 0.0012 (cd_atm_ice from namelist.ice — verify against runtime namelist) (constant_field_pipeline)
 
 ### Hemisphere-integrated scalars (ldiag_cmor=.true.)
 - [x] **siarea (N)** — Sea-Ice Area North (`1e6 km2`, high) — siarean (DefaultPipeline)
