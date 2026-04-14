@@ -25,6 +25,21 @@ jobqueue:
     walltime: '00:30:00'
 
 pipelines:
+  # ============================================================
+  # basin_pipeline: pass-through of FESOM basin mask (ocean.basin Ofx)
+  # ============================================================
+  - name: basin_pipeline
+    steps:
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_basin_mask
+      - pycmor.std_lib.generic.get_variable
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   - name: ocean_vertical_integration_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
@@ -157,6 +172,8 @@ inherit:
   grid_label: gn
   mesh_path: &mp /work/ab0246/a270092/input/fesom2/core2
   grid_file: /work/ab0246/a270092/input/fesom2/core2/mesh.nc
+  basin_mask_file: /work/ab0246/a270092/input/fesom2/core2/basin_mask.nc
+  time_dimname: time
   grid: "FESOM 2.6 unstructured grid CORE2 (126858 surface nodes)"
   nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
@@ -421,3 +438,16 @@ rules:
     reference_density: 1025.0
     pipelines:
       - zostoga_pipeline
+
+  # ============================================================
+  # basin mask (Ofx) — pass-through from static basin_mask.nc
+  # ============================================================
+
+  - name: basin
+    inputs:
+      - path: *mp
+        pattern: basin_mask.nc
+    compound_name: ocean.basin.ti-u-hxy-u.fx.GLB
+    model_variable: basin
+    pipelines:
+      - basin_pipeline
