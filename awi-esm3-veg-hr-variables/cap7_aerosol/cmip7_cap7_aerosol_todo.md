@@ -12,7 +12,7 @@ therefore not producible.
 | Status | Count |
 |--------|-------|
 | Already in veg_atm (fire emissions + lwp) | 0 |
-| Implemented (new cap7 rules) | 2 |
+| Implemented (new cap7 rules) | 1 |
 | Blocked — no prognostic aerosol (MACv2-SP total only) | 20 |
 | Blocked — no atmospheric chemistry | 19 |
 | Blocked — no CO2 tracer in current config | 4 |
@@ -22,11 +22,11 @@ therefore not producible.
 
 ---
 
-## Implemented — new cap7 rules (2)
+## Implemented — new cap7 rules (1)
 
-### MACv2-SP aerosol optical depth (1)
+### MACv2-SP aerosol optical depth
 
-- [x] **od550aer** (mon) — `aerosol.od550aer.tavg-u-hxy-u.mon.glb` — Total aerosol optical depth at 550nm. From `macv2sp_taod550` in XIOS monthly output (`atmos_1m_*.nc`). MACv2-SP provides total column AOD at 550nm. Passthrough, units already dimensionless.
+- [ ] **od550aer** (mon) — `aerosol.od550aer.tavg-u-hxy-u.mon.glb` — **Dropped**: `macv2sp_taod550` represents only the anthropogenic simple-plume AOD perturbation, not total AOD as required by CMIP7. Without a natural background aerosol AOD from a prognostic scheme, outputting `macv2sp_taod550` as `od550aer` would be physically incorrect.
 
 ### Prescribed ozone (1)
 
@@ -97,7 +97,7 @@ While prescribed values exist, they are forcing inputs, not model output.
 
 - [ ] **n2o** (mon, model levels) — `atmosChem.n2o.tavg-al-hxy-u.mon.glb` — N2O on model levels. Prescribed WMGHG.
 - [ ] **n2o** (mon, plev19) — `atmosChem.n2o.tavg-p19-hxy-air.mon.glb` — N2O on plev19. Prescribed WMGHG.
-- [ ] **n2o** (mon, global mean) — `atmosChem.n2o.tavg-u-hm-air.mon.glb` — Global mean N2O. Prescribed scalar.
+- [x] **n2o** (mon, global mean) — `atmosChem.n2o.tavg-u-hm-air.mon.glb` — Global mean N2O. From input4MIPs `n2o_*_gm_1750-2022.nc` (ppb → mol/mol via ×1e-9, annual → monthly by ffill). CMIP7 guidance for prescribed-concentration runs: report global mean instead of 3D field.
 - [ ] **n2o** (mon, plev19, clim) — `atmosChem.n2o.tclm-p19-hxy-air.mon.glb` — N2O climatology.
 - [ ] **n2o** (mon, global mean, clim) — `atmosChem.n2o.tclm-u-hm-air.mon.glb` — N2O climatological global mean.
 

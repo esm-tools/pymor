@@ -869,6 +869,19 @@ def scale_by_constant(data, rule):
 # ============================================================
 
 
+def upsample_to_monthly(data, rule):
+    """
+    Upsample an annual time series to monthly by forward-filling.
+
+    Used for prescribed GHG forcing scalars (CFC11, CFC12, CH4, N2O, etc.)
+    that are provided as annual global-mean values in input4MIPs files but
+    are required at monthly frequency by CMIP7.
+
+    Each annual value is repeated for all 12 months of that year.
+    """
+    return data.resample(time="MS").ffill()
+
+
 def compute_square(data, rule):
     """
     Square the input field.

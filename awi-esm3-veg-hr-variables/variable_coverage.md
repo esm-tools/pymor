@@ -1,6 +1,6 @@
 # Variable Coverage Report — AWI-ESM3-VEG-HR
 
-**Total:** 742 unique (variable, frequency) pairs across all CSVs | 434 rules in YAML files
+**Total:** 866 unique compound names across all CSVs | 505 rules in YAML files
 
 **Categories:** `core`, `cap7`, `veg`, `lrcs`, `extra`
 
@@ -10,26 +10,26 @@
 
 | Realm | With rules | Total | Coverage |
 |---|---|---|---|
-| aerosol | 2 | 31 | 6% |
+| aerosol | 2 | 32 | 6% |
 | aerosol atmosChem | 7 | 14 | 50% |
-| atmos | 139 | 237 | 59% |
-| atmos aerosol | 0 | 1 | 0% |
+| atmos | 165 | 278 | 59% |
+| atmos aerosol | 0 | 4 | 0% |
 | atmos aerosol land | 2 | 2 | ✅ |
 | atmos atmosChem aerosol | 0 | 4 | 0% |
-| atmos land | 2 | 2 | ✅ |
-| atmosChem | 0 | 9 | 0% |
-| atmosChem aerosol | 0 | 4 | 0% |
-| land | 127 | 169 | 75% |
-| landIce | 2 | 2 | ✅ |
-| landIce land | 8 | 18 | 44% |
-| ocean | 83 | 153 | 54% |
+| atmos land | 3 | 3 | ✅ |
+| atmosChem | 3 | 18 | 17% |
+| atmosChem aerosol | 0 | 5 | 0% |
+| land | 126 | 190 | 66% |
+| landIce | 3 | 3 | ✅ |
+| landIce land | 9 | 19 | 47% |
+| ocean | 93 | 175 | 53% |
 | ocean seaIce | 3 | 3 | ✅ |
-| seaIce | 57 | 91 | 63% |
+| seaIce | 78 | 114 | 68% |
 | seaIce ocean | 2 | 2 | ✅ |
 
 ---
 
-## Realm: aerosol — 2/31 rules
+## Realm: aerosol — 2/32 rules
 
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
@@ -40,6 +40,7 @@
 | `aerosol.cfc114.tavg-al-hxy-u.mon.glb` | ❌ | No atmospheric chemistry | cap7 |
 | `aerosol.cly.tavg-p39-hy-air.mon.glb` | ❌ | No atmospheric chemistry | cap7 |
 | `aerosol.drydust.tavg-u-hxy-u.mon.glb` | ❌ | No deposition scheme | cap7 |
+| `aerosol.hcfc22.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
 | `aerosol.hcl.tavg-al-hxy-u.mon.glb` | ❌ | No atmospheric chemistry | cap7 |
 | `aerosol.hfc125.tavg-al-hxy-u.mon.glb` | ❌ | No atmospheric chemistry | cap7 |
 | `aerosol.hfc134a.tavg-al-hxy-u.mon.glb` | ❌ | No atmospheric chemistry | cap7 |
@@ -50,7 +51,7 @@
 | `aerosol.noy.tavg-p39-hy-air.mon.glb` | ❌ | No atmospheric chemistry | cap7 |
 | `aerosol.o3.tavg-h2m-hxy-u.1hr.glb` | ❌ | Not yet implemented | extra |
 | `aerosol.o3.tmax-h2m-hxy-u.day.glb` | ❌ | Not yet implemented | extra |
-| `aerosol.od550aer.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `aerosol.od550aer.tavg-u-hxy-u.mon.glb` | ❌ | MACv2-SP provides anthropogenic perturbation AOD only, not total AOD | cap7 |
 | `aerosol.od550bb.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
 | `aerosol.od550bc.tavg-u-hxy-u.mon.glb` | ❌ | No prognostic aerosol | cap7 |
 | `aerosol.od550dust.tavg-u-hxy-u.mon.glb` | ❌ | No prognostic aerosol | cap7 |
@@ -69,22 +70,22 @@
 
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
-| `aerosol.conccn.tavg-al-hxy-u.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
-| `aerosol.emibbbc.tavg-u-hxy-u.mon.glb` | ✅ |  | veg |
-| `aerosol.emibbch4.tavg-u-hxy-u.mon.glb` | ✅ |  | veg |
-| `aerosol.emibbco.tavg-u-hxy-u.mon.glb` | ✅ |  | veg |
-| `aerosol.emibbdms.tavg-u-hxy-u.mon.glb` | ✅ |  | veg |
-| `aerosol.emibboa.tavg-u-hxy-u.mon.glb` | ✅ |  | veg |
-| `aerosol.emibbso2.tavg-u-hxy-u.mon.glb` | ✅ |  | veg |
-| `aerosol.emibbvoc.tavg-u-hxy-u.mon.glb` | ✅ |  | veg |
-| `aerosol.sfpm1.tavg-h2m-hxy-u.1hr.glb` | ❌ | Not yet implemented | extra |
-| `aerosol.sfpm1.tavg-h2m-hxy-u.day.glb` | ❌ | Not yet implemented | extra |
-| `aerosol.sfpm10.tavg-h2m-hxy-u.1hr.glb` | ❌ | Not yet implemented | extra |
-| `aerosol.sfpm10.tavg-h2m-hxy-u.day.glb` | ❌ | Not yet implemented | extra |
-| `aerosol.sfpm25.tavg-h2m-hxy-u.1hr.glb` | ❌ | Not yet implemented | extra |
-| `aerosol.sfpm25.tavg-h2m-hxy-u.day.glb` | ❌ | Not yet implemented | extra |
+| `aerosol.conccn.tavg-al-hxy-u.mon.glb` | ❌ | MACv2-SP affects CDNC via Twomey parametrization but does not output 3D aerosol number concentration | veg |
+| `aerosol.emibbbc.tavg-u-hxy-u.mon.glb` | ✅ | LPJ-GUESS fFireAll_monthly.out × Andreae (2019) EF=0.37 g BC/kgDM | veg |
+| `aerosol.emibbch4.tavg-u-hxy-u.mon.glb` | ✅ | LPJ-GUESS fFireAll_monthly.out × Andreae (2019) EF=1.94 g CH4/kgDM | veg |
+| `aerosol.emibbco.tavg-u-hxy-u.mon.glb` | ✅ | LPJ-GUESS fFireAll_monthly.out × Andreae (2019) EF=63.0 g CO/kgDM | veg |
+| `aerosol.emibbdms.tavg-u-hxy-u.mon.glb` | ✅ | LPJ-GUESS fFireAll_monthly.out × Andreae (2019) EF=0.68 g DMS/kgDM | veg |
+| `aerosol.emibboa.tavg-u-hxy-u.mon.glb` | ✅ | LPJ-GUESS fFireAll_monthly.out × Andreae (2019) EF=2.62 g OA/kgDM | veg |
+| `aerosol.emibbso2.tavg-u-hxy-u.mon.glb` | ✅ | LPJ-GUESS fFireAll_monthly.out × Andreae (2019) EF for SO2 | veg |
+| `aerosol.emibbvoc.tavg-u-hxy-u.mon.glb` | ✅ | LPJ-GUESS fFireAll_monthly.out × Andreae (2019) EF for NMVOC | veg |
+| `aerosol.sfpm1.tavg-h2m-hxy-u.1hr.glb` | ❌ | No prognostic aerosol — MACv2-SP has no size-resolved aerosol mass (requires CAMS/M7) | extra |
+| `aerosol.sfpm1.tavg-h2m-hxy-u.day.glb` | ❌ | No prognostic aerosol — MACv2-SP has no size-resolved aerosol mass (requires CAMS/M7) | extra |
+| `aerosol.sfpm10.tavg-h2m-hxy-u.1hr.glb` | ❌ | No prognostic aerosol — MACv2-SP has no size-resolved aerosol mass (requires CAMS/M7) | extra |
+| `aerosol.sfpm10.tavg-h2m-hxy-u.day.glb` | ❌ | No prognostic aerosol — MACv2-SP has no size-resolved aerosol mass (requires CAMS/M7) | extra |
+| `aerosol.sfpm25.tavg-h2m-hxy-u.1hr.glb` | ❌ | No prognostic aerosol — MACv2-SP has no size-resolved aerosol mass (requires CAMS/M7) | extra |
+| `aerosol.sfpm25.tavg-h2m-hxy-u.day.glb` | ❌ | No prognostic aerosol — MACv2-SP has no size-resolved aerosol mass (requires CAMS/M7) | extra |
 
-## Realm: atmos — 139/237 rules
+## Realm: atmos — 165/278 rules
 
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
@@ -100,6 +101,11 @@
 | `atmos.clc.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (convective cloud fraction internal to scheme) | cap7 |
 | `atmos.clcalipso.tavg-220hPa-hxy-air.day.glb` | ❌ | No COSP satellite simulators | cap7 |
 | `atmos.clcalipso.tavg-220hPa-hxy-air.mon.glb` | ❌ | No COSP satellite simulators | cap7 |
+| `atmos.clcalipso.tavg-560hPa-hxy-air.day.glb` | ❌ | No COSP satellite simulators | cap7 |
+| `atmos.clcalipso.tavg-560hPa-hxy-air.mon.glb` | ❌ | No COSP satellite simulators | cap7 |
+| `atmos.clcalipso.tavg-840hPa-hxy-air.day.glb` | ❌ | No COSP satellite simulators | cap7 |
+| `atmos.clcalipso.tavg-840hPa-hxy-air.mon.glb` | ❌ | No COSP satellite simulators | cap7 |
+| `atmos.clcalipso.tavg-h40-hxy-air.mon.glb` | ❌ | No COSP satellite simulators | cap7 |
 | `atmos.cldnci.tavg-u-hxy-cl.day.glb` | ❌ | Needs IFS source changes (no in-cloud ice crystal number diagnostic) | cap7 |
 | `atmos.cldnvi.tavg-u-hxy-u.day.glb` | ❌ | Needs IFS source changes (no column ice crystal number diagnostic) | cap7 |
 | `atmos.cli.tavg-al-hxy-u.mon.glb` | ✅ |  | cap7 core |
@@ -132,7 +138,7 @@
 | `atmos.fco2antt.tavg-u-hxy-u.mon.glb` | ❌ | No CO2 tracer (concentration-driven) | cap7 |
 | `atmos.fco2fos.tavg-u-hxy-u.mon.glb` | ❌ | No CO2 tracer (concentration-driven) | cap7 |
 | `atmos.fco2nat.tavg-u-hxy-u.mon.glb` | ❌ | No CO2 tracer | cap7 |
-| `atmos.hfdsnb.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `atmos.hfdsnb.tavg-u-hxy-lnd.day.glb` | ❌ | Needs IFS source changes (downward heat flux at snow base not a standard OIFS output) | veg |
 | `atmos.hfls.tavg-u-hxy-u.1hr.glb` | ✅ |  | extra |
 | `atmos.hfls.tavg-u-hxy-u.3hr.glb` | ✅ |  | veg |
 | `atmos.hfls.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
@@ -141,17 +147,24 @@
 | `atmos.hfss.tavg-u-hxy-u.3hr.glb` | ✅ |  | veg |
 | `atmos.hfss.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
 | `atmos.hfss.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
-| `atmos.hur.tavg-al-hxy-u.mon.glb` | ✅ |  | cap7 core |
+| `atmos.hur.tavg-al-hxy-u.mon.glb` | ✅ |  | cap7 |
+| `atmos.hur.tavg-p19-hxy-air.mon.glb` | ✅ |  | cap7 core |
 | `atmos.hur.tavg-p19-hxy-u.day.glb` | ✅ |  | cap7 core |
 | `atmos.hurs.tavg-h2m-hxy-u.1hr.30S-90S` | ✅ |  | extra |
+| `atmos.hurs.tavg-h2m-hxy-u.1hr.glb` | ✅ |  | extra |
 | `atmos.hurs.tavg-h2m-hxy-u.6hr.glb` | ✅ |  | cap7 core |
-| `atmos.hurs.tavg-h2m-hxy-u.day.glb` | ✅ |  | cap7 core extra |
+| `atmos.hurs.tavg-h2m-hxy-u.day.glb` | ✅ |  | cap7 core |
 | `atmos.hurs.tavg-h2m-hxy-u.mon.glb` | ✅ |  | cap7 core |
+| `atmos.hurs.tmax-h2m-hxy-u.day.glb` | ✅ |  | cap7 |
+| `atmos.hurs.tmin-h2m-hxy-crp.day.glb` | ❌ | Only 1hr/3hr/6hr/day/mon frequency implemented | extra |
+| `atmos.hurs.tmin-h2m-hxy-u.day.glb` | ✅ |  | cap7 |
 | `atmos.hurs.tpt-h2m-hxy-u.3hr.glb` | ✅ |  | extra |
-| `atmos.hus.tavg-al-hxy-u.mon.glb` | ✅ |  | cap7 core |
+| `atmos.hus.tavg-al-hxy-u.mon.glb` | ✅ |  | cap7 |
 | `atmos.hus.tavg-p19-hxy-u.day.glb` | ✅ |  | cap7 core |
+| `atmos.hus.tavg-p19-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.hus.tpt-al-hxy-u.6hr.glb` | ✅ |  | cap7 |
 | `atmos.hus.tpt-p6-hxy-air.3hr.glb` | ✅ |  | veg |
+| `atmos.hus.tpt-p7h-hxy-air.6hr.glb` | ✅ |  | cap7 |
 | `atmos.huss.tavg-h2m-hxy-u.day.glb` | ✅ |  | cap7 core |
 | `atmos.huss.tavg-h2m-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.huss.tpt-h2m-hxy-u.1hr.glb` | ✅ |  | cap7 |
@@ -169,29 +182,34 @@
 | `atmos.mcd.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (convective mass flux internal to scheme) | cap7 |
 | `atmos.mcu.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (convective mass flux internal to scheme) | cap7 |
 | `atmos.noaahi2m.tavg-h2m-hxy-u.day.glb` | ❌ | No heat index scheme (requires Rothfusz formula post-processing) | extra |
+| `atmos.noaahi2m.tmax-h2m-hxy-u.day.glb` | ❌ | No heat index scheme (requires Rothfusz formula post-processing) | extra |
 | `atmos.pctisccp.tavg-u-hxy-cl.day.glb` | ❌ | No COSP satellite simulators | cap7 |
 | `atmos.pctisccp.tavg-u-hxy-cl.mon.glb` | ❌ | No COSP satellite simulators | cap7 |
 | `atmos.pfull.tavg-al-hxy-u.day.glb` | ✅ |  | extra |
 | `atmos.pfull.tclm-al-hxy-u.mon.glb` | ✅ |  | cap7 |
 | `atmos.phalf.tclm-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (alevhalf axis not yet configured) | cap7 |
-| `atmos.pr.tavg-u-hxy-u.1hr.glb` | ✅ |  | cap7 core extra |
+| `atmos.pr.tavg-u-hxy-crp.day.glb` | ❌ | Only 1hr/3hr/day/mon frequency implemented | extra |
+| `atmos.pr.tavg-u-hxy-u.1hr.30S-90S` | ✅ |  | extra |
+| `atmos.pr.tavg-u-hxy-u.1hr.glb` | ✅ |  | cap7 core |
 | `atmos.pr.tavg-u-hxy-u.3hr.glb` | ✅ |  | cap7 core |
-| `atmos.pr.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 core extra |
+| `atmos.pr.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 core |
 | `atmos.pr.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
+| `atmos.pr.tmax-u-hxy-u.day.glb` | ❌ | Only 1hr/3hr/day/mon frequency implemented | extra |
 | `atmos.prc.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
 | `atmos.prc.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
-| `atmos.prrsn.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `atmos.prrsn.tavg-u-hxy-lnd.day.glb` | ❌ | Needs IFS source changes (IFS does not partition precip by surface type) | veg |
 | `atmos.prsn.tavg-u-hxy-u.3hr.glb` | ✅ |  | cap7 |
 | `atmos.prsn.tavg-u-hxy-u.6hr.glb` | ✅ |  | veg |
 | `atmos.prsn.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
 | `atmos.prsn.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
-| `atmos.prsnc.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
-| `atmos.prsnsn.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `atmos.prsnc.tavg-u-hxy-lnd.day.glb` | ❌ | Needs IFS source changes (IFS has total snowfall only, no convective/LS split) | veg |
+| `atmos.prsnsn.tavg-u-hxy-lnd.day.glb` | ❌ | Needs IFS source changes (IFS does not track snowfall fraction on snow) | veg |
 | `atmos.prw.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
 | `atmos.prw.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.ps.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 core |
 | `atmos.ps.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
-| `atmos.ps.tpt-u-hxy-u.1hr.glb` | ✅ |  | cap7 extra |
+| `atmos.ps.tpt-u-hxy-u.1hr.30S-90S` | ✅ |  | extra |
+| `atmos.ps.tpt-u-hxy-u.1hr.glb` | ✅ |  | cap7 |
 | `atmos.ps.tpt-u-hxy-u.3hr.glb` | ✅ |  | veg |
 | `atmos.ps.tpt-u-hxy-u.6hr.glb` | ✅ |  | cap7 |
 | `atmos.psl.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 core |
@@ -205,10 +223,11 @@
 | `atmos.reffclws.tavg-al-hxy-scl.mon.glb` | ❌ | No COSP satellite simulators | cap7 |
 | `atmos.rld.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (ecRad half-level profiles not exposed via XIOS) | cap7 |
 | `atmos.rldcs.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (ecRad half-level profiles not exposed via XIOS) | cap7 |
-| `atmos.rlds.tavg-u-hxy-u.1hr.glb` | ✅ |  | cap7 extra |
+| `atmos.rlds.tavg-u-hxy-u.1hr.30S-90S` | ✅ |  | extra |
+| `atmos.rlds.tavg-u-hxy-u.1hr.glb` | ✅ |  | cap7 |
 | `atmos.rlds.tavg-u-hxy-u.3hr.glb` | ✅ |  | veg |
 | `atmos.rlds.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
-| `atmos.rlds.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core lrcs |
+| `atmos.rlds.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.rldscs.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
 | `atmos.rldscs.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.rls.tavg-u-hxy-u.day.glb` | ✅ |  | extra |
@@ -218,7 +237,7 @@
 | `atmos.rlus.tavg-u-hxy-u.1hr.glb` | ✅ |  | extra |
 | `atmos.rlus.tavg-u-hxy-u.3hr.glb` | ✅ |  | veg |
 | `atmos.rlus.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
-| `atmos.rlus.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core lrcs |
+| `atmos.rlus.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.rluscs.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
 | `atmos.rluscs.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.rlut.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
@@ -227,10 +246,11 @@
 | `atmos.rlutcs.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.rsd.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (ecRad half-level profiles not exposed via XIOS) | cap7 |
 | `atmos.rsdcs.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (ecRad half-level profiles not exposed via XIOS) | cap7 |
-| `atmos.rsds.tavg-u-hxy-u.1hr.glb` | ✅ |  | cap7 extra |
+| `atmos.rsds.tavg-u-hxy-u.1hr.30S-90S` | ✅ |  | extra |
+| `atmos.rsds.tavg-u-hxy-u.1hr.glb` | ✅ |  | cap7 |
 | `atmos.rsds.tavg-u-hxy-u.3hr.glb` | ✅ |  | veg |
-| `atmos.rsds.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 core lrcs |
-| `atmos.rsds.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core lrcs |
+| `atmos.rsds.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 core |
+| `atmos.rsds.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.rsdscs.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
 | `atmos.rsdscs.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.rsdscsdiff.tavg-u-hxy-u.day.glb` | ❌ | Needs IFS source changes (ecRad sw_dn_diffuse_surf_g not exposed) | cap7 |
@@ -244,8 +264,8 @@
 | `atmos.rsucs.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (ecRad half-level profiles not exposed via XIOS) | cap7 |
 | `atmos.rsus.tavg-u-hxy-u.1hr.glb` | ✅ |  | extra |
 | `atmos.rsus.tavg-u-hxy-u.3hr.glb` | ✅ |  | veg |
-| `atmos.rsus.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 lrcs |
-| `atmos.rsus.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core lrcs |
+| `atmos.rsus.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
+| `atmos.rsus.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.rsuscs.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
 | `atmos.rsuscs.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.rsut.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
@@ -254,20 +274,32 @@
 | `atmos.rsutcs.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.rtmt.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 |
 | `atmos.sci.tavg-u-hxy-u.mon.glb` | ❌ | Needs IFS source changes (no clear IFS diagnostic for shallow convection fraction) | cap7 |
-| `atmos.sfcWind.tavg-h10m-hxy-u.1hr.glb` | ✅ |  | cap7 extra |
+| `atmos.sfcWind.tavg-h10m-hxy-u.1hr.30S-90S` | ✅ |  | extra |
+| `atmos.sfcWind.tavg-h10m-hxy-u.1hr.glb` | ✅ |  | cap7 |
 | `atmos.sfcWind.tavg-h10m-hxy-u.day.glb` | ✅ |  | cap7 core |
 | `atmos.sfcWind.tavg-h10m-hxy-u.mon.glb` | ✅ |  | cap7 core |
+| `atmos.sfcWind.tmax-h10m-hxy-u.day.glb` | ✅ |  | cap7 |
 | `atmos.sftlf.ti-u-hxy-u.fx.glb` | ✅ |  | cap7 core |
 | `atmos.smc.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (shallow convective flux internal to scheme) | cap7 |
 | `atmos.snmsl.tavg-u-hxy-lnd.day.glb` | ✅ |  | veg |
-| `atmos.snrefr.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
-| `atmos.snwc.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
-| `atmos.ta.tavg-700hPa-hxy-air.day.glb` | ✅ |  | cap7 core |
-| `atmos.ta.tavg-al-hxy-u.mon.glb` | ✅ |  | cap7 core |
-| `atmos.ta.tpt-al-hxy-u.6hr.glb` | ✅ |  | cap7 core |
+| `atmos.snrefr.tavg-u-hxy-lnd.day.glb` | ❌ | Needs IFS source changes (HTESSEL snow refreezing flux not exposed via XIOS) | veg |
+| `atmos.snwc.tavg-u-hxy-lnd.day.glb` | ❌ | Needs IFS source changes (HTESSEL canopy snow not confirmed accessible via XIOS) | veg |
+| `atmos.ta.tavg-700hPa-hxy-air.day.glb` | ✅ |  | cap7 |
+| `atmos.ta.tavg-al-hxy-u.mon.glb` | ✅ |  | cap7 |
+| `atmos.ta.tavg-p19-hxy-air.day.glb` | ✅ |  | cap7 core |
+| `atmos.ta.tavg-p19-hxy-air.mon.glb` | ✅ |  | cap7 core |
+| `atmos.ta.tpt-al-hxy-u.6hr.glb` | ✅ |  | cap7 |
+| `atmos.ta.tpt-p3-hxy-air.6hr.glb` | ✅ |  | cap7 core |
 | `atmos.ta.tpt-p6-hxy-air.3hr.glb` | ✅ |  | veg |
-| `atmos.tas.tavg-h2m-hxy-u.day.glb` | ✅ |  | cap7 core extra |
+| `atmos.ta.tpt-p7h-hxy-air.6hr.glb` | ✅ |  | cap7 |
+| `atmos.tas.tavg-h2m-hxy-u.day.glb` | ✅ |  | cap7 core |
 | `atmos.tas.tavg-h2m-hxy-u.mon.glb` | ✅ |  | cap7 core |
+| `atmos.tas.tmax-h2m-hxy-crp.day.glb` | ❌ | Only 1hr/3hr/day/mon frequency implemented | extra |
+| `atmos.tas.tmax-h2m-hxy-u.day.glb` | ✅ |  | cap7 core |
+| `atmos.tas.tmaxavg-h2m-hxy-u.mon.glb` | ✅ |  | cap7 core |
+| `atmos.tas.tmin-h2m-hxy-crp.day.glb` | ❌ | Only 1hr/3hr/day/mon frequency implemented | extra |
+| `atmos.tas.tmin-h2m-hxy-u.day.glb` | ✅ |  | cap7 core |
+| `atmos.tas.tminavg-h2m-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.tas.tpt-h2m-hxy-u.3hr.glb` | ✅ |  | cap7 core |
 | `atmos.tauu.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.tauv.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
@@ -292,45 +324,58 @@
 | `atmos.tntrscs.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (temperature tendency not exposed) | cap7 |
 | `atmos.tntscp.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (temperature tendency not exposed) | cap7 |
 | `atmos.tntscpbl.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (temperature tendency not exposed) | cap7 |
+| `atmos.ts.tavg-u-hxy-lnd.day.glb` | ❌ | Only 1hr/3hr/6hr/day/mon frequency implemented | veg |
 | `atmos.ts.tavg-u-hxy-u.1hr.glb` | ✅ |  | cap7 |
 | `atmos.ts.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.ts.tpt-u-hxy-u.3hr.glb` | ✅ |  | extra |
 | `atmos.ts.tpt-u-hxy-u.6hr.glb` | ✅ |  | cap7 |
 | `atmos.ua.tavg-p19-hxy-air.day.glb` | ✅ |  | cap7 core |
 | `atmos.ua.tavg-p19-hxy-air.mon.glb` | ✅ |  | cap7 core |
-| `atmos.ua.tpt-al-hxy-u.6hr.glb` | ✅ |  | cap7 core |
+| `atmos.ua.tpt-al-hxy-u.6hr.glb` | ✅ |  | cap7 |
 | `atmos.ua.tpt-h100m-hxy-u.1hr.glb` | ❌ | Needs IFS source changes (IFS does not interpolate to 100m height) | cap7 |
+| `atmos.ua.tpt-p3-hxy-air.6hr.glb` | ✅ |  | cap7 core |
 | `atmos.ua.tpt-p6-hxy-air.3hr.glb` | ✅ |  | veg |
+| `atmos.ua.tpt-p7h-hxy-air.6hr.glb` | ✅ |  | cap7 |
 | `atmos.uas.tavg-h10m-hxy-u.day.glb` | ✅ |  | cap7 core |
 | `atmos.uas.tavg-h10m-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.uas.tpt-h10m-hxy-u.1hr.glb` | ✅ |  | cap7 |
 | `atmos.uas.tpt-h10m-hxy-u.3hr.glb` | ✅ |  | cap7 core |
 | `atmos.va.tavg-p19-hxy-air.day.glb` | ✅ |  | cap7 core |
 | `atmos.va.tavg-p19-hxy-air.mon.glb` | ✅ |  | cap7 core |
-| `atmos.va.tpt-al-hxy-u.6hr.glb` | ✅ |  | cap7 core |
+| `atmos.va.tpt-al-hxy-u.6hr.glb` | ✅ |  | cap7 |
 | `atmos.va.tpt-h100m-hxy-u.1hr.glb` | ❌ | Needs IFS source changes (IFS does not interpolate to 100m height) | cap7 |
+| `atmos.va.tpt-p3-hxy-air.6hr.glb` | ✅ |  | cap7 core |
 | `atmos.va.tpt-p6-hxy-air.3hr.glb` | ✅ |  | veg |
+| `atmos.va.tpt-p7h-hxy-air.6hr.glb` | ✅ |  | cap7 |
 | `atmos.vas.tavg-h10m-hxy-u.day.glb` | ✅ |  | cap7 core |
 | `atmos.vas.tavg-h10m-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.vas.tpt-h10m-hxy-u.1hr.glb` | ✅ |  | cap7 |
 | `atmos.vas.tpt-h10m-hxy-u.3hr.glb` | ✅ |  | cap7 core |
-| `atmos.wap.tavg-500hPa-hxy-air.day.glb` | ✅ |  | cap7 core |
+| `atmos.wap.tavg-500hPa-hxy-air.day.glb` | ✅ |  | cap7 |
 | `atmos.wap.tavg-p19-hxy-air.mon.glb` | ✅ |  | cap7 core |
+| `atmos.wap.tavg-p19-hxy-u.day.glb` | ✅ |  | cap7 core |
 | `atmos.wap.tpt-p6-hxy-air.3hr.glb` | ✅ |  | veg |
 | `atmos.wbgt.tavg-h2m-hxy-u.day.glb` | ❌ | No Wet Bulb Globe Temperature scheme | extra |
-| `atmos.wsg.tmax-h100m-hxy-u.1hr.glb` | ✅ |  | cap7 |
-| `atmos.wsg.tmax-h100m-hxy-u.mon.glb` | ✅ |  | extra |
+| `atmos.wbgt.tmax-h2m-hxy-u.day.glb` | ❌ | No Wet Bulb Globe Temperature scheme | extra |
+| `atmos.wsg.tmax-h100m-hxy-u.1hr.glb` | ❌ | Only 1hr/mon frequency implemented | cap7 |
+| `atmos.wsg.tmax-h100m-hxy-u.mon.glb` | ❌ | Only 1hr/mon frequency implemented | extra |
+| `atmos.wsg.tmax-h10m-hxy-u.1hr.glb` | ✅ |  | cap7 |
+| `atmos.wsg.tmax-h10m-hxy-u.mon.glb` | ✅ |  | extra |
 | `atmos.zfull.ti-al-hxy-u.fx.glb` | ❌ | Needs IFS source changes (offline geopotential height computation needed) | cap7 |
 | `atmos.zg.tavg-p19-hxy-air.day.glb` | ✅ |  | cap7 core |
 | `atmos.zg.tavg-p19-hxy-air.mon.glb` | ✅ |  | cap7 core |
 | `atmos.zg.tpt-al-hxy-u.6hr.glb` | ✅ |  | cap7 |
+| `atmos.zg.tpt-p7h-hxy-air.6hr.glb` | ✅ |  | cap7 |
 | `atmos.ztp.tavg-u-hxy-u.mon.glb` | ❌ | Needs IFS source changes (tropopause not exposed via XIOS) | cap7 |
 
-## Realm: atmos aerosol — 0/1 rules
+## Realm: atmos aerosol — 0/4 rules
 
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
 | `atmos.co2.tavg-al-hxy-u.mon.glb` | ❌ | No CO2 tracer (concentration-driven) | cap7 |
+| `atmos.co2.tavg-p19-hxy-air.mon.glb` | ❌ | No CO2 tracer (concentration-driven) | cap7 |
+| `atmos.co2.tclm-p19-hxy-air.mon.glb` | ❌ | No CO2 tracer (concentration-driven) | cap7 |
+| `atmos.co2.tclm-u-hm-u.mon.glb` | ❌ | No CO2 tracer (concentration-driven) | cap7 |
 
 ## Realm: atmos aerosol land — 2/2 rules
 
@@ -348,37 +393,48 @@
 | `atmos.reffsclwtop.tavg-u-hxy-scl.mon.glb` | ❌ | No cloud microphysics diagnostics | veg |
 | `atmos.scldncl.tavg-u-hxy-scl.day.glb` | ❌ | No cloud microphysics diagnostics (no column droplet number diagnostic) | cap7 |
 
-## Realm: atmos land — 2/2 rules
+## Realm: atmos land — 3/3 rules
 
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
 | `atmos.areacella.ti-u-hxy-u.fx.glb` | ✅ |  | core |
 | `atmos.evspsbl.tavg-u-hxy-lnd.day.glb` | ✅ |  | extra |
+| `atmos.evspsbl.tavg-u-hxy-u.mon.glb` | ✅ |  | core |
 
-## Realm: atmosChem — 0/9 rules
+## Realm: atmosChem — 3/18 rules
 
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
-| `atmosChem.cfc11.tavg-u-hm-air.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmosChem.cfc11.tavg-u-hm-air.mon.glb` | ✅ | input4MIPs CR-CMIP-1-0-0 annual global-mean, ffill→monthly, ×1e-12 ppt→mol mol-1 | cap7 |
 | `atmosChem.cfc113.tavg-u-hm-air.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmosChem.cfc12.tavg-u-hm-air.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmosChem.cfc12.tavg-u-hm-air.mon.glb` | ✅ | input4MIPs CR-CMIP-1-0-0 annual global-mean, ffill→monthly, ×1e-12 ppt→mol mol-1 | cap7 |
 | `atmosChem.ch4.tavg-p19-hxy-air.mon.glb` | ❌ | No methane cycle | cap7 |
+| `atmosChem.ch4.tavg-u-hm-air.mon.glb` | ❌ | No methane cycle | cap7 |
+| `atmosChem.ch4.tclm-p19-hxy-air.mon.glb` | ❌ | No methane cycle | cap7 |
+| `atmosChem.ch4.tclm-u-hm-air.mon.glb` | ❌ | No methane cycle | cap7 |
 | `atmosChem.flashrate.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | extra |
 | `atmosChem.flashrate.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | extra |
 | `atmosChem.hcfc22.tavg-u-hm-air.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmosChem.n2o.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmosChem.n2o.tavg-al-hxy-u.mon.glb` | ❌ | Prescribed well-mixed scalar — CMIP7: omit 3D field, report global mean (n2o.tavg-u-hm-air) instead | cap7 |
+| `atmosChem.n2o.tavg-p19-hxy-air.mon.glb` | ❌ | Prescribed well-mixed scalar — CMIP7: omit 3D field, report global mean (n2o.tavg-u-hm-air) instead | cap7 |
+| `atmosChem.n2o.tavg-u-hm-air.mon.glb` | ✅ | input4MIPs CR-CMIP-1-0-0 annual global-mean, ffill→monthly, ×1e-9 ppb→mol mol-1 (well-mixed prescribed; CMIP7: report global mean instead of 3D) | cap7 |
+| `atmosChem.n2o.tclm-p19-hxy-air.mon.glb` | ❌ | Prescribed well-mixed scalar — CMIP7: omit 3D field, report global mean (n2o.tavg-u-hm-air) instead | cap7 |
+| `atmosChem.n2o.tclm-u-hm-air.mon.glb` | ❌ | Prescribed well-mixed scalar — CMIP7: omit 3D field, report global mean (n2o.tavg-u-hm-air) instead | cap7 |
 | `atmosChem.o3.tavg-al-hxy-u.mon.glb` | ❌ | No interactive ozone | cap7 |
+| `atmosChem.o3.tavg-p19-hxy-air.mon.glb` | ❌ | No interactive ozone | cap7 |
+| `atmosChem.o3.tclm-p19-hxy-air.mon.glb` | ❌ | No interactive ozone | cap7 |
 
-## Realm: atmosChem aerosol — 0/4 rules
+## Realm: atmosChem aerosol — 0/5 rules
 
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
+| `atmosChem.ch4.tavg-al-hxy-u.mon.glb` | ❌ | No methane cycle | cap7 |
 | `atmosChem.dms.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
 | `atmosChem.drynoy.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
 | `atmosChem.emich4.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | extra |
 | `atmosChem.wetnoy.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
 
-## Realm: land — 127/169 rules
+## Realm: land — 126/190 rules
 
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
@@ -400,11 +456,16 @@
 | `land.cProduct.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.cProductLut.tpt-u-hxy-multi.yr.glb` | ✅ |  | veg |
 | `land.cRoot.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
-| `land.cSoil.tavg-d100cm-hxy-lnd.mon.glb` | ✅ |  | cap7 |
+| `land.cSoil.tavg-d100cm-hxy-lnd.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
+| `land.cSoil.tavg-sl-hxy-lnd.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
+| `land.cSoil.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.cSoilLut.tpt-u-hxy-multi.yr.glb` | ✅ |  | veg |
 | `land.cSoilPools.tavg-u-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
 | `land.cStem.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.cVeg.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
+| `land.cVeg.tavg-u-hxy-ng.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
+| `land.cVeg.tavg-u-hxy-shb.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
+| `land.cVeg.tavg-u-hxy-tree.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
 | `land.cVegLut.tpt-u-hxy-multi.yr.glb` | ✅ |  | veg |
 | `land.cropFrac.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 |
 | `land.cropFrac.tavg-u-hxy-u.yr.glb` | ✅ |  | veg |
@@ -416,7 +477,7 @@
 | `land.dslw.tavg-u-hxy-lnd.day.glb` | ✅ |  | extra |
 | `land.dsn.tavg-u-hxy-lnd.day.glb` | ✅ |  | veg |
 | `land.dsw.tavg-u-hxy-lnd.day.glb` | ✅ |  | veg |
-| `land.esn.tavg-u-hxy-lnd.day.glb` | ✅ |  | veg |
+| `land.esn.tavg-u-hxy-lnd.day.glb` | ❌ | Only day frequency implemented | veg |
 | `land.evspsblpot.tavg-u-hxy-lnd.day.glb` | ❌ | Only mon frequency implemented | veg |
 | `land.evspsblpot.tavg-u-hxy-lnd.mon.glb` | ✅ |  | veg |
 | `land.evspsblsoi.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 core |
@@ -459,6 +520,9 @@
 | `land.fracLut.tpt-u-hxy-u.yr.glb` | ✅ |  | veg |
 | `land.fracOutLut.tsum-u-hxy-lnd.yr.glb` | ✅ |  | veg |
 | `land.gpp.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
+| `land.gpp.tavg-u-hxy-ng.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
+| `land.gpp.tavg-u-hxy-shb.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
+| `land.gpp.tavg-u-hxy-tree.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
 | `land.gppLut.tavg-u-hxy-multi.mon.glb` | ✅ |  | veg |
 | `land.gppVgt.tavg-u-hxy-multi.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
 | `land.grassFrac.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 |
@@ -488,6 +552,8 @@
 | `land.mrsol.tavg-d100cm-hxy-lnd.3hr.glb` | ✅ |  | veg |
 | `land.mrsol.tavg-d10cm-hxy-lnd.day.glb` | ✅ |  | cap7 |
 | `land.mrsol.tavg-d10cm-hxy-lnd.mon.glb` | ✅ |  | cap7 core |
+| `land.mrsol.tavg-sl-hxy-lnd.mon.glb` | ❌ | Only 3hr/day/mon frequency implemented | cap7 |
+| `land.mrsol.tpt-d10cm-hxy-lnd.3hr.glb` | ✅ |  | veg |
 | `land.mrsolLut.tavg-d10cm-hxy-multi.mon.glb` | ✅ |  | veg |
 | `land.mrsow.tavg-u-hxy-lnd.day.glb` | ✅ |  | extra |
 | `land.mrtws.tavg-u-hxy-lnd.day.glb` | ✅ |  | veg |
@@ -501,19 +567,26 @@
 | `land.nbpLut.tavg-u-hxy-multi.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
 | `land.nep.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.npp.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
+| `land.npp.tavg-u-hxy-ng.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
+| `land.npp.tavg-u-hxy-shb.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
+| `land.npp.tavg-u-hxy-tree.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
 | `land.nppLeaf.tavg-u-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
 | `land.nppLut.tavg-u-hxy-multi.mon.glb` | ✅ |  | veg |
 | `land.nppOther.tavg-u-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
 | `land.nppRoot.tavg-u-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
 | `land.nppStem.tavg-u-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
 | `land.nppVgt.tavg-u-hxy-multi.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
-| `land.orog.ti-u-hxy-u.fx.glb` | ✅ |  | cap7 core extra |
+| `land.orog.ti-u-hxy-u.fx.30S-90S` | ✅ |  | extra |
+| `land.orog.ti-u-hxy-u.fx.glb` | ✅ |  | cap7 core |
 | `land.pastureFrac.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 |
 | `land.pastureFracC3.tavg-u-hxy-u.mon.glb` | ✅ |  | extra |
 | `land.pastureFracC4.tavg-u-hxy-u.mon.glb` | ✅ |  | extra |
 | `land.prveg.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.qgwr.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
 | `land.ra.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
+| `land.ra.tavg-u-hxy-ng.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
+| `land.ra.tavg-u-hxy-shb.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
+| `land.ra.tavg-u-hxy-tree.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
 | `land.raLeaf.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.raLut.tavg-u-hxy-multi.mon.glb` | ✅ |  | veg |
 | `land.raOther.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
@@ -522,6 +595,9 @@
 | `land.raVgt.tavg-u-hxy-multi.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
 | `land.residualFrac.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 |
 | `land.rh.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
+| `land.rh.tavg-u-hxy-ng.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
+| `land.rh.tavg-u-hxy-shb.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
+| `land.rh.tavg-u-hxy-tree.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
 | `land.rhLitter.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.rhLut.tavg-u-hxy-multi.mon.glb` | ✅ |  | veg |
 | `land.rhSoil.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
@@ -537,7 +613,8 @@
 | `land.srfrad.tavg-u-hxy-u.3hr.glb` | ✅ |  | veg |
 | `land.sw.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
 | `land.sweLut.tavg-u-hxy-multi.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
-| `land.tas.tavg-h2m-hxy-u.1hr.glb` | ✅ |  | cap7 extra |
+| `land.tas.tavg-h2m-hxy-u.1hr.30S-90S` | ❌ | Only 1hr/3hr/day/mon frequency implemented | extra |
+| `land.tas.tavg-h2m-hxy-u.1hr.glb` | ❌ | Only 1hr/3hr/day/mon frequency implemented | cap7 |
 | `land.tasLut.tavg-h2m-hxy-multi.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
 | `land.tran.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.tran.tavg-u-hxy-u.3hr.glb` | ❌ | Only mon frequency implemented | veg |
@@ -546,20 +623,21 @@
 | `land.treeFracBdlDcd.tavg-u-hxy-u.mon.glb` | ✅ |  | veg |
 | `land.tsLut.tavg-u-hxy-multi.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
 | `land.tsl.tavg-sl-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `land.tslsi.tavg-u-hxy-lsi.day.glb` | ✅ |  | cap7 |
+| `land.tslsi.tavg-u-hxy-lsi.day.glb` | ❌ | Only 3hr/day frequency implemented | cap7 |
 | `land.tslsi.tpt-u-hxy-lsi.3hr.glb` | ✅ |  | veg |
 | `land.vegFrac.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 |
 | `land.vegHeight.tavg-u-hxy-tree.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
 | `land.wtd.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
 
-## Realm: landIce — 2/2 rules
+## Realm: landIce — 3/3 rules
 
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
+| `landIce.sbl.tavg-u-hxy-lnd.mon.glb` | ✅ |  | veg |
 | `landIce.sbl.tavg-u-hxy-u.day.glb` | ✅ |  | veg |
-| `landIce.sbl.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 lrcs veg |
+| `landIce.sbl.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 |
 
-## Realm: landIce land — 8/18 rules
+## Realm: landIce land — 9/19 rules
 
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
@@ -573,7 +651,8 @@
 | `landIce.pflw.tavg-u-hxy-lnd.mon.glb` | ❌ | No permafrost scheme | veg |
 | `landIce.snc.tavg-u-hxy-lnd.day.glb` | ✅ |  | cap7 |
 | `landIce.snc.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 core |
-| `landIce.snd.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 core |
+| `landIce.snd.tavg-u-hxy-lnd.day.glb` | ✅ |  | veg |
+| `landIce.snd.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `landIce.snm.tavg-u-hxy-lnd.day.glb` | ✅ |  | veg |
 | `landIce.snw.tavg-u-hxy-lnd.day.glb` | ✅ |  | cap7 |
 | `landIce.snw.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 core |
@@ -582,7 +661,7 @@
 | `landIce.tpf.tavg-u-hxy-lnd.mon.glb` | ❌ | No permafrost scheme | veg |
 | `landIce.tsn.tavg-u-hxy-lnd.day.glb` | ✅ |  | veg |
 
-## Realm: ocean — 83/153 rules
+## Realm: ocean — 93/175 rules
 
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
@@ -590,8 +669,9 @@
 | `ocean.agessc.tavg-ol-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.areacello.ti-u-hxy-u.fx.glb` | ✅ |  | cap7 core |
 | `ocean.basin.ti-u-hxy-u.fx.glb` | ✅ |  | cap7 core |
+| `ocean.bigthetao.tavg-ol-hm-sea.mon.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | lrcs |
 | `ocean.bigthetao.tavg-ol-hxy-sea.dec.glb` | ❌ | Decadal frequency not implemented | lrcs |
-| `ocean.bigthetao.tavg-ol-hxy-sea.mon.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | cap7 core lrcs |
+| `ocean.bigthetao.tavg-ol-hxy-sea.mon.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | cap7 core |
 | `ocean.chcint.tavg-op4-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.deptho.ti-u-hxy-sea.fx.glb` | ✅ |  | cap7 core |
 | `ocean.difmxybo.tavg-ol-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
@@ -607,7 +687,9 @@
 | `ocean.dyto.ti-u-hxy-u.fx.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.dyuo.ti-u-hxy-u.fx.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.dyvo.ti-u-hxy-u.fx.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.ficeberg.tavg-ol-hxy-sea.mon.glb` | ❌ | No icebergs | cap7 lrcs |
+| `ocean.evspsbl.tavg-u-hxy-ifs.mon.glb` | ✅ |  | lrcs |
+| `ocean.ficeberg.tavg-ol-hxy-sea.mon.glb` | ❌ | No icebergs | cap7 |
+| `ocean.ficeberg.tavg-u-hxy-sea.mon.glb` | ❌ | No icebergs | lrcs |
 | `ocean.flandice.tavg-u-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.friver.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 |
 | `ocean.hfacrossline.tavg-u-ht-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
@@ -621,13 +703,18 @@
 | `ocean.hfgeou.tavg-u-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.hfgeou.ti-u-hxy-sea.fx.glb` | ❌ | FESOM does not include geothermal heating | cap7 core |
 | `ocean.hfibthermds.tavg-ol-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.hfibthermds.tavg-u-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.hfrainds.tavg-u-hxy-ifs.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.hfrunoffds.tavg-ol-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.hfrunoffds.tavg-u-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.hfsnthermds.tavg-ol-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.hfsnthermds.tavg-u-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.hfx.tavg-ol-hxy-sea.mon.glb` | ✅ |  | cap7 |
 | `ocean.hfx.tavg-u-hxy-sea.day.glb` | ✅ |  | lrcs |
+| `ocean.hfx.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 |
 | `ocean.hfy.tavg-ol-hxy-sea.mon.glb` | ✅ |  | cap7 |
 | `ocean.hfy.tavg-u-hxy-sea.day.glb` | ✅ |  | lrcs |
+| `ocean.hfy.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 |
 | `ocean.htovgyre.tavg-u-hyb-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.htovovrt.tavg-u-hyb-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.masscello.tavg-ol-hxy-sea.dec.glb` | ✅ |  | lrcs |
@@ -637,14 +724,20 @@
 | `ocean.masso.tavg-u-hm-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.mfo.tavg-u-ht-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.mlotst.tavg-u-hxy-sea.day.glb` | ✅ |  | lrcs |
-| `ocean.mlotst.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 core lrcs |
+| `ocean.mlotst.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 core |
+| `ocean.mlotst.tmax-u-hxy-sea.mon.glb` | ❌ | Only day/mon frequency implemented | lrcs |
+| `ocean.mlotst.tmin-u-hxy-sea.mon.glb` | ❌ | Only day/mon frequency implemented | lrcs |
 | `ocean.mlotstsq.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.msftbarot.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
-| `ocean.msftm.tavg-ol-hyb-sea.mon.glb` | ✅ |  | cap7 lrcs |
+| `ocean.msftm.tavg-ol-hyb-sea.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
+| `ocean.msftm.tavg-rho-hyb-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.msftmmpa.tavg-ol-hyb-sea.mon.glb` | ✅ |  | lrcs |
+| `ocean.msftmmpa.tavg-rho-hyb-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.msftmsmpa.tavg-ol-hyb-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.msfty.tavg-ol-ht-sea.mon.glb` | ❌ | Not yet implemented | cap7 lrcs |
+| `ocean.msfty.tavg-ol-ht-sea.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `ocean.msfty.tavg-rho-ht-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.msftypa.tavg-ol-ht-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.msftypa.tavg-rho-ht-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.obvfsq.tavg-ol-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.ocontempdiff.tavg-ol-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.ocontempmint.tavg-u-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
@@ -673,22 +766,28 @@
 | `ocean.phcint.tavg-op4-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.pso.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.rsdoabsorb.tavg-ol-hxy-sea.yr.glb` | ✅ |  | lrcs |
+| `ocean.rsds.tavg-u-hxy-ifs.mon.glb` | ❌ | Only 1hr/3hr/day/mon frequency implemented | lrcs |
+| `ocean.rsus.tavg-u-hxy-ifs.mon.glb` | ❌ | Only 1hr/3hr/day/mon frequency implemented | lrcs |
 | `ocean.scint.tavg-op4-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.sf6.tavg-ol-hxy-sea.mon.glb` | ❌ | No SF6 tracer in FESOM | cap7 |
 | `ocean.sfacrossline.tavg-u-ht-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.sfriver.tavg-u-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.sftof.ti-u-hxy-u.fx.glb` | ✅ |  | cap7 core |
 | `ocean.sfx.tavg-ol-hxy-sea.mon.glb` | ✅ |  | lrcs |
+| `ocean.sfx.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.sfy.tavg-ol-hxy-sea.mon.glb` | ✅ |  | lrcs |
+| `ocean.sfy.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.sltbasin.tavg-u-hyb-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.sltovgyre.tavg-u-hyb-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.sltovovrt.tavg-u-hyb-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.so.tavg-ol-hm-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.so.tavg-ol-hxy-sea.dec.glb` | ✅ |  | lrcs |
-| `ocean.so.tavg-ol-hxy-sea.mon.glb` | ✅ |  | cap7 core lrcs |
+| `ocean.so.tavg-ol-hxy-sea.mon.glb` | ✅ |  | cap7 core |
 | `ocean.sob.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.somint.tavg-u-hxy-sea.yr.glb` | ✅ |  | lrcs |
+| `ocean.sos.tavg-u-hm-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.sos.tavg-u-hxy-sea.day.glb` | ✅ |  | cap7 core |
-| `ocean.sos.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 core lrcs |
+| `ocean.sos.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 core |
 | `ocean.sossq.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.sw17O.tavg-ol-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.sw18O.tavg-ol-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
@@ -699,8 +798,9 @@
 | `ocean.tauvo.tavg-u-hxy-sea.3hr.glb` | ✅ |  | cap7 |
 | `ocean.tauvo.tavg-u-hxy-sea.dec.glb` | ✅ |  | lrcs |
 | `ocean.tauvo.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 core |
+| `ocean.thetao.tavg-ol-hm-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.thetao.tavg-ol-hxy-sea.dec.glb` | ✅ |  | lrcs |
-| `ocean.thetao.tavg-ol-hxy-sea.mon.glb` | ✅ |  | cap7 core lrcs |
+| `ocean.thetao.tavg-ol-hxy-sea.mon.glb` | ✅ |  | cap7 core |
 | `ocean.thetao.tavg-op20bar-hxy-sea.day.glb` | ❌ | Only dec/mon frequency implemented | lrcs |
 | `ocean.thkcello.tavg-ol-hxy-sea.dec.glb` | ✅ |  | lrcs |
 | `ocean.thkcello.tavg-ol-hxy-sea.mon.glb` | ✅ |  | cap7 core |
@@ -710,8 +810,9 @@
 | `ocean.tnkebto.tavg-u-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.tnpeo.tavg-u-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.tob.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
+| `ocean.tos.tavg-u-hm-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.tos.tavg-u-hxy-sea.day.glb` | ✅ |  | cap7 core |
-| `ocean.tos.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 core lrcs |
+| `ocean.tos.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 core |
 | `ocean.tossq.tavg-u-hxy-sea.day.glb` | ✅ |  | cap7 |
 | `ocean.tossq.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.umo.tavg-ol-hxy-sea.mon.glb` | ✅ |  | cap7 core |
@@ -748,16 +849,27 @@
 | `ocean.siflfwbot.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.vsfsit.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
 
-## Realm: seaIce — 57/91 rules
+## Realm: seaIce — 78/114 rules
 
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
-| `seaIce.evspsbl.tavg-u-hxy-si.mon.glb` | ✅ |  | cap7 core lrcs |
+| `seaIce.evspsbl.tavg-u-hxy-si.mon.glb` | ✅ |  | cap7 |
 | `seaIce.prra.tavg-u-hxy-si.mon.glb` | ✅ |  | cap7 |
+| `seaIce.prsn.tavg-u-hxy-si.mon.glb` | ✅ |  | cap7 |
+| `seaIce.rlds.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
+| `seaIce.rlus.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
+| `seaIce.rsds.tavg-u-hxy-si.day.glb` | ✅ |  | lrcs |
+| `seaIce.rsds.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
+| `seaIce.rsus.tavg-u-hxy-si.day.glb` | ✅ |  | lrcs |
+| `seaIce.rsus.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
+| `seaIce.sbl.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
+| `seaIce.sfdsi.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.siage.tavg-u-hxy-si.day.glb` | ❌ | Not yet implemented | lrcs |
 | `seaIce.siage.tavg-u-hxy-si.mon.glb` | ❌ | tr_iage=.false., not enabled | lrcs |
 | `seaIce.siarea.tavg-u-hm-u.day.nh` | ✅ |  | lrcs |
+| `seaIce.siarea.tavg-u-hm-u.day.sh` | ✅ |  | lrcs |
 | `seaIce.siarea.tavg-u-hm-u.mon.nh` | ✅ |  | lrcs |
+| `seaIce.siarea.tavg-u-hm-u.mon.sh` | ✅ |  | lrcs |
 | `seaIce.siareaacrossline.tavg-u-ht-u.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `seaIce.sicompstren.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.siconc.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 core |
@@ -781,10 +893,13 @@
 | `seaIce.sidragtop.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.sieqthick.tavg-u-hxy-si.mon.glb` | ✅ |  | cap7 |
 | `seaIce.siextent.tavg-u-hm-u.day.nh` | ✅ |  | lrcs |
+| `seaIce.siextent.tavg-u-hm-u.day.sh` | ✅ |  | lrcs |
 | `seaIce.siextent.tavg-u-hm-u.mon.nh` | ✅ |  | lrcs |
+| `seaIce.siextent.tavg-u-hm-u.mon.sh` | ✅ |  | lrcs |
 | `seaIce.sifb.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.siflcondbot.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.siflcondtop.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
+| `seaIce.siflfwbot.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.siflfwdrain.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.sifllattop.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.siflsensbot.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
@@ -819,7 +934,9 @@
 | `seaIce.sisnhc.tavg-u-hxy-si.day.glb` | ✅ |  | veg |
 | `seaIce.sisnhc.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.sisnmass.tavg-u-hm-si.day.nh` | ✅ |  | lrcs |
+| `seaIce.sisnmass.tavg-u-hm-si.day.sh` | ✅ |  | lrcs |
 | `seaIce.sisnmass.tavg-u-hm-si.mon.nh` | ✅ |  | lrcs |
+| `seaIce.sisnmass.tavg-u-hm-si.mon.sh` | ✅ |  | lrcs |
 | `seaIce.sisnmassacrossline.tavg-u-ht-u.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `seaIce.sispeed.tavg-u-hxy-si.day.glb` | ✅ |  | lrcs |
 | `seaIce.sispeed.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
@@ -832,6 +949,7 @@
 | `seaIce.sitempbot.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.sitempsnic.tavg-u-hxy-si.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
 | `seaIce.sitempsnic.tavg-u-hxy-si.mon.glb` | ❌ | Internal FESOM variable, not output | cap7 |
+| `seaIce.sithick.tavg-u-hxy-sir.mon.glb` | ❌ | Only day/mon frequency implemented | lrcs |
 | `seaIce.sitimefrac.tavg-u-hxy-sea.day.glb` | ✅ |  | lrcs |
 | `seaIce.sitimefrac.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 core |
 | `seaIce.siu.tavg-u-hxy-si.day.glb` | ✅ |  | cap7 |
@@ -839,15 +957,21 @@
 | `seaIce.siv.tavg-u-hxy-si.day.glb` | ✅ |  | cap7 |
 | `seaIce.siv.tavg-u-hxy-si.mon.glb` | ✅ |  | cap7 core |
 | `seaIce.sivol.tavg-u-hm-u.day.nh` | ✅ |  | lrcs |
+| `seaIce.sivol.tavg-u-hm-u.day.sh` | ✅ |  | lrcs |
 | `seaIce.sivol.tavg-u-hm-u.mon.nh` | ✅ |  | lrcs |
-| `seaIce.snd.tavg-u-hxy-sn.day.glb` | ✅ |  | cap7 veg |
+| `seaIce.sivol.tavg-u-hm-u.mon.sh` | ✅ |  | lrcs |
+| `seaIce.snc.tavg-u-hxy-si.mon.glb` | ❌ | Single-category ice — no snow cover fraction | cap7 |
+| `seaIce.snd.tavg-u-hxy-sn.day.glb` | ✅ |  | cap7 |
+| `seaIce.snd.tavg-u-hxy-sn.mon.glb` | ✅ |  | cap7 core |
 | `seaIce.snm.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
-| `seaIce.ts.tavg-u-hxy-si.day.glb` | ✅ |  | lrcs veg |
+| `seaIce.snw.tavg-u-hxy-si.mon.glb` | ✅ |  | cap7 |
+| `seaIce.ts.tavg-u-hxy-si.day.glb` | ✅ |  | lrcs |
+| `seaIce.ts.tavg-u-hxy-si.mon.glb` | ✅ |  | cap7 core |
 
 ## Realm: seaIce ocean — 2/2 rules
 
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
 | `seaIce.sithick.tavg-u-hxy-si.day.glb` | ✅ |  | cap7 |
-| `seaIce.sithick.tavg-u-hxy-si.mon.glb` | ✅ |  | cap7 core lrcs |
+| `seaIce.sithick.tavg-u-hxy-si.mon.glb` | ✅ |  | cap7 core |
 

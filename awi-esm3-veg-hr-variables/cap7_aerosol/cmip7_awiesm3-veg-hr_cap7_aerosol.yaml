@@ -2,9 +2,9 @@
 # Generated from 5 CSVs in cap7_aerosol/
 #
 # AWI-ESM3-VEG-HR has NO prognostic aerosol (uses MACv2-SP) and NO interactive
-# chemistry. Only 2 of 52 variables are producible:
-# - od550aer: total AOD from MACv2-SP
+# chemistry. Producible variables:
 # - toz: total column ozone from prescribed climatology
+# - cfc11, cfc12: prescribed WMGHG scalars from input4MIPs forcing files
 # See cmip7_cap7_aerosol_todo.md for full variable tracking.
 
 general:
@@ -30,6 +30,23 @@ jobqueue:
     walltime: '00:30:00'
 
 pipelines:
+  # GHG scalar pipeline: load annual input4MIPs forcing file,
+  # upsample annual -> monthly, convert ppt -> mol/mol (scale 1e-12)
+  - name: ghg_scalar_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:upsample_to_monthly
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:scale_by_constant
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   # Scale pipeline for toz: tco3 (kg m-2) -> toz (m)
   # toz(m) = tco3(kg/m2) / rho_O3_STP = tco3 / 2.1415
   - name: toz_pipeline
@@ -49,6 +66,7 @@ pipelines:
 
 inherit:
   data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/oifs
+  ghg_path: &ghg /work/ab0246/a270092/input/oifs-48r1/cmip7-data/ghg
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
@@ -63,6 +81,47 @@ inherit:
 rules:
   # od550aer dropped: MACv2-SP represents only anthropogenic simple-plume AOD,
   # not total AOD as CMIP7 requires. No prognostic/other aerosol in this config.
+
+  # cfc11: global-mean mole fraction from input4MIPs annual GHG forcing file
+  # cfc11 (ppt) -> mol/mol via scale_factor=1e-12; annual -> monthly by ffill
+  - name: cfc11_mon
+    inputs:
+      - path: *ghg
+        pattern: cfc11_input4MIPs_GHGConcentrations_CMIP_CR-CMIP-1-0-0_gm_1750-2022\.nc
+    compound_name: atmosChem.cfc11.tavg-u-hm-air.mon.GLB
+    model_variable: cfc11
+    scale_factor: 1.0e-12
+    scaled_units: "mol mol-1"
+    pipelines:
+      - ghg_scalar_pipeline
+
+  # cfc12: global-mean mole fraction from input4MIPs annual GHG forcing file
+  # cfc12 (ppt) -> mol/mol via scale_factor=1e-12; annual -> monthly by ffill
+  - name: cfc12_mon
+    inputs:
+      - path: *ghg
+        pattern: cfc12_input4MIPs_GHGConcentrations_CMIP_CR-CMIP-1-0-0_gm_1750-2022\.nc
+    compound_name: atmosChem.cfc12.tavg-u-hm-air.mon.GLB
+    model_variable: cfc12
+    scale_factor: 1.0e-12
+    scaled_units: "mol mol-1"
+    pipelines:
+      - ghg_scalar_pipeline
+
+  # n2o: global-mean mole fraction from input4MIPs annual GHG forcing file
+  # n2o (ppb) -> mol/mol via scale_factor=1e-9; annual -> monthly by ffill
+  # Note: AWI-ESM3-VEG-HR uses well-mixed prescribed N2O (no spatial variation).
+  # CMIP7 guidance: "if N2O is spatially uniform, omit 3D field, report global mean instead."
+  - name: n2o_mon
+    inputs:
+      - path: *ghg
+        pattern: n2o_input4MIPs_GHGConcentrations_CMIP_CR-CMIP-1-0-0_gm_1750-2022\.nc
+    compound_name: atmosChem.n2o.tavg-u-hm-air.mon.GLB
+    model_variable: n2o
+    scale_factor: 1.0e-9
+    scaled_units: "mol mol-1"
+    pipelines:
+      - ghg_scalar_pipeline
 
   # toz: total column ozone from IFS prescribed ozone
   # tco3 (kg m-2) -> toz (m) via division by O3 density at STP (2.1415 kg/m3)
