@@ -81,9 +81,9 @@ While prescribed values exist, they are forcing inputs, not model output.
 
 ### Ozone on levels (3)
 
-- [ ] **o3** (mon, model levels) — `atmosChem.o3.tavg-al-hxy-u.mon.glb` — Ozone mole fraction on model levels. Prescribed climatology, not interactive.
-- [ ] **o3** (mon, plev19) — `atmosChem.o3.tavg-p19-hxy-air.mon.glb` — Ozone on pressure levels. Prescribed climatology.
-- [ ] **o3** (mon, plev19, clim) — `atmosChem.o3.tclm-p19-hxy-air.mon.glb` — Ozone climatology on plev19.
+- [ ] **o3** (mon, model levels) — `atmosChem.o3.tavg-al-hxy-u.mon.glb` — Ozone mole fraction on model levels. Field `o3` is defined in `field_def_cmip7.xml.j2` but IFS does not send it to XIOS (not in `context_ifs.xml.j2`). Requires IFS source change to expose 3D prescribed ozone array via XIOS. Unit conversion: kg kg-1 → mol mol-1 via ×(M_air/M_O3) = ×0.60354.
+- [ ] **o3** (mon, plev19) — `atmosChem.o3.tavg-p19-hxy-air.mon.glb` — Ozone on pressure levels. Same blocker as model-level variant.
+- [ ] **o3** (mon, plev19, clim) — `atmosChem.o3.tclm-p19-hxy-air.mon.glb` — Ozone climatology on plev19. Same blocker.
 
 ### Methane (5)
 
@@ -91,7 +91,7 @@ While prescribed values exist, they are forcing inputs, not model output.
 - [ ] **ch4** (mon, plev19) — `atmosChem.ch4.tavg-p19-hxy-air.mon.glb` — CH4 on plev19. Prescribed WMGHG.
 - [x] **ch4** (mon, global mean) — `atmosChem.ch4.tavg-u-hm-air.mon.glb` — Global mean CH4. From input4MIPs `ch4_*_gm_1750-2022.nc` (ppb → mol/mol via ×1e-9, annual → monthly by ffill). CMIP7 guidance for prescribed-concentration runs: report global mean instead of 3D field.
 - [ ] **ch4** (mon, plev19, clim) — `atmosChem.ch4.tclm-p19-hxy-air.mon.glb` — CH4 climatology.
-- [ ] **ch4** (mon, global mean, clim) — `atmosChem.ch4.tclm-u-hm-air.mon.glb` — CH4 climatological global mean.
+- [ ] **ch4** (mon, global mean, clim) — `atmosChem.ch4.tclm-u-hm-air.mon.glb` — CH4 climatological global mean. Implementable from input4MIPs GHG file (12 constant monthly values). CMIP7 processing note: "When calling CMOR, identify this variable as `ch4globalClim`, not `ch4global`" — pycmor handles this automatically via `compound_name` lookup in data request metadata.
 
 ### Nitrous oxide (5)
 
@@ -99,7 +99,7 @@ While prescribed values exist, they are forcing inputs, not model output.
 - [ ] **n2o** (mon, plev19) — `atmosChem.n2o.tavg-p19-hxy-air.mon.glb` — N2O on plev19. Prescribed WMGHG.
 - [x] **n2o** (mon, global mean) — `atmosChem.n2o.tavg-u-hm-air.mon.glb` — Global mean N2O. From input4MIPs `n2o_*_gm_1750-2022.nc` (ppb → mol/mol via ×1e-9, annual → monthly by ffill). CMIP7 guidance for prescribed-concentration runs: report global mean instead of 3D field.
 - [ ] **n2o** (mon, plev19, clim) — `atmosChem.n2o.tclm-p19-hxy-air.mon.glb` — N2O climatology.
-- [ ] **n2o** (mon, global mean, clim) — `atmosChem.n2o.tclm-u-hm-air.mon.glb` — N2O climatological global mean.
+- [ ] **n2o** (mon, global mean, clim) — `atmosChem.n2o.tclm-u-hm-air.mon.glb` — N2O climatological global mean. Implementable from input4MIPs GHG file (12 constant monthly values). CMIP7 processing note: "When calling CMOR, identify this variable as `n2oglobalClim`" — pycmor handles this automatically via `compound_name` lookup in data request metadata.
 
 ### Other trace gases (6)
 

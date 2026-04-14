@@ -420,9 +420,9 @@
 | `atmosChem.n2o.tavg-u-hm-air.mon.glb` | ✅ | input4MIPs CR-CMIP-1-0-0 annual global-mean, ffill→monthly, ×1e-9 ppb→mol mol-1 (well-mixed prescribed; CMIP7: report global mean instead of 3D) | cap7 |
 | `atmosChem.n2o.tclm-p19-hxy-air.mon.glb` | ❌ | Prescribed well-mixed scalar — CMIP7: omit 3D field, report global mean (n2o.tavg-u-hm-air) instead | cap7 |
 | `atmosChem.n2o.tclm-u-hm-air.mon.glb` | ❌ | Prescribed well-mixed scalar — CMIP7: omit 3D field, report global mean (n2o.tavg-u-hm-air) instead | cap7 |
-| `atmosChem.o3.tavg-al-hxy-u.mon.glb` | ❌ | No interactive ozone | cap7 |
-| `atmosChem.o3.tavg-p19-hxy-air.mon.glb` | ❌ | No interactive ozone | cap7 |
-| `atmosChem.o3.tclm-p19-hxy-air.mon.glb` | ❌ | No interactive ozone | cap7 |
+| `atmosChem.o3.tavg-al-hxy-u.mon.glb` | ❌ | IFS does not send o3 to XIOS (not in context_ifs.xml.j2) — needs IFS source change | cap7 |
+| `atmosChem.o3.tavg-p19-hxy-air.mon.glb` | ❌ | IFS does not send o3 to XIOS (not in context_ifs.xml.j2) — needs IFS source change | cap7 |
+| `atmosChem.o3.tclm-p19-hxy-air.mon.glb` | ❌ | IFS does not send o3 to XIOS (not in context_ifs.xml.j2) — needs IFS source change | cap7 |
 
 ## Realm: atmosChem aerosol — 0/5 rules
 
