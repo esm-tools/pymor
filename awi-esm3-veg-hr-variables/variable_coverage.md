@@ -1,6 +1,6 @@
 # Variable Coverage Report — AWI-ESM3-VEG-HR
 
-**Total:** 866 unique compound names across all CSVs | 505 rules in YAML files
+**Total:** 866 unique compound names across all CSVs | 506 rules in YAML files
 
 **Categories:** `core`, `cap7`, `veg`, `lrcs`, `extra`
 
@@ -17,7 +17,7 @@
 | atmos aerosol land | 2 | 2 | ✅ |
 | atmos atmosChem aerosol | 0 | 4 | 0% |
 | atmos land | 3 | 3 | ✅ |
-| atmosChem | 3 | 18 | 17% |
+| atmosChem | 4 | 18 | 22% |
 | atmosChem aerosol | 0 | 5 | 0% |
 | land | 126 | 190 | 66% |
 | landIce | 3 | 3 | ✅ |
@@ -401,17 +401,17 @@
 | `atmos.evspsbl.tavg-u-hxy-lnd.day.glb` | ✅ |  | extra |
 | `atmos.evspsbl.tavg-u-hxy-u.mon.glb` | ✅ |  | core |
 
-## Realm: atmosChem — 3/18 rules
+## Realm: atmosChem — 4/18 rules
 
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
 | `atmosChem.cfc11.tavg-u-hm-air.mon.glb` | ✅ | input4MIPs CR-CMIP-1-0-0 annual global-mean, ffill→monthly, ×1e-12 ppt→mol mol-1 | cap7 |
 | `atmosChem.cfc113.tavg-u-hm-air.mon.glb` | ❌ | Not yet implemented | cap7 |
 | `atmosChem.cfc12.tavg-u-hm-air.mon.glb` | ✅ | input4MIPs CR-CMIP-1-0-0 annual global-mean, ffill→monthly, ×1e-12 ppt→mol mol-1 | cap7 |
-| `atmosChem.ch4.tavg-p19-hxy-air.mon.glb` | ❌ | No methane cycle | cap7 |
-| `atmosChem.ch4.tavg-u-hm-air.mon.glb` | ❌ | No methane cycle | cap7 |
-| `atmosChem.ch4.tclm-p19-hxy-air.mon.glb` | ❌ | No methane cycle | cap7 |
-| `atmosChem.ch4.tclm-u-hm-air.mon.glb` | ❌ | No methane cycle | cap7 |
+| `atmosChem.ch4.tavg-p19-hxy-air.mon.glb` | ❌ | Prescribed well-mixed scalar — CMIP7: omit 3D field, report global mean (ch4.tavg-u-hm-air) instead | cap7 |
+| `atmosChem.ch4.tavg-u-hm-air.mon.glb` | ✅ | input4MIPs CR-CMIP-1-0-0 annual global-mean, ffill→monthly, ×1e-9 ppb→mol mol-1 (well-mixed prescribed; CMIP7: report global mean instead of 3D) | cap7 |
+| `atmosChem.ch4.tclm-p19-hxy-air.mon.glb` | ❌ | Prescribed well-mixed scalar — CMIP7: omit 3D field, report global mean (ch4.tavg-u-hm-air) instead | cap7 |
+| `atmosChem.ch4.tclm-u-hm-air.mon.glb` | ❌ | Prescribed well-mixed scalar — CMIP7: omit 3D field, report global mean (ch4.tavg-u-hm-air) instead | cap7 |
 | `atmosChem.flashrate.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | extra |
 | `atmosChem.flashrate.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | extra |
 | `atmosChem.hcfc22.tavg-u-hm-air.mon.glb` | ❌ | Not yet implemented | cap7 |
@@ -428,7 +428,7 @@
 
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
-| `atmosChem.ch4.tavg-al-hxy-u.mon.glb` | ❌ | No methane cycle | cap7 |
+| `atmosChem.ch4.tavg-al-hxy-u.mon.glb` | ❌ | Prescribed well-mixed scalar — CMIP7: omit 3D field, report global mean (ch4.tavg-u-hm-air) instead | cap7 |
 | `atmosChem.dms.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
 | `atmosChem.drynoy.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
 | `atmosChem.emich4.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | extra |

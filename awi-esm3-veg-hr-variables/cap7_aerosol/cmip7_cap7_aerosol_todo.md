@@ -89,7 +89,7 @@ While prescribed values exist, they are forcing inputs, not model output.
 
 - [ ] **ch4** (mon, model levels) — `atmosChem.ch4.tavg-al-hxy-u.mon.glb` — CH4 mole fraction on levels. Prescribed WMGHG.
 - [ ] **ch4** (mon, plev19) — `atmosChem.ch4.tavg-p19-hxy-air.mon.glb` — CH4 on plev19. Prescribed WMGHG.
-- [ ] **ch4** (mon, global mean) — `atmosChem.ch4.tavg-u-hm-air.mon.glb` — Global mean CH4. Prescribed scalar.
+- [x] **ch4** (mon, global mean) — `atmosChem.ch4.tavg-u-hm-air.mon.glb` — Global mean CH4. From input4MIPs `ch4_*_gm_1750-2022.nc` (ppb → mol/mol via ×1e-9, annual → monthly by ffill). CMIP7 guidance for prescribed-concentration runs: report global mean instead of 3D field.
 - [ ] **ch4** (mon, plev19, clim) — `atmosChem.ch4.tclm-p19-hxy-air.mon.glb` — CH4 climatology.
 - [ ] **ch4** (mon, global mean, clim) — `atmosChem.ch4.tclm-u-hm-air.mon.glb` — CH4 climatological global mean.
 
