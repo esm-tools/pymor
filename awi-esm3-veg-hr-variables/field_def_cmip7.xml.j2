@@ -1,5 +1,5 @@
-<field_definition level="1" prec="4" enabled="true" operation="instant" freq_op="1ts" ts_enabled="true" default_value="1.e+20" >
-  <field_group id="2D_physical" grid_ref="reduced_sfc" freq_op="3h" >
+<field_definition level="1" prec="4" enabled="true" operation="instant" freq_op="{{ oifs.output_step_freq }}ts" ts_enabled="true" default_value="1.e+20" >
+  <field_group id="2D_physical" grid_ref="reduced_sfc" freq_op="{{ oifs.output_step_freq }}ts" >
     <!--TODO: convert to kg m-2-->
     <field id="sro"    long_name="surface runoff"                                             standard_name="runoff_amount"                                            unit="m" />
     <!--TODO: convert to kg m-2-->
@@ -200,11 +200,11 @@
     <field id="cloud_area_fraction__clt" name="clt" field_ref="tcc" standard_name="cloud_area_fraction" long_name="Total Cloud Cover Percentage" unit="%" >
         tcc*100
     </field>
-    <!-- Precipitation at 3h accumulation: m/3h → kg m-2 s-1 (freq_op="3h") -->
+    <!-- Precipitation at 3h accumulation: m/3h → kg m-2 s-1 (freq_op="{{ oifs.output_step_freq }}ts") -->
     <field id="precipitation_flux_3h__pr" name="pr" field_ref="tp" standard_name="precipitation_flux" long_name="Precipitation" unit="kg m-2 s-1" >
         tp*1000/3600
     </field>
-    <!-- Precipitation at 1h accumulation: m/1h → kg m-2 s-1 (freq_op="1h") -->
+    <!-- Precipitation at 1h accumulation: m/1h → kg m-2 s-1 (freq_op="{{ oifs.output_step_freq }}ts") -->
     <field id="precipitation_flux_1h__pr" name="pr" field_ref="tp" standard_name="precipitation_flux" long_name="Precipitation" unit="kg m-2 s-1" >
         tp*1000/3600
     </field>
@@ -381,7 +381,7 @@
     <field id="macv2sp_taod550" long_name="Total Aerosol Optical Depth at 550nm from MACV2SP" standard_name="total_aerosol_optical_depth_at_550nm_from_MACV2SP"        unit="1" />
   </field_group>
 
-  <field_group id="3D_ml" grid_ref="reduced_ml" freq_op="3h" >
+  <field_group id="3D_ml" grid_ref="reduced_ml" freq_op="{{ oifs.output_step_freq }}ts" >
     <field id="pt"     long_name="potential temperature"                     standard_name="air_potential_temperature"                 unit="K" />
     <!-- WARNING: FullPos doesn't process 'mont', don't use it -->
     <field id="mont"   long_name="Montgomery geopotential"                                                                             unit="m2 s-2" />
@@ -406,7 +406,7 @@
     <field id="co2"    long_name="co2 mass mixing ration"                    standard_name="co2_mass_mixing_ratio"                     unit="kg*kg-1" />
   </field_group>
 
-  <field_group id="3D_pl" grid_ref="reduced_pl" freq_op="3h" >
+  <field_group id="3D_pl" grid_ref="reduced_pl" freq_op="{{ oifs.output_step_freq }}ts" >
     <field id="pt_pl"     long_name="potential temperature"                     standard_name="air_potential_temperature"                 unit="K" />
     <!-- WARNING: FullPos doesn't process 'mont', don't use it -->
     <field id="mont_pl"   long_name="Montgomery geopotential"                                                                             unit="m2 s-2" />
@@ -439,7 +439,7 @@
   </field_group>
 
   <!-- Model-level derived CMOR fields -->
-  <field_group id="3D_ml_cmor" grid_ref="reduced_ml" freq_op="3h" >
+  <field_group id="3D_ml_cmor" grid_ref="reduced_ml" freq_op="{{ oifs.output_step_freq }}ts" >
     <!-- Geopotential height on model levels: z/g -->
     <field id="geopotential_height_ml__zg" name="zg" field_ref="z" standard_name="geopotential_height" long_name="Geopotential Height" unit="m" >
         z/9.80665
@@ -450,7 +450,7 @@
     </field>
   </field_group>
 
-  <field_group id="3D_th" grid_ref="reduced_th" freq_op="3h" >
+  <field_group id="3D_th" grid_ref="reduced_th" freq_op="{{ oifs.output_step_freq }}ts" >
     <!-- WARNING: FullPos doesn't process 'mont', don't use it -->
     <field id="mont_th"   long_name="Montgomery geopotential"                                                                             unit="m2 s-2" />
     <field id="pres_th"   long_name="pressure"                                  standard_name="air_pressure"                              unit="Pa" />
@@ -474,7 +474,7 @@
     <field id="co2_th"    long_name="co2 mass mixing ration"                    standard_name="co2_mass_mixing_ratio"                     unit="kg*kg-1" />
   </field_group>
 
-  <field_group id="3D_pv" grid_ref="reduced_pv" freq_op="3h" >
+  <field_group id="3D_pv" grid_ref="reduced_pv" freq_op="{{ oifs.output_step_freq }}ts" >
     <field id="pt_pv"     long_name="potential temperature" standard_name="air_potential_temperature"                                     unit="K" />
     <!-- WARNING: FullPos doesn't process 'mont', don't use it -->
     <field id="mont_pv"   long_name="Montgomery geopotential"                                                                             unit="m2 s-2" />
@@ -498,7 +498,7 @@
     <field id="co2_pv"    long_name="co2 mass mixing ration"                    standard_name="co2_mass_mixing_ratio"                     unit="kg*kg-1" />
   </field_group>
 
-  <field_group id="pextra" grid_ref="reduced_ml" freq_op="3h" >
+  <field_group id="pextra" grid_ref="reduced_ml" freq_op="{{ oifs.output_step_freq }}ts" >
     <field id="pextra_91"  long_name="u-tendency from explicit dynamics"                                                   unit="m/s2 * s" />
     <field id="pextra_92"  long_name="v-tendency from explicit dynamics"                                                   unit="m/s2 * s" />
     <field id="pextra_93"  long_name="T-tendency from explicit dynamics"                                                   unit="K/s * s" />
