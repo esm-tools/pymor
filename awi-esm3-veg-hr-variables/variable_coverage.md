@@ -40,7 +40,7 @@
 | `aerosol.cfc114.tavg-al-hxy-u.mon.glb` | ❌ | No atmospheric chemistry | cap7 |
 | `aerosol.cly.tavg-p39-hy-air.mon.glb` | ❌ | No atmospheric chemistry | cap7 |
 | `aerosol.drydust.tavg-u-hxy-u.mon.glb` | ❌ | No deposition scheme | cap7 |
-| `aerosol.hcfc22.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `aerosol.hcfc22.tavg-al-hxy-u.mon.glb` | ❌ | HCFC22 on model levels: no atmospheric chemistry in IFS | cap7 |
 | `aerosol.hcl.tavg-al-hxy-u.mon.glb` | ❌ | No atmospheric chemistry | cap7 |
 | `aerosol.hfc125.tavg-al-hxy-u.mon.glb` | ❌ | No atmospheric chemistry | cap7 |
 | `aerosol.hfc134a.tavg-al-hxy-u.mon.glb` | ❌ | No atmospheric chemistry | cap7 |
@@ -49,20 +49,20 @@
 | `aerosol.mmrpm2p5.tavg-al-hxy-u.mon.glb` | ❌ | No prognostic aerosol (MACv2-SP only) | veg |
 | `aerosol.no2.tavg-h2m-hxy-u.1hr.glb` | ❌ | No atmospheric chemistry | extra |
 | `aerosol.noy.tavg-p39-hy-air.mon.glb` | ❌ | No atmospheric chemistry | cap7 |
-| `aerosol.o3.tavg-h2m-hxy-u.1hr.glb` | ❌ | Not yet implemented | extra |
-| `aerosol.o3.tmax-h2m-hxy-u.day.glb` | ❌ | Not yet implemented | extra |
+| `aerosol.o3.tavg-h2m-hxy-u.1hr.glb` | ❌ | Near-surface ozone: no interactive chemistry in IFS | extra |
+| `aerosol.o3.tmax-h2m-hxy-u.day.glb` | ❌ | Near-surface ozone: no interactive chemistry in IFS | extra |
 | `aerosol.od550aer.tavg-u-hxy-u.mon.glb` | ❌ | MACv2-SP provides anthropogenic perturbation AOD only, not total AOD | cap7 |
-| `aerosol.od550bb.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `aerosol.od550bb.tavg-u-hxy-u.mon.glb` | ❌ | No prognostic aerosol — MACv2-SP has no biomass burning AOD component | cap7 |
 | `aerosol.od550bc.tavg-u-hxy-u.mon.glb` | ❌ | No prognostic aerosol | cap7 |
 | `aerosol.od550dust.tavg-u-hxy-u.mon.glb` | ❌ | No prognostic aerosol | cap7 |
 | `aerosol.od550lt1aer.tavg-u-hxy-u.mon.glb` | ❌ | No prognostic aerosol | cap7 |
-| `aerosol.od550no3.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `aerosol.od550oa.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `aerosol.od550so4.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `aerosol.od550soa.tavg-u-hxy-u.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `aerosol.od550no3.tavg-u-hxy-u.mon.glb` | ❌ | No prognostic aerosol — MACv2-SP has no nitrate AOD component | cap7 |
+| `aerosol.od550oa.tavg-u-hxy-u.mon.glb` | ❌ | No prognostic aerosol — MACv2-SP has no organic aerosol AOD component | cap7 |
+| `aerosol.od550so4.tavg-u-hxy-u.mon.glb` | ❌ | No prognostic aerosol — MACv2-SP has no sulfate AOD component | cap7 |
+| `aerosol.od550soa.tavg-u-hxy-u.mon.glb` | ❌ | No prognostic aerosol — MACv2-SP has no secondary organic aerosol AOD component | veg |
 | `aerosol.od550ss.tavg-u-hxy-u.mon.glb` | ❌ | No prognostic aerosol | cap7 |
-| `aerosol.oh.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `aerosol.so2.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `aerosol.oh.tavg-al-hxy-u.mon.glb` | ❌ | No atmospheric chemistry in IFS | cap7 |
+| `aerosol.so2.tavg-al-hxy-u.mon.glb` | ❌ | No atmospheric chemistry in IFS | cap7 |
 | `aerosol.toz.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 |
 | `aerosol.wetdust.tavg-u-hxy-u.mon.glb` | ❌ | No deposition scheme | cap7 |
 
@@ -406,15 +406,15 @@
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
 | `atmosChem.cfc11.tavg-u-hm-air.mon.glb` | ✅ | input4MIPs CR-CMIP-1-0-0 annual global-mean, ffill→monthly, ×1e-12 ppt→mol mol-1 | cap7 |
-| `atmosChem.cfc113.tavg-u-hm-air.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmosChem.cfc113.tavg-u-hm-air.mon.glb` | ❌ | Prescribed scalar — GHG input4MIPs file not confirmed available at *ghg path | cap7 |
 | `atmosChem.cfc12.tavg-u-hm-air.mon.glb` | ✅ | input4MIPs CR-CMIP-1-0-0 annual global-mean, ffill→monthly, ×1e-12 ppt→mol mol-1 | cap7 |
 | `atmosChem.ch4.tavg-p19-hxy-air.mon.glb` | ❌ | Prescribed well-mixed scalar — CMIP7: omit 3D field, report global mean (ch4.tavg-u-hm-air) instead | cap7 |
 | `atmosChem.ch4.tavg-u-hm-air.mon.glb` | ✅ | input4MIPs CR-CMIP-1-0-0 annual global-mean, ffill→monthly, ×1e-9 ppb→mol mol-1 (well-mixed prescribed; CMIP7: report global mean instead of 3D) | cap7 |
 | `atmosChem.ch4.tclm-p19-hxy-air.mon.glb` | ❌ | Prescribed well-mixed scalar — CMIP7: omit 3D field, report global mean (ch4.tavg-u-hm-air) instead | cap7 |
 | `atmosChem.ch4.tclm-u-hm-air.mon.glb` | ❌ | Prescribed well-mixed scalar — CMIP7: omit 3D field, report global mean (ch4.tavg-u-hm-air) instead | cap7 |
-| `atmosChem.flashrate.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | extra |
-| `atmosChem.flashrate.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | extra |
-| `atmosChem.hcfc22.tavg-u-hm-air.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmosChem.flashrate.tavg-u-hxy-u.day.glb` | ❌ | No lightning parameterization output in IFS configuration | extra |
+| `atmosChem.flashrate.tavg-u-hxy-u.mon.glb` | ❌ | No lightning parameterization output in IFS configuration | extra |
+| `atmosChem.hcfc22.tavg-u-hm-air.mon.glb` | ❌ | HCFC22 on model levels: no atmospheric chemistry in IFS | cap7 |
 | `atmosChem.n2o.tavg-al-hxy-u.mon.glb` | ❌ | Prescribed well-mixed scalar — CMIP7: omit 3D field, report global mean (n2o.tavg-u-hm-air) instead | cap7 |
 | `atmosChem.n2o.tavg-p19-hxy-air.mon.glb` | ❌ | Prescribed well-mixed scalar — CMIP7: omit 3D field, report global mean (n2o.tavg-u-hm-air) instead | cap7 |
 | `atmosChem.n2o.tavg-u-hm-air.mon.glb` | ✅ | input4MIPs CR-CMIP-1-0-0 annual global-mean, ffill→monthly, ×1e-9 ppb→mol mol-1 (well-mixed prescribed; CMIP7: report global mean instead of 3D) | cap7 |
@@ -429,10 +429,10 @@
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
 | `atmosChem.ch4.tavg-al-hxy-u.mon.glb` | ❌ | Prescribed well-mixed scalar — CMIP7: omit 3D field, report global mean (ch4.tavg-u-hm-air) instead | cap7 |
-| `atmosChem.dms.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmosChem.drynoy.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmosChem.emich4.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | extra |
-| `atmosChem.wetnoy.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmosChem.dms.tavg-al-hxy-u.mon.glb` | ❌ | No atmospheric chemistry in IFS | cap7 |
+| `atmosChem.drynoy.tavg-u-hxy-u.mon.glb` | ❌ | No deposition scheme (no atmospheric chemistry) | cap7 |
+| `atmosChem.emich4.tavg-u-hxy-u.mon.glb` | ❌ | No methane emission scheme (ifmethane=0) | extra |
+| `atmosChem.wetnoy.tavg-u-hxy-u.mon.glb` | ❌ | No deposition scheme (no atmospheric chemistry) | cap7 |
 
 ## Realm: land — 126/190 rules
 
@@ -444,7 +444,7 @@
 | `land.burntFractionAll.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 |
 | `land.c3PftFrac.tavg-u-hxy-u.mon.glb` | ✅ |  | extra |
 | `land.c4PftFrac.tavg-u-hxy-u.mon.glb` | ✅ |  | extra |
-| `land.cGeologicStorage.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `land.cGeologicStorage.tavg-u-hxy-u.mon.glb` | ❌ | No geologic carbon storage model | cap7 |
 | `land.cLand.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.cLeaf.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.cLitter.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
@@ -460,7 +460,7 @@
 | `land.cSoil.tavg-sl-hxy-lnd.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
 | `land.cSoil.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.cSoilLut.tpt-u-hxy-multi.yr.glb` | ✅ |  | veg |
-| `land.cSoilPools.tavg-u-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `land.cSoilPools.tavg-u-hxy-lnd.mon.glb` | ❌ | Requires per-pool disaggregation not in LPJ-GUESS standard output | cap7 |
 | `land.cStem.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.cVeg.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.cVeg.tavg-u-hxy-ng.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
@@ -473,7 +473,7 @@
 | `land.cropFracC4.tavg-u-hxy-u.mon.glb` | ✅ |  | extra |
 | `land.dcw.tavg-u-hxy-lnd.day.glb` | ✅ |  | extra |
 | `land.dgw.tavg-u-hxy-lnd.day.glb` | ✅ |  | veg |
-| `land.drivw.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `land.drivw.tavg-u-hxy-lnd.day.glb` | ❌ | No river routing model | veg |
 | `land.dslw.tavg-u-hxy-lnd.day.glb` | ✅ |  | extra |
 | `land.dsn.tavg-u-hxy-lnd.day.glb` | ✅ |  | veg |
 | `land.dsw.tavg-u-hxy-lnd.day.glb` | ✅ |  | veg |
@@ -493,15 +493,15 @@
 | `land.fFireAll.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.fFireNat.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.fHarvestToAtmos.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
-| `land.fHarvestToGeologicStorage.tavg-u-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `land.fHarvestToProduct.tavg-u-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `land.fHarvestToGeologicStorage.tavg-u-hxy-lnd.mon.glb` | ❌ | No geologic carbon storage model | cap7 |
+| `land.fHarvestToProduct.tavg-u-hxy-lnd.mon.glb` | ❌ | No fHarvestToProduct_monthly.out in LPJ-GUESS | cap7 |
 | `land.fLitterFire.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.fLitterSoil.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.fLuc.tavg-u-hxy-lnd.mon.glb` | ✅ |  | veg |
 | `land.fLulccAtmLut.tavg-u-hxy-multi.mon.glb` | ✅ |  | veg |
 | `land.fNLandToOcean.tavg-u-hxy-lnd.mon.glb` | ✅ |  | veg |
 | `land.fNLitterSoil.tavg-u-hxy-lnd.mon.glb` | ✅ |  | veg |
-| `land.fNVegSoil.tavg-u-hxy-lnd.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `land.fNVegSoil.tavg-u-hxy-lnd.mon.glb` | ❌ | No fNVegSoil output in LPJ-GUESS (only fNVegLitter) | veg |
 | `land.fNgas.tavg-u-hxy-lnd.mon.glb` | ✅ |  | veg |
 | `land.fNgasFire.tavg-u-hxy-lnd.mon.glb` | ✅ |  | veg |
 | `land.fNleach.tavg-u-hxy-lnd.mon.glb` | ✅ |  | veg |
@@ -510,11 +510,11 @@
 | `land.fProductDecomp.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.fVegFire.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.fVegLitter.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
-| `land.fVegLitterMortality.tavg-u-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `land.fVegLitterSenescence.tavg-u-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `land.fVegSoil.tavg-u-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `land.fVegSoilMortality.tavg-u-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `land.fVegSoilSenescence.tavg-u-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `land.fVegLitterMortality.tavg-u-hxy-lnd.mon.glb` | ❌ | Not in LPJ-GUESS output files | cap7 |
+| `land.fVegLitterSenescence.tavg-u-hxy-lnd.mon.glb` | ❌ | Not in LPJ-GUESS output files | cap7 |
+| `land.fVegSoil.tavg-u-hxy-lnd.mon.glb` | ❌ | Not in LPJ-GUESS output files | cap7 |
+| `land.fVegSoilMortality.tavg-u-hxy-lnd.mon.glb` | ❌ | Not in LPJ-GUESS output files | cap7 |
+| `land.fVegSoilSenescence.tavg-u-hxy-lnd.mon.glb` | ❌ | Not in LPJ-GUESS output files | cap7 |
 | `land.fracInLut.tsum-u-hxy-lnd.yr.glb` | ✅ |  | veg |
 | `land.fracLut.tpt-u-hxy-u.mon.glb` | ✅ |  | veg |
 | `land.fracLut.tpt-u-hxy-u.yr.glb` | ✅ |  | veg |
@@ -524,21 +524,21 @@
 | `land.gpp.tavg-u-hxy-shb.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
 | `land.gpp.tavg-u-hxy-tree.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
 | `land.gppLut.tavg-u-hxy-multi.mon.glb` | ✅ |  | veg |
-| `land.gppVgt.tavg-u-hxy-multi.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `land.gppVgt.tavg-u-hxy-multi.day.glb` | ❌ | No daily per-PFT output from LPJ-GUESS | veg |
 | `land.grassFrac.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 |
 | `land.grassFrac.tavg-u-hxy-u.yr.glb` | ✅ |  | veg |
 | `land.hfdsl.tavg-u-hxy-lnd.3hr.glb` | ✅ |  | veg |
-| `land.hflsLut.tavg-u-hxy-multi.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
-| `land.hfssLut.tavg-u-hxy-multi.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `land.hflsLut.tavg-u-hxy-multi.mon.glb` | ❌ | Surface energy balance variable — not output by LPJ-GUESS | veg |
+| `land.hfssLut.tavg-u-hxy-multi.mon.glb` | ❌ | Surface energy balance variable — not output by LPJ-GUESS | veg |
 | `land.irrDem.tavg-u-hxy-u.day.glb` | ❌ | No irrigation scheme | extra |
-| `land.irrGw.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | extra |
+| `land.irrGw.tavg-u-hxy-u.day.glb` | ❌ | No irrigation scheme | extra |
 | `land.irrLut.tavg-u-hxy-multi.mon.glb` | ✅ |  | veg |
 | `land.irrLut.tavg-u-hxy-u.day.glb` | ❌ | Only mon frequency implemented | extra |
-| `land.irrSurf.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | extra |
+| `land.irrSurf.tavg-u-hxy-u.day.glb` | ❌ | No irrigation scheme | extra |
 | `land.lai.tavg-u-hxy-lnd.day.glb` | ✅ |  | extra |
 | `land.lai.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 core |
 | `land.laiLut.tavg-u-hxy-multi.mon.glb` | ✅ |  | veg |
-| `land.laiVgt.tavg-u-hxy-multi.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `land.laiVgt.tavg-u-hxy-multi.day.glb` | ❌ | No daily per-PFT output from LPJ-GUESS | veg |
 | `land.landCoverFrac.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 |
 | `land.mrro.tavg-u-hxy-lnd.3hr.glb` | ✅ |  | veg |
 | `land.mrro.tavg-u-hxy-lnd.day.glb` | ✅ |  | cap7 |
@@ -564,25 +564,25 @@
 | `land.nSoil.tavg-u-hxy-lnd.mon.glb` | ✅ |  | veg |
 | `land.nVeg.tavg-u-hxy-lnd.mon.glb` | ✅ |  | veg |
 | `land.nbp.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
-| `land.nbpLut.tavg-u-hxy-multi.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `land.nbpLut.tavg-u-hxy-multi.mon.glb` | ❌ | No per-tile variant in LPJ-GUESS (only gridcell total nbp_monthly.out) | veg |
 | `land.nep.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.npp.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.npp.tavg-u-hxy-ng.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
 | `land.npp.tavg-u-hxy-shb.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
 | `land.npp.tavg-u-hxy-tree.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
-| `land.nppLeaf.tavg-u-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `land.nppLeaf.tavg-u-hxy-lnd.mon.glb` | ❌ | Not in LPJ-GUESS standard output files | cap7 |
 | `land.nppLut.tavg-u-hxy-multi.mon.glb` | ✅ |  | veg |
-| `land.nppOther.tavg-u-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `land.nppRoot.tavg-u-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `land.nppStem.tavg-u-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `land.nppVgt.tavg-u-hxy-multi.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `land.nppOther.tavg-u-hxy-lnd.mon.glb` | ❌ | Not in LPJ-GUESS standard output files | cap7 |
+| `land.nppRoot.tavg-u-hxy-lnd.mon.glb` | ❌ | Not in LPJ-GUESS standard output files | cap7 |
+| `land.nppStem.tavg-u-hxy-lnd.mon.glb` | ❌ | Not in LPJ-GUESS standard output files | cap7 |
+| `land.nppVgt.tavg-u-hxy-multi.day.glb` | ❌ | No daily per-PFT output from LPJ-GUESS | veg |
 | `land.orog.ti-u-hxy-u.fx.30S-90S` | ✅ |  | extra |
 | `land.orog.ti-u-hxy-u.fx.glb` | ✅ |  | cap7 core |
 | `land.pastureFrac.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 |
 | `land.pastureFracC3.tavg-u-hxy-u.mon.glb` | ✅ |  | extra |
 | `land.pastureFracC4.tavg-u-hxy-u.mon.glb` | ✅ |  | extra |
 | `land.prveg.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
-| `land.qgwr.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `land.qgwr.tavg-u-hxy-lnd.day.glb` | ❌ | No groundwater scheme in HTESSEL | veg |
 | `land.ra.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.ra.tavg-u-hxy-ng.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
 | `land.ra.tavg-u-hxy-shb.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
@@ -592,7 +592,7 @@
 | `land.raOther.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.raRoot.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.raStem.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
-| `land.raVgt.tavg-u-hxy-multi.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `land.raVgt.tavg-u-hxy-multi.day.glb` | ❌ | No daily per-PFT output from LPJ-GUESS | veg |
 | `land.residualFrac.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 |
 | `land.rh.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.rh.tavg-u-hxy-ng.mon.glb` | ❌ | Only mon frequency implemented | cap7 |
@@ -601,33 +601,33 @@
 | `land.rhLitter.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.rhLut.tavg-u-hxy-multi.mon.glb` | ✅ |  | veg |
 | `land.rhSoil.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
-| `land.rhVgt.tavg-u-hxy-multi.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `land.rhVgt.tavg-u-hxy-multi.day.glb` | ❌ | No daily per-PFT output from LPJ-GUESS | veg |
 | `land.rivi.tavg-u-hxy-lnd.day.glb` | ❌ | No river routing model | extra |
 | `land.rivo.tavg-u-hxy-lnd.day.glb` | ❌ | No river routing model | veg |
 | `land.rootd.ti-u-hxy-lnd.fx.glb` | ✅ |  | cap7 core |
-| `land.rzwc.tavg-u-hxy-lnd.day.glb` | ❌ | Not yet implemented | extra |
+| `land.rzwc.tavg-u-hxy-lnd.day.glb` | ❌ | HTESSEL has fixed soil layers not defined by root depth — cannot derive root-zone moisture | extra |
 | `land.sftgif.ti-u-hxy-u.fx.glb` | ✅ |  | cap7 core |
 | `land.shrubFrac.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 |
 | `land.shrubFrac.tavg-u-hxy-u.yr.glb` | ✅ |  | veg |
 | `land.slthick.ti-sl-hxy-lnd.fx.glb` | ✅ |  | cap7 core |
 | `land.srfrad.tavg-u-hxy-u.3hr.glb` | ✅ |  | veg |
-| `land.sw.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
-| `land.sweLut.tavg-u-hxy-multi.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `land.sw.tavg-u-hxy-lnd.day.glb` | ❌ | No surface water scheme in HTESSEL | veg |
+| `land.sweLut.tavg-u-hxy-multi.mon.glb` | ❌ | No per-tile variant in LPJ-GUESS (only gridcell total snw_monthly.out) | veg |
 | `land.tas.tavg-h2m-hxy-u.1hr.30S-90S` | ❌ | Only 1hr/3hr/day/mon frequency implemented | extra |
 | `land.tas.tavg-h2m-hxy-u.1hr.glb` | ❌ | Only 1hr/3hr/day/mon frequency implemented | cap7 |
-| `land.tasLut.tavg-h2m-hxy-multi.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `land.tasLut.tavg-h2m-hxy-multi.mon.glb` | ❌ | Atmospheric variable — not per-tile from LPJ-GUESS | veg |
 | `land.tran.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 |
 | `land.tran.tavg-u-hxy-u.3hr.glb` | ❌ | Only mon frequency implemented | veg |
 | `land.treeFrac.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 |
 | `land.treeFrac.tavg-u-hxy-u.yr.glb` | ✅ |  | veg |
 | `land.treeFracBdlDcd.tavg-u-hxy-u.mon.glb` | ✅ |  | veg |
-| `land.tsLut.tavg-u-hxy-multi.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
-| `land.tsl.tavg-sl-hxy-lnd.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `land.tsLut.tavg-u-hxy-multi.mon.glb` | ❌ | Soil temperature exists gridcell-only — no per-tile LUT variant | veg |
+| `land.tsl.tavg-sl-hxy-lnd.mon.glb` | ❌ | Feasible from tsl_monthly.out (15 depth levels) — pipeline not yet written | cap7 |
 | `land.tslsi.tavg-u-hxy-lsi.day.glb` | ❌ | Only 3hr/day frequency implemented | cap7 |
 | `land.tslsi.tpt-u-hxy-lsi.3hr.glb` | ✅ |  | veg |
 | `land.vegFrac.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 |
-| `land.vegHeight.tavg-u-hxy-tree.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
-| `land.wtd.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `land.vegHeight.tavg-u-hxy-tree.mon.glb` | ❌ | Only vegHeightTree_monthly.out (tree-only) — no grid-cell mean vegetation height | veg |
+| `land.wtd.tavg-u-hxy-lnd.day.glb` | ❌ | No groundwater scheme in HTESSEL | veg |
 
 ## Realm: landIce — 3/3 rules
 
@@ -642,12 +642,12 @@
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
 | `landIce.agesno.tavg-u-hxy-lnd.mon.glb` | ❌ | No interactive ice sheet model | veg |
-| `landIce.hfdsn.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
-| `landIce.hfdsn.tavg-u-hxy-lnd.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
-| `landIce.lwsnl.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
-| `landIce.lwsnl.tavg-u-hxy-lnd.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `landIce.hfdsn.tavg-u-hxy-lnd.day.glb` | ❌ | Feasible from snow energy balance (lambda*(Tsn-Tsoil)/dz) — pipeline not yet written | veg |
+| `landIce.hfdsn.tavg-u-hxy-lnd.mon.glb` | ❌ | Feasible from snow energy balance (lambda*(Tsn-Tsoil)/dz) — pipeline not yet written | veg |
+| `landIce.lwsnl.tavg-u-hxy-lnd.day.glb` | ❌ | Single-layer snow scheme in HTESSEL — no liquid water tracking | veg |
+| `landIce.lwsnl.tavg-u-hxy-lnd.mon.glb` | ❌ | Single-layer snow scheme in HTESSEL — no liquid water tracking | veg |
 | `landIce.mrfso.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 core |
-| `landIce.pflw.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `landIce.pflw.tavg-u-hxy-lnd.day.glb` | ❌ | No permafrost scheme in HTESSEL | veg |
 | `landIce.pflw.tavg-u-hxy-lnd.mon.glb` | ❌ | No permafrost scheme | veg |
 | `landIce.snc.tavg-u-hxy-lnd.day.glb` | ✅ |  | cap7 |
 | `landIce.snc.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 core |
@@ -656,8 +656,8 @@
 | `landIce.snm.tavg-u-hxy-lnd.day.glb` | ✅ |  | veg |
 | `landIce.snw.tavg-u-hxy-lnd.day.glb` | ✅ |  | cap7 |
 | `landIce.snw.tavg-u-hxy-lnd.mon.glb` | ✅ |  | cap7 core |
-| `landIce.sootsn.tavg-u-hxy-lnd.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
-| `landIce.tpf.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `landIce.sootsn.tavg-u-hxy-lnd.mon.glb` | ❌ | Requires CAMS aerosol deposition (not available in this config) | veg |
+| `landIce.tpf.tavg-u-hxy-lnd.day.glb` | ❌ | No permafrost scheme in HTESSEL | veg |
 | `landIce.tpf.tavg-u-hxy-lnd.mon.glb` | ❌ | No permafrost scheme | veg |
 | `landIce.tsn.tavg-u-hxy-lnd.day.glb` | ✅ |  | veg |
 
@@ -666,63 +666,63 @@
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
 | `ocean.absscint.tavg-op4-hxy-sea.mon.glb` | ✅ |  | lrcs |
-| `ocean.agessc.tavg-ol-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.agessc.tavg-ol-hxy-sea.mon.glb` | ❌ | Age tracer not enabled in current config (use_age_tracer=.false.) | lrcs |
 | `ocean.areacello.ti-u-hxy-u.fx.glb` | ✅ |  | cap7 core |
 | `ocean.basin.ti-u-hxy-u.fx.glb` | ✅ |  | cap7 core |
 | `ocean.bigthetao.tavg-ol-hm-sea.mon.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | lrcs |
 | `ocean.bigthetao.tavg-ol-hxy-sea.dec.glb` | ❌ | Decadal frequency not implemented | lrcs |
 | `ocean.bigthetao.tavg-ol-hxy-sea.mon.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | cap7 core |
-| `ocean.chcint.tavg-op4-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.chcint.tavg-op4-hxy-sea.mon.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | lrcs |
 | `ocean.deptho.ti-u-hxy-sea.fx.glb` | ✅ |  | cap7 core |
-| `ocean.difmxybo.tavg-ol-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.difmxybo.tavg-ol-hxy-sea.yr.glb` | ❌ | Biharmonic diffusivity coefficient not output separately in FESOM | lrcs |
 | `ocean.difmxylo.tavg-ol-hxy-sea.yr.glb` | ✅ |  | lrcs |
-| `ocean.diftrblo.tavg-ol-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.diftrelo.tavg-ol-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.diftrblo.tavg-ol-hxy-sea.yr.glb` | ❌ | Requires fer_gm=.true. (GM diffusivity fer_K not output in current config) | lrcs |
+| `ocean.diftrelo.tavg-ol-hxy-sea.yr.glb` | ❌ | Requires fer_gm=.true. (GM diffusivity fer_K not output in current config) | lrcs |
 | `ocean.difvho.tavg-ol-hxy-sea.yr.glb` | ✅ |  | lrcs |
 | `ocean.difvso.tavg-ol-hxy-sea.yr.glb` | ✅ |  | lrcs |
-| `ocean.dispkexyfo.tavg-u-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.dxto.ti-u-hxy-u.fx.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.dxuo.ti-u-hxy-u.fx.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.dxvo.ti-u-hxy-u.fx.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.dyto.ti-u-hxy-u.fx.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.dyuo.ti-u-hxy-u.fx.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.dyvo.ti-u-hxy-u.fx.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.dispkexyfo.tavg-u-hxy-sea.yr.glb` | ❌ | No KE dissipation diagnostic in FESOM | lrcs |
+| `ocean.dxto.ti-u-hxy-u.fx.glb` | ❌ | Unstructured mesh — no dx/dy concept (would need Voronoi edge lengths) | lrcs |
+| `ocean.dxuo.ti-u-hxy-u.fx.glb` | ❌ | Unstructured mesh — no staggered u-point grid | lrcs |
+| `ocean.dxvo.ti-u-hxy-u.fx.glb` | ❌ | Unstructured mesh — no staggered v-point grid | lrcs |
+| `ocean.dyto.ti-u-hxy-u.fx.glb` | ❌ | Unstructured mesh — no dx/dy concept | lrcs |
+| `ocean.dyuo.ti-u-hxy-u.fx.glb` | ❌ | Unstructured mesh — no staggered u-point grid | lrcs |
+| `ocean.dyvo.ti-u-hxy-u.fx.glb` | ❌ | Unstructured mesh — no staggered v-point grid | lrcs |
 | `ocean.evspsbl.tavg-u-hxy-ifs.mon.glb` | ✅ |  | lrcs |
 | `ocean.ficeberg.tavg-ol-hxy-sea.mon.glb` | ❌ | No icebergs | cap7 |
 | `ocean.ficeberg.tavg-u-hxy-sea.mon.glb` | ❌ | No icebergs | lrcs |
-| `ocean.flandice.tavg-u-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.flandice.tavg-u-hxy-sea.mon.glb` | ❌ | Requires use_landice_water=.true. — not confirmed enabled in current config | lrcs |
 | `ocean.friver.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 |
 | `ocean.hfacrossline.tavg-u-ht-sea.mon.glb` | ❌ | No strait diagnostic in FESOM — requires offline line-integral with transect mask | lrcs |
-| `ocean.hfbasin.tavg-u-hyb-sea.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `ocean.hfbasinpadv.tavg-u-hyb-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.hfbasinpmadv.tavg-u-hyb-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.hfbasinpmdiff.tavg-u-hyb-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.hfbasinpsmadv.tavg-u-hyb-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.hfbasin.tavg-u-hyb-sea.mon.glb` | ❌ | Requires basin masks — not available for DARS unstructured mesh | cap7 |
+| `ocean.hfbasinpadv.tavg-u-hyb-sea.mon.glb` | ❌ | Requires basin masks + GM eddy decomposition | lrcs |
+| `ocean.hfbasinpmadv.tavg-u-hyb-sea.mon.glb` | ❌ | Requires basin masks | lrcs |
+| `ocean.hfbasinpmdiff.tavg-u-hyb-sea.mon.glb` | ❌ | Requires basin masks | lrcs |
+| `ocean.hfbasinpsmadv.tavg-u-hyb-sea.mon.glb` | ❌ | No submesoscale parameterization; requires basin masks | lrcs |
 | `ocean.hfds.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 core |
-| `ocean.hfevapds.tavg-u-hxy-ifs.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.hfgeou.tavg-u-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.hfevapds.tavg-u-hxy-ifs.mon.glb` | ❌ | Requires atmosphere-side heat flux decomposition (IFS output, not FESOM) | lrcs |
+| `ocean.hfgeou.tavg-u-hxy-sea.mon.glb` | ❌ | Not implemented in FESOM 2.7 | lrcs |
 | `ocean.hfgeou.ti-u-hxy-sea.fx.glb` | ❌ | FESOM does not include geothermal heating | cap7 core |
-| `ocean.hfibthermds.tavg-ol-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.hfibthermds.tavg-u-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.hfrainds.tavg-u-hxy-ifs.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.hfrunoffds.tavg-ol-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.hfrunoffds.tavg-u-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.hfsnthermds.tavg-ol-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.hfsnthermds.tavg-u-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.hfibthermds.tavg-ol-hxy-sea.mon.glb` | ❌ | Requires use_icebergs=.true. (not enabled) | lrcs |
+| `ocean.hfibthermds.tavg-u-hxy-sea.mon.glb` | ❌ | Requires use_icebergs=.true. (not enabled) | lrcs |
+| `ocean.hfrainds.tavg-u-hxy-ifs.mon.glb` | ❌ | Requires atmosphere-side heat flux decomposition (IFS output, not FESOM) | lrcs |
+| `ocean.hfrunoffds.tavg-ol-hxy-sea.mon.glb` | ❌ | Requires runoff temperature diagnostic, not output by FESOM | lrcs |
+| `ocean.hfrunoffds.tavg-u-hxy-sea.mon.glb` | ❌ | Requires runoff temperature diagnostic, not output by FESOM | lrcs |
+| `ocean.hfsnthermds.tavg-ol-hxy-sea.mon.glb` | ❌ | No snow thermodynamic heat flux diagnostic in FESOM | lrcs |
+| `ocean.hfsnthermds.tavg-u-hxy-sea.mon.glb` | ❌ | No snow thermodynamic heat flux diagnostic in FESOM | lrcs |
 | `ocean.hfx.tavg-ol-hxy-sea.mon.glb` | ✅ |  | cap7 |
 | `ocean.hfx.tavg-u-hxy-sea.day.glb` | ✅ |  | lrcs |
 | `ocean.hfx.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 |
 | `ocean.hfy.tavg-ol-hxy-sea.mon.glb` | ✅ |  | cap7 |
 | `ocean.hfy.tavg-u-hxy-sea.day.glb` | ✅ |  | lrcs |
 | `ocean.hfy.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 |
-| `ocean.htovgyre.tavg-u-hyb-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.htovovrt.tavg-u-hyb-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.htovgyre.tavg-u-hyb-sea.mon.glb` | ❌ | Requires basin masks + gyre/overturning decomposition | lrcs |
+| `ocean.htovovrt.tavg-u-hyb-sea.mon.glb` | ❌ | Requires basin masks + gyre/overturning decomposition | lrcs |
 | `ocean.masscello.tavg-ol-hxy-sea.dec.glb` | ✅ |  | lrcs |
 | `ocean.masscello.tavg-ol-hxy-sea.mon.glb` | ✅ |  | cap7 core |
 | `ocean.masscello.ti-ol-hxy-sea.fx.glb` | ✅ |  | cap7 core |
 | `ocean.masso.tavg-u-hm-sea.dec.glb` | ✅ |  | lrcs |
 | `ocean.masso.tavg-u-hm-sea.mon.glb` | ✅ |  | lrcs |
-| `ocean.mfo.tavg-u-ht-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.mfo.tavg-u-ht-sea.mon.glb` | ❌ | No strait diagnostic in FESOM — requires predefined ocean transect lines (oline dimension) | lrcs |
 | `ocean.mlotst.tavg-u-hxy-sea.day.glb` | ✅ |  | lrcs |
 | `ocean.mlotst.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 core |
 | `ocean.mlotst.tmax-u-hxy-sea.mon.glb` | ❌ | Only day/mon frequency implemented | lrcs |
@@ -733,36 +733,36 @@
 | `ocean.msftm.tavg-rho-hyb-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.msftmmpa.tavg-ol-hyb-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.msftmmpa.tavg-rho-hyb-sea.mon.glb` | ✅ |  | lrcs |
-| `ocean.msftmsmpa.tavg-ol-hyb-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.msfty.tavg-ol-ht-sea.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `ocean.msfty.tavg-rho-ht-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.msftypa.tavg-ol-ht-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.msftypa.tavg-rho-ht-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.msftmsmpa.tavg-ol-hyb-sea.mon.glb` | ❌ | No submesoscale parameterization output in FESOM | lrcs |
+| `ocean.msfty.tavg-ol-ht-sea.mon.glb` | ❌ | Requires structured grid or regridding + basin masks | cap7 |
+| `ocean.msfty.tavg-rho-ht-sea.mon.glb` | ❌ | Requires structured grid or regridding + basin masks | lrcs |
+| `ocean.msftypa.tavg-ol-ht-sea.mon.glb` | ❌ | Requires structured grid or regridding + basin masks | lrcs |
+| `ocean.msftypa.tavg-rho-ht-sea.mon.glb` | ❌ | Requires structured grid or regridding + basin masks | lrcs |
 | `ocean.obvfsq.tavg-ol-hxy-sea.mon.glb` | ✅ |  | lrcs |
-| `ocean.ocontempdiff.tavg-ol-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.ocontempmint.tavg-u-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.ocontemppadvect.tavg-ol-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.ocontemppmdiff.tavg-ol-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.ocontemppsmadvect.tavg-ol-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.ocontemprmadvect.tavg-ol-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.ocontemptend.tavg-ol-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.ocontempdiff.tavg-ol-hxy-sea.yr.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | lrcs |
+| `ocean.ocontempmint.tavg-u-hxy-sea.yr.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | lrcs |
+| `ocean.ocontemppadvect.tavg-ol-hxy-sea.yr.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | lrcs |
+| `ocean.ocontemppmdiff.tavg-ol-hxy-sea.yr.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | lrcs |
+| `ocean.ocontemppsmadvect.tavg-ol-hxy-sea.yr.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | lrcs |
+| `ocean.ocontemprmadvect.tavg-ol-hxy-sea.yr.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | lrcs |
+| `ocean.ocontemptend.tavg-ol-hxy-sea.yr.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | lrcs |
 | `ocean.opottempdiff.tavg-ol-hxy-sea.yr.glb` | ✅ |  | lrcs |
 | `ocean.opottempmint.tavg-u-hxy-sea.yr.glb` | ✅ |  | lrcs |
-| `ocean.opottemppadvect.tavg-ol-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.opottemppmdiff.tavg-ol-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.opottemppsmadvect.tavg-ol-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.opottemppadvect.tavg-ol-hxy-sea.yr.glb` | ❌ | Zero field — fer_gm=.false., no GM parameterization active | lrcs |
+| `ocean.opottemppmdiff.tavg-ol-hxy-sea.yr.glb` | ❌ | Zero field — fer_gm=.false., no mesoscale diffusion | lrcs |
+| `ocean.opottemppsmadvect.tavg-ol-hxy-sea.yr.glb` | ❌ | Zero field — no submesoscale parameterization | lrcs |
 | `ocean.opottemprmadvect.tavg-ol-hxy-sea.yr.glb` | ✅ |  | lrcs |
 | `ocean.opottemptend.tavg-ol-hxy-sea.dec.glb` | ❌ | Only yr frequency implemented | lrcs |
 | `ocean.opottemptend.tavg-ol-hxy-sea.yr.glb` | ✅ |  | lrcs |
 | `ocean.osaltdiff.tavg-ol-hxy-sea.yr.glb` | ✅ |  | lrcs |
-| `ocean.osaltpadvect.tavg-ol-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.osaltpmdiff.tavg-ol-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.osaltpsmadvect.tavg-ol-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.osaltpsmadvect.tavg-ol-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.osaltpadvect.tavg-ol-hxy-sea.yr.glb` | ❌ | Zero field — fer_gm=.false., no GM parameterization active | lrcs |
+| `ocean.osaltpmdiff.tavg-ol-hxy-sea.yr.glb` | ❌ | Zero field — fer_gm=.false., no mesoscale diffusion | lrcs |
+| `ocean.osaltpsmadvect.tavg-ol-hxy-sea.mon.glb` | ❌ | Zero field — no submesoscale parameterization | lrcs |
+| `ocean.osaltpsmadvect.tavg-ol-hxy-sea.yr.glb` | ❌ | Zero field — no submesoscale parameterization | lrcs |
 | `ocean.osaltrmadvect.tavg-ol-hxy-sea.yr.glb` | ✅ |  | lrcs |
 | `ocean.osalttend.tavg-ol-hxy-sea.yr.glb` | ✅ |  | lrcs |
 | `ocean.pbo.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
-| `ocean.pfscint.tavg-op4-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.pfscint.tavg-op4-hxy-sea.mon.glb` | ❌ | No preformed salinity tracer in FESOM | lrcs |
 | `ocean.phcint.tavg-op4-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.pso.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.rsdoabsorb.tavg-ol-hxy-sea.yr.glb` | ✅ |  | lrcs |
@@ -771,15 +771,15 @@
 | `ocean.scint.tavg-op4-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.sf6.tavg-ol-hxy-sea.mon.glb` | ❌ | No SF6 tracer in FESOM | cap7 |
 | `ocean.sfacrossline.tavg-u-ht-sea.mon.glb` | ❌ | No strait diagnostic in FESOM — requires offline line-integral with transect mask | lrcs |
-| `ocean.sfriver.tavg-u-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.sfriver.tavg-u-hxy-sea.mon.glb` | ❌ | No river salt flux diagnostic in FESOM2 | lrcs |
 | `ocean.sftof.ti-u-hxy-u.fx.glb` | ✅ |  | cap7 core |
 | `ocean.sfx.tavg-ol-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.sfx.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.sfy.tavg-ol-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.sfy.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
-| `ocean.sltbasin.tavg-u-hyb-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.sltovgyre.tavg-u-hyb-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.sltovovrt.tavg-u-hyb-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.sltbasin.tavg-u-hyb-sea.mon.glb` | ❌ | Requires basin masks | lrcs |
+| `ocean.sltovgyre.tavg-u-hyb-sea.mon.glb` | ❌ | Requires basin masks + gyre/overturning decomposition | lrcs |
+| `ocean.sltovovrt.tavg-u-hyb-sea.mon.glb` | ❌ | Requires basin masks + gyre/overturning decomposition | lrcs |
 | `ocean.so.tavg-ol-hm-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.so.tavg-ol-hxy-sea.dec.glb` | ✅ |  | lrcs |
 | `ocean.so.tavg-ol-hxy-sea.mon.glb` | ✅ |  | cap7 core |
@@ -789,9 +789,9 @@
 | `ocean.sos.tavg-u-hxy-sea.day.glb` | ✅ |  | cap7 core |
 | `ocean.sos.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 core |
 | `ocean.sossq.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
-| `ocean.sw17O.tavg-ol-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.sw18O.tavg-ol-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.sw2H.tavg-ol-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.sw17O.tavg-ol-hxy-sea.mon.glb` | ❌ | Water isotopes not enabled (lwiso=.false.) | lrcs |
+| `ocean.sw18O.tavg-ol-hxy-sea.mon.glb` | ❌ | Water isotopes not enabled (lwiso=.false.) | lrcs |
+| `ocean.sw2H.tavg-ol-hxy-sea.mon.glb` | ❌ | Water isotopes not enabled (lwiso=.false.) | lrcs |
 | `ocean.tauuo.tavg-u-hxy-sea.3hr.glb` | ✅ |  | cap7 |
 | `ocean.tauuo.tavg-u-hxy-sea.dec.glb` | ✅ |  | lrcs |
 | `ocean.tauuo.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 core |
@@ -805,10 +805,10 @@
 | `ocean.thkcello.tavg-ol-hxy-sea.dec.glb` | ✅ |  | lrcs |
 | `ocean.thkcello.tavg-ol-hxy-sea.mon.glb` | ✅ |  | cap7 core |
 | `ocean.thkcello.ti-ol-hxy-sea.fx.glb` | ✅ |  | cap7 core |
-| `ocean.thkcelluo.tavg-ol-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.thkcellvo.tavg-ol-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.tnkebto.tavg-u-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.tnpeo.tavg-u-hxy-sea.yr.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.thkcelluo.tavg-ol-hxy-sea.mon.glb` | ❌ | Unstructured mesh — no u/v grid distinction in FESOM | lrcs |
+| `ocean.thkcellvo.tavg-ol-hxy-sea.mon.glb` | ❌ | Unstructured mesh — no u/v grid distinction in FESOM | lrcs |
+| `ocean.tnkebto.tavg-u-hxy-sea.yr.glb` | ❌ | No KE tendency diagnostic in FESOM | lrcs |
+| `ocean.tnpeo.tavg-u-hxy-sea.yr.glb` | ❌ | No PE tendency diagnostic in FESOM | lrcs |
 | `ocean.tob.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.tos.tavg-u-hm-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.tos.tavg-u-hxy-sea.day.glb` | ✅ |  | cap7 core |
@@ -829,10 +829,10 @@
 | `ocean.vos.tavg-u-hxy-sea.day.glb` | ✅ |  | lrcs |
 | `ocean.vsf.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.vsfcorr.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
-| `ocean.vsfevap.tavg-u-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.vsfpr.tavg-u-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.vsfriver.tavg-u-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `ocean.wfcorr.tavg-u-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.vsfevap.tavg-u-hxy-sea.mon.glb` | ❌ | FESOM does not split virtual salt flux by component | lrcs |
+| `ocean.vsfpr.tavg-u-hxy-sea.mon.glb` | ❌ | FESOM does not split virtual salt flux by component | lrcs |
+| `ocean.vsfriver.tavg-u-hxy-sea.mon.glb` | ❌ | FESOM does not split virtual salt flux by component | lrcs |
+| `ocean.wfcorr.tavg-u-hxy-sea.mon.glb` | ❌ | No water flux correction in standard FESOM2 config | lrcs |
 | `ocean.wfo.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.wmo.tavg-ol-hxy-sea.mon.glb` | ✅ |  | cap7 core |
 | `ocean.wo.tavg-ol-hxy-sea.mon.glb` | ✅ |  | cap7 core |
@@ -864,7 +864,7 @@
 | `seaIce.rsus.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.sbl.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.sfdsi.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
-| `seaIce.siage.tavg-u-hxy-si.day.glb` | ❌ | Not yet implemented | lrcs |
+| `seaIce.siage.tavg-u-hxy-si.day.glb` | ❌ | tr_iage=.false., not enabled | lrcs |
 | `seaIce.siage.tavg-u-hxy-si.mon.glb` | ❌ | tr_iage=.false., not enabled | lrcs |
 | `seaIce.siarea.tavg-u-hm-u.day.nh` | ✅ |  | lrcs |
 | `seaIce.siarea.tavg-u-hm-u.day.sh` | ✅ |  | lrcs |
@@ -878,14 +878,14 @@
 | `seaIce.siconca.tavg-u-hxy-u.mon.glb` | ✅ |  | lrcs |
 | `seaIce.sidconcdyn.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `seaIce.sidconcth.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
-| `seaIce.sidivvel.tpt-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `seaIce.sidivvel.tpt-u-hxy-si.mon.glb` | ❌ | Requires divergence computation on unstructured FESOM mesh | lrcs |
 | `seaIce.sidmassdyn.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
-| `seaIce.sidmassgrowthbot.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `seaIce.sidmassgrowthsi.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `seaIce.sidmassgrowthwat.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `seaIce.sidmassmeltbot.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `seaIce.sidmassmeltlat.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `seaIce.sidmassmelttop.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `seaIce.sidmassgrowthbot.tavg-u-hxy-si.mon.glb` | ❌ | No split thermodynamic growth terms in FESOM (only total thermo/dynamic) | lrcs |
+| `seaIce.sidmassgrowthsi.tavg-u-hxy-si.mon.glb` | ❌ | No split thermodynamic growth terms in FESOM | lrcs |
+| `seaIce.sidmassgrowthwat.tavg-u-hxy-si.mon.glb` | ❌ | No split thermodynamic growth terms in FESOM (no frazil output) | lrcs |
+| `seaIce.sidmassmeltbot.tavg-u-hxy-si.mon.glb` | ❌ | No split thermodynamic melt terms in FESOM (only total thermo/dynamic) | lrcs |
+| `seaIce.sidmassmeltlat.tavg-u-hxy-si.mon.glb` | ❌ | No split thermodynamic melt terms in FESOM | lrcs |
+| `seaIce.sidmassmelttop.tavg-u-hxy-si.mon.glb` | ❌ | No split thermodynamic melt terms in FESOM | lrcs |
 | `seaIce.sidmassth.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.sidmasstranx.tavg-u-hxy-u.mon.glb` | ✅ |  | lrcs |
 | `seaIce.sidmasstrany.tavg-u-hxy-u.mon.glb` | ✅ |  | lrcs |
@@ -902,20 +902,20 @@
 | `seaIce.siflfwbot.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.siflfwdrain.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.sifllattop.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
-| `seaIce.siflsensbot.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `seaIce.siflsensbot.tavg-u-hxy-si.mon.glb` | ❌ | Ocean-ice interface sensible heat flux not output by FESOM | lrcs |
 | `seaIce.siflsenstop.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
-| `seaIce.siflswdbot.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `seaIce.siforcecoriolx.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `seaIce.siforcecorioly.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `seaIce.siforceintstrx.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `seaIce.siforceintstry.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `seaIce.siforcetiltx.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `seaIce.siforcetilty.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `seaIce.siflswdbot.tavg-u-hxy-si.mon.glb` | ❌ | Shortwave flux transmitted through ice not output by FESOM | lrcs |
+| `seaIce.siforcecoriolx.tavg-u-hxy-si.mon.glb` | ❌ | Coriolis force not output by FESOM sea ice dynamics | lrcs |
+| `seaIce.siforcecorioly.tavg-u-hxy-si.mon.glb` | ❌ | Coriolis force not output by FESOM sea ice dynamics | lrcs |
+| `seaIce.siforceintstrx.tavg-u-hxy-si.mon.glb` | ❌ | Internal stress not output by FESOM sea ice dynamics | lrcs |
+| `seaIce.siforceintstry.tavg-u-hxy-si.mon.glb` | ❌ | Internal stress not output by FESOM sea ice dynamics | lrcs |
+| `seaIce.siforcetiltx.tavg-u-hxy-si.mon.glb` | ❌ | Sea-surface tilt force not output by FESOM sea ice dynamics | lrcs |
+| `seaIce.siforcetilty.tavg-u-hxy-si.mon.glb` | ❌ | Sea-surface tilt force not output by FESOM sea ice dynamics | lrcs |
 | `seaIce.sihc.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `seaIce.siitdconc.tavg-u-hxy-si.mon.glb` | ❌ | Single-category ice — no ITD | lrcs |
-| `seaIce.siitdsnconc.tavg-u-hxy-si.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
-| `seaIce.siitdsnconc.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `seaIce.siitdsnthick.tavg-u-hxy-si.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
+| `seaIce.siitdsnconc.tavg-u-hxy-si.day.glb` | ❌ | Requires ITD (ice thickness distribution) — FESOM is single-category | veg |
+| `seaIce.siitdsnconc.tavg-u-hxy-si.mon.glb` | ❌ | Requires ITD (ice thickness distribution) — FESOM is single-category | lrcs |
+| `seaIce.siitdsnthick.tavg-u-hxy-si.day.glb` | ❌ | Requires ITD (ice thickness distribution) — FESOM is single-category | veg |
 | `seaIce.siitdsnthick.tavg-u-hxy-si.mon.glb` | ❌ | Single-category ice — no ITD | lrcs |
 | `seaIce.siitdthick.tavg-u-hxy-si.mon.glb` | ❌ | Single-category ice — no ITD | lrcs |
 | `seaIce.simass.tavg-u-hxy-si.mon.glb` | ✅ |  | cap7 core |
@@ -927,10 +927,10 @@
 | `seaIce.sirdgconc.tavg-u-hxy-si.mon.glb` | ❌ | tr_lvl=.false. — ridging tracer not enabled in FESOM | lrcs |
 | `seaIce.sisali.tavg-u-hxy-si.mon.glb` | ❌ | Constant salinity — not a prognostic variable | cap7 |
 | `seaIce.sisaltmass.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
-| `seaIce.sishearvel.tpt-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `seaIce.sisndmassdyn.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `seaIce.sisndmasssi.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
-| `seaIce.sisndmasswind.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `seaIce.sishearvel.tpt-u-hxy-si.mon.glb` | ❌ | Requires shear computation on unstructured FESOM mesh | lrcs |
+| `seaIce.sisndmassdyn.tavg-u-hxy-si.mon.glb` | ❌ | Snow mass budget terms not output separately by FESOM | lrcs |
+| `seaIce.sisndmasssi.tavg-u-hxy-si.mon.glb` | ❌ | Snow mass budget terms not output separately by FESOM | lrcs |
+| `seaIce.sisndmasswind.tavg-u-hxy-si.mon.glb` | ❌ | No wind redistribution of snow in FESOM (sisndmasswind not output) | lrcs |
 | `seaIce.sisnhc.tavg-u-hxy-si.day.glb` | ✅ |  | veg |
 | `seaIce.sisnhc.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.sisnmass.tavg-u-hm-si.day.nh` | ✅ |  | lrcs |
