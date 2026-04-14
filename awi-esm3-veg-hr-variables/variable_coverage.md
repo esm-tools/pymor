@@ -692,7 +692,7 @@
 | `ocean.ficeberg.tavg-u-hxy-sea.mon.glb` | ❌ | No icebergs | lrcs |
 | `ocean.flandice.tavg-u-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.friver.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 |
-| `ocean.hfacrossline.tavg-u-ht-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.hfacrossline.tavg-u-ht-sea.mon.glb` | ❌ | No strait diagnostic in FESOM — requires offline line-integral with transect mask | lrcs |
 | `ocean.hfbasin.tavg-u-hyb-sea.mon.glb` | ❌ | Not yet implemented | cap7 |
 | `ocean.hfbasinpadv.tavg-u-hyb-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.hfbasinpmadv.tavg-u-hyb-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
@@ -770,7 +770,7 @@
 | `ocean.rsus.tavg-u-hxy-ifs.mon.glb` | ❌ | Only 1hr/3hr/day/mon frequency implemented | lrcs |
 | `ocean.scint.tavg-op4-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.sf6.tavg-ol-hxy-sea.mon.glb` | ❌ | No SF6 tracer in FESOM | cap7 |
-| `ocean.sfacrossline.tavg-u-ht-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `ocean.sfacrossline.tavg-u-ht-sea.mon.glb` | ❌ | No strait diagnostic in FESOM — requires offline line-integral with transect mask | lrcs |
 | `ocean.sfriver.tavg-u-hxy-sea.mon.glb` | ❌ | Not yet implemented | lrcs |
 | `ocean.sftof.ti-u-hxy-u.fx.glb` | ✅ |  | cap7 core |
 | `ocean.sfx.tavg-ol-hxy-sea.mon.glb` | ✅ |  | lrcs |
@@ -870,7 +870,7 @@
 | `seaIce.siarea.tavg-u-hm-u.day.sh` | ✅ |  | lrcs |
 | `seaIce.siarea.tavg-u-hm-u.mon.nh` | ✅ |  | lrcs |
 | `seaIce.siarea.tavg-u-hm-u.mon.sh` | ✅ |  | lrcs |
-| `seaIce.siareaacrossline.tavg-u-ht-u.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `seaIce.siareaacrossline.tavg-u-ht-u.mon.glb` | ❌ | No strait diagnostic in FESOM — requires offline line-integral with transect mask | lrcs |
 | `seaIce.sicompstren.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.siconc.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 core |
 | `seaIce.siconc.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
@@ -919,12 +919,12 @@
 | `seaIce.siitdsnthick.tavg-u-hxy-si.mon.glb` | ❌ | Single-category ice — no ITD | lrcs |
 | `seaIce.siitdthick.tavg-u-hxy-si.mon.glb` | ❌ | Single-category ice — no ITD | lrcs |
 | `seaIce.simass.tavg-u-hxy-si.mon.glb` | ✅ |  | cap7 core |
-| `seaIce.simassacrossline.tavg-u-ht-u.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `seaIce.simassacrossline.tavg-u-ht-u.mon.glb` | ❌ | No strait diagnostic in FESOM — requires offline line-integral with transect mask | lrcs |
 | `seaIce.simpconc.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.simpeffconc.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.simprefrozen.tavg-u-hxy-simp.mon.glb` | ✅ |  | lrcs |
 | `seaIce.simpthick.tavg-u-hxy-simp.mon.glb` | ✅ |  | lrcs |
-| `seaIce.sirdgconc.tavg-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `seaIce.sirdgconc.tavg-u-hxy-si.mon.glb` | ❌ | tr_lvl=.false. — ridging tracer not enabled in FESOM | lrcs |
 | `seaIce.sisali.tavg-u-hxy-si.mon.glb` | ❌ | Constant salinity — not a prognostic variable | cap7 |
 | `seaIce.sisaltmass.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.sishearvel.tpt-u-hxy-si.mon.glb` | ❌ | Not yet implemented | lrcs |
@@ -937,7 +937,7 @@
 | `seaIce.sisnmass.tavg-u-hm-si.day.sh` | ✅ |  | lrcs |
 | `seaIce.sisnmass.tavg-u-hm-si.mon.nh` | ✅ |  | lrcs |
 | `seaIce.sisnmass.tavg-u-hm-si.mon.sh` | ✅ |  | lrcs |
-| `seaIce.sisnmassacrossline.tavg-u-ht-u.mon.glb` | ❌ | Not yet implemented | lrcs |
+| `seaIce.sisnmassacrossline.tavg-u-ht-u.mon.glb` | ❌ | No strait diagnostic in FESOM — requires offline line-integral with transect mask | lrcs |
 | `seaIce.sispeed.tavg-u-hxy-si.day.glb` | ✅ |  | lrcs |
 | `seaIce.sispeed.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.sistressave.tpt-u-hxy-si.mon.glb` | ✅ |  | lrcs |
@@ -947,9 +947,9 @@
 | `seaIce.sistrydtop.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.sistryubot.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
 | `seaIce.sitempbot.tavg-u-hxy-si.mon.glb` | ✅ |  | lrcs |
-| `seaIce.sitempsnic.tavg-u-hxy-si.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
-| `seaIce.sitempsnic.tavg-u-hxy-si.mon.glb` | ❌ | Internal FESOM variable, not output | cap7 |
-| `seaIce.sithick.tavg-u-hxy-sir.mon.glb` | ❌ | Only day/mon frequency implemented | lrcs |
+| `seaIce.sitempsnic.tavg-u-hxy-si.day.glb` | ❌ | Snow-ice interface temperature: computed internally in FESOM thermodynamic solver, not exposed as output (Tsnice only in icepack driver, which is not active) | veg |
+| `seaIce.sitempsnic.tavg-u-hxy-si.mon.glb` | ❌ | Snow-ice interface temperature: computed internally in FESOM thermodynamic solver, not exposed as output (Tsnice only in icepack driver, which is not active) | cap7 |
+| `seaIce.sithick.tavg-u-hxy-sir.mon.glb` | ❌ | Ridged ice variant (tavg-u-hxy-sir): tr_lvl=.false. — ridging tracer not enabled in FESOM | lrcs |
 | `seaIce.sitimefrac.tavg-u-hxy-sea.day.glb` | ✅ |  | lrcs |
 | `seaIce.sitimefrac.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 core |
 | `seaIce.siu.tavg-u-hxy-si.day.glb` | ✅ |  | cap7 |
