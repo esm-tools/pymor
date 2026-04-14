@@ -41,8 +41,8 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_013/outdata/oifs
-  lpjg_data_path: &ldp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_013/outdata/lpj_guess
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_017/outdata/oifs
+  lpjg_data_path: &ldp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_017/outdata/lpj_guess
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
@@ -53,7 +53,7 @@ inherit:
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   time_dimname: time_counter
   output_directory: ./cmorized_output/veg_atm_tco95_test
-  year_start: 1900
+  year_start: 1909
 
 rules:
   # ============================================================
