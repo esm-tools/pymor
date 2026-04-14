@@ -46,6 +46,24 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # hur on model levels: reconstruct from ta + hus + pfull (OpenIFS native
+  # model-level output does not fill `r`; FullPos only emits it on plev)
+  - name: hur_ml_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_hur_ml
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   # huss: Tetens formula from 2d + sp
   - name: huss_pipeline
     steps:
@@ -679,9 +697,17 @@ rules:
   - name: hur_mon_ml
     inputs:
       - path: *dp
-        pattern: atmos_mon_ml_cap7_hur_.*\.nc
+        pattern: atmos_mon_ml_cap7_ta_.*\.nc
     compound_name: atmos.hur.tavg-al-hxy-u.mon.GLB
-    model_variable: hur
+    model_variable: ta
+    second_input_path: *dp
+    second_input_pattern: "atmos_mon_ml_cap7_hus_*.nc"
+    second_variable: hus
+    third_input_path: *dp
+    third_input_pattern: "atmos_mon_ml_cap7_pfull_*.nc"
+    third_variable: pfull
+    pipelines:
+      - hur_ml_pipeline
     lazy_write: true
 
   # ============================================================
