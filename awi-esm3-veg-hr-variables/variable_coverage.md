@@ -88,49 +88,49 @@
 
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
-| `atmos.albisccp.tavg-u-hxy-cl.day.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.albisccp.tavg-u-hxy-cl.day.glb` | ❌ | No COSP satellite simulators | cap7 |
 | `atmos.albisccp.tavg-u-hxy-cl.mon.glb` | ❌ | No COSP satellite simulators | cap7 |
-| `atmos.ccb.tavg-u-hxy-ccl.day.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.ccb.tavg-u-hxy-ccl.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.cct.tavg-u-hxy-ccl.day.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.cct.tavg-u-hxy-ccl.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.ccb.tavg-u-hxy-ccl.day.glb` | ❌ | Needs IFS source changes (KCBOT not exposed via XIOS) | cap7 |
+| `atmos.ccb.tavg-u-hxy-ccl.mon.glb` | ❌ | Needs IFS source changes (KCBOT not exposed via XIOS) | cap7 |
+| `atmos.cct.tavg-u-hxy-ccl.day.glb` | ❌ | Needs IFS source changes (KCTOP not exposed via XIOS) | cap7 |
+| `atmos.cct.tavg-u-hxy-ccl.mon.glb` | ❌ | Needs IFS source changes (KCTOP not exposed via XIOS) | cap7 |
 | `atmos.ci.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 |
 | `atmos.cl.tavg-al-hxy-u.day.glb` | ✅ |  | extra |
 | `atmos.cl.tavg-al-hxy-u.mon.glb` | ✅ |  | cap7 core |
-| `atmos.clc.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.clcalipso.tavg-220hPa-hxy-air.day.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.clc.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (convective cloud fraction internal to scheme) | cap7 |
+| `atmos.clcalipso.tavg-220hPa-hxy-air.day.glb` | ❌ | No COSP satellite simulators | cap7 |
 | `atmos.clcalipso.tavg-220hPa-hxy-air.mon.glb` | ❌ | No COSP satellite simulators | cap7 |
-| `atmos.cldnci.tavg-u-hxy-cl.day.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.cldnvi.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.cldnci.tavg-u-hxy-cl.day.glb` | ❌ | Needs IFS source changes (no in-cloud ice crystal number diagnostic) | cap7 |
+| `atmos.cldnvi.tavg-u-hxy-u.day.glb` | ❌ | Needs IFS source changes (no column ice crystal number diagnostic) | cap7 |
 | `atmos.cli.tavg-al-hxy-u.mon.glb` | ✅ |  | cap7 core |
-| `atmos.clic.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.clis.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.clisccp.tavg-p7c-hxy-air.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.clic.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (convective cloud ice internal to scheme) | cap7 |
+| `atmos.clis.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (requires clic from convection scheme) | cap7 |
+| `atmos.clisccp.tavg-p7c-hxy-air.mon.glb` | ❌ | No COSP satellite simulators | cap7 |
 | `atmos.clivi.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
 | `atmos.clivi.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
-| `atmos.clivic.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.clivic.tavg-u-hxy-u.day.glb` | ❌ | Needs IFS source changes (convective/stratiform IWP not separated) | cap7 |
 | `atmos.clmisr.tavg-h16-hxy-air.mon.glb` | ❌ | No COSP satellite simulators | cap7 |
-| `atmos.cls.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.cls.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (requires clc from convection scheme) | cap7 |
 | `atmos.clt.tavg-u-hxy-u.1hr.30S-90S` | ✅ |  | extra |
 | `atmos.clt.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 core |
 | `atmos.clt.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
-| `atmos.cltcalipso.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.cltcalipso.tavg-u-hxy-u.day.glb` | ❌ | No COSP satellite simulators | cap7 |
 | `atmos.cltcalipso.tavg-u-hxy-u.mon.glb` | ❌ | No COSP satellite simulators | cap7 |
-| `atmos.cltisccp.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.cltisccp.tavg-u-hxy-u.day.glb` | ❌ | No COSP satellite simulators | cap7 |
 | `atmos.cltisccp.tavg-u-hxy-u.mon.glb` | ❌ | No COSP satellite simulators | cap7 |
 | `atmos.clw.tavg-al-hxy-u.mon.glb` | ✅ |  | cap7 core |
-| `atmos.clwc.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.clws.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.clwc.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (convective cloud liquid internal to scheme) | cap7 |
+| `atmos.clws.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (requires clwc from convection scheme) | cap7 |
 | `atmos.clwvi.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
 | `atmos.clwvi.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
-| `atmos.clwvic.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.co23D.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.clwvic.tavg-u-hxy-u.day.glb` | ❌ | Needs IFS source changes (convective/stratiform LWP not separated) | cap7 |
+| `atmos.co23D.tavg-al-hxy-u.mon.glb` | ❌ | No CO2 tracer (concentration-driven) | cap7 |
 | `atmos.co2mass.tavg-u-hm-u.mon.glb` | ❌ | No CO2 tracer (concentration-driven) | cap7 |
-| `atmos.dmc.tavg-alh-hxy-u.mon.glb` | ❌ | No cloud microphysics diagnostics | cap7 |
-| `atmos.edt.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.evu.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.fco2antt.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.fco2fos.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.dmc.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (convective detrainment internal to scheme) | cap7 |
+| `atmos.edt.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (convective entrainment internal to scheme) | cap7 |
+| `atmos.evu.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (convective entrainment internal to scheme) | cap7 |
+| `atmos.fco2antt.tavg-u-hxy-u.mon.glb` | ❌ | No CO2 tracer (concentration-driven) | cap7 |
+| `atmos.fco2fos.tavg-u-hxy-u.mon.glb` | ❌ | No CO2 tracer (concentration-driven) | cap7 |
 | `atmos.fco2nat.tavg-u-hxy-u.mon.glb` | ❌ | No CO2 tracer | cap7 |
 | `atmos.hfdsnb.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
 | `atmos.hfls.tavg-u-hxy-u.1hr.glb` | ✅ |  | extra |
@@ -156,24 +156,24 @@
 | `atmos.huss.tavg-h2m-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.huss.tpt-h2m-hxy-u.1hr.glb` | ✅ |  | cap7 |
 | `atmos.huss.tpt-h2m-hxy-u.3hr.glb` | ✅ |  | cap7 core |
-| `atmos.loadbc.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.loaddust.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.loadnh4.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.loadno3.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.loadoa.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.loadpoa.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.loadso4.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.loadsoa.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.loadss.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.mc.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source code changes | cap7 |
-| `atmos.mcd.tavg-alh-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.mcu.tavg-alh-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.noaahi2m.tavg-h2m-hxy-u.day.glb` | ❌ | Not yet implemented | extra |
-| `atmos.pctisccp.tavg-u-hxy-cl.day.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.loadbc.tavg-u-hxy-u.day.glb` | ❌ | No prognostic aerosol | cap7 |
+| `atmos.loaddust.tavg-u-hxy-u.day.glb` | ❌ | No prognostic aerosol | cap7 |
+| `atmos.loadnh4.tavg-u-hxy-u.day.glb` | ❌ | No prognostic aerosol | cap7 |
+| `atmos.loadno3.tavg-u-hxy-u.day.glb` | ❌ | No prognostic aerosol | cap7 |
+| `atmos.loadoa.tavg-u-hxy-u.day.glb` | ❌ | No prognostic aerosol | cap7 |
+| `atmos.loadpoa.tavg-u-hxy-u.day.glb` | ❌ | No prognostic aerosol | cap7 |
+| `atmos.loadso4.tavg-u-hxy-u.day.glb` | ❌ | No prognostic aerosol | cap7 |
+| `atmos.loadsoa.tavg-u-hxy-u.day.glb` | ❌ | No prognostic aerosol | cap7 |
+| `atmos.loadss.tavg-u-hxy-u.day.glb` | ❌ | No prognostic aerosol | cap7 |
+| `atmos.mc.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (convective mass flux internal to scheme) | cap7 |
+| `atmos.mcd.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (convective mass flux internal to scheme) | cap7 |
+| `atmos.mcu.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (convective mass flux internal to scheme) | cap7 |
+| `atmos.noaahi2m.tavg-h2m-hxy-u.day.glb` | ❌ | No heat index scheme (requires Rothfusz formula post-processing) | extra |
+| `atmos.pctisccp.tavg-u-hxy-cl.day.glb` | ❌ | No COSP satellite simulators | cap7 |
 | `atmos.pctisccp.tavg-u-hxy-cl.mon.glb` | ❌ | No COSP satellite simulators | cap7 |
 | `atmos.pfull.tavg-al-hxy-u.day.glb` | ✅ |  | extra |
 | `atmos.pfull.tclm-al-hxy-u.mon.glb` | ✅ |  | cap7 |
-| `atmos.phalf.tclm-alh-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.phalf.tclm-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (alevhalf axis not yet configured) | cap7 |
 | `atmos.pr.tavg-u-hxy-u.1hr.glb` | ✅ |  | cap7 core extra |
 | `atmos.pr.tavg-u-hxy-u.3hr.glb` | ✅ |  | cap7 core |
 | `atmos.pr.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 core extra |
@@ -198,13 +198,13 @@
 | `atmos.psl.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.psl.tpt-u-hxy-u.1hr.glb` | ✅ |  | cap7 |
 | `atmos.psl.tpt-u-hxy-u.6hr.glb` | ✅ |  | cap7 |
-| `atmos.ptp.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.ptp.tavg-u-hxy-u.mon.glb` | ❌ | Needs IFS source changes (tropopause not exposed via XIOS) | cap7 |
 | `atmos.reffclic.tavg-al-hxy-ccl.mon.glb` | ❌ | No cloud microphysics diagnostics | cap7 |
-| `atmos.reffclis.tavg-al-hxy-scl.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.reffclis.tavg-al-hxy-scl.mon.glb` | ❌ | No cloud microphysics diagnostics | cap7 |
 | `atmos.reffclwc.tavg-al-hxy-ccl.mon.glb` | ❌ | No cloud microphysics diagnostics | cap7 |
 | `atmos.reffclws.tavg-al-hxy-scl.mon.glb` | ❌ | No COSP satellite simulators | cap7 |
-| `atmos.rld.tavg-alh-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.rldcs.tavg-alh-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.rld.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (ecRad half-level profiles not exposed via XIOS) | cap7 |
+| `atmos.rldcs.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (ecRad half-level profiles not exposed via XIOS) | cap7 |
 | `atmos.rlds.tavg-u-hxy-u.1hr.glb` | ✅ |  | cap7 extra |
 | `atmos.rlds.tavg-u-hxy-u.3hr.glb` | ✅ |  | veg |
 | `atmos.rlds.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
@@ -213,8 +213,8 @@
 | `atmos.rldscs.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.rls.tavg-u-hxy-u.day.glb` | ✅ |  | extra |
 | `atmos.rls.tavg-u-hxy-u.mon.glb` | ✅ |  | veg |
-| `atmos.rlu.tavg-alh-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.rlucs.tavg-alh-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.rlu.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (ecRad half-level profiles not exposed via XIOS) | cap7 |
+| `atmos.rlucs.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (ecRad half-level profiles not exposed via XIOS) | cap7 |
 | `atmos.rlus.tavg-u-hxy-u.1hr.glb` | ✅ |  | extra |
 | `atmos.rlus.tavg-u-hxy-u.3hr.glb` | ✅ |  | veg |
 | `atmos.rlus.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
@@ -225,23 +225,23 @@
 | `atmos.rlut.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.rlutcs.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
 | `atmos.rlutcs.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
-| `atmos.rsd.tavg-alh-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.rsdcs.tavg-alh-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.rsd.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (ecRad half-level profiles not exposed via XIOS) | cap7 |
+| `atmos.rsdcs.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (ecRad half-level profiles not exposed via XIOS) | cap7 |
 | `atmos.rsds.tavg-u-hxy-u.1hr.glb` | ✅ |  | cap7 extra |
 | `atmos.rsds.tavg-u-hxy-u.3hr.glb` | ✅ |  | veg |
 | `atmos.rsds.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 core lrcs |
 | `atmos.rsds.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core lrcs |
 | `atmos.rsdscs.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
 | `atmos.rsdscs.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
-| `atmos.rsdscsdiff.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.rsdsdiff.tavg-u-hxy-u.1hr.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.rsdsdiff.tavg-u-hxy-u.day.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.rsdscsdiff.tavg-u-hxy-u.day.glb` | ❌ | Needs IFS source changes (ecRad sw_dn_diffuse_surf_g not exposed) | cap7 |
+| `atmos.rsdsdiff.tavg-u-hxy-u.1hr.glb` | ❌ | Needs IFS source changes (ecRad sw_dn_diffuse_surf_g not exposed) | cap7 |
+| `atmos.rsdsdiff.tavg-u-hxy-u.day.glb` | ❌ | Needs IFS source changes (ecRad sw_dn_diffuse_surf_g not exposed) | cap7 |
 | `atmos.rsdt.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
 | `atmos.rsdt.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.rss.tavg-u-hxy-u.day.glb` | ✅ |  | extra |
 | `atmos.rss.tavg-u-hxy-u.mon.glb` | ✅ |  | veg |
-| `atmos.rsu.tavg-alh-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.rsucs.tavg-alh-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.rsu.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (ecRad half-level profiles not exposed via XIOS) | cap7 |
+| `atmos.rsucs.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (ecRad half-level profiles not exposed via XIOS) | cap7 |
 | `atmos.rsus.tavg-u-hxy-u.1hr.glb` | ✅ |  | extra |
 | `atmos.rsus.tavg-u-hxy-u.3hr.glb` | ✅ |  | veg |
 | `atmos.rsus.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 lrcs |
@@ -253,12 +253,12 @@
 | `atmos.rsutcs.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 |
 | `atmos.rsutcs.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.rtmt.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 |
-| `atmos.sci.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.sci.tavg-u-hxy-u.mon.glb` | ❌ | Needs IFS source changes (no clear IFS diagnostic for shallow convection fraction) | cap7 |
 | `atmos.sfcWind.tavg-h10m-hxy-u.1hr.glb` | ✅ |  | cap7 extra |
 | `atmos.sfcWind.tavg-h10m-hxy-u.day.glb` | ✅ |  | cap7 core |
 | `atmos.sfcWind.tavg-h10m-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.sftlf.ti-u-hxy-u.fx.glb` | ✅ |  | cap7 core |
-| `atmos.smc.tavg-alh-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.smc.tavg-alh-hxy-u.mon.glb` | ❌ | Needs IFS source changes (shallow convective flux internal to scheme) | cap7 |
 | `atmos.snmsl.tavg-u-hxy-lnd.day.glb` | ✅ |  | veg |
 | `atmos.snrefr.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
 | `atmos.snwc.tavg-u-hxy-lnd.day.glb` | ❌ | Veg-only variable, not yet implemented | veg |
@@ -271,27 +271,27 @@
 | `atmos.tas.tpt-h2m-hxy-u.3hr.glb` | ✅ |  | cap7 core |
 | `atmos.tauu.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.tauv.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
-| `atmos.tnhus.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source code changes | cap7 |
-| `atmos.tnhusa.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source code changes | cap7 |
-| `atmos.tnhusc.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source code changes | cap7 |
-| `atmos.tnhusd.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.tnhusmp.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.tnhuspbl.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.tnhusscp.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.tnhusscpbl.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source code changes | cap7 |
-| `atmos.tnt.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source code changes | cap7 |
-| `atmos.tnta.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source code changes | cap7 |
-| `atmos.tntc.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source code changes | cap7 |
-| `atmos.tntd.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.tntmp.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.tntpbl.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.tntr.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source code changes | cap7 |
-| `atmos.tntrl.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.tntrlcs.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.tntrs.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.tntrscs.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.tntscp.tavg-al-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.tntscpbl.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source code changes | cap7 |
+| `atmos.tnhus.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (humidity tendency not exposed) | cap7 |
+| `atmos.tnhusa.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (humidity tendency not exposed) | cap7 |
+| `atmos.tnhusc.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (humidity tendency not exposed) | cap7 |
+| `atmos.tnhusd.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (humidity tendency not exposed) | cap7 |
+| `atmos.tnhusmp.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (humidity tendency not exposed) | cap7 |
+| `atmos.tnhuspbl.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (humidity tendency not exposed) | cap7 |
+| `atmos.tnhusscp.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (humidity tendency not exposed) | cap7 |
+| `atmos.tnhusscpbl.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (humidity tendency not exposed) | cap7 |
+| `atmos.tnt.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (temperature tendency not exposed) | cap7 |
+| `atmos.tnta.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (temperature tendency not exposed) | cap7 |
+| `atmos.tntc.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (temperature tendency not exposed) | cap7 |
+| `atmos.tntd.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (temperature tendency not exposed) | cap7 |
+| `atmos.tntmp.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (temperature tendency not exposed) | cap7 |
+| `atmos.tntpbl.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (temperature tendency not exposed) | cap7 |
+| `atmos.tntr.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (temperature tendency not exposed) | cap7 |
+| `atmos.tntrl.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (temperature tendency not exposed) | cap7 |
+| `atmos.tntrlcs.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (temperature tendency not exposed) | cap7 |
+| `atmos.tntrs.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (temperature tendency not exposed) | cap7 |
+| `atmos.tntrscs.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (temperature tendency not exposed) | cap7 |
+| `atmos.tntscp.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (temperature tendency not exposed) | cap7 |
+| `atmos.tntscpbl.tavg-al-hxy-u.mon.glb` | ❌ | Needs IFS source changes (temperature tendency not exposed) | cap7 |
 | `atmos.ts.tavg-u-hxy-u.1hr.glb` | ✅ |  | cap7 |
 | `atmos.ts.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.ts.tpt-u-hxy-u.3hr.glb` | ✅ |  | extra |
@@ -299,7 +299,7 @@
 | `atmos.ua.tavg-p19-hxy-air.day.glb` | ✅ |  | cap7 core |
 | `atmos.ua.tavg-p19-hxy-air.mon.glb` | ✅ |  | cap7 core |
 | `atmos.ua.tpt-al-hxy-u.6hr.glb` | ✅ |  | cap7 core |
-| `atmos.ua.tpt-h100m-hxy-u.1hr.glb` | ❌ | Only 3hr/6hr/day/mon frequency implemented | cap7 |
+| `atmos.ua.tpt-h100m-hxy-u.1hr.glb` | ❌ | Needs IFS source changes (IFS does not interpolate to 100m height) | cap7 |
 | `atmos.ua.tpt-p6-hxy-air.3hr.glb` | ✅ |  | veg |
 | `atmos.uas.tavg-h10m-hxy-u.day.glb` | ✅ |  | cap7 core |
 | `atmos.uas.tavg-h10m-hxy-u.mon.glb` | ✅ |  | cap7 core |
@@ -308,7 +308,7 @@
 | `atmos.va.tavg-p19-hxy-air.day.glb` | ✅ |  | cap7 core |
 | `atmos.va.tavg-p19-hxy-air.mon.glb` | ✅ |  | cap7 core |
 | `atmos.va.tpt-al-hxy-u.6hr.glb` | ✅ |  | cap7 core |
-| `atmos.va.tpt-h100m-hxy-u.1hr.glb` | ❌ | Only 3hr/6hr/day/mon frequency implemented | cap7 |
+| `atmos.va.tpt-h100m-hxy-u.1hr.glb` | ❌ | Needs IFS source changes (IFS does not interpolate to 100m height) | cap7 |
 | `atmos.va.tpt-p6-hxy-air.3hr.glb` | ✅ |  | veg |
 | `atmos.vas.tavg-h10m-hxy-u.day.glb` | ✅ |  | cap7 core |
 | `atmos.vas.tavg-h10m-hxy-u.mon.glb` | ✅ |  | cap7 core |
@@ -317,14 +317,14 @@
 | `atmos.wap.tavg-500hPa-hxy-air.day.glb` | ✅ |  | cap7 core |
 | `atmos.wap.tavg-p19-hxy-air.mon.glb` | ✅ |  | cap7 core |
 | `atmos.wap.tpt-p6-hxy-air.3hr.glb` | ✅ |  | veg |
-| `atmos.wbgt.tavg-h2m-hxy-u.day.glb` | ❌ | Not yet implemented | extra |
+| `atmos.wbgt.tavg-h2m-hxy-u.day.glb` | ❌ | No Wet Bulb Globe Temperature scheme | extra |
 | `atmos.wsg.tmax-h100m-hxy-u.1hr.glb` | ✅ |  | cap7 |
 | `atmos.wsg.tmax-h100m-hxy-u.mon.glb` | ✅ |  | extra |
-| `atmos.zfull.ti-al-hxy-u.fx.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.zfull.ti-al-hxy-u.fx.glb` | ❌ | Needs IFS source changes (offline geopotential height computation needed) | cap7 |
 | `atmos.zg.tavg-p19-hxy-air.day.glb` | ✅ |  | cap7 core |
 | `atmos.zg.tavg-p19-hxy-air.mon.glb` | ✅ |  | cap7 core |
 | `atmos.zg.tpt-al-hxy-u.6hr.glb` | ✅ |  | cap7 |
-| `atmos.ztp.tavg-u-hxy-u.mon.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.ztp.tavg-u-hxy-u.mon.glb` | ❌ | Needs IFS source changes (tropopause not exposed via XIOS) | cap7 |
 
 ## Realm: atmos aerosol — 0/1 rules
 
@@ -343,10 +343,10 @@
 
 | Variable | Rule | Reason | Categories |
 |---|---|---|---|
-| `atmos.reffcclwtop.tavg-u-hxy-ccl.day.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.reffsclwtop.tavg-u-hxy-scl.day.glb` | ❌ | Not yet implemented | cap7 |
-| `atmos.reffsclwtop.tavg-u-hxy-scl.mon.glb` | ❌ | Veg-only variable, not yet implemented | veg |
-| `atmos.scldncl.tavg-u-hxy-scl.day.glb` | ❌ | Not yet implemented | cap7 |
+| `atmos.reffcclwtop.tavg-u-hxy-ccl.day.glb` | ❌ | No cloud microphysics diagnostics | cap7 |
+| `atmos.reffsclwtop.tavg-u-hxy-scl.day.glb` | ❌ | No cloud microphysics diagnostics | cap7 |
+| `atmos.reffsclwtop.tavg-u-hxy-scl.mon.glb` | ❌ | No cloud microphysics diagnostics | veg |
+| `atmos.scldncl.tavg-u-hxy-scl.day.glb` | ❌ | No cloud microphysics diagnostics (no column droplet number diagnostic) | cap7 |
 
 ## Realm: atmos land — 2/2 rules
 
