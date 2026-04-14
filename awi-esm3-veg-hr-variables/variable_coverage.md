@@ -156,7 +156,7 @@
 | `atmos.hurs.tavg-h2m-hxy-u.day.glb` | ✅ |  | cap7 core |
 | `atmos.hurs.tavg-h2m-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.hurs.tmax-h2m-hxy-u.day.glb` | ✅ |  | cap7 |
-| `atmos.hurs.tmin-h2m-hxy-crp.day.glb` | ❌ | Only 1hr/3hr/6hr/day/mon frequency implemented | extra |
+| `atmos.hurs.tmin-h2m-hxy-crp.day.glb` | ❌ | Crop-tile variant (tmin-h2m-hxy-crp): no crop tiles in IFS (run_landcover=0) | extra |
 | `atmos.hurs.tmin-h2m-hxy-u.day.glb` | ✅ |  | cap7 |
 | `atmos.hurs.tpt-h2m-hxy-u.3hr.glb` | ✅ |  | extra |
 | `atmos.hus.tavg-al-hxy-u.mon.glb` | ✅ |  | cap7 |

@@ -12,13 +12,15 @@ therefore not producible.
 | Status | Count |
 |--------|-------|
 | Already in veg_atm (fire emissions + lwp) | 0 |
-| Implemented (new cap7 rules) | 1 |
+| Implemented (new cap7 rules) | 5 |
 | Blocked — no prognostic aerosol (MACv2-SP total only) | 20 |
-| Blocked — no atmospheric chemistry | 19 |
+| Blocked — no atmospheric chemistry | 15 |
 | Blocked — no CO2 tracer in current config | 4 |
 | Blocked — no cloud microphysics diagnostics | 3 |
 | Blocked — no deposition scheme | 4 |
-| **Total** | **52** |
+| **Total** | **51** |
+
+_Note: od550aer (1 entry) is excluded from total — dropped because MACv2-SP provides only anthropogenic AOD perturbation, not total AOD. Implemented: toz, cfc11, cfc12, ch4 (global mean), n2o (global mean)._
 
 ---
 
@@ -105,8 +107,8 @@ While prescribed values exist, they are forcing inputs, not model output.
 
 - [ ] **dms** (mon, model levels) — `atmosChem.dms.tavg-al-hxy-u.mon.glb` — DMS mole fraction. No chemistry.
 - [ ] **noy** (mon, plev39) — `aerosol.noy.tavg-p39-hy-air.mon.glb` — Total reactive nitrogen. No chemistry.
-- [ ] **cfc11** (mon, global mean) — `atmosChem.cfc11.tavg-u-hm-air.mon.glb` — Global mean CFC11. Prescribed scalar.
-- [ ] **cfc12** (mon, global mean) — `atmosChem.cfc12.tavg-u-hm-air.mon.glb` — Global mean CFC12. Prescribed scalar.
+- [x] **cfc11** (mon, global mean) — `atmosChem.cfc11.tavg-u-hm-air.mon.glb` — Global mean CFC11. From input4MIPs `cfc11_*_gm_1750-2022.nc` (ppt → mol/mol via ×1e-12, annual → monthly by ffill).
+- [x] **cfc12** (mon, global mean) — `atmosChem.cfc12.tavg-u-hm-air.mon.glb` — Global mean CFC12. From input4MIPs `cfc12_*_gm_1750-2022.nc` (ppt → mol/mol via ×1e-12, annual → monthly by ffill).
 - [ ] **cfc113** (mon, global mean) — `atmosChem.cfc113.tavg-u-hm-air.mon.glb` — Global mean CFC113. Prescribed scalar.
 - [ ] **hcfc22** (mon, global mean) — `atmosChem.hcfc22.tavg-u-hm-air.mon.glb` — Global mean HCFC22. Prescribed scalar.
 
