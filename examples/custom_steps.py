@@ -3242,6 +3242,32 @@ def compute_msftmz(data, rule):
     w = w.load()
     w = w.assign_coords(lat=("nod2", mesh.n_y), lon=("nod2", mesh.n_x))
 
+    # Align w's vertical dim to whatever tripyview's nod_area uses. tripyview
+    # renames nl->nz and nl1->nz1 in the diag file's 'nod_area'; if the diag
+    # file stores nod_area on half-levels (nl1), the product w*nod_area ends
+    # up with both 'nz' (from w) and 'nz1' (from nod_area), which breaks the
+    # final transpose to ('time','nz1','lat'). Detect the diag vertical dim
+    # and rename w's vertical dim to match so only one vertical dim survives.
+    try:
+        import os as _os
+        if _os.path.isfile(diagpath):
+            with xr.open_dataset(diagpath) as _diag:
+                _na_dims = set(_diag["nod_area"].dims)
+            _diag_vdim = None
+            for _src, _dst in (("nl", "nz"), ("nl1", "nz1"), ("nz", "nz"), ("nz1", "nz1")):
+                if _src in _na_dims:
+                    _diag_vdim = _dst
+                    break
+            if _diag_vdim is not None:
+                # w typically has 'nz'; rename to the diag file's vertical dim
+                for _wv in ("nz", "nz1"):
+                    if _wv in w.dims and _wv != _diag_vdim:
+                        w = w.rename({_wv: _diag_vdim})
+                        break
+    except Exception:
+        # Best-effort alignment; fall through and let tripyview raise if needed.
+        pass
+
     basin_to_key = {
         "atlantic_arctic_ocean": "aamoc",
         "indian_pacific_ocean":  "ipmoc",
@@ -3262,7 +3288,12 @@ def compute_msftmz(data, rule):
     # Figure out time + nz from the first basin result
     first = next(iter(per_basin.values()))
     has_time = "time" in first.dims
-    nz = first.sizes["nz"]
+    # tripyview may emit either 'nz' or 'nz1' as the vertical dim depending on
+    # the diag file's nod_area level convention.
+    _zdim = "nz" if "nz" in first.dims else ("nz1" if "nz1" in first.dims else None)
+    if _zdim is None:
+        raise ValueError(f"compute_msftmz: zmoc result has no vertical dim (dims={first.dims})")
+    nz = first.sizes[_zdim]
     ntime = first.sizes["time"] if has_time else 1
 
     # Match target nz=nz from tripyview; use interface depths from mesh
