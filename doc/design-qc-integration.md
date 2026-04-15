@@ -56,6 +56,21 @@ esgvoc        # CV lookups
 Users still run `esgvoc config add cmip7 && esgvoc install` once per
 user (CVs are stored in `~/.local/share/esgvoc/`).
 
+## Known limitations
+
+- **Unstructured grids (FESOM)** trigger `[VAR005] Coordinate
+  monotonicity for 'lat'/'lon'`: cchecker requires dimension
+  coordinates to be strictly increasing, but FESOM emits unsorted
+  1-D node arrays as `lat`/`lon`. Two fixes possible:
+  1. Restructure to use a generic `node` dimension with `lat`/`lon`
+     as auxiliary coordinates (CF-compliant; cchecker only checks
+     monotonicity on dimension coords). Requires changes in
+     `dimensions.map_dimensions`.
+  2. Regrid to a structured lat/lon grid before write (covered by
+     `pycmor.fesom_2p1`). Required path for ESGF publication anyway.
+  Document this in the FESOM section of the user guide and treat
+  VAR005 as expected for unstructured-mode QC runs.
+
 ## Open questions
 
 - How to cleanly suppress CV-lookup failures for temporary unregistered

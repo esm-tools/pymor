@@ -45,6 +45,7 @@ import xarray as xr
 from xarray.core.utils import is_scalar
 
 from ..core.logging import logger
+from .bounds import add_bounds_from_coords
 from .chunking import (
     calculate_chunks_even_divisor,
     calculate_chunks_iterative,
@@ -54,6 +55,45 @@ from .chunking import (
 from .dataset_helpers import get_time_label, has_time_axis
 
 import dask
+
+
+def _ensure_lat_lon_bounds(ds):
+    """
+    Add lat_bnds/lon_bnds to a dataset when the coord is 1-D, monotonic and >1 point.
+
+    Silently skips unstructured / non-monotonic / scalar cases (e.g. FESOM flattened
+    node arrays) where cell edges cannot be inferred from centers alone. Required
+    for CMIP7 compliance (cchecker ATTR001).
+    """
+    import numpy as np
+
+    if not isinstance(ds, xr.Dataset):
+        return ds
+    candidates = []
+    for name in ("lat", "latitude", "lon", "longitude"):
+        if name in ds.variables:
+            coord = ds[name]
+            bname = f"{name}_bnds"
+            if bname in ds.variables:
+                continue
+            if coord.ndim != 1 or coord.size < 2:
+                continue
+            try:
+                vals = np.asarray(coord.values)
+                diffs = np.diff(vals)
+                if not (np.all(diffs > 0) or np.all(diffs < 0)):
+                    logger.debug(f"  → Skipping bounds for non-monotonic coord '{name}'")
+                    continue
+            except Exception:
+                continue
+            candidates.append(name)
+    if candidates:
+        ds = add_bounds_from_coords(ds, coord_names=candidates)
+        for name in candidates:
+            bname = f"{name}_bnds"
+            if bname in ds.variables:
+                ds[bname].encoding["_FillValue"] = None
+    return ds
 
 
 def _is_dask_backed(ds):
@@ -452,6 +492,10 @@ def _save_dataset_with_native_timespan(
             for _c in list(ds.coords):
                 ds[_c].encoding["_FillValue"] = None
 
+        # CMIP7 cchecker ATTR001: ensure lat/lon bounds exist on regular grids
+        datasets[i] = _ensure_lat_lon_bounds(ds)
+        ds = datasets[i]
+
         paths.append(create_filepath(ds, rule))
 
     # Calculate chunking/compression encoding
@@ -622,8 +666,9 @@ def save_dataset(da: xr.DataArray, rule):
             ds_temp = da.to_dataset()
         else:
             ds_temp = da
+        ds_temp = _ensure_lat_lon_bounds(ds_temp)
         chunk_encoding = _calculate_netcdf_chunks(ds_temp, rule)
-        return da.to_netcdf(
+        return ds_temp.to_netcdf(
             filepath,
             mode="w",
             format="NETCDF4",
@@ -643,12 +688,13 @@ def save_dataset(da: xr.DataArray, rule):
             ds_temp = da.to_dataset()
         else:
             ds_temp = da
+        ds_temp = _ensure_lat_lon_bounds(ds_temp)
         chunk_encoding = _calculate_netcdf_chunks(ds_temp, rule)
         # Merge time encoding with chunk encoding
         final_encoding = {time_label: time_encoding}
         if chunk_encoding:
             final_encoding.update(chunk_encoding)
-        return da.to_netcdf(
+        return ds_temp.to_netcdf(
             filepath,
             mode="w",
             format="NETCDF4",
@@ -751,6 +797,8 @@ def save_dataset(da: xr.DataArray, rule):
             ds_temp = da.to_dataset()
         else:
             ds_temp = da
+        ds_temp = _ensure_lat_lon_bounds(ds_temp)
+        da = ds_temp
         chunk_encoding = _calculate_netcdf_chunks(ds_temp, rule)
         da.to_netcdf(
             filepath,
@@ -811,6 +859,8 @@ def save_dataset(da: xr.DataArray, rule):
                     group_ds[_v].encoding.pop("coordinates", None)
                 for _c in list(group_ds.coords):
                     group_ds[_c].encoding["_FillValue"] = None
+                # CMIP7 cchecker ATTR001: ensure lat/lon bounds on regular grids
+                group_ds = _ensure_lat_lon_bounds(group_ds)
                 datasets.append(group_ds)
             # Calculate chunking encoding — align with dask chunks for streaming writes
             is_dask = any(_is_dask_backed(ds) for ds in datasets)

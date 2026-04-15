@@ -531,10 +531,15 @@ class CMIP7DataRequestVariable(DataRequestVariable):
             "long_name": self.long_name,
             "units": self.units,
             "cell_methods": self.cell_methods,
+            "cell_measures": self.cell_measures,
             "comment": self.comment,
         }
-        # Remove None values
-        return {k: v for k, v in attrs.items() if v is not None}
+        # Drop None values and CMIP7 sentinel placeholders like "::MODEL" that
+        # indicate the field is model-specific and not defined by the data request.
+        def _is_sentinel(v):
+            return isinstance(v, str) and v.strip().startswith("::")
+
+        return {k: v for k, v in attrs.items() if v is not None and v != "" and not _is_sentinel(v)}
 
     @property
     def cell_measures(self) -> str:

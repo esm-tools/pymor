@@ -117,12 +117,13 @@ class CMIP7GlobalAttributes(GlobalAttributes):
 
     def subdir_path(self) -> str:
         """
-        Generate CMIP7 directory structure path.
+        Generate CMIP7 directory structure path (13 components, per WCRP DRS).
 
-        CMIP7 DRS is similar to CMIP6:
-        <mip_era>/<activity_id>/<institution_id>/<source_id>/<experiment_id>/
-        <member_id>/<table_id>/<variable_id>/<grid_label>/<version>
+        <drs_specs>/<mip_era>/<activity>/<institution>/<source>/<experiment>/
+        <variant_label>/<region>/<frequency>/<variable>/<branding_suffix>/
+        <grid_label>/<directory_date>
         """
+        drs_specs = self.get_drs_specs()
         mip_era = self.get_mip_era()
         activity_id = self.get_activity_id()
         institution_id = self.get_institution_id()
@@ -132,12 +133,17 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         sub_experiment_id = self.get_sub_experiment_id()
         if sub_experiment_id != "none":
             member_id = f"{member_id}-{sub_experiment_id}"
-        table_id = self.get_table_id()
+        region = self.get_region() or "GLB"
+        frequency = self.get_frequency()
         variable_id = self.get_variable_id()
+        branding_suffix = self.get_branding_suffix() or "unknown"
         grid_label = self.get_grid_label()
-        version = f"v{datetime.datetime.today().strftime('%Y%m%d')}"
-        directory_path = f"{mip_era}/{activity_id}/{institution_id}/{source_id}/{experiment_id}/{member_id}/{table_id}/{variable_id}/{grid_label}/{version}"  # noqa: E501
-        return directory_path
+        directory_date = f"v{datetime.datetime.today().strftime('%Y%m%d')}"
+        return (
+            f"{drs_specs}/{mip_era}/{activity_id}/{institution_id}/{source_id}/"
+            f"{experiment_id}/{member_id}/{region}/{frequency}/{variable_id}/"
+            f"{branding_suffix}/{grid_label}/{directory_date}"
+        )
 
     # ========================================================================
     # Variant label and component extraction
