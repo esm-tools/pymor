@@ -65,11 +65,11 @@ rules:
   - name: sisnhc_day
     inputs:
       - path: *dp
-        pattern: m_snow.fesom.1900.nc
+        pattern: m_snow.fesom.1909.nc
     compound_name: seaIce.sisnhc.tavg-u-hxy-si.day.GLB
     model_variable: m_snow
     second_input_path: *dp
-    second_input_pattern: a_ice.fesom.1900.nc
+    second_input_pattern: a_ice.fesom.1909.nc
     second_variable: a_ice
     rho_snow: 330.0
     L_f: 334000.0

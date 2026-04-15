@@ -18,10 +18,11 @@ conda activate pycmor_py312
 
 cd /work/ab0246/a270092/software/pycmor
 
-# Move Prefect home to local /tmp to avoid NFS SQLite locking issues
-export PREFECT_HOME=/tmp/prefect_$$
-mkdir -p $PREFECT_HOME
-export TMPDIR=/tmp
+PYCMOR_SCRATCH=/scratch/a/a270092/pycmor_tmp/$$
+mkdir -p $PYCMOR_SCRATCH/prefect/storage
+export PREFECT_HOME=$PYCMOR_SCRATCH/prefect
+export PREFECT_LOCAL_STORAGE_PATH=$PYCMOR_SCRATCH/prefect/storage
+export TMPDIR=$PYCMOR_SCRATCH
 export HDF5_USE_FILE_LOCKING=FALSE
 export OMP_NUM_THREADS=1
 

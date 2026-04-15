@@ -301,7 +301,7 @@ rules:
   - name: pbo
     inputs:
       - path: *dp
-        pattern: pbo.fesom.1900.nc
+        pattern: pbo.fesom.1909.nc
     compound_name: ocean.pbo.tavg-u-hxy-sea.mon.GLB
     model_variable: pbo
 
@@ -309,7 +309,7 @@ rules:
   - name: volo
     inputs:
       - path: *dp
-        pattern: volo.fesom.1900.nc
+        pattern: volo.fesom.1909.nc
     compound_name: ocean.volo.tavg-u-hm-sea.mon.GLB
     model_variable: volo
 
@@ -317,7 +317,7 @@ rules:
   - name: tos_ga
     inputs:
       - path: *dp
-        pattern: thetaoga.fesom.1900.nc
+        pattern: thetaoga.fesom.1909.nc
     compound_name: ocean.tos.tavg-u-hm-sea.mon.GLB
     model_variable: thetaoga
 
@@ -325,7 +325,7 @@ rules:
   - name: sos_ga
     inputs:
       - path: *dp
-        pattern: soga.fesom.1900.nc
+        pattern: soga.fesom.1909.nc
     compound_name: ocean.sos.tavg-u-hm-sea.mon.GLB
     model_variable: soga
 
@@ -336,7 +336,7 @@ rules:
   - name: thetao_ga
     inputs:
       - path: *dp
-        pattern: thetaoga.fesom.1900.nc
+        pattern: thetaoga.fesom.1909.nc
     compound_name: ocean.thetao.tavg-ol-hm-sea.mon.GLB
     model_variable: thetaoga
 
@@ -344,7 +344,7 @@ rules:
   - name: so_ga
     inputs:
       - path: *dp
-        pattern: soga.fesom.1900.nc
+        pattern: soga.fesom.1909.nc
     compound_name: ocean.so.tavg-ol-hm-sea.mon.GLB
     model_variable: soga
 
@@ -352,7 +352,7 @@ rules:
   - name: obvfsq
     inputs:
       - path: *dp
-        pattern: N2.fesom.1900.nc
+        pattern: N2.fesom.1909.nc
     compound_name: ocean.obvfsq.tavg-ol-hxy-sea.mon.GLB
     model_variable: N2
 
@@ -360,7 +360,7 @@ rules:
   - name: wfo
     inputs:
       - path: *dp
-        pattern: fw.fesom.1900.nc
+        pattern: fw.fesom.1909.nc
     compound_name: ocean.wfo.tavg-u-hxy-sea.mon.GLB
     model_variable: fw
     scale_factor: 1000.0
@@ -372,7 +372,7 @@ rules:
   - name: vsf
     inputs:
       - path: *dp
-        pattern: virtsalt.fesom.1900.nc
+        pattern: virtsalt.fesom.1909.nc
     compound_name: ocean.vsf.tavg-u-hxy-sea.mon.GLB
     model_variable: virtsalt
     model_unit: "kg m-2 s-1"
@@ -385,7 +385,7 @@ rules:
   - name: evspsbl
     inputs:
       - path: *dp
-        pattern: evap.fesom.1900.nc
+        pattern: evap.fesom.1909.nc
     compound_name: ocean.evspsbl.tavg-u-hxy-ifs.mon.GLB
     model_variable: evap
     scale_factor: 1000.0
@@ -399,7 +399,7 @@ rules:
   - name: vsfcorr
     inputs:
       - path: *dp
-        pattern: relaxsalt.fesom.1900.nc
+        pattern: relaxsalt.fesom.1909.nc
     compound_name: ocean.vsfcorr.tavg-u-hxy-sea.mon.GLB
     model_variable: relaxsalt
     model_unit: "kg m-2 s-1"
@@ -411,14 +411,14 @@ rules:
   - name: mlotst_day
     inputs:
       - path: *dp
-        pattern: MLD3.fesom.1900.nc
+        pattern: MLD3.fesom.1909.nc
     compound_name: ocean.mlotst.tavg-u-hxy-sea.day.GLB
     model_variable: MLD3
 
   - name: uos
     inputs:
       - path: *dp
-        pattern: unod.fesom.1900.nc
+        pattern: unod.fesom.1909.nc
     compound_name: ocean.uos.tavg-u-hxy-sea.day.GLB
     model_variable: unod
     pipelines:
@@ -427,7 +427,7 @@ rules:
   - name: vos
     inputs:
       - path: *dp
-        pattern: vnod.fesom.1900.nc
+        pattern: vnod.fesom.1909.nc
     compound_name: ocean.vos.tavg-u-hxy-sea.day.GLB
     model_variable: vnod
     pipelines:
@@ -466,7 +466,7 @@ rules:
   - name: tossq
     inputs:
       - path: *dp
-        pattern: sst.fesom.1900.nc
+        pattern: sst.fesom.1909.nc
     compound_name: ocean.tossq.tavg-u-hxy-sea.mon.GLB
     model_variable: sst
     squared_units: "degC2"
@@ -476,7 +476,7 @@ rules:
   - name: sossq
     inputs:
       - path: *dp
-        pattern: sss.fesom.1900.nc
+        pattern: sss.fesom.1909.nc
     compound_name: ocean.sossq.tavg-u-hxy-sea.mon.GLB
     model_variable: sss
     squared_units: "1E-06"
@@ -486,7 +486,7 @@ rules:
   - name: zossq
     inputs:
       - path: *dp
-        pattern: ssh.fesom.1900.nc
+        pattern: ssh.fesom.1909.nc
     compound_name: ocean.zossq.tavg-u-hxy-sea.mon.GLB
     model_variable: ssh
     squared_units: "m2"
@@ -496,7 +496,7 @@ rules:
   - name: mlotstsq
     inputs:
       - path: *dp
-        pattern: MLD3.fesom.1900.nc
+        pattern: MLD3.fesom.1909.nc
     compound_name: ocean.mlotstsq.tavg-u-hxy-sea.mon.GLB
     model_variable: MLD3
     squared_units: "m2"
@@ -510,7 +510,7 @@ rules:
   - name: tob
     inputs:
       - path: *dp
-        pattern: temp.fesom.1900.nc
+        pattern: temp.fesom.1909.nc
     compound_name: ocean.tob.tavg-u-hxy-sea.mon.GLB
     model_variable: temp
     pipelines:
@@ -519,7 +519,7 @@ rules:
   - name: sob
     inputs:
       - path: *dp
-        pattern: salt.fesom.1900.nc
+        pattern: salt.fesom.1909.nc
     compound_name: ocean.sob.tavg-u-hxy-sea.mon.GLB
     model_variable: salt
     pipelines:
@@ -533,7 +533,7 @@ rules:
   - name: msftbarot
     inputs:
       - path: *dp
-        pattern: ssh.fesom.1900.nc
+        pattern: ssh.fesom.1909.nc
     compound_name: ocean.msftbarot.tavg-u-hxy-sea.mon.GLB
     model_variable: ssh
     pipelines:
@@ -543,7 +543,7 @@ rules:
   - name: pso
     inputs:
       - path: *dp
-        pattern: ssh.fesom.1900.nc
+        pattern: ssh.fesom.1909.nc
     compound_name: ocean.pso.tavg-u-hxy-sea.mon.GLB
     model_variable: ssh
     reference_density: 1025.0
@@ -555,7 +555,7 @@ rules:
   - name: masso
     inputs:
       - path: *dp
-        pattern: volo.fesom.1900.nc
+        pattern: volo.fesom.1909.nc
     compound_name: ocean.masso.tavg-u-hm-sea.mon.GLB
     model_variable: volo
     scale_factor: 1025.0
@@ -572,7 +572,7 @@ rules:
   - name: phcint
     inputs:
       - path: *dp
-        pattern: temp.fesom.1900.nc
+        pattern: temp.fesom.1909.nc
     compound_name: ocean.phcint.tavg-op4-hxy-sea.mon.GLB
     model_variable: temp
     integration_attrs:
@@ -588,7 +588,7 @@ rules:
   - name: scint
     inputs:
       - path: *dp
-        pattern: salt.fesom.1900.nc
+        pattern: salt.fesom.1909.nc
     compound_name: ocean.scint.tavg-op4-hxy-sea.mon.GLB
     model_variable: salt
     integration_attrs:
@@ -603,7 +603,7 @@ rules:
   - name: opottempmint
     inputs:
       - path: *dp
-        pattern: temp.fesom.1900.nc
+        pattern: temp.fesom.1909.nc
     compound_name: ocean.opottempmint.tavg-u-hxy-sea.yr.GLB
     model_variable: temp
     integration_attrs:
@@ -619,7 +619,7 @@ rules:
   - name: somint
     inputs:
       - path: *dp
-        pattern: salt.fesom.1900.nc
+        pattern: salt.fesom.1909.nc
     compound_name: ocean.somint.tavg-u-hxy-sea.yr.GLB
     model_variable: salt
     integration_attrs:
@@ -650,7 +650,7 @@ rules:
   - name: difvho
     inputs:
       - path: *dp
-        pattern: Kv.fesom.1900.nc
+        pattern: Kv.fesom.1909.nc
     compound_name: ocean.difvho.tavg-ol-hxy-sea.yr.GLB
     model_variable: Kv
     # NOTE: monthly data, CMIP wants yearly average — needs yearly timeavg
@@ -659,7 +659,7 @@ rules:
   - name: difvso
     inputs:
       - path: *dp
-        pattern: Kv.fesom.1900.nc
+        pattern: Kv.fesom.1909.nc
     compound_name: ocean.difvso.tavg-ol-hxy-sea.yr.GLB
     model_variable: Kv
 
@@ -667,7 +667,7 @@ rules:
   - name: difmxylo
     inputs:
       - path: *dp
-        pattern: Av.fesom.1900.nc
+        pattern: Av.fesom.1909.nc
     compound_name: ocean.difmxylo.tavg-ol-hxy-sea.yr.GLB
     model_variable: Av
 
@@ -684,7 +684,7 @@ rules:
   - name: opottemptend
     inputs:
       - path: *dp
-        pattern: opottemptend.fesom.1900.nc
+        pattern: opottemptend.fesom.1909.nc
     compound_name: ocean.opottemptend.tavg-ol-hxy-sea.yr.GLB
     model_variable: opottemptend
     # NOTE: monthly data, CMIP wants yearly — needs yearly timeavg
@@ -698,7 +698,7 @@ rules:
   - name: osalttend
     inputs:
       - path: *dp
-        pattern: osalttend.fesom.1900.nc
+        pattern: osalttend.fesom.1909.nc
     compound_name: ocean.osalttend.tavg-ol-hxy-sea.yr.GLB
     model_variable: osalttend
     model_unit: "kg m-2 s-1"
@@ -707,7 +707,7 @@ rules:
   - name: opottemprmadvect
     inputs:
       - path: *dp
-        pattern: opottemprmadvect.fesom.1900.nc
+        pattern: opottemprmadvect.fesom.1909.nc
     compound_name: ocean.opottemprmadvect.tavg-ol-hxy-sea.yr.GLB
     model_variable: opottemprmadvect
 
@@ -715,7 +715,7 @@ rules:
   - name: opottempdiff
     inputs:
       - path: *dp
-        pattern: opottempdiff.fesom.1900.nc
+        pattern: opottempdiff.fesom.1909.nc
     compound_name: ocean.opottempdiff.tavg-ol-hxy-sea.yr.GLB
     model_variable: opottempdiff
 
@@ -723,7 +723,7 @@ rules:
   - name: osaltrmadvect
     inputs:
       - path: *dp
-        pattern: osaltrmadvect.fesom.1900.nc
+        pattern: osaltrmadvect.fesom.1909.nc
     compound_name: ocean.osaltrmadvect.tavg-ol-hxy-sea.yr.GLB
     model_variable: osaltrmadvect
     model_unit: "kg m-2 s-1"
@@ -732,7 +732,7 @@ rules:
   - name: osaltdiff
     inputs:
       - path: *dp
-        pattern: osaltdiff.fesom.1900.nc
+        pattern: osaltdiff.fesom.1909.nc
     compound_name: ocean.osaltdiff.tavg-ol-hxy-sea.yr.GLB
     model_variable: osaltdiff
     model_unit: "kg m-2 s-1"
@@ -741,7 +741,7 @@ rules:
   - name: rsdoabsorb
     inputs:
       - path: *dp
-        pattern: rsdoabsorb.fesom.1900.nc
+        pattern: rsdoabsorb.fesom.1909.nc
     compound_name: ocean.rsdoabsorb.tavg-ol-hxy-sea.yr.GLB
     model_variable: rsdoabsorb
 
@@ -765,11 +765,11 @@ rules:
   - name: sfx
     inputs:
       - path: *dp
-        pattern: unod.fesom.1900.nc
+        pattern: unod.fesom.1909.nc
     compound_name: ocean.sfx.tavg-ol-hxy-sea.mon.GLB
     model_variable: unod
     salt_path: *dp
-    salt_pattern: salt.fesom.1900.nc
+    salt_pattern: salt.fesom.1909.nc
     salt_variable: salt
     reference_density: 1025.0
     transport_component: x
@@ -779,11 +779,11 @@ rules:
   - name: sfx_int
     inputs:
       - path: *dp
-        pattern: unod.fesom.1900.nc
+        pattern: unod.fesom.1909.nc
     compound_name: ocean.sfx.tavg-u-hxy-sea.mon.GLB
     model_variable: unod
     salt_path: *dp
-    salt_pattern: salt.fesom.1900.nc
+    salt_pattern: salt.fesom.1909.nc
     salt_variable: salt
     reference_density: 1025.0
     transport_component: x
@@ -793,11 +793,11 @@ rules:
   - name: sfy
     inputs:
       - path: *dp
-        pattern: vnod.fesom.1900.nc
+        pattern: vnod.fesom.1909.nc
     compound_name: ocean.sfy.tavg-ol-hxy-sea.mon.GLB
     model_variable: vnod
     salt_path: *dp
-    salt_pattern: salt.fesom.1900.nc
+    salt_pattern: salt.fesom.1909.nc
     salt_variable: salt
     reference_density: 1025.0
     transport_component: y
@@ -807,11 +807,11 @@ rules:
   - name: sfy_int
     inputs:
       - path: *dp
-        pattern: vnod.fesom.1900.nc
+        pattern: vnod.fesom.1909.nc
     compound_name: ocean.sfy.tavg-u-hxy-sea.mon.GLB
     model_variable: vnod
     salt_path: *dp
-    salt_pattern: salt.fesom.1900.nc
+    salt_pattern: salt.fesom.1909.nc
     salt_variable: salt
     reference_density: 1025.0
     transport_component: y

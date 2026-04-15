@@ -1,13 +1,18 @@
+import functools
 import os
+import secrets
 import sys
 from importlib import resources
 from importlib.metadata import entry_points
+from pathlib import Path
 from typing import List
 
 import rich_click as click
 import yaml
+from click import get_current_context as _cur_ctx
 from click_loguru import ClickLoguru
 from dask.distributed import Client
+from loguru import logger as _loguru_logger
 from rich.traceback import install as rich_traceback_install
 from streamlit.web import cli as stcli
 
@@ -21,6 +26,65 @@ from .core.validate import GENERAL_VALIDATOR, PIPELINES_VALIDATOR, RULES_VALIDAT
 from .dev import utils as dev_utils
 from .fesom_1p4.nodes_to_levels import convert
 from .scripts.update_dimensionless_mappings import update_dimensionless_mappings
+
+
+def _patch_click_loguru_unique_logfiles(cl_instance):
+    """Replace ClickLoguru.init_logger with a race-free variant.
+
+    The upstream implementation (click_loguru 1.3.7) picks a log filename by
+    scanning ``logs/pycmor-process_N.log`` and choosing ``N+1``, then unlinks
+    old files for retention. When multiple pycmor jobs share a working
+    directory (typical on HPC/SLURM) this TOCTOU races: several processes pick
+    the same N, and retention-unlink can hit a file another job just removed,
+    raising ``FileNotFoundError``. Here we append ``<pid>_<token>`` to the log
+    filename so every process gets a unique slot, and we skip the retention
+    sweep (which is inherently racy with shared cwd).
+    """
+
+    def init_logger(log_dir_parent=None, logfile=True):
+        def decorator(user_func):
+            @functools.wraps(user_func)
+            def wrapper(*args, **kwargs):
+                state = _cur_ctx().find_object(cl_instance.LogState)
+                if state.verbose:
+                    log_level = "DEBUG"
+                elif state.quiet:
+                    log_level = "ERROR"
+                else:
+                    log_level = cl_instance._stderr_log_level
+                _loguru_logger.remove()
+                _loguru_logger.add(
+                    sys.stderr, level=log_level, format=cl_instance.stderr_format_func
+                )
+                if logfile and state.logfile:
+                    if log_dir_parent is not None:
+                        cl_instance._log_dir_parent = log_dir_parent
+                    if cl_instance._log_dir_parent is None:
+                        log_dir_path = Path(".") / "logs"
+                    else:
+                        log_dir_path = Path(cl_instance._log_dir_parent)
+                    subcommand = _cur_ctx().invoked_subcommand or state.subcommand
+                    if subcommand is not None:
+                        logfile_prefix = f"{cl_instance._name}-{subcommand}"
+                    else:
+                        logfile_prefix = f"{cl_instance._name}"
+                    log_dir_path.mkdir(parents=True, exist_ok=True)
+                    unique_tag = f"{os.getpid()}_{secrets.token_hex(4)}"
+                    state.logfile_path = (
+                        log_dir_path / f"{logfile_prefix}_{unique_tag}.log"
+                    )
+                    state.logfile_handler_id = _loguru_logger.add(
+                        str(state.logfile_path), level=cl_instance._file_log_level
+                    )
+                _loguru_logger.debug(f'Command line: "{" ".join(sys.argv)}"')
+                _loguru_logger.debug(f"{cl_instance._name} version {cl_instance._version}")
+                return user_func(*args, **kwargs)
+
+            return wrapper
+
+        return decorator
+
+    cl_instance.init_logger = init_logger
 
 MAX_FRAMES = int(os.environ.get("PYCMOR_ERROR_MAX_FRAMES", os.environ.get("PYMOR_ERROR_MAX_FRAMES", 3)))
 """
@@ -42,6 +106,9 @@ click_loguru = ClickLoguru(
     # log_dir_parent="tests/data/logs",
     timer_log_level="info",
 )
+# Make log-file allocation race-free across concurrent pycmor invocations
+# that share a working directory (e.g. multiple SLURM jobs in the same dir).
+_patch_click_loguru_unique_logfiles(click_loguru)
 
 
 # FIXME(PG): Doesn't work as intended :-(

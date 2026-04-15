@@ -187,49 +187,49 @@ rules:
   - name: tos
     inputs:
       - path: *dp
-        pattern: sst.fesom.1900.nc
+        pattern: sst.fesom.1909.nc
     compound_name: ocean.tos.tavg-u-hxy-sea.mon.GLB
     model_variable: sst
 
   - name: sos
     inputs:
       - path: *dp
-        pattern: sss.fesom.1900.nc
+        pattern: sss.fesom.1909.nc
     compound_name: ocean.sos.tavg-u-hxy-sea.mon.GLB
     model_variable: sss
 
   - name: zos
     inputs:
       - path: *dp
-        pattern: ssh.fesom.1900.nc
+        pattern: ssh.fesom.1909.nc
     compound_name: ocean.zos.tavg-u-hxy-sea.mon.GLB
     model_variable: ssh
 
   - name: hfds
     inputs:
       - path: *dp
-        pattern: fh.fesom.1900.nc
+        pattern: fh.fesom.1909.nc
     compound_name: ocean.hfds.tavg-u-hxy-sea.mon.GLB
     model_variable: fh
 
   - name: mlotst
     inputs:
       - path: *dp
-        pattern: MLD3.fesom.1900.nc
+        pattern: MLD3.fesom.1909.nc
     compound_name: ocean.mlotst.tavg-u-hxy-sea.mon.GLB
     model_variable: MLD3
 
   - name: tauuo
     inputs:
       - path: *dp
-        pattern: tx_sur.fesom.1900.nc
+        pattern: tx_sur.fesom.1909.nc
     compound_name: ocean.tauuo.tavg-u-hxy-sea.mon.GLB
     model_variable: tx_sur
 
   - name: tauvo
     inputs:
       - path: *dp
-        pattern: ty_sur.fesom.1900.nc
+        pattern: ty_sur.fesom.1909.nc
     compound_name: ocean.tauvo.tavg-u-hxy-sea.mon.GLB
     model_variable: ty_sur
 
@@ -240,35 +240,35 @@ rules:
   - name: thetao
     inputs:
       - path: *dp
-        pattern: temp.fesom.1900.nc
+        pattern: temp.fesom.1909.nc
     compound_name: ocean.thetao.tavg-ol-hxy-sea.mon.GLB
     model_variable: temp
 
   - name: so
     inputs:
       - path: *dp
-        pattern: salt.fesom.1900.nc
+        pattern: salt.fesom.1909.nc
     compound_name: ocean.so.tavg-ol-hxy-sea.mon.GLB
     model_variable: salt
 
   - name: uo
     inputs:
       - path: *dp
-        pattern: unod.fesom.1900.nc
+        pattern: unod.fesom.1909.nc
     compound_name: ocean.uo.tavg-ol-hxy-sea.mon.GLB
     model_variable: unod
 
   - name: vo
     inputs:
       - path: *dp
-        pattern: vnod.fesom.1900.nc
+        pattern: vnod.fesom.1909.nc
     compound_name: ocean.vo.tavg-ol-hxy-sea.mon.GLB
     model_variable: vnod
 
   - name: wo
     inputs:
       - path: *dp
-        pattern: w.fesom.1900.nc
+        pattern: w.fesom.1909.nc
     compound_name: ocean.wo.tavg-ol-hxy-sea.mon.GLB
     model_variable: w
 
@@ -279,7 +279,7 @@ rules:
   - name: absscint
     inputs:
       - path: *dp
-        pattern: salt.fesom.1900.nc
+        pattern: salt.fesom.1909.nc
     compound_name: ocean.absscint.tavg-op4-hxy-sea.mon.GLB
     model_variable: salt
     integration_attrs:
@@ -296,21 +296,21 @@ rules:
   - name: tos_day
     inputs:
       - path: *dp
-        pattern: sst.fesom.1900.nc
+        pattern: sst.fesom.1909.nc
     compound_name: ocean.tos.tavg-u-hxy-sea.day.GLB
     model_variable: sst
 
   - name: sos_day
     inputs:
       - path: *dp
-        pattern: sss.fesom.1900.nc
+        pattern: sss.fesom.1909.nc
     compound_name: ocean.sos.tavg-u-hxy-sea.day.GLB
     model_variable: sss
 
   - name: zos_day
     inputs:
       - path: *dp
-        pattern: ssh.fesom.1900.nc
+        pattern: ssh.fesom.1909.nc
     compound_name: ocean.zos.tavg-u-hxy-sea.day.GLB
     model_variable: ssh
 
@@ -371,14 +371,14 @@ rules:
   - name: thkcello
     inputs:
       - path: *dp
-        pattern: hnode.fesom.1900.nc
+        pattern: hnode.fesom.1909.nc
     compound_name: ocean.thkcello.tavg-ol-hxy-sea.mon.GLB
     model_variable: hnode
 
   - name: masscello
     inputs:
       - path: *dp
-        pattern: hnode.fesom.1900.nc
+        pattern: hnode.fesom.1909.nc
     compound_name: ocean.masscello.tavg-ol-hxy-sea.mon.GLB
     model_variable: hnode
     scale_factor: 1025.0
@@ -393,7 +393,7 @@ rules:
   - name: umo
     inputs:
       - path: *dp
-        pattern: unod.fesom.1900.nc
+        pattern: unod.fesom.1909.nc
     compound_name: ocean.umo.tavg-ol-hxy-sea.mon.GLB
     model_variable: unod
     reference_density: 1025.0
@@ -404,7 +404,7 @@ rules:
   - name: vmo
     inputs:
       - path: *dp
-        pattern: vnod.fesom.1900.nc
+        pattern: vnod.fesom.1909.nc
     compound_name: ocean.vmo.tavg-ol-hxy-sea.mon.GLB
     model_variable: vnod
     reference_density: 1025.0
@@ -415,7 +415,7 @@ rules:
   - name: wmo
     inputs:
       - path: *dp
-        pattern: w.fesom.1900.nc
+        pattern: w.fesom.1909.nc
     compound_name: ocean.wmo.tavg-ol-hxy-sea.mon.GLB
     model_variable: w
     reference_density: 1025.0
@@ -430,10 +430,10 @@ rules:
   - name: zostoga
     inputs:
       - path: *dp
-        pattern: temp.fesom.1900.nc
+        pattern: temp.fesom.1909.nc
     compound_name: ocean.zostoga.tavg-u-hm-sea.mon.GLB
     model_variable: temp
-    salt_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_017/outdata/fesom/salt.fesom.1900.nc
+    salt_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_017/outdata/fesom/salt.fesom.1909.nc
     salt_variable: salt
     reference_density: 1025.0
     pipelines:

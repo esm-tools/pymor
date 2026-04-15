@@ -67,28 +67,28 @@ rules:
   - name: sithick_day
     inputs:
       - path: *dp
-        pattern: h_ice.fesom.1900.nc
+        pattern: h_ice.fesom.1909.nc
     compound_name: seaIce.sithick.tavg-u-hxy-si.day.GLB
     model_variable: h_ice
 
   - name: snd_day
     inputs:
       - path: *dp
-        pattern: h_snow.fesom.1900.nc
+        pattern: h_snow.fesom.1909.nc
     compound_name: seaIce.snd.tavg-u-hxy-sn.day.GLB
     model_variable: h_snow
 
   - name: siu_day
     inputs:
       - path: *dp
-        pattern: uice.fesom.1900.nc
+        pattern: uice.fesom.1909.nc
     compound_name: seaIce.siu.tavg-u-hxy-si.day.GLB
     model_variable: uice
 
   - name: siv_day
     inputs:
       - path: *dp
-        pattern: vice.fesom.1900.nc
+        pattern: vice.fesom.1909.nc
     compound_name: seaIce.siv.tavg-u-hxy-si.day.GLB
     model_variable: vice
 
@@ -100,7 +100,7 @@ rules:
   - name: sieqthick
     inputs:
       - path: *dp
-        pattern: m_ice.fesom.1900.nc
+        pattern: m_ice.fesom.1909.nc
     compound_name: seaIce.sieqthick.tavg-u-hxy-si.mon.GLB
     model_variable: m_ice
 
@@ -108,7 +108,7 @@ rules:
   - name: snw
     inputs:
       - path: *dp
-        pattern: m_snow.fesom.1900.nc
+        pattern: m_snow.fesom.1909.nc
     compound_name: seaIce.snw.tavg-u-hxy-si.mon.GLB
     model_variable: m_snow
     scale_factor: 1000.0
@@ -124,7 +124,7 @@ rules:
   - name: evspsbl
     inputs:
       - path: *dp
-        pattern: evap.fesom.1900.nc
+        pattern: evap.fesom.1909.nc
     compound_name: seaIce.evspsbl.tavg-u-hxy-si.mon.GLB
     model_variable: evap
     scale_factor: 1000.0
@@ -135,7 +135,7 @@ rules:
   - name: prra
     inputs:
       - path: *dp
-        pattern: prec.fesom.1900.nc
+        pattern: prec.fesom.1909.nc
     compound_name: seaIce.prra.tavg-u-hxy-si.mon.GLB
     model_variable: prec
     scale_factor: 1000.0
@@ -146,7 +146,7 @@ rules:
   - name: prsn
     inputs:
       - path: *dp
-        pattern: snow.fesom.1900.nc
+        pattern: snow.fesom.1909.nc
     compound_name: seaIce.prsn.tavg-u-hxy-si.mon.GLB
     model_variable: snow
     scale_factor: 1000.0
