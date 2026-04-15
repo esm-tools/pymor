@@ -230,17 +230,15 @@ def create_filepath(ds, rule):
     source_id = rule.source_id  # AWI-CM-1-1-MR
     experiment_id = rule.experiment_id  # historical
     out_dir = rule.output_directory  # where to save output files
-    institution = getattr(rule, "institution", "AWI")
     grid = rule.grid_label  # grid_type
     time_range = _filename_time_range(ds, rule)
 
-    # Sanitize components to comply with CMIP6 specification
+    # Sanitize components to comply with CMIP6/CMIP7 DRS filename spec
     name = _sanitize_component(name)
     table_id = _sanitize_component(table_id)
     source_id = _sanitize_component(source_id)
     experiment_id = _sanitize_component(experiment_id)
     label = _sanitize_component(label)
-    institution = _sanitize_component(institution)
     grid = _sanitize_component(grid)
 
     # Check for climatology suffix
@@ -252,18 +250,28 @@ def create_filepath(ds, rule):
         subdirs = rule.ga.subdir_path()
         out_dir = f"{out_dir}/{subdirs}"
 
-    # Build filename according to CMIP6 spec
-    # For fx (time-invariant) fields, omit time_range
     frequency_str = rule.data_request_variable.frequency
-    if frequency_str == "fx" or not time_range:
-        filepath = (
-            f"{out_dir}/{name}_{table_id}_{institution}-{source_id}_" f"{experiment_id}_{label}_{grid}{clim_suffix}.nc"
-        )
+    compound_str = getattr(rule, "compound_name", "") or ""
+    # CMIP7 compound_name has 5 dot-parts; CMIP6 uses 2 (Table.variable).
+    is_cmip7 = compound_str.count(".") >= 4
+
+    if is_cmip7:
+        # CMIP7 DRS filename:
+        # <variable_id>_<branding_suffix>_<frequency>_<region>_<grid_label>_<source_id>_<experiment_id>_<variant_label>[_<time_range>].nc
+        parts = compound_str.split(".")
+        branding_suffix = _sanitize_component(parts[2])
+        region = _sanitize_component(parts[4])
+        freq_tok = _sanitize_component(frequency_str)
+        head = f"{out_dir}/{name}_{branding_suffix}_{freq_tok}_{region}_{grid}_{source_id}_{experiment_id}_{label}"
     else:
-        filepath = (
-            f"{out_dir}/{name}_{table_id}_{institution}-{source_id}_"
-            f"{experiment_id}_{label}_{grid}_{time_range}{clim_suffix}.nc"
-        )
+        # CMIP6 DRS filename (no institution prefix):
+        # <variable_id>_<table_id>_<source_id>_<experiment_id>_<variant_label>_<grid_label>[_<time_range>].nc
+        head = f"{out_dir}/{name}_{table_id}_{source_id}_{experiment_id}_{label}_{grid}"
+
+    if frequency_str == "fx" or not time_range:
+        filepath = f"{head}{clim_suffix}.nc"
+    else:
+        filepath = f"{head}_{time_range}{clim_suffix}.nc"
 
     Path(filepath).parent.mkdir(parents=True, exist_ok=True)
     return filepath
@@ -412,6 +420,37 @@ def _save_dataset_with_native_timespan(
 
             # Also set the encoding directly on the variable
             ds[time_label].encoding.update(time_encoding)
+            # CMIP spec: time:units must match `^days since YYYY-M-D( HH:MM:SS)?$` (no fractional seconds).
+            # Derive a clean units string from an explicit reference in this order:
+            #   user rule.time_units -> existing encoding/attr (stripped of .fractional) ->
+            #   time_origin attr -> first timestamp date.
+            _cur = ds[time_label].encoding.get("units") or ds[time_label].attrs.get("units")
+            if _cur and "." not in _cur.split(" ")[-1]:
+                _units = _cur
+            elif _cur:
+                _units = _cur.split(".")[0]
+            elif ds[time_label].attrs.get("time_origin"):
+                _units = f"days since {ds[time_label].attrs['time_origin']}"
+            else:
+                try:
+                    _t0 = pd.Timestamp(str(ds[time_label].values[0]))
+                    _units = f"days since {_t0:%Y-%m-%d 00:00:00}"
+                except Exception:
+                    _units = None
+            if _units:
+                ds[time_label].attrs.pop("units", None)
+                ds[time_label].encoding["units"] = _units
+            # Drop stale `bounds` attr if the referenced bounds variable is not present
+            _bnd = ds[time_label].attrs.get("bounds")
+            if _bnd and _bnd not in ds.variables:
+                ds[time_label].attrs.pop("bounds", None)
+                ds[time_label].encoding.pop("bounds", None)
+            # Drop stale per-variable `coordinates` encoding (post-rename fixup)
+            for _v in ds.data_vars:
+                ds[_v].encoding.pop("coordinates", None)
+            # CF: coordinate variables must not have _FillValue
+            for _c in list(ds.coords):
+                ds[_c].encoding["_FillValue"] = None
 
         paths.append(create_filepath(ds, rule))
 
@@ -465,7 +504,7 @@ def _calculate_netcdf_chunks(ds: xr.Dataset, rule) -> dict:
     enable_chunking = rule._pycmor_cfg("netcdf_enable_chunking")
     enable_chunking = getattr(rule, "netcdf_enable_chunking", enable_chunking)
     if not enable_chunking:
-        return {}
+        return {v: {"_FillValue": 1.0e20} for v in ds.data_vars}
 
     # Get chunking configuration from global config
     chunk_algorithm = rule._pycmor_cfg("netcdf_chunk_algorithm")
@@ -557,6 +596,8 @@ def save_dataset(da: xr.DataArray, rule):
         extra_kwargs.update({"unlimited_dims": ["time"]})
     time_encoding = {"dtype": time_dtype}
     time_encoding = {k: v for k, v in time_encoding.items() if v is not None}
+    # CMIP spec: time:units must match `days since YYYY-M-D( HH:MM:SS)?` (no fractional seconds).
+    # Preserve the epoch from upstream data; strip fractional seconds later in the save path.
     # Allow user to define time units and calendar in the rule object
     # Martina has a usecase where she wants to set time units to
     # `days since 1850-01-01` and calendar to `proleptic_gregorian` for
@@ -681,6 +722,24 @@ def save_dataset(da: xr.DataArray, rule):
             da = da.rename("data")
         da = da.to_dataset()
     da[time_label].encoding.update(time_encoding)
+    # CMIP spec: strip fractional seconds from time:units (preserve epoch).
+    _cur = da[time_label].encoding.get("units") or da[time_label].attrs.get("units")
+    if _cur and "." in _cur.split(" ")[-1]:
+        _clean = _cur.split(".")[0]
+        da[time_label].attrs.pop("units", None)
+        da[time_label].encoding["units"] = _clean
+    # Drop stale `bounds` attr if the referenced bounds variable is not present
+    bnd = da[time_label].attrs.get("bounds")
+    if bnd and bnd not in da.variables:
+        da[time_label].attrs.pop("bounds", None)
+        da[time_label].encoding.pop("bounds", None)
+    # Drop stale per-variable `coordinates` encoding from upstream files; we want
+    # the attribute set by std_lib.attributes.set_coordinates (post-rename) to win.
+    for v in da.data_vars:
+        da[v].encoding.pop("coordinates", None)
+    # CF: coordinate variables must not have _FillValue
+    for c in list(da.coords):
+        da[c].encoding["_FillValue"] = None
 
     if not has_time_axis(da):
         filepath = create_filepath(da, rule)
@@ -736,6 +795,22 @@ def save_dataset(da: xr.DataArray, rule):
             datasets = []
             for group_name, group_ds in groups:
                 paths.append(create_filepath(group_ds, rule))
+                # CMIP spec fixups: strip fractional seconds from time:units (preserve epoch);
+                # drop stale bounds/coordinates encodings; remove _FillValue from coords.
+                if time_label in group_ds.variables:
+                    _cur = group_ds[time_label].encoding.get("units") or group_ds[time_label].attrs.get("units")
+                    if _cur and "." in _cur.split(" ")[-1]:
+                        _clean = _cur.split(".")[0]
+                        group_ds[time_label].encoding["units"] = _clean
+                        group_ds[time_label].attrs["units"] = _clean
+                    _bnd = group_ds[time_label].attrs.get("bounds")
+                    if _bnd and _bnd not in group_ds.variables:
+                        group_ds[time_label].attrs.pop("bounds", None)
+                        group_ds[time_label].encoding.pop("bounds", None)
+                for _v in group_ds.data_vars:
+                    group_ds[_v].encoding.pop("coordinates", None)
+                for _c in list(group_ds.coords):
+                    group_ds[_c].encoding["_FillValue"] = None
                 datasets.append(group_ds)
             # Calculate chunking encoding — align with dask chunks for streaming writes
             is_dask = any(_is_dask_backed(ds) for ds in datasets)
@@ -744,9 +819,26 @@ def save_dataset(da: xr.DataArray, rule):
             else:
                 chunk_encoding = _calculate_netcdf_chunks(datasets[0], rule)
             # Merge time encoding with chunk encoding
-            final_encoding = {time_label: time_encoding}
+            final_encoding = {time_label: dict(time_encoding)}
             if chunk_encoding:
                 final_encoding.update(chunk_encoding)
+            # CMIP spec: force a clean time:units string (preserve epoch; no fractional seconds).
+            _ref = datasets[0][time_label] if time_label in datasets[0].variables else None
+            if _ref is not None:
+                # xarray normalizes reference datetimes to ISO with `T`, which violates the
+                # cchecker regex `days since YYYY-M-D( HH:MM:SS)?`. Use a date-only epoch
+                # to stay within the accepted grammar while preserving absolute time.
+                try:
+                    _t0 = pd.Timestamp(str(_ref.values[0]))
+                    _units = f"days since {_t0:%Y-%m-%d}"
+                except Exception:
+                    _units = None
+                if _units:
+                    final_encoding[time_label]["units"] = _units
+                    for _ds in datasets:
+                        if time_label in _ds.variables:
+                            _ds[time_label].attrs.pop("units", None)
+                            _ds[time_label].encoding["units"] = _units
             if is_dask:
                 with dask.config.set(scheduler="synchronous"):
                     xr.save_mfdataset(

@@ -111,9 +111,10 @@ XARRAY_OPTIONS = {
         "dataarray": {
             "attrs": {
                 "missing_value": {
-                    "default": 1.0e30,
+                    "default": 1.0e20,
                     "doc": (
-                        "Default missing value to use for xarray DataArray " "attributes and encoding. Default is 1e30."
+                        "Default missing value to use for xarray DataArray attributes and encoding. "
+                        "CMIP/CMOR spec requires 1.0e20."
                     ),
                     "parser": float,
                 },
@@ -364,8 +365,8 @@ class PycmorConfig:
             parser=_parse_bool,
         )
         xarray_default_missing_value = Option(
-            default=1.0e30,
-            doc="Which missing value to use for xarray. Default is 1e30.",
+            default=1.0e20,
+            doc="Which missing value to use for xarray. CMIP/CMOR spec requires 1.0e20.",
             parser=float,
         )
         xarray_open_mfdataset_engine = Option(

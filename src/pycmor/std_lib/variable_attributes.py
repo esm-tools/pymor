@@ -49,13 +49,19 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
         logger.info(f"{k}: {v}")
     da.attrs.update(attrs)
 
-    # Set encoding for missing values:
+    # CMIP/CF requires `_FillValue` via encoding and `missing_value` as a CF attribute
+    # with matching dtype. xarray casts encoded _FillValue to the variable dtype; we must
+    # match that manually for the attribute to avoid dtype-mismatch warnings.
+    import numpy as np
     for k, v in attrs_for_encoding.items():
         if k == "_FillValue":
             da.encoding["_FillValue"] = v
         if k == "missing_value":
-            # Optionally, also set in encoding, but not needed by default
-            da.encoding["missing_value"] = v
+            try:
+                cast = da.dtype.type(v) if da.dtype.kind in "fi" else np.float32(v)
+            except Exception:
+                cast = np.float32(v)
+            da.attrs["missing_value"] = cast
 
     if given_dtype == xr.Dataset:
         return ds

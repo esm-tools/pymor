@@ -455,6 +455,8 @@ def get_encoding_with_chunks(
             var_encoding["complevel"] = compression_level
             var_encoding["shuffle"] = True
 
+        var_encoding["_FillValue"] = 1.0e20
+
         encoding[var] = var_encoding
 
     return encoding

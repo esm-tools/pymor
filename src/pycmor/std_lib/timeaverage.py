@@ -314,7 +314,9 @@ def timeavg(da: xr.DataArray, rule):
         ds = da.resample(time=frequency_str).first()
     elif time_method == "MEAN":
         ds = da.resample(time=frequency_str).mean()
-        offset = rule.get("adjust_timestamp", None)
+        # CMIP spec: time coordinate of MEAN-averaged data sits at the midpoint
+        # of its averaging interval. Default to "mid" unless user overrides.
+        offset = rule.get("adjust_timestamp", "mid")
         offset_presets = {
             "first": 0,
             "start": 0,

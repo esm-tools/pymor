@@ -45,9 +45,11 @@ pipelines:
 inherit:
   data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_017/outdata/oifs
   lpjg_data_path: &ldp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_017/outdata/lpj_guess
-  source_id: AWI-ESM-3
+  source_id: AWI-ESM3-VEG-LR
   institution_id: AWI
-  experiment_id: picontrol
+  experiment_id: piControl
+  activity_id: CMIP
+  parent_experiment_id: no parent
   variant_label: r1i1p1f1
   grid_label: gn
   grid: "OpenIFS TCo95 reduced Gaussian, interpolated to 1deg regular grid"

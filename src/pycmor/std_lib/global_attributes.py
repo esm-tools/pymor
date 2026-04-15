@@ -61,12 +61,16 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         if "required_global_attributes" in self.cv and self.cv["required_global_attributes"]:
             return self.cv["required_global_attributes"]
 
-        # Fallback to CMIP6-compatible list
+        # Fallback to CMIP6-compatible list, extended with CMIP7 branded-variable globals
         return [
             "Conventions",
             "activity_id",
+            "area_label",
+            "branded_variable",
+            "branding_suffix",
             "creation_date",
             "data_specs_version",
+            "drs_specs",
             "experiment",
             "experiment_id",
             "forcing_index",
@@ -74,25 +78,33 @@ class CMIP7GlobalAttributes(GlobalAttributes):
             "further_info_url",
             "grid",
             "grid_label",
+            "history",
+            "horizontal_label",
             "initialization_index",
             "institution",
             "institution_id",
             "license",
+            "license_id",
             "mip_era",
             "nominal_resolution",
+            "parent_experiment_id",
             "physics_index",
             "product",
             "realization_index",
             "realm",
+            "region",
             "source",
             "source_id",
             "source_type",
             "sub_experiment",
             "sub_experiment_id",
             "table_id",
+            "temporal_label",
+            "title",
             "tracking_id",
             "variable_id",
             "variant_label",
+            "vertical_label",
         ]
 
     def global_attributes(self) -> dict:
@@ -582,9 +594,80 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         return frequency
 
     def get_Conventions(self):
-        """Get CF Conventions version"""
-        # CMIP7 uses CF-1.10 and CMIP-7.0
-        return self.rule_dict.get("Conventions", "CF-1.10 CMIP-7.0")
+        """Get CF Conventions version (space-separated, no comma per CV)."""
+        return self.rule_dict.get("Conventions", "CF-1.11 CMIP-7.0")
+
+    # ========================================================================
+    # CMIP7 branded-variable attributes (parsed from compound_name)
+    # compound_name format: <realm>.<variable>.<branding_suffix>.<frequency>.<region>
+    # branding_suffix: <temporal>-<vertical>-<horizontal>-<area>
+    # ========================================================================
+
+    def _compound_parts(self):
+        compound_name = self.rule_dict.get("compound_name")
+        if not compound_name:
+            return None
+        parts = compound_name.split(".")
+        if len(parts) < 5:
+            return None
+        return parts
+
+    def _branding_tokens(self):
+        parts = self._compound_parts()
+        if parts is None:
+            return None
+        tokens = parts[2].split("-")
+        if len(tokens) != 4:
+            return None
+        return tokens
+
+    def get_branded_variable(self):
+        return self.rule_dict.get("branded_variable", self.rule_dict.get("compound_name"))
+
+    def get_branding_suffix(self):
+        parts = self._compound_parts()
+        return parts[2] if parts else None
+
+    def get_temporal_label(self):
+        tokens = self._branding_tokens()
+        return tokens[0] if tokens else None
+
+    def get_vertical_label(self):
+        tokens = self._branding_tokens()
+        return tokens[1] if tokens else None
+
+    def get_horizontal_label(self):
+        tokens = self._branding_tokens()
+        return tokens[2] if tokens else None
+
+    def get_area_label(self):
+        tokens = self._branding_tokens()
+        return tokens[3] if tokens else None
+
+    def get_region(self):
+        parts = self._compound_parts()
+        return parts[4] if parts else self.rule_dict.get("region", "GLB")
+
+    def get_drs_specs(self):
+        return self.rule_dict.get("drs_specs", "CMIP7")
+
+    def get_license_id(self):
+        return self.rule_dict.get("license_id", "cc-by-4-0")
+
+    def get_parent_experiment_id(self):
+        return self.rule_dict.get("parent_experiment_id", "no parent")
+
+    def get_title(self):
+        user = self.rule_dict.get("title")
+        if user:
+            return user
+        return f"{self.get_source_id()} output prepared for CMIP7"
+
+    def get_history(self):
+        user = self.rule_dict.get("history")
+        if user:
+            return user
+        return f"{self.rule_dict.get('creation_date','')}: pycmor CMIP7 rewrite"
 
     def get_product(self):
         """Get product type"""
@@ -598,26 +681,36 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         return self.rule_dict.get("product", "model-output")
 
     def get_data_specs_version(self):
-        """Get data specifications version"""
-        # This could come from the CMIP7 data request version
-        # Check if drv has version info
+        """Get data specifications version.
+
+        Priority: user override → drv version → parse from CMIP7_DReq_metadata path
+        (e.g. '/…/v1.2.2.2/metadata.json' → '1.2.2.2') → '1.0.0'.
+        """
+        user = self.rule_dict.get("data_specs_version")
+        if user:
+            return str(user)
         if isinstance(self.drv, dict):
             version = self.drv.get("dreq content version", None)
         else:
             version = getattr(self.drv, "version", None)
-
         if version:
             return str(version)
-
-        # Fallback to user-provided or default
-        return self.rule_dict.get("data_specs_version", "1.0.0")
+        dreq_path = self.rule_dict.get("CMIP7_DReq_metadata") or self.rule_dict.get("general", {}).get(
+            "CMIP7_DReq_metadata"
+        )
+        if dreq_path:
+            m = re.search(r"/v(\d+(?:\.\d+)+)/", str(dreq_path))
+            if m:
+                return m.group(1)
+        return "1.0.0"
 
     def get_creation_date(self):
         return self.rule_dict["creation_date"]
 
     def get_tracking_id(self):
-        """Generate a unique tracking ID"""
-        return "hdl:21.14100/" + str(uuid.uuid4())
+        """Generate a unique tracking ID (prefix overridable via rule_dict)."""
+        prefix = self.rule_dict.get("tracking_id_prefix", "hdl:21.14100/")
+        return prefix + str(uuid.uuid4())
 
     def get_variable_id(self):
         return self.rule_dict["cmor_variable"]
