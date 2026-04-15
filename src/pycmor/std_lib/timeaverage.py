@@ -298,6 +298,18 @@ def timeavg(da: xr.DataArray, rule):
     rule.frequency_str = frequency_str
     time_method = _get_time_method(drv.frequency)
     rule.time_method = time_method
+    # FESOM yearly files and concat'd hemispheric selects can yield a
+    # non-monotonic time index, which breaks xr.resample. Sort once if needed.
+    if "time" in getattr(da, "coords", {}):
+        try:
+            if not bool(da.indexes["time"].is_monotonic_increasing):
+                logger.warning(
+                    f"Time index for {getattr(rule, 'cmor_variable', '<unknown>')} "
+                    "is not monotonic; sorting before resample."
+                )
+                da = da.sortby("time")
+        except (KeyError, AttributeError):
+            pass
     if time_method == "INSTANTANEOUS":
         ds = da.resample(time=frequency_str).first()
     elif time_method == "MEAN":

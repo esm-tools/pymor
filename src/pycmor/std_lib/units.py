@@ -397,7 +397,10 @@ def convert(
                 # Target is dimensionless with a scaling factor (e.g. "1E-03", "0.001").
                 # Check if source is also dimensionless (e.g. "psu", "1").
                 # If so, values are already in the correct numeric range — just relabel.
-                _from_q = ureg.Quantity(1, from_unit)
+                # Use single-arg form (parse_expression) which accepts bare
+                # scaling factors like "1e-3"/"0.001"; the two-arg form goes
+                # via parse_units and rejects them in pint>=0.22.
+                _from_q = ureg.Quantity(from_unit)
                 if _from_q.dimensionless:
                     logger.info(
                         f"Both source '{from_unit}' and target '{to}' are dimensionless. "

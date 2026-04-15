@@ -379,7 +379,7 @@ rules:
       - path: *dp
         pattern: thdgrsnw\.fesom\..*\.nc
     compound_name: seaIce.snm.tavg-u-hxy-si.mon.GLB
-    model_variable: thdgrsn
+    model_variable: thdgrsnw
     scale_factor: 330.0
     scaled_units: "kg m-2 s-1"
     pipelines:
