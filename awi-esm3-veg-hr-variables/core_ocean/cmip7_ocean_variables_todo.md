@@ -36,8 +36,8 @@ Rules file: `cmip7_awiesm3-veg-hr_ocean.yaml`
 - [x] **sftof** — Sea Area Percentage (`%`, Ofx) *(rule + fx_sftof_pipeline)*
 - [x] **thkcello** — Ocean Model Cell Thickness (`m`, Ofx, static) *(rule + fx_thkcello_pipeline)*
 - [x] **masscello** — Ocean Grid-Cell Mass per Area (`kg m-2`, Ofx, static) *(rule + fx_masscello_pipeline)*
-- [ ] **basin** — Region Selection Index (`1`, Ofx) — NOT POSSIBLE: needs external basin mask
-- [ ] **hfgeou** — Upward Geothermal Heat Flux (`W m-2`, Ofx) — NOT POSSIBLE: not in FESOM
+- [x] **basin** — Region Selection Index (`1`, Ofx) — Implemented via `basin_pipeline` using external basin mask file
+- [~] **hfgeou** — Upward Geothermal Heat Flux (`W m-2`, Ofx) — NOT POSSIBLE: FESOM does not include geothermal heating
 
 ## Daily (Oday) — namelist.io updated to daily frequency
 

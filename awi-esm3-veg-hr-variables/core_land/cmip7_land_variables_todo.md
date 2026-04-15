@@ -40,12 +40,12 @@ Pycmor rules: `cmip7_awiesm3-veg-hr_land.yaml`
 
 ## Deferred to lrcs_land (need LPJ-GUESS or external data)
 
-- [ ] **evspsblsoi** — Soil Evaporation (`kg m-2 s-1`, Lmon) — IFS `e` is total, not partitioned. Needs LPJ-GUESS
-- [ ] **evspsblveg** — Canopy Evaporation (`kg m-2 s-1`, Lmon) — IFS `e` is total, not partitioned. Needs LPJ-GUESS
-- [ ] **rootd** — Maximum Root Depth (`m`, fx) — Not an IFS output. Needs LPJ-GUESS or hardcoded 2.89m (HTESSEL total)
-- [ ] **mrsofc** — Soil Field Capacity (`kg m-2`, fx) — Depends on IFS soil type map + HTESSEL lookup. Needs external data
-- [ ] **sftgif** — Glacier Area Fraction (`%`, fx) — Not a standard IFS output. Needs external glacier dataset
-- [ ] **mrfso** — Frozen Soil Water Content (`kg m-2`, LImon) — IFS HTESSEL doesn't output frozen fraction separately. Needs research
+- [x] **evspsblsoi** — Soil Evaporation (`kg m-2 s-1`, Lmon) — Implemented in `lrcs_land` from LPJ-GUESS `evspsblsoi_monthly.out`
+- [x] **evspsblveg** — Canopy Evaporation (`kg m-2 s-1`, Lmon) — Implemented in `lrcs_land` from LPJ-GUESS `evspsblveg_monthly.out`
+- [x] **rootd** — Maximum Root Depth (`m`, fx) — Implemented in `lrcs_land` via `rootd_pipeline` (Zeng 1998 weighted effective depth from `tvl`/`tvh`)
+- [x] **mrsofc** — Soil Field Capacity (`kg m-2`, fx) — Implemented in `lrcs_land` via `mrsofc_pipeline` (Van Genuchten params from IFS soil type)
+- [x] **sftgif** — Glacier Area Fraction (`%`, fx) — Implemented in `lrcs_land` via `sftgif_pipeline` (IFS vegetation type 12)
+- [x] **mrfso** — Frozen Soil Water Content (`kg m-2`, LImon) — Implemented in `lrcs_land` from LPJ-GUESS `mrfso_monthly.out`
 
 ---
 

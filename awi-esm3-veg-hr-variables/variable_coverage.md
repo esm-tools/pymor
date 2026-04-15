@@ -357,8 +357,8 @@
 | `atmos.wap.tpt-p6-hxy-air.3hr.glb` | ✅ |  | veg |
 | `atmos.wbgt.tavg-h2m-hxy-u.day.glb` | ❌ | No Wet Bulb Globe Temperature scheme | extra |
 | `atmos.wbgt.tmax-h2m-hxy-u.day.glb` | ❌ | No Wet Bulb Globe Temperature scheme | extra |
-| `atmos.wsg.tmax-h100m-hxy-u.1hr.glb` | ❌ | Only 1hr/mon frequency implemented | cap7 |
-| `atmos.wsg.tmax-h100m-hxy-u.mon.glb` | ❌ | Only 1hr/mon frequency implemented | extra |
+| `atmos.wsg.tmax-h100m-hxy-u.1hr.glb` | ❌ | IFS does not output wind gust at 100m height (10m gust is implemented) | cap7 |
+| `atmos.wsg.tmax-h100m-hxy-u.mon.glb` | ❌ | IFS does not output wind gust at 100m height (10m gust is implemented) | extra |
 | `atmos.wsg.tmax-h10m-hxy-u.1hr.glb` | ✅ |  | cap7 |
 | `atmos.wsg.tmax-h10m-hxy-u.mon.glb` | ✅ |  | extra |
 | `atmos.zfull.ti-al-hxy-u.fx.glb` | ❌ | Needs IFS source changes (offline geopotential height computation needed) | cap7 |
@@ -670,7 +670,7 @@
 | `ocean.areacello.ti-u-hxy-u.fx.glb` | ✅ |  | cap7 core |
 | `ocean.basin.ti-u-hxy-u.fx.glb` | ✅ |  | cap7 core |
 | `ocean.bigthetao.tavg-ol-hm-sea.mon.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | lrcs |
-| `ocean.bigthetao.tavg-ol-hxy-sea.dec.glb` | ❌ | Decadal frequency not implemented | lrcs |
+| `ocean.bigthetao.tavg-ol-hxy-sea.dec.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | lrcs |
 | `ocean.bigthetao.tavg-ol-hxy-sea.mon.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | cap7 core |
 | `ocean.chcint.tavg-op4-hxy-sea.mon.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | lrcs |
 | `ocean.deptho.ti-u-hxy-sea.fx.glb` | ✅ |  | cap7 core |
@@ -766,8 +766,8 @@
 | `ocean.phcint.tavg-op4-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.pso.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.rsdoabsorb.tavg-ol-hxy-sea.yr.glb` | ✅ |  | lrcs |
-| `ocean.rsds.tavg-u-hxy-ifs.mon.glb` | ❌ | Only 1hr/3hr/day/mon frequency implemented | lrcs |
-| `ocean.rsus.tavg-u-hxy-ifs.mon.glb` | ❌ | Only 1hr/3hr/day/mon frequency implemented | lrcs |
+| `ocean.rsds.tavg-u-hxy-ifs.mon.glb` | ❌ | FESOM swr.fesom is total shortwave (not ice-free only); ice-free masking not yet implemented | lrcs |
+| `ocean.rsus.tavg-u-hxy-ifs.mon.glb` | ❌ | FESOM does not output reflected shortwave (rsus) separately | lrcs |
 | `ocean.scint.tavg-op4-hxy-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.sf6.tavg-ol-hxy-sea.mon.glb` | ❌ | No SF6 tracer in FESOM | cap7 |
 | `ocean.sfacrossline.tavg-u-ht-sea.mon.glb` | ❌ | No strait diagnostic in FESOM — requires offline line-integral with transect mask | lrcs |

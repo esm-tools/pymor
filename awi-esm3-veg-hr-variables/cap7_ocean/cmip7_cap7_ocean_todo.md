@@ -78,7 +78,7 @@ No new rules needed.
 
 These require basin mask infrastructure not yet available for FESOM DARS mesh.
 
-- [ ] **basin** (fx) — `ocean.basin.ti-u-hxy-u.fx.glb` — Basin mask integer field. Needs basin definition on unstructured DARS mesh.
+- [x] **basin** (fx) — `ocean.basin.ti-u-hxy-u.fx.glb` — Implemented in `core_ocean` via `basin_pipeline` using external basin mask file.
 - [ ] **msftmz** (mon, basin+depth) — `ocean.msftm.tavg-ol-hyb-sea.mon.glb` — Ocean meridional overturning mass streamfunction. Needs basin masks + zig-zag path integration on unstructured mesh.
 - [ ] **msftyz** (mon, basin+depth) — `ocean.msfty.tavg-ol-ht-sea.mon.glb` — Ocean Y overturning mass streamfunction. Same basin mask + path integration requirement.
 
