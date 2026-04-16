@@ -57,42 +57,109 @@ from .dataset_helpers import get_time_label, has_time_axis
 import dask
 
 
-def _ensure_lat_lon_bounds(ds):
+def _ensure_lat_lon_bounds(ds, rule=None):
     """
-    Add lat_bnds/lon_bnds to a dataset when the coord is 1-D, monotonic and >1 point.
+    Add lat_bnds/lon_bnds to a dataset.
 
-    Silently skips unstructured / non-monotonic / scalar cases (e.g. FESOM flattened
-    node arrays) where cell edges cannot be inferred from centers alone. Required
-    for CMIP7 compliance (cchecker ATTR001).
+    For regular monotonic 1-D coords, bounds are inferred from cell centers.
+    For unstructured (non-monotonic) coords, bounds are copied from
+    ``rule.grid_file`` if it contains matching ``lat_bnds(ncells, vertices)`` /
+    ``lon_bnds(ncells, vertices)``. Required for CMIP7 compliance (cchecker
+    ATTR001).
     """
     import numpy as np
 
     if not isinstance(ds, xr.Dataset):
         return ds
-    candidates = []
+    regular = []
+    unstructured = []
     for name in ("lat", "latitude", "lon", "longitude"):
-        if name in ds.variables:
-            coord = ds[name]
-            bname = f"{name}_bnds"
-            if bname in ds.variables:
-                continue
-            if coord.ndim != 1 or coord.size < 2:
-                continue
-            try:
-                vals = np.asarray(coord.values)
-                diffs = np.diff(vals)
-                if not (np.all(diffs > 0) or np.all(diffs < 0)):
-                    logger.debug(f"  → Skipping bounds for non-monotonic coord '{name}'")
-                    continue
-            except Exception:
-                continue
-            candidates.append(name)
-    if candidates:
-        ds = add_bounds_from_coords(ds, coord_names=candidates)
-        for name in candidates:
+        if name not in ds.variables:
+            continue
+        coord = ds[name]
+        bname = f"{name}_bnds"
+        if bname in ds.variables:
+            continue
+        if coord.ndim != 1 or coord.size < 2:
+            continue
+        try:
+            vals = np.asarray(coord.values)
+            diffs = np.diff(vals)
+            if np.all(diffs > 0) or np.all(diffs < 0):
+                regular.append(name)
+            else:
+                unstructured.append(name)
+        except Exception:
+            continue
+    if regular:
+        ds = add_bounds_from_coords(ds, coord_names=regular)
+        for name in regular:
             bname = f"{name}_bnds"
             if bname in ds.variables:
                 ds[bname].encoding["_FillValue"] = None
+    if unstructured and rule is not None:
+        ds = _attach_bounds_from_mesh(ds, rule, unstructured)
+    return ds
+
+
+def _attach_bounds_from_mesh(ds, rule, coord_names):
+    """Copy ``lat_bnds``/``lon_bnds`` from ``rule.grid_file`` if dimensions match.
+
+    Used for unstructured meshes (e.g. FESOM2) where cell vertices cannot be
+    inferred from node positions alone; the mesh/griddes NetCDF holds pre-
+    computed dual-cell vertex coordinates.
+    """
+    import numpy as np
+
+    grid_file = getattr(rule, "grid_file", None)
+    if not grid_file:
+        return ds
+    try:
+        mesh = xr.open_dataset(grid_file, decode_times=False)
+    except Exception as e:
+        logger.debug(f"  → Skipping mesh bounds: cannot open {grid_file}: {e}")
+        return ds
+    try:
+        for name in coord_names:
+            bname = f"{name}_bnds"
+            mesh_bname = "lat_bnds" if name in ("lat", "latitude") else "lon_bnds"
+            if mesh_bname not in mesh.variables:
+                continue
+            mb = mesh[mesh_bname]
+            coord = ds[name]
+            if coord.size != mb.shape[0]:
+                logger.debug(
+                    f"  → Skipping mesh bounds for '{name}': size mismatch "
+                    f"{coord.size} vs {mb.shape[0]}"
+                )
+                continue
+            # Verify values agree so we aren't pulling bounds from a different mesh.
+            mesh_centers_name = "lat" if name in ("lat", "latitude") else "lon"
+            if mesh_centers_name in mesh.variables:
+                # Tolerance covers float32 vs float64 representation of the same mesh
+                if not np.allclose(
+                    np.asarray(coord.values, dtype=float),
+                    np.asarray(mesh[mesh_centers_name].values, dtype=float),
+                    rtol=0,
+                    atol=1e-4,
+                ):
+                    logger.debug(
+                        f"  → Skipping mesh bounds for '{name}': centers disagree with mesh"
+                    )
+                    continue
+            # Rename the mesh vertex dim to match the variable's spatial dim.
+            dim_name = coord.dims[0]
+            vdim = mb.dims[1]
+            data = mb.values
+            ds[bname] = xr.DataArray(
+                data,
+                dims=(dim_name, vdim),
+                attrs={"units": mb.attrs.get("units", "degrees")},
+            )
+            ds[bname].encoding["_FillValue"] = None
+            ds[name].attrs["bounds"] = bname
+    finally:
+        mesh.close()
     return ds
 
 
@@ -493,7 +560,7 @@ def _save_dataset_with_native_timespan(
                 ds[_c].encoding["_FillValue"] = None
 
         # CMIP7 cchecker ATTR001: ensure lat/lon bounds exist on regular grids
-        datasets[i] = _ensure_lat_lon_bounds(ds)
+        datasets[i] = _ensure_lat_lon_bounds(ds, rule)
         ds = datasets[i]
 
         paths.append(create_filepath(ds, rule))
@@ -666,7 +733,7 @@ def save_dataset(da: xr.DataArray, rule):
             ds_temp = da.to_dataset()
         else:
             ds_temp = da
-        ds_temp = _ensure_lat_lon_bounds(ds_temp)
+        ds_temp = _ensure_lat_lon_bounds(ds_temp, rule)
         chunk_encoding = _calculate_netcdf_chunks(ds_temp, rule)
         return ds_temp.to_netcdf(
             filepath,
@@ -688,7 +755,7 @@ def save_dataset(da: xr.DataArray, rule):
             ds_temp = da.to_dataset()
         else:
             ds_temp = da
-        ds_temp = _ensure_lat_lon_bounds(ds_temp)
+        ds_temp = _ensure_lat_lon_bounds(ds_temp, rule)
         chunk_encoding = _calculate_netcdf_chunks(ds_temp, rule)
         # Merge time encoding with chunk encoding
         final_encoding = {time_label: time_encoding}
@@ -797,7 +864,7 @@ def save_dataset(da: xr.DataArray, rule):
             ds_temp = da.to_dataset()
         else:
             ds_temp = da
-        ds_temp = _ensure_lat_lon_bounds(ds_temp)
+        ds_temp = _ensure_lat_lon_bounds(ds_temp, rule)
         da = ds_temp
         chunk_encoding = _calculate_netcdf_chunks(ds_temp, rule)
         da.to_netcdf(
@@ -860,7 +927,7 @@ def save_dataset(da: xr.DataArray, rule):
                 for _c in list(group_ds.coords):
                     group_ds[_c].encoding["_FillValue"] = None
                 # CMIP7 cchecker ATTR001: ensure lat/lon bounds on regular grids
-                group_ds = _ensure_lat_lon_bounds(group_ds)
+                group_ds = _ensure_lat_lon_bounds(group_ds, rule)
                 datasets.append(group_ds)
             # Calculate chunking encoding — align with dask chunks for streaming writes
             is_dask = any(_is_dask_backed(ds) for ds in datasets)
