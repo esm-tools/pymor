@@ -28,20 +28,9 @@ jobqueue:
     walltime: '00:30:00'
 
 pipelines:
-  # areacellr: same grid as atmosphere, reuse areacella computation
+  # areacellr (river grid == atmosphere grid): reuse pycmor std_lib FrozenPipeline
   - name: areacella_pipeline
-    steps:
-      - pycmor.core.gather_inputs.load_mfdataset
-      - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_areacella
-      - pycmor.std_lib.attributes.set_global
-      - pycmor.std_lib.attributes.set_variable
-      - pycmor.std_lib.attributes.set_coordinates
-      - pycmor.std_lib.dimensions.map_dimensions
-      - pycmor.core.caching.manual_checkpoint
-      - pycmor.std_lib.generic.trigger_compute
-      - pycmor.std_lib.generic.show_data
-      - pycmor.std_lib.files.save_dataset
+    uses: pycmor.core.pipeline.AreacellaFxPipeline
 
   # Southern hemisphere subset pipeline (orog 30S-90S, tas 1hr 30S-90S)
   - name: southern_hemisphere_pipeline

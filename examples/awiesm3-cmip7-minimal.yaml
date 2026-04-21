@@ -38,19 +38,9 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # Ofx pipeline: load grid file, extract variable directly (e.g., areacello)
-  # Generic — reusable for any model with grid info in NetCDF
+  # areacello: reuse pycmor std_lib FrozenPipeline
   - name: fx_extract_pipeline
-    steps:
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
-      - pycmor.std_lib.generic.get_variable
-      - pycmor.std_lib.attributes.set_global
-      - pycmor.std_lib.attributes.set_variable
-      - pycmor.std_lib.attributes.set_coordinates
-      - pycmor.std_lib.dimensions.map_dimensions
-      - pycmor.std_lib.generic.trigger_compute
-      - pycmor.std_lib.generic.show_data
-      - pycmor.std_lib.files.save_dataset
+    uses: pycmor.core.pipeline.AreacelloFxPipeline
 
   # Ofx pipeline: compute bathymetry from mesh depth_lev
   - name: fx_deptho_pipeline
@@ -151,6 +141,17 @@ inherit:
   output_directory: ./cmorized_output/awiesm3
 
 rules:
+  # Ocean grid-cell area (fx) -- referenced by every ocean/seaice variable
+  # via cell_measures: area: areacello.
+  - name: areacello
+    inputs:
+      - path: *mp
+        pattern: mesh.nc
+    compound_name: ocean.areacello.ti-u-hxy-u.fx.GLB
+    model_variable: cell_area
+    pipelines:
+      - fx_extract_pipeline
+
   # Ocean surface temperature
   - name: tos
     inputs:

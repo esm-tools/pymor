@@ -47,18 +47,10 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # Ofx pipeline: load grid file, extract variable directly (e.g., areacello)
+  # Ofx pipeline for areacello: reuse pycmor std_lib FrozenPipeline
+  # (reads cell_area from mesh, emits as CMIP7 fx file)
   - name: fx_extract_pipeline
-    steps:
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
-      - pycmor.std_lib.generic.get_variable
-      - pycmor.std_lib.attributes.set_global
-      - pycmor.std_lib.attributes.set_variable
-      - pycmor.std_lib.attributes.set_coordinates
-      - pycmor.std_lib.dimensions.map_dimensions
-      - pycmor.std_lib.generic.trigger_compute
-      - pycmor.std_lib.generic.show_data
-      - pycmor.std_lib.files.save_dataset
+    uses: pycmor.core.pipeline.AreacelloFxPipeline
 
   # Ofx pipeline: compute bathymetry from mesh depth_lev
   - name: fx_deptho_pipeline

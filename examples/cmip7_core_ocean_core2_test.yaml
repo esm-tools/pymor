@@ -58,17 +58,9 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # areacello: reuse pycmor std_lib FrozenPipeline
   - name: fx_extract_pipeline
-    steps:
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
-      - pycmor.std_lib.generic.get_variable
-      - pycmor.std_lib.attributes.set_global
-      - pycmor.std_lib.attributes.set_variable
-      - pycmor.std_lib.attributes.set_coordinates
-      - pycmor.std_lib.dimensions.map_dimensions
-      - pycmor.std_lib.generic.trigger_compute
-      - pycmor.std_lib.generic.show_data
-      - pycmor.std_lib.files.save_dataset
+    uses: pycmor.core.pipeline.AreacelloFxPipeline
 
   - name: fx_deptho_pipeline
     steps:
@@ -165,7 +157,7 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_017/outdata/fesom
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/LR_test_01/outdata/fesom
   source_id: AWI-ESM3-VEG-LR
   institution_id: AWI
   experiment_id: piControl
@@ -436,7 +428,7 @@ rules:
         pattern: temp.fesom.1909.nc
     compound_name: ocean.zostoga.tavg-u-hm-sea.mon.GLB
     model_variable: temp
-    salt_file: /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_017/outdata/fesom/salt.fesom.1909.nc
+    salt_file: /work/bb1469/a270092/runtime/awiesm3-develop/LR_test_01/outdata/fesom/salt.fesom.1909.nc
     salt_variable: salt
     reference_density: 1025.0
     pipelines:

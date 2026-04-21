@@ -44,6 +44,25 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # hur on pressure levels: recompute from ta + hus using CMIP7 phase-
+  # dependent saturation vapour pressure (water >=0 C, ice <0 C). IFS
+  # FullPos `r` uses mixed-phase QSAT interpolation that is not CMIP7.
+  - name: hur_plev_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_hur_plev
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   - name: hurs_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
@@ -108,6 +127,11 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # areacella: atmospheric grid-cell area, referenced by every atm variable
+  # via cell_measures: area: areacella.
+  - name: areacella_pipeline
+    uses: pycmor.core.pipeline.AreacellaFxPipeline
+
 inherit:
   data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/oifs
   source_id: AWI-ESM-3
@@ -122,6 +146,21 @@ inherit:
   output_directory: ./cmorized_output/awiesm3
 
 rules:
+  # ============================================================
+  # fx (time-invariant)
+  # ============================================================
+
+  # Atmospheric grid-cell area -- companion for every atm variable
+  # that carries cell_measures: area: areacella.
+  - name: areacella
+    inputs:
+      - path: *dp
+        pattern: atmos_mon_rsdt_mon_.*\.nc
+    compound_name: atmos.areacella.ti-u-hxy-u.fx.GLB
+    model_variable: rsdt
+    pipelines:
+      - areacella_pipeline
+
   # ============================================================
   # Monthly 2D surface (Amon)
   # ============================================================
@@ -461,9 +500,13 @@ rules:
   - name: hur
     inputs:
       - path: *dp
-        pattern: atmos_mon_pl_hur_mon_pl_.*\.nc
+        pattern: atmos_mon_pl_ta_mon_pl_.*\.nc
     compound_name: atmos.hur.tavg-p19-hxy-air.mon.GLB
-    model_variable: hur
+    model_variable: ta
+    second_input_path: *dp
+    second_input_pattern: "atmos_mon_pl_hus_mon_pl_.*\\.nc"
+    second_variable: hus
+    pipelines: [hur_plev_pipeline]
     lazy_write: true
 
   # ============================================================
@@ -617,9 +660,13 @@ rules:
   - name: hur_day
     inputs:
       - path: *dp
-        pattern: atmos_day_pl_hur_day_pl_.*\.nc
+        pattern: atmos_day_pl_ta_day_pl_.*\.nc
     compound_name: atmos.hur.tavg-p19-hxy-u.day.GLB
-    model_variable: hur
+    model_variable: ta
+    second_input_path: *dp
+    second_input_pattern: "atmos_day_pl_hus_day_pl_.*\\.nc"
+    second_variable: hus
+    pipelines: [hur_plev_pipeline]
     lazy_write: true
 
   # ============================================================
