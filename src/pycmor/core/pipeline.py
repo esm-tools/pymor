@@ -367,12 +367,14 @@ class AreacelloFxPipeline(FrozenPipeline):
 class AreacellaFxPipeline(FrozenPipeline):
     """Fixed pipeline producing ``areacella`` from lat/lon on a regular grid.
 
-    Uses the spherical-Earth cell-area formula on the grid's lat/lon
-    coords. Reference via ``uses: pycmor.pipeline.AreacellaFxPipeline``.
+    Loads any model output file, picks a field, and applies the
+    spherical-Earth cell-area formula on the field's lat/lon coords.
+    Reference via ``uses: pycmor.core.pipeline.AreacellaFxPipeline``.
     """
 
     STEPS = (
-        "pycmor.std_lib.cell_measures.load_gridfile",
+        "pycmor.core.gather_inputs.load_mfdataset",
+        "pycmor.std_lib.generic.get_variable",
         "pycmor.std_lib.cell_measures.compute_areacella",
         "pycmor.std_lib.attributes.set_global",
         "pycmor.std_lib.attributes.set_variable",
