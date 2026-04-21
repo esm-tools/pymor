@@ -600,8 +600,12 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         return frequency
 
     def get_Conventions(self):
-        """Get CF Conventions version (space-separated, no comma per CV)."""
-        return self.rule_dict.get("Conventions", "CF-1.11 CMIP-7.0")
+        """Get CF Conventions version.
+
+        CMIP7 Conventions CV lists CF versions only (``CF-1.11``, ``CF-1.12``,
+        ``CF-1.13``); the ``CMIP-7.0`` suffix used by CMIP6 is not a CMIP7 term.
+        """
+        return self.rule_dict.get("Conventions", "CF-1.11")
 
     # ========================================================================
     # CMIP7 branded-variable attributes (parsed from compound_name)
@@ -628,7 +632,17 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         return tokens
 
     def get_branded_variable(self):
-        return self.rule_dict.get("branded_variable", self.rule_dict.get("compound_name"))
+        # CMIP7 branded_variable CV format: <variable_id>_<branding_suffix>
+        # (e.g. ``sidmassth_tavg-u-hxy-si``). Internal compound_name uses the
+        # dotted 5-part form <realm>.<variable>.<branding_suffix>.<frequency>.<region>;
+        # transform to the DRS form when emitting the global attribute.
+        user = self.rule_dict.get("branded_variable")
+        if user:
+            return user
+        parts = self._compound_parts()
+        if parts is not None:
+            return f"{parts[1]}_{parts[2]}"
+        return self.rule_dict.get("compound_name")
 
     def get_branding_suffix(self):
         parts = self._compound_parts()
@@ -651,17 +665,39 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         return tokens[3] if tokens else None
 
     def get_region(self):
+        # CMIP7 region CV uses lowercase identifiers (e.g. `glb`, `nh`, `sh`);
+        # compound_name historically carried uppercase (`GLB`).
         parts = self._compound_parts()
-        return parts[4] if parts else self.rule_dict.get("region", "GLB")
+        region = parts[4] if parts else self.rule_dict.get("region", "glb")
+        return region.lower() if isinstance(region, str) else region
 
     def get_drs_specs(self):
-        return self.rule_dict.get("drs_specs", "CMIP7")
+        return self.rule_dict.get("drs_specs", "MIP-DRS7")
 
     def get_license_id(self):
-        return self.rule_dict.get("license_id", "cc-by-4-0")
+        return self.rule_dict.get("license_id", "CC-BY-4.0")
 
     def get_parent_experiment_id(self):
-        return self.rule_dict.get("parent_experiment_id", "no parent")
+        # CMIP7 experiment CV assigns each experiment its parent; the CMIP6
+        # sentinel "no parent" is not a valid CMIP7 value. If the user supplied
+        # "no parent" (or left it unset), look up the parent from the CV.
+        user = self.rule_dict.get("parent_experiment_id")
+        if user and user.strip().lower() not in ("no parent", "none", ""):
+            return user
+        experiment_id = self.rule_dict.get("experiment_id")
+        if experiment_id:
+            try:
+                from esgvoc.api.projects import get_all_terms_in_collection
+
+                for term in get_all_terms_in_collection("cmip7", "experiment"):
+                    if getattr(term, "drs_name", None) == experiment_id:
+                        parent = getattr(term, "parent_experiment", None)
+                        if parent is not None:
+                            return getattr(parent, "drs_name", "") or ""
+                        return ""
+            except Exception:
+                pass
+        return user or ""
 
     def get_title(self):
         user = self.rule_dict.get("title")
@@ -707,15 +743,19 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         if dreq_path:
             m = re.search(r"/v(\d+(?:\.\d+)+)/", str(dreq_path))
             if m:
-                return m.group(1)
-        return "1.0.0"
+                return f"MIP-DS7.{m.group(1)}"
+        return "MIP-DS7.1.0.0"
 
     def get_creation_date(self):
         return self.rule_dict["creation_date"]
 
     def get_tracking_id(self):
-        """Generate a unique tracking ID (prefix overridable via rule_dict)."""
-        prefix = self.rule_dict.get("tracking_id_prefix", "hdl:21.14100/")
+        """Generate a unique tracking ID (prefix overridable via rule_dict).
+
+        The CMIP7 tracking_id CV requires the ``hdl:21.14107/<uuid>`` prefix
+        (21.14107, not the 21.14100 handle used in CMIP6).
+        """
+        prefix = self.rule_dict.get("tracking_id_prefix", "hdl:21.14107/")
         return prefix + str(uuid.uuid4())
 
     def get_variable_id(self):

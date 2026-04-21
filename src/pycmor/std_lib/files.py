@@ -367,7 +367,8 @@ def create_filepath(ds, rule):
         # <variable_id>_<branding_suffix>_<frequency>_<region>_<grid_label>_<source_id>_<experiment_id>_<variant_label>[_<time_range>].nc
         parts = compound_str.split(".")
         branding_suffix = _sanitize_component(parts[2])
-        region = _sanitize_component(parts[4])
+        # CMIP7 region CV is lowercase (glb, nh, sh, ...); match the global attribute.
+        region = _sanitize_component(parts[4]).lower()
         freq_tok = _sanitize_component(frequency_str)
         head = f"{out_dir}/{name}_{branding_suffix}_{freq_tok}_{region}_{grid}_{source_id}_{experiment_id}_{label}"
     else:
