@@ -343,6 +343,46 @@ class DefaultPipeline(FrozenPipeline):
     NAME = "pycmor.pipeline.DefaultPipeline"
 
 
+class AreacelloFxPipeline(FrozenPipeline):
+    """Fixed pipeline producing ``areacello`` from an unstructured ocean mesh.
+
+    Reads ``rule.grid_file`` for ``cell_area`` and writes a CMIP7 fx
+    file. Configs need only set ``compound_name``, ``model_variable``,
+    and ``inputs`` (the mesh file), then reference this pipeline via
+    ``uses: pycmor.pipeline.AreacelloFxPipeline``.
+    """
+
+    STEPS = (
+        "pycmor.std_lib.cell_measures.load_gridfile",
+        "pycmor.std_lib.cell_measures.compute_areacello",
+        "pycmor.std_lib.attributes.set_global",
+        "pycmor.std_lib.attributes.set_variable",
+        "pycmor.std_lib.attributes.set_coordinates",
+        "pycmor.std_lib.dimensions.map_dimensions",
+        "pycmor.std_lib.files.save_dataset",
+    )
+    NAME = "pycmor.pipeline.AreacelloFxPipeline"
+
+
+class AreacellaFxPipeline(FrozenPipeline):
+    """Fixed pipeline producing ``areacella`` from lat/lon on a regular grid.
+
+    Uses the spherical-Earth cell-area formula on the grid's lat/lon
+    coords. Reference via ``uses: pycmor.pipeline.AreacellaFxPipeline``.
+    """
+
+    STEPS = (
+        "pycmor.std_lib.cell_measures.load_gridfile",
+        "pycmor.std_lib.cell_measures.compute_areacella",
+        "pycmor.std_lib.attributes.set_global",
+        "pycmor.std_lib.attributes.set_variable",
+        "pycmor.std_lib.attributes.set_coordinates",
+        "pycmor.std_lib.dimensions.map_dimensions",
+        "pycmor.std_lib.files.save_dataset",
+    )
+    NAME = "pycmor.pipeline.AreacellaFxPipeline"
+
+
 class TestingPipeline(FrozenPipeline):
     """
     The TestingPipeline class is a subclass of the Pipeline class. It is designed for testing purposes. It includes

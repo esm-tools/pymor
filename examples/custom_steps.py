@@ -158,6 +158,35 @@ def compute_sftof(data, rule):
     return result
 
 
+def compute_areacello(data, rule):
+    """
+    Ocean grid-cell area from an unstructured mesh.
+
+    Reads ``cell_area`` (or ``cluster_area`` as a fallback) from the mesh
+    Dataset produced by ``load_gridfile``. No computation — the mesh
+    already stores the per-node surface area in m².
+
+    Input: xr.Dataset (mesh file with ``cell_area`` or ``cluster_area``)
+    Output: xr.DataArray (1D, per ocean node)
+    """
+    for name in ("cell_area", "cluster_area"):
+        if name in data:
+            area = data[name]
+            break
+    else:
+        raise ValueError("Mesh must contain 'cell_area' or 'cluster_area' for areacello")
+
+    result = area.copy()
+    result.attrs = {
+        "units": "m2",
+        "standard_name": "cell_area",
+        "long_name": "Ocean Grid-Cell Area",
+        "cell_methods": "area: sum",
+    }
+    result.name = rule.model_variable
+    return result
+
+
 def compute_thkcello_fx(data, rule):
     """
     Compute static ocean layer thickness from mesh depth bounds.
@@ -1914,14 +1943,26 @@ def compute_sfcwind(data, rule):
     return result
 
 
+def _e_sat_cmip(T_K):
+    """CMIP7-compliant saturation vapour pressure [Pa] as a function of T [K].
+
+    Convention: over water for T >= 273.15 K, over ice for T < 273.15 K
+    (CF/CMIP standard). Alduchov & Eskridge (1996) Magnus-form coefficients.
+      water:  e_sat = 611.2 * exp(17.625 * Tc / (Tc + 243.04))
+      ice:    e_sat = 611.2 * exp(22.587 * Tc / (Tc + 273.86))
+    """
+    Tc = T_K - 273.15
+    e_water = 611.2 * np.exp(17.625 * Tc / (Tc + 243.04))
+    e_ice = 611.2 * np.exp(22.587 * Tc / (Tc + 273.86))
+    return xr.where(T_K >= 273.15, e_water, e_ice)
+
+
 def compute_hurs(data, rule):
     """
     Compute near-surface relative humidity from temperature and dewpoint.
 
-    Uses the Magnus formula:
-      RH = 100 * exp(b*Td/(c+Td)) / exp(b*T/(c+T))
-
-    where T and Td are in Celsius, b = 17.625, c = 243.04.
+    Uses CMIP7 phase-dependent saturation vapour pressure: over water for
+    T >= 0°C, over ice for T < 0°C. RH is e_sat(Td) / e_sat(T).
 
     Primary input (data) is 2t (2m temperature, K).
     Dewpoint is loaded from rule attributes.
@@ -1933,17 +1974,10 @@ def compute_hurs(data, rule):
     """
     td_K = _load_secondary_mf(rule, "second_input_path", "second_input_pattern", "second_variable")
 
-    # Convert K -> °C
-    t_C = data - 273.15
-    td_C = td_K - 273.15
-
-    # Magnus formula constants (Alduchov and Eskridge, 1996)
-    b = 17.625
-    c = 243.04
-
-    result = 100.0 * np.exp(b * td_C / (c + td_C)) / np.exp(b * t_C / (c + t_C))
-
-    # Clip to physical range
+    # Phase reference follows ambient T (not Td) per CMIP/CF convention.
+    e = _e_sat_cmip(td_K)
+    e_sat = _e_sat_cmip(data)
+    result = 100.0 * e / e_sat
     result = result.clip(0, 100)
 
     result.attrs = {
@@ -1955,45 +1989,57 @@ def compute_hurs(data, rule):
     return result
 
 
+def compute_hur_plev(data, rule):
+    """Compute CMIP7-compliant relative humidity on pressure levels.
+
+    Uses ta (primary) + hus (secondary); pressure is taken from the
+    `plev` coordinate of the input (pfull == plev on pressure levels).
+    Saturation vapour pressure follows the CMIP7 convention: over water
+    for T >= 0°C, over ice below (see `_e_sat_cmip`). This replaces the
+    IFS FullPos `r` field, which uses a mixed-phase QSAT interpolation
+    that is not CMIP7-compliant.
+    """
+    hus = _load_secondary_mf(rule, "second_input_path", "second_input_pattern", "second_variable")
+    # pfull from the pressure-level coord; broadcast over (time,lat,lon)
+    plev_name = next((n for n in ("plev", "plev19", "pressure", "lev") if n in data.coords), None)
+    if plev_name is None:
+        raise ValueError(f"compute_hur_plev: no plev-like coord on ta (coords={list(data.coords)})")
+    pfull = data[plev_name]
+
+    e_sat = _e_sat_cmip(data)
+    e = hus * pfull / (0.622 + 0.378 * hus)
+    result = 100.0 * e / e_sat
+    result = result.clip(0, 100)
+
+    result.attrs = {
+        "units": "%",
+        "standard_name": "relative_humidity",
+        "long_name": "Relative Humidity",
+    }
+    result.name = rule.model_variable
+    return result
+
+
 def compute_hur_ml(data, rule):
     """
     Compute relative humidity on model levels from ta, hus, pfull.
 
     OpenIFS on native model levels does not fill the `r` field (FullPos only
-    emits `r` on pressure levels), so we reconstruct it from temperature,
-    specific humidity and pressure using the Magnus/Tetens formula for
-    saturation vapour pressure over water:
+    emits `r` on pressure levels). We reconstruct RH with CMIP7 phase-dependent
+    saturation vapour pressure (over water for T >= 0°C, over ice below).
 
-      e_sat(T) = 611.2 * exp(17.67 * (T - 273.15) / (T - 29.65))   [Pa]
-
-    Vapour pressure from specific humidity:
-
-      e = q * p / (0.622 + 0.378 * q)                              [Pa]
-
-    Relative humidity:
-
-      RH = 100 * e / e_sat
+      e      = q * p / (0.622 + 0.378 * q)      [Pa]
+      e_sat  = phase-dependent Magnus (see _e_sat_cmip)
+      RH     = 100 * e / e_sat
 
     Primary input (data) is ta (air temperature on model levels, K).
     Specific humidity and pressure are loaded from rule attributes.
-
-    Rule attributes:
-      - second_input_path: directory containing hus files
-      - second_input_pattern: glob pattern for hus files
-      - second_variable: variable name in hus files (e.g. "hus")
-      - third_input_path: directory containing pfull files
-      - third_input_pattern: glob pattern for pfull files
-      - third_variable: variable name in pfull files (e.g. "pfull")
     """
     hus = _load_secondary_mf(rule, "second_input_path", "second_input_pattern", "second_variable")
     pfull = _load_secondary_mf(rule, "third_input_path", "third_input_pattern", "third_variable")
 
-    # Saturation vapour pressure over water (Bolton 1980 / Magnus form)
-    e_sat = 611.2 * np.exp(17.67 * (data - 273.15) / (data - 29.65))
-
-    # Actual vapour pressure from specific humidity and pressure
+    e_sat = _e_sat_cmip(data)
     e = hus * pfull / (0.622 + 0.378 * hus)
-
     result = 100.0 * e / e_sat
     result = result.clip(0, 100)
 
