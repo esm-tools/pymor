@@ -552,6 +552,8 @@ def _save_dataset_with_native_timespan(
             if _bnd and _bnd not in ds.variables:
                 ds[time_label].attrs.pop("bounds", None)
                 ds[time_label].encoding.pop("bounds", None)
+            # CF 1.11 §4.4: ESM time axes do not track leap seconds.
+            ds[time_label].attrs.setdefault("units_metadata", "leap_seconds: none")
             # Drop stale per-variable `coordinates` encoding (post-rename fixup)
             for _v in ds.data_vars:
                 ds[_v].encoding.pop("coordinates", None)
@@ -615,7 +617,14 @@ def _calculate_netcdf_chunks(ds: xr.Dataset, rule) -> dict:
     enable_chunking = rule._pycmor_cfg("netcdf_enable_chunking")
     enable_chunking = getattr(rule, "netcdf_enable_chunking", enable_chunking)
     if not enable_chunking:
-        return {v: {"_FillValue": 1.0e20} for v in ds.data_vars}
+        # CF forbids _FillValue on bounds variables; respect explicit None and skip *_bnds.
+        _sentinel = object()
+        out = {}
+        for v in ds.data_vars:
+            _pre = ds[v].encoding.get("_FillValue", _sentinel)
+            _is_bounds = str(v).endswith(("_bnds", "_bounds"))
+            out[v] = {"_FillValue": None if (_pre is None or _is_bounds) else 1.0e20}
+        return out
 
     # Get chunking configuration from global config
     chunk_algorithm = rule._pycmor_cfg("netcdf_chunk_algorithm")
@@ -922,6 +931,8 @@ def save_dataset(da: xr.DataArray, rule):
                     if _bnd and _bnd not in group_ds.variables:
                         group_ds[time_label].attrs.pop("bounds", None)
                         group_ds[time_label].encoding.pop("bounds", None)
+                    # CF 1.11 §4.4: ESM time axes do not track leap seconds.
+                    group_ds[time_label].attrs.setdefault("units_metadata", "leap_seconds: none")
                 for _v in group_ds.data_vars:
                     group_ds[_v].encoding.pop("coordinates", None)
                 for _c in list(group_ds.coords):

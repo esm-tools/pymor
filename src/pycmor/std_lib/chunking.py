@@ -455,7 +455,15 @@ def get_encoding_with_chunks(
             var_encoding["complevel"] = compression_level
             var_encoding["shuffle"] = True
 
-        var_encoding["_FillValue"] = 1.0e20
+        # CF forbids _FillValue on bounds variables. Respect an explicit None
+        # already set upstream, and skip any *_bnds / *_bounds variable.
+        _sentinel = object()
+        _pre = ds[var].encoding.get("_FillValue", _sentinel)
+        _is_bounds = str(var).endswith(("_bnds", "_bounds"))
+        if _pre is None or _is_bounds:
+            var_encoding["_FillValue"] = None
+        else:
+            var_encoding["_FillValue"] = 1.0e20
 
         encoding[var] = var_encoding
 
