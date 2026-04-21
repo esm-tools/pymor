@@ -53,11 +53,31 @@ from .chunking import (
     get_encoding_with_chunks,
 )
 from .dataset_helpers import get_time_label, has_time_axis
+from .global_attributes import _collect_external_cell_measures
 
 import dask
 
 
-def _ensure_lat_lon_bounds(ds, rule=None):
+def _ensure_external_variables(ds):
+    """CF 1.11 §7.2: announce cell_measures that live in a sibling fx file."""
+    if not isinstance(ds, xr.Dataset):
+        return ds
+    external = _collect_external_cell_measures(ds)
+    if not external:
+        return ds
+    existing = ds.attrs.get("external_variables", "")
+    ds.attrs["external_variables"] = " ".join(sorted({*existing.split(), *external}))
+    return ds
+
+
+def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
+    """Wrap _ensure_lat_lon_bounds with a post-pass that announces
+    external cell_measures variables (CF 1.11 §7.2)."""
+    ds = _ensure_lat_lon_bounds_impl(ds, rule)
+    return _ensure_external_variables(ds)
+
+
+def _ensure_lat_lon_bounds_impl(ds, rule=None):
     """
     Add lat_bnds/lon_bnds to a dataset.
 
@@ -563,7 +583,7 @@ def _save_dataset_with_native_timespan(
                 ds[_c].encoding["_FillValue"] = None
 
         # CMIP7 cchecker ATTR001: ensure lat/lon bounds exist on regular grids
-        datasets[i] = _ensure_lat_lon_bounds(ds, rule)
+        datasets[i] = _ensure_lat_lon_bounds_and_external_vars(ds, rule)
         ds = datasets[i]
 
         paths.append(create_filepath(ds, rule))
@@ -743,7 +763,7 @@ def save_dataset(da: xr.DataArray, rule):
             ds_temp = da.to_dataset()
         else:
             ds_temp = da
-        ds_temp = _ensure_lat_lon_bounds(ds_temp, rule)
+        ds_temp = _ensure_lat_lon_bounds_and_external_vars(ds_temp, rule)
         chunk_encoding = _calculate_netcdf_chunks(ds_temp, rule)
         return ds_temp.to_netcdf(
             filepath,
@@ -765,7 +785,7 @@ def save_dataset(da: xr.DataArray, rule):
             ds_temp = da.to_dataset()
         else:
             ds_temp = da
-        ds_temp = _ensure_lat_lon_bounds(ds_temp, rule)
+        ds_temp = _ensure_lat_lon_bounds_and_external_vars(ds_temp, rule)
         chunk_encoding = _calculate_netcdf_chunks(ds_temp, rule)
         # Merge time encoding with chunk encoding
         final_encoding = {time_label: time_encoding}
@@ -874,7 +894,7 @@ def save_dataset(da: xr.DataArray, rule):
             ds_temp = da.to_dataset()
         else:
             ds_temp = da
-        ds_temp = _ensure_lat_lon_bounds(ds_temp, rule)
+        ds_temp = _ensure_lat_lon_bounds_and_external_vars(ds_temp, rule)
         da = ds_temp
         chunk_encoding = _calculate_netcdf_chunks(ds_temp, rule)
         da.to_netcdf(
@@ -939,7 +959,7 @@ def save_dataset(da: xr.DataArray, rule):
                 for _c in list(group_ds.coords):
                     group_ds[_c].encoding["_FillValue"] = None
                 # CMIP7 cchecker ATTR001: ensure lat/lon bounds on regular grids
-                group_ds = _ensure_lat_lon_bounds(group_ds, rule)
+                group_ds = _ensure_lat_lon_bounds_and_external_vars(group_ds, rule)
                 datasets.append(group_ds)
             # Calculate chunking encoding — align with dask chunks for streaming writes
             is_dask = any(_is_dask_backed(ds) for ds in datasets)

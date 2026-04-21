@@ -1037,3 +1037,28 @@ def set_global_attributes(ds, rule):
     global_attrs = {k: v for k, v in global_attrs.items() if v is not None}
     ds.attrs.update(global_attrs)
     return ds
+
+
+def _collect_external_cell_measures(ds):
+    """Return cell_measures variable names referenced but not present in ``ds``.
+
+    Parses every data variable's ``cell_measures`` attribute (CF format
+    ``"key1: name1 [key2: name2 ...]"``) and returns the set of referenced
+    variable names that do not appear in ``ds`` itself. Typical ocean
+    outputs reference ``areacello`` / ``volcello``; atmos reference
+    ``areacella``; these are shipped as separate fx files.
+    """
+    names: set = set()
+    for var in ds.data_vars:
+        cm = ds[var].attrs.get("cell_measures")
+        if not isinstance(cm, str):
+            continue
+        # "area: areacello volume: volcello" -> ["areacello", "volcello"]
+        tokens = cm.replace(",", " ").split()
+        for i, tok in enumerate(tokens):
+            if tok.endswith(":"):
+                continue
+            if i > 0 and tokens[i - 1].endswith(":"):
+                if tok not in ds.variables:
+                    names.add(tok)
+    return names
