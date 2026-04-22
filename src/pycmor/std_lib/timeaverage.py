@@ -310,10 +310,25 @@ def timeavg(da: xr.DataArray, rule):
                 da = da.sortby("time")
         except (KeyError, AttributeError):
             pass
+    # Default flox engine is "numpy" (vectorised, zero JIT cold-start).
+    # The default flox path ("numbagg") JIT-compiles each aggregator via
+    # numba on first use — ~30 s per (aggregator, dtype, worker) triple.
+    # On HR runs with fresh Dask workers this dominated wall time. The
+    # numpy engine is within a small factor of numbagg once warm.
+    # Override per-rule or via config key ``flox_engine`` when needed.
+    _flox_engine = rule.get("flox_engine") if hasattr(rule, "get") else None
+    if not _flox_engine and hasattr(rule, "_pycmor_cfg"):
+        try:
+            _flox_engine = rule._pycmor_cfg("flox_engine")
+        except Exception:
+            _flox_engine = None
+    if not _flox_engine:
+        _flox_engine = "numpy"
+    _resample_kw = {"engine": _flox_engine}
     if time_method == "INSTANTANEOUS":
-        ds = da.resample(time=frequency_str).first()
+        ds = da.resample(time=frequency_str).first(**_resample_kw)
     elif time_method == "MEAN":
-        ds = da.resample(time=frequency_str).mean()
+        ds = da.resample(time=frequency_str).mean(**_resample_kw)
         # CMIP spec: time coordinate of MEAN-averaged data sits at the midpoint
         # of its averaging interval. Default to "mid" unless user overrides.
         offset = rule.get("adjust_timestamp", "mid")
