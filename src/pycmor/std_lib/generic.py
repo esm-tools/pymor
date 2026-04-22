@@ -482,7 +482,25 @@ def get_variable(data, rule_spec):
     >>> print("OUTPUT (extracted 'pressure'):", result2.values)
     OUTPUT (extracted 'pressure'): [1013. 1015. 1012.]
     """
-    return data[rule_spec.model_variable]
+    da = data[rule_spec.model_variable]
+    # Preserve bounds variables referenced by the selected variable's
+    # coordinates. XIOS output (e.g. IFS unstructured) stores bounds as
+    # ``bounds_lat(cell, nvertex)`` data_vars; simple indexing drops them
+    # because they carry an extra dim not present on the selected variable.
+    # Attach them as coords so downstream steps and the final save can
+    # emit them as proper CF bounds variables. Skip bounds whose extra dims
+    # (e.g. time_bounds with ``axis_nbounds``) xarray refuses to accept as a
+    # coord on this DataArray -- those typically flow through encoding.
+    if isinstance(data, xr.Dataset):
+        for coord_name in list(da.coords):
+            bnds = da.coords[coord_name].attrs.get("bounds")
+            if not bnds or bnds not in data.variables or bnds in da.coords:
+                continue
+            try:
+                da = da.assign_coords({bnds: data[bnds]})
+            except Exception as e:
+                logger.debug(f"get_variable: skipping bounds coord '{bnds}': {e}")
+    return da
 
 
 # [FIXME] Can this one be removed?

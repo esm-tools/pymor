@@ -70,11 +70,43 @@ def _ensure_external_variables(ds):
     return ds
 
 
+def _ensure_coordinates_attr(ds):
+    """Rebuild ``coordinates`` attribute on each data var from current names.
+
+    ``set_coordinate_attributes`` runs early in the pipeline (before
+    ``map_dimensions``); a rename that happens afterwards (e.g. a vertical
+    coord ``pressure_levels`` -> ``plev19``) would leave the stored string
+    pointing at a variable that no longer exists. Regenerate at save time
+    from the current dim/coord names so the attribute always matches what
+    is actually in the file.
+    """
+    if not isinstance(ds, xr.Dataset):
+        return ds
+    for var_name in ds.data_vars:
+        da = ds[var_name]
+        if str(var_name).endswith(("_bnds", "_bounds")) or str(var_name).startswith("bounds_"):
+            continue
+        names = []
+        for dim in da.dims:
+            if dim in ds.coords and dim not in names:
+                names.append(str(dim))
+        for coord_name in da.coords:
+            cn = str(coord_name)
+            if cn not in names:
+                names.append(cn)
+        if names:
+            da.encoding.pop("coordinates", None)
+            da.attrs["coordinates"] = " ".join(names)
+    return ds
+
+
 def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
-    """Wrap _ensure_lat_lon_bounds with a post-pass that announces
-    external cell_measures variables (CF 1.11 §7.2)."""
+    """Wrap _ensure_lat_lon_bounds with post-passes that announce external
+    cell_measures (CF 1.11 §7.2) and refresh the ``coordinates`` attr."""
     ds = _ensure_lat_lon_bounds_impl(ds, rule)
-    return _ensure_external_variables(ds)
+    ds = _ensure_external_variables(ds)
+    ds = _ensure_coordinates_attr(ds)
+    return ds
 
 
 def _ensure_lat_lon_bounds_impl(ds, rule=None):
@@ -84,13 +116,26 @@ def _ensure_lat_lon_bounds_impl(ds, rule=None):
     For regular monotonic 1-D coords, bounds are inferred from cell centers.
     For unstructured (non-monotonic) coords, bounds are copied from
     ``rule.grid_file`` if it contains matching ``lat_bnds(ncells, vertices)`` /
-    ``lon_bnds(ncells, vertices)``. Required for CMIP7 compliance (cchecker
+    ``lon_bnds(ncells, vertices)``. Also recognises the XIOS naming convention
+    ``bounds_<coord>`` used by IFS output and renames to the CF-standard
+    ``<coord>_bnds`` form when present. Required for CMIP7 compliance (cchecker
     ATTR001).
     """
     import numpy as np
 
     if not isinstance(ds, xr.Dataset):
         return ds
+    # Adopt XIOS-style `bounds_lat` / `bounds_lon` bounds if present (rename to
+    # the CF-standard `<coord>_bnds` form and update the `bounds` attr).
+    for name in ("lat", "latitude", "lon", "longitude"):
+        if name not in ds.variables:
+            continue
+        cf_bname = f"{name}_bnds"
+        xios_bname = f"bounds_{name}"
+        if cf_bname not in ds.variables and xios_bname in ds.variables:
+            ds = ds.rename({xios_bname: cf_bname})
+            ds[name].attrs["bounds"] = cf_bname
+            ds[cf_bname].encoding["_FillValue"] = None
     regular = []
     unstructured = []
     for name in ("lat", "latitude", "lon", "longitude"):
@@ -244,6 +289,16 @@ def _encoding_from_dask_chunks(ds, rule):
                     var_encoding["blosc_shuffle"] = 1
                 elif compression_codec == "zstd":
                     var_encoding["shuffle"] = True
+        # CF forbids _FillValue on bounds variables; respect explicit None and
+        # skip *_bnds / *_bounds. For data variables, set the CMIP-required
+        # 1.0e20 fill (xarray's default for float32 is NaN otherwise).
+        _sentinel = object()
+        _pre = da.encoding.get("_FillValue", _sentinel)
+        _is_bounds = str(var).endswith(("_bnds", "_bounds")) or str(var).startswith(("bounds_",))
+        if _pre is None or _is_bounds:
+            var_encoding["_FillValue"] = None
+        else:
+            var_encoding["_FillValue"] = 1.0e20
         encoding[var] = var_encoding
 
     logger.info(f"Using dask-aligned netCDF chunks: {encoding.get(list(ds.data_vars)[0], {}).get('chunksizes', 'none')}")
