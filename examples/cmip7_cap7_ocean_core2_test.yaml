@@ -141,7 +141,7 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_017/outdata/fesom
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/LR_test_01/outdata/fesom
   source_id: AWI-ESM3-VEG-LR
   institution_id: AWI
   experiment_id: piControl
@@ -155,8 +155,8 @@ inherit:
   nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   output_directory: ./cmorized_output/cap7_ocean_core2_test
-  year_start: 1909
-  year_end: 1909
+  year_start: 1900
+  year_end: 1901
 
 rules:
   # ============================================================
@@ -168,7 +168,7 @@ rules:
   - name: tossq_day
     inputs:
       - path: *dp
-        pattern: sst.fesom.1909.nc
+        pattern: sst\.fesom\..*\.nc
     compound_name: ocean.tossq.tavg-u-hxy-sea.day.GLB
     model_variable: sst
     squared_units: "degC2"
@@ -184,7 +184,7 @@ rules:
   - name: volcello_mon
     inputs:
       - path: *dp
-        pattern: hnode.fesom.1909.nc
+        pattern: hnode\.fesom\..*\.nc
     compound_name: ocean.volcello.tavg-ol-hxy-sea.mon.GLB
     model_variable: hnode
     lazy_write: true
@@ -200,7 +200,7 @@ rules:
   - name: friver
     inputs:
       - path: *dp
-        pattern: runoff.fesom.1909.nc
+        pattern: runoff\.fesom\..*\.nc
     compound_name: ocean.friver.tavg-u-hxy-sea.mon.GLB
     model_variable: runoff
     scale_factor: 1000.0
@@ -217,13 +217,13 @@ rules:
   - name: hfx
     inputs:
       - path: *dp
-        pattern: utemp.fesom.1909.nc
+        pattern: utemp\.fesom\..*\.nc
     compound_name: ocean.hfx.tavg-ol-hxy-sea.mon.GLB
     model_variable: utemp
     scale_factor: 4095900.0
     scaled_units: "W"
     hnode_path: *dp
-    hnode_pattern: hnode.fesom.1909.nc
+    hnode_pattern: hnode\.fesom\..*\.nc
     hnode_variable: hnode
     lazy_write: true
     pipelines:
@@ -233,13 +233,13 @@ rules:
   - name: hfxint
     inputs:
       - path: *dp
-        pattern: utemp.fesom.1909.nc
+        pattern: utemp\.fesom\..*\.nc
     compound_name: ocean.hfx.tavg-u-hxy-sea.mon.GLB
     model_variable: utemp
     scale_factor: 4095900.0
     scaled_units: "W"
     hnode_path: *dp
-    hnode_pattern: hnode.fesom.1909.nc
+    hnode_pattern: hnode\.fesom\..*\.nc
     hnode_variable: hnode
     vertical_sum: true
     pipelines:
@@ -248,13 +248,13 @@ rules:
   - name: hfy
     inputs:
       - path: *dp
-        pattern: vtemp.fesom.1909.nc
+        pattern: vtemp\.fesom\..*\.nc
     compound_name: ocean.hfy.tavg-ol-hxy-sea.mon.GLB
     model_variable: vtemp
     scale_factor: 4095900.0
     scaled_units: "W"
     hnode_path: *dp
-    hnode_pattern: hnode.fesom.1909.nc
+    hnode_pattern: hnode\.fesom\..*\.nc
     hnode_variable: hnode
     lazy_write: true
     pipelines:
@@ -263,13 +263,13 @@ rules:
   - name: hfyint
     inputs:
       - path: *dp
-        pattern: vtemp.fesom.1909.nc
+        pattern: vtemp\.fesom\..*\.nc
     compound_name: ocean.hfy.tavg-u-hxy-sea.mon.GLB
     model_variable: vtemp
     scale_factor: 4095900.0
     scaled_units: "W"
     hnode_path: *dp
-    hnode_pattern: hnode.fesom.1909.nc
+    hnode_pattern: hnode\.fesom\..*\.nc
     hnode_variable: hnode
     vertical_sum: true
     pipelines:
@@ -286,19 +286,18 @@ rules:
   # NOTE: tx_sur is on the elem grid (6.2M elements); same elem→node
   # caveat as the monthly tauuo rule in core_ocean applies here.
 
-  # Test with monthly data (3hr not available in CORE2 test output)
-  - name: tauuo_mon
+  - name: tauuo_3hr
     inputs:
       - path: *dp
-        pattern: tx_sur.fesom.1909.nc
-    compound_name: ocean.tauuo.tavg-u-hxy-sea.mon.GLB
+        pattern: tx_sur\.fesom\..*\.nc
+    compound_name: ocean.tauuo.tavg-u-hxy-sea.3hr.GLB
     model_variable: tx_sur
 
-  - name: tauvo_mon
+  - name: tauvo_3hr
     inputs:
       - path: *dp
-        pattern: ty_sur.fesom.1909.nc
-    compound_name: ocean.tauvo.tavg-u-hxy-sea.mon.GLB
+        pattern: ty_sur\.fesom\..*\.nc
+    compound_name: ocean.tauvo.tavg-u-hxy-sea.3hr.GLB
     model_variable: ty_sur
 
   # ============================================================
@@ -312,13 +311,13 @@ rules:
   # - name: sfx
   #   inputs:
   #     - path: *dp
-  #       pattern: unod.fesom.1909.nc
+  #       pattern: unod\.fesom\..*\.nc
   #   compound_name: ocean.sfx.tavg-ol-hxy-sea.mon.GLB
   #   model_variable: unod
 
   # - name: sfy
   #   inputs:
   #     - path: *dp
-  #       pattern: vnod.fesom.1909.nc
+  #       pattern: vnod\.fesom\..*\.nc
   #   compound_name: ocean.sfy.tavg-ol-hxy-sea.mon.GLB
   #   model_variable: vnod

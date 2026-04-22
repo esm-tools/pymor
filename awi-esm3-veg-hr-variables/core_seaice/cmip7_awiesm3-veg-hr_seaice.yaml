@@ -80,7 +80,7 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
@@ -101,7 +101,7 @@ rules:
   - name: simass
     inputs:
       - path: *dp
-        pattern: m_ice.fesom.1350.nc
+        pattern: m_ice\.fesom\..*\.nc
     compound_name: seaIce.simass.tavg-u-hxy-si.mon.GLB
     model_variable: m_ice
     scale_factor: 917.0
@@ -112,7 +112,7 @@ rules:
   - name: siu
     inputs:
       - path: *dp
-        pattern: uice.fesom.1350.nc
+        pattern: uice\.fesom\..*\.nc
     compound_name: seaIce.siu.tavg-u-hxy-si.mon.GLB
     model_variable: uice
     # vec_autorotate=.true. set in namelist.io
@@ -120,7 +120,7 @@ rules:
   - name: siv
     inputs:
       - path: *dp
-        pattern: vice.fesom.1350.nc
+        pattern: vice\.fesom\..*\.nc
     compound_name: seaIce.siv.tavg-u-hxy-si.mon.GLB
     model_variable: vice
     # vec_autorotate=.true. set in namelist.io
@@ -132,21 +132,21 @@ rules:
   - name: sithick
     inputs:
       - path: *dp
-        pattern: h_ice.fesom.1350.nc
+        pattern: h_ice\.fesom\..*\.nc
     compound_name: seaIce.sithick.tavg-u-hxy-si.mon.GLB
     model_variable: h_ice
 
   - name: snd
     inputs:
       - path: *dp
-        pattern: h_snow.fesom.1350.nc
+        pattern: h_snow\.fesom\..*\.nc
     compound_name: seaIce.snd.tavg-u-hxy-sn.mon.GLB
     model_variable: h_snow
 
   - name: ts
     inputs:
       - path: *dp
-        pattern: ist.fesom.1350.nc
+        pattern: ist\.fesom\..*\.nc
     compound_name: seaIce.ts.tavg-u-hxy-si.mon.GLB
     model_variable: ist
     # ist outputs in K, CMIP wants K — no conversion needed
@@ -158,7 +158,7 @@ rules:
   - name: siconc
     inputs:
       - path: *dp
-        pattern: a_ice.fesom.1350.nc
+        pattern: a_ice\.fesom\..*\.nc
     compound_name: seaIce.siconc.tavg-u-hxy-u.mon.GLB
     model_variable: a_ice
     pipelines:
@@ -167,7 +167,7 @@ rules:
   - name: sitimefrac
     inputs:
       - path: *dp
-        pattern: a_ice.fesom.1350.nc
+        pattern: a_ice\.fesom\..*\.nc
     compound_name: seaIce.sitimefrac.tavg-u-hxy-sea.mon.GLB
     model_variable: a_ice
     pipelines:
@@ -180,7 +180,7 @@ rules:
   - name: siconc_day
     inputs:
       - path: *dp
-        pattern: a_ice.fesom.1350.nc
+        pattern: a_ice\.fesom\..*\.nc
     compound_name: seaIce.siconc.tavg-u-hxy-u.day.GLB
     model_variable: a_ice
     pipelines:

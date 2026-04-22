@@ -77,7 +77,7 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_017/outdata/fesom
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/LR_test_01/outdata/fesom
   source_id: AWI-ESM3-VEG-LR
   institution_id: AWI
   experiment_id: piControl
@@ -91,8 +91,8 @@ inherit:
   nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   output_directory: ./cmorized_output/core_seaice_core2_test
-  year_start: 1909
-  year_end: 1909
+  year_start: 1900
+  year_end: 1901
 
 rules:
   # ============================================================

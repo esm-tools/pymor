@@ -178,7 +178,7 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_017/outdata/oifs
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/LR_test_01/outdata/oifs
   source_id: AWI-ESM3-VEG-LR
   institution_id: AWI
   experiment_id: piControl
@@ -191,8 +191,8 @@ inherit:
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   time_dimname: time_counter
   output_directory: ./cmorized_output/cap7_atm_tco95_test
-  year_start: 1909
-  year_end: 1909
+  year_start: 1900
+  year_end: 1901
 
 rules:
   # ============================================================
@@ -534,47 +534,50 @@ rules:
 
   # ============================================================
   # Part 7: 6hr instantaneous model-level fields
+  # DISABLED: we decided not to produce 6hr_ml output in XIOS file_def
+  # (too large; see doc/awi_cap7_volume_estimate.txt). Re-enable both
+  # file_def_oifs_cmip7_spinup.xml.j2 and these rules together if needed.
   # ============================================================
 
-  - name: ta_6hr_ml
-    inputs:
-      - path: *dp
-        pattern: atmos_6h_ml_ta_.*\.nc
-    compound_name: atmos.ta.tpt-al-hxy-u.6hr.GLB
-    model_variable: ta
-    lazy_write: true
+  # - name: ta_6hr_ml
+  #   inputs:
+  #     - path: *dp
+  #       pattern: atmos_6h_ml_ta_.*\.nc
+  #   compound_name: atmos.ta.tpt-al-hxy-u.6hr.GLB
+  #   model_variable: ta
+  #   lazy_write: true
 
-  - name: ua_6hr_ml
-    inputs:
-      - path: *dp
-        pattern: atmos_6h_ml_ua_.*\.nc
-    compound_name: atmos.ua.tpt-al-hxy-u.6hr.GLB
-    model_variable: ua
-    lazy_write: true
+  # - name: ua_6hr_ml
+  #   inputs:
+  #     - path: *dp
+  #       pattern: atmos_6h_ml_ua_.*\.nc
+  #   compound_name: atmos.ua.tpt-al-hxy-u.6hr.GLB
+  #   model_variable: ua
+  #   lazy_write: true
 
-  - name: va_6hr_ml
-    inputs:
-      - path: *dp
-        pattern: atmos_6h_ml_va_.*\.nc
-    compound_name: atmos.va.tpt-al-hxy-u.6hr.GLB
-    model_variable: va
-    lazy_write: true
+  # - name: va_6hr_ml
+  #   inputs:
+  #     - path: *dp
+  #       pattern: atmos_6h_ml_va_.*\.nc
+  #   compound_name: atmos.va.tpt-al-hxy-u.6hr.GLB
+  #   model_variable: va
+  #   lazy_write: true
 
-  - name: hus_6hr_ml
-    inputs:
-      - path: *dp
-        pattern: atmos_6h_ml_hus_.*\.nc
-    compound_name: atmos.hus.tpt-al-hxy-u.6hr.GLB
-    model_variable: hus
-    lazy_write: true
+  # - name: hus_6hr_ml
+  #   inputs:
+  #     - path: *dp
+  #       pattern: atmos_6h_ml_hus_.*\.nc
+  #   compound_name: atmos.hus.tpt-al-hxy-u.6hr.GLB
+  #   model_variable: hus
+  #   lazy_write: true
 
-  - name: zg_6hr_ml
-    inputs:
-      - path: *dp
-        pattern: atmos_6h_ml_zg_.*\.nc
-    compound_name: atmos.zg.tpt-al-hxy-u.6hr.GLB
-    model_variable: zg
-    lazy_write: true
+  # - name: zg_6hr_ml
+  #   inputs:
+  #     - path: *dp
+  #       pattern: atmos_6h_ml_zg_.*\.nc
+  #   compound_name: atmos.zg.tpt-al-hxy-u.6hr.GLB
+  #   model_variable: zg
+  #   lazy_write: true
 
   # ============================================================
   # Part 8: 6hr instantaneous plev7h fields

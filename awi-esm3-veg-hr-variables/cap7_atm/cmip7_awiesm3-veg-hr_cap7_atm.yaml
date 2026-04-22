@@ -46,24 +46,6 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # hur on model levels: reconstruct from ta + hus + pfull (OpenIFS native
-  # model-level output does not fill `r`; FullPos only emits it on plev)
-  - name: hur_ml_pipeline
-    steps:
-      - pycmor.core.gather_inputs.load_mfdataset
-      - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_hur_ml
-      - pycmor.std_lib.timeaverage.timeavg
-      - pycmor.std_lib.units.handle_unit_conversion
-      - pycmor.std_lib.attributes.set_global
-      - pycmor.std_lib.attributes.set_variable
-      - pycmor.std_lib.attributes.set_coordinates
-      - pycmor.std_lib.dimensions.map_dimensions
-      - pycmor.core.caching.manual_checkpoint
-      - pycmor.std_lib.generic.trigger_compute
-      - pycmor.std_lib.generic.show_data
-      - pycmor.std_lib.files.save_dataset
-
   # huss: Tetens formula from 2d + sp
   - name: huss_pipeline
     steps:
@@ -197,7 +179,7 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/oifs
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/oifs
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
@@ -549,47 +531,50 @@ rules:
 
   # ============================================================
   # Part 7: 6hr instantaneous model-level fields
+  # DISABLED: we decided not to produce 6hr_ml output in XIOS file_def
+  # (too large; see doc/awi_cap7_volume_estimate.txt). Re-enable both
+  # file_def_oifs_cmip7_spinup.xml.j2 and these rules together if needed.
   # ============================================================
 
-  - name: ta_6hr_ml
-    inputs:
-      - path: *dp
-        pattern: atmos_6h_ml_ta_.*\.nc
-    compound_name: atmos.ta.tpt-al-hxy-u.6hr.GLB
-    model_variable: ta
-    lazy_write: true
+  # - name: ta_6hr_ml
+  #   inputs:
+  #     - path: *dp
+  #       pattern: atmos_6h_ml_ta_.*\.nc
+  #   compound_name: atmos.ta.tpt-al-hxy-u.6hr.GLB
+  #   model_variable: ta
+  #   lazy_write: true
 
-  - name: ua_6hr_ml
-    inputs:
-      - path: *dp
-        pattern: atmos_6h_ml_ua_.*\.nc
-    compound_name: atmos.ua.tpt-al-hxy-u.6hr.GLB
-    model_variable: ua
-    lazy_write: true
+  # - name: ua_6hr_ml
+  #   inputs:
+  #     - path: *dp
+  #       pattern: atmos_6h_ml_ua_.*\.nc
+  #   compound_name: atmos.ua.tpt-al-hxy-u.6hr.GLB
+  #   model_variable: ua
+  #   lazy_write: true
 
-  - name: va_6hr_ml
-    inputs:
-      - path: *dp
-        pattern: atmos_6h_ml_va_.*\.nc
-    compound_name: atmos.va.tpt-al-hxy-u.6hr.GLB
-    model_variable: va
-    lazy_write: true
+  # - name: va_6hr_ml
+  #   inputs:
+  #     - path: *dp
+  #       pattern: atmos_6h_ml_va_.*\.nc
+  #   compound_name: atmos.va.tpt-al-hxy-u.6hr.GLB
+  #   model_variable: va
+  #   lazy_write: true
 
-  - name: hus_6hr_ml
-    inputs:
-      - path: *dp
-        pattern: atmos_6h_ml_hus_.*\.nc
-    compound_name: atmos.hus.tpt-al-hxy-u.6hr.GLB
-    model_variable: hus
-    lazy_write: true
+  # - name: hus_6hr_ml
+  #   inputs:
+  #     - path: *dp
+  #       pattern: atmos_6h_ml_hus_.*\.nc
+  #   compound_name: atmos.hus.tpt-al-hxy-u.6hr.GLB
+  #   model_variable: hus
+  #   lazy_write: true
 
-  - name: zg_6hr_ml
-    inputs:
-      - path: *dp
-        pattern: atmos_6h_ml_zg_.*\.nc
-    compound_name: atmos.zg.tpt-al-hxy-u.6hr.GLB
-    model_variable: zg
-    lazy_write: true
+  # - name: zg_6hr_ml
+  #   inputs:
+  #     - path: *dp
+  #       pattern: atmos_6h_ml_zg_.*\.nc
+  #   compound_name: atmos.zg.tpt-al-hxy-u.6hr.GLB
+  #   model_variable: zg
+  #   lazy_write: true
 
   # ============================================================
   # Part 8: 6hr instantaneous plev7h fields
@@ -694,20 +679,14 @@ rules:
     model_variable: hus
     lazy_write: true
 
+  # hur is emitted directly by XIOS (field_def maps 'r' on model levels to 'hur'),
+  # so no compute-from-ta+hus+pfull pipeline is needed.
   - name: hur_mon_ml
     inputs:
       - path: *dp
-        pattern: atmos_mon_ml_cap7_ta_.*\.nc
+        pattern: atmos_mon_ml_cap7_hur_.*\.nc
     compound_name: atmos.hur.tavg-al-hxy-u.mon.GLB
-    model_variable: ta
-    second_input_path: *dp
-    second_input_pattern: "atmos_mon_ml_cap7_hus_*.nc"
-    second_variable: hus
-    third_input_path: *dp
-    third_input_pattern: "atmos_mon_ml_cap7_pfull_*.nc"
-    third_variable: pfull
-    pipelines:
-      - hur_ml_pipeline
+    model_variable: hur
     lazy_write: true
 
   # ============================================================

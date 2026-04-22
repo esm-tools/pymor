@@ -45,7 +45,7 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_017/outdata/fesom
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/LR_test_01/outdata/fesom
   source_id: AWI-ESM3-VEG-LR
   institution_id: AWI
   experiment_id: piControl
@@ -59,8 +59,8 @@ inherit:
   nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   output_directory: ./cmorized_output/veg_seaice_core2_test
-  year_start: 1909
-  year_end: 1909
+  year_start: 1900
+  year_end: 1901
 
 rules:
   # Daily snow heat content: derived from daily m_snow and a_ice
@@ -68,11 +68,11 @@ rules:
   - name: sisnhc_day
     inputs:
       - path: *dp
-        pattern: m_snow.fesom.1909.nc
+        pattern: m_snow\.fesom\..*\.nc
     compound_name: seaIce.sisnhc.tavg-u-hxy-si.day.GLB
     model_variable: m_snow
     second_input_path: *dp
-    second_input_pattern: a_ice.fesom.1909.nc
+    second_input_pattern: a_ice\.fesom\..*\.nc
     second_variable: a_ice
     rho_snow: 330.0
     L_f: 334000.0

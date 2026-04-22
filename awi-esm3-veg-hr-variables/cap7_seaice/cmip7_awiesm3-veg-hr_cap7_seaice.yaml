@@ -46,7 +46,7 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
@@ -67,21 +67,21 @@ rules:
   - name: sithick_day
     inputs:
       - path: *dp
-        pattern: h_ice.fesom.1350.nc
+        pattern: h_ice\.fesom\..*\.nc
     compound_name: seaIce.sithick.tavg-u-hxy-si.day.GLB
     model_variable: h_ice
 
   - name: snd_day
     inputs:
       - path: *dp
-        pattern: h_snow.fesom.1350.nc
+        pattern: h_snow\.fesom\..*\.nc
     compound_name: seaIce.snd.tavg-u-hxy-sn.day.GLB
     model_variable: h_snow
 
   - name: siu_day
     inputs:
       - path: *dp
-        pattern: uice.fesom.1350.nc
+        pattern: uice\.fesom\..*\.nc
     compound_name: seaIce.siu.tavg-u-hxy-si.day.GLB
     model_variable: uice
     # vec_autorotate=.true. set in namelist.io
@@ -89,7 +89,7 @@ rules:
   - name: siv_day
     inputs:
       - path: *dp
-        pattern: vice.fesom.1350.nc
+        pattern: vice\.fesom\..*\.nc
     compound_name: seaIce.siv.tavg-u-hxy-si.day.GLB
     model_variable: vice
     # vec_autorotate=.true. set in namelist.io
@@ -102,7 +102,7 @@ rules:
   - name: sieqthick
     inputs:
       - path: *dp
-        pattern: m_ice.fesom.1350.nc
+        pattern: m_ice\.fesom\..*\.nc
     compound_name: seaIce.sieqthick.tavg-u-hxy-si.mon.GLB
     model_variable: m_ice
 
@@ -110,7 +110,7 @@ rules:
   - name: snw
     inputs:
       - path: *dp
-        pattern: m_snow.fesom.1350.nc
+        pattern: m_snow\.fesom\..*\.nc
     compound_name: seaIce.snw.tavg-u-hxy-si.mon.GLB
     model_variable: m_snow
     scale_factor: 1000.0
@@ -126,7 +126,7 @@ rules:
   - name: evspsbl
     inputs:
       - path: *dp
-        pattern: evap.fesom.1350.nc
+        pattern: evap\.fesom\..*\.nc
     compound_name: seaIce.evspsbl.tavg-u-hxy-si.mon.GLB
     model_variable: evap
     scale_factor: -1000.0  # FESOM evap is negative-up; CMIP7 evspsbl positive=upward
@@ -137,7 +137,7 @@ rules:
   - name: prra
     inputs:
       - path: *dp
-        pattern: prec.fesom.1350.nc
+        pattern: prec\.fesom\..*\.nc
     compound_name: seaIce.prra.tavg-u-hxy-si.mon.GLB
     model_variable: prec
     scale_factor: 1000.0
@@ -148,7 +148,7 @@ rules:
   - name: prsn
     inputs:
       - path: *dp
-        pattern: snow.fesom.1350.nc
+        pattern: snow\.fesom\..*\.nc
     compound_name: seaIce.prsn.tavg-u-hxy-si.mon.GLB
     model_variable: snow
     scale_factor: 1000.0

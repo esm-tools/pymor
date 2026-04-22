@@ -42,8 +42,8 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_017/outdata/oifs
-  lpjg_data_path: &ldp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_017/outdata/lpj_guess
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/LR_test_01/outdata/oifs
+  lpjg_data_path: &ldp /work/bb1469/a270092/runtime/awiesm3-develop/LR_test_01/outdata/lpj_guess
   source_id: AWI-ESM3-VEG-LR
   institution_id: AWI
   experiment_id: piControl
@@ -56,7 +56,7 @@ inherit:
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   time_dimname: time_counter
   output_directory: ./cmorized_output/veg_atm_tco95_test
-  year_start: 1909
+  year_start: 1900
 
 rules:
   # ============================================================
@@ -118,42 +118,45 @@ rules:
 
   # ============================================================
   # 3hr instantaneous plev6 (lower troposphere 950-700 hPa)
+  # DISABLED: we decided not to produce 3h_pl6 output in XIOS file_def
+  # (too large; see doc/awi_cap7_volume_estimate.txt). Re-enable both
+  # file_def_oifs_cmip7_spinup.xml.j2 and these rules together if needed.
   # ============================================================
 
-  - name: ta_3hrPt_plev6
-    inputs:
-      - path: *dp
-        pattern: atmos_3h_pl6_ta_.*\.nc
-    compound_name: atmos.ta.tpt-p6-hxy-air.3hr.GLB
-    model_variable: ta
+  # - name: ta_3hrPt_plev6
+  #   inputs:
+  #     - path: *dp
+  #       pattern: atmos_3h_pl6_ta_.*\.nc
+  #   compound_name: atmos.ta.tpt-p6-hxy-air.3hr.GLB
+  #   model_variable: ta
 
-  - name: ua_3hrPt_plev6
-    inputs:
-      - path: *dp
-        pattern: atmos_3h_pl6_ua_.*\.nc
-    compound_name: atmos.ua.tpt-p6-hxy-air.3hr.GLB
-    model_variable: ua
+  # - name: ua_3hrPt_plev6
+  #   inputs:
+  #     - path: *dp
+  #       pattern: atmos_3h_pl6_ua_.*\.nc
+  #   compound_name: atmos.ua.tpt-p6-hxy-air.3hr.GLB
+  #   model_variable: ua
 
-  - name: va_3hrPt_plev6
-    inputs:
-      - path: *dp
-        pattern: atmos_3h_pl6_va_.*\.nc
-    compound_name: atmos.va.tpt-p6-hxy-air.3hr.GLB
-    model_variable: va
+  # - name: va_3hrPt_plev6
+  #   inputs:
+  #     - path: *dp
+  #       pattern: atmos_3h_pl6_va_.*\.nc
+  #   compound_name: atmos.va.tpt-p6-hxy-air.3hr.GLB
+  #   model_variable: va
 
-  - name: wap_3hrPt_plev6
-    inputs:
-      - path: *dp
-        pattern: atmos_3h_pl6_wap_.*\.nc
-    compound_name: atmos.wap.tpt-p6-hxy-air.3hr.GLB
-    model_variable: wap
+  # - name: wap_3hrPt_plev6
+  #   inputs:
+  #     - path: *dp
+  #       pattern: atmos_3h_pl6_wap_.*\.nc
+  #   compound_name: atmos.wap.tpt-p6-hxy-air.3hr.GLB
+  #   model_variable: wap
 
-  - name: hus_3hrPt_plev6
-    inputs:
-      - path: *dp
-        pattern: atmos_3h_pl6_hus_.*\.nc
-    compound_name: atmos.hus.tpt-p6-hxy-air.3hr.GLB
-    model_variable: hus
+  # - name: hus_3hrPt_plev6
+  #   inputs:
+  #     - path: *dp
+  #       pattern: atmos_3h_pl6_hus_.*\.nc
+  #   compound_name: atmos.hus.tpt-p6-hxy-air.3hr.GLB
+  #   model_variable: hus
 
   # ============================================================
   # 3hr instantaneous boundary layer depth

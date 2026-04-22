@@ -142,7 +142,7 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
@@ -165,7 +165,7 @@ rules:
   - name: tossq_day
     inputs:
       - path: *dp
-        pattern: sst.fesom.1350.nc
+        pattern: sst\.fesom\..*\.nc
     compound_name: ocean.tossq.tavg-u-hxy-sea.day.GLB
     model_variable: sst
     squared_units: "degC2"
@@ -181,7 +181,7 @@ rules:
   - name: volcello_mon
     inputs:
       - path: *dp
-        pattern: hnode.fesom.1350.nc
+        pattern: hnode\.fesom\..*\.nc
     compound_name: ocean.volcello.tavg-ol-hxy-sea.mon.GLB
     model_variable: hnode
     lazy_write: true
@@ -197,7 +197,7 @@ rules:
   - name: friver
     inputs:
       - path: *dp
-        pattern: runoff.fesom.1350.nc
+        pattern: runoff\.fesom\..*\.nc
     compound_name: ocean.friver.tavg-u-hxy-sea.mon.GLB
     model_variable: runoff
     scale_factor: 1000.0
@@ -214,13 +214,13 @@ rules:
   - name: hfx
     inputs:
       - path: *dp
-        pattern: utemp.fesom.1350.nc
+        pattern: utemp\.fesom\..*\.nc
     compound_name: ocean.hfx.tavg-ol-hxy-sea.mon.GLB
     model_variable: utemp
     scale_factor: 4095900.0
     scaled_units: "W"
     hnode_path: *dp
-    hnode_pattern: hnode.fesom.1350.nc
+    hnode_pattern: hnode\.fesom\..*\.nc
     hnode_variable: hnode
     lazy_write: true
     pipelines:
@@ -229,13 +229,13 @@ rules:
   - name: hfxint
     inputs:
       - path: *dp
-        pattern: utemp.fesom.1350.nc
+        pattern: utemp\.fesom\..*\.nc
     compound_name: ocean.hfx.tavg-u-hxy-sea.mon.GLB
     model_variable: utemp
     scale_factor: 4095900.0
     scaled_units: "W"
     hnode_path: *dp
-    hnode_pattern: hnode.fesom.1350.nc
+    hnode_pattern: hnode\.fesom\..*\.nc
     hnode_variable: hnode
     vertical_sum: true
     pipelines:
@@ -244,13 +244,13 @@ rules:
   - name: hfy
     inputs:
       - path: *dp
-        pattern: vtemp.fesom.1350.nc
+        pattern: vtemp\.fesom\..*\.nc
     compound_name: ocean.hfy.tavg-ol-hxy-sea.mon.GLB
     model_variable: vtemp
     scale_factor: 4095900.0
     scaled_units: "W"
     hnode_path: *dp
-    hnode_pattern: hnode.fesom.1350.nc
+    hnode_pattern: hnode\.fesom\..*\.nc
     hnode_variable: hnode
     lazy_write: true
     pipelines:
@@ -259,13 +259,13 @@ rules:
   - name: hfyint
     inputs:
       - path: *dp
-        pattern: vtemp.fesom.1350.nc
+        pattern: vtemp\.fesom\..*\.nc
     compound_name: ocean.hfy.tavg-u-hxy-sea.mon.GLB
     model_variable: vtemp
     scale_factor: 4095900.0
     scaled_units: "W"
     hnode_path: *dp
-    hnode_pattern: hnode.fesom.1350.nc
+    hnode_pattern: hnode\.fesom\..*\.nc
     hnode_variable: hnode
     vertical_sum: true
     pipelines:
@@ -305,13 +305,13 @@ rules:
   # - name: sfx
   #   inputs:
   #     - path: *dp
-  #       pattern: unod.fesom.1350.nc
+  #       pattern: unod\.fesom\..*\.nc
   #   compound_name: ocean.sfx.tavg-ol-hxy-sea.mon.GLB
   #   model_variable: unod
 
   # - name: sfy
   #   inputs:
   #     - path: *dp
-  #       pattern: vnod.fesom.1350.nc
+  #       pattern: vnod\.fesom\..*\.nc
   #   compound_name: ocean.sfy.tavg-ol-hxy-sea.mon.GLB
   #   model_variable: vnod

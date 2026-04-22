@@ -26,6 +26,11 @@ jobqueue:
     walltime: '00:30:00'
 
 pipelines:
+  # Frozen fx pipeline: computes areacella from 1st timestep of any Amon file
+  # that carries cell_measures: area: areacella.
+  - name: areacella_pipeline
+    uses: pycmor.core.pipeline.AreacellaFxPipeline
+
   - name: sfcwind_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
@@ -125,7 +130,7 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
-  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/cmip7_output_017/outdata/oifs
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/LR_test_01/outdata/oifs
   source_id: AWI-ESM3-VEG-LR
   institution_id: AWI
   experiment_id: piControl
@@ -138,10 +143,24 @@ inherit:
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   time_dimname: time_counter
   output_directory: ./cmorized_output/core_atm_tco95_test
-  year_start: 1909
-  year_end: 1909
+  year_start: 1900
+  year_end: 1901
 
 rules:
+  # ============================================================
+  # fx / time-invariant — areacella from first timestep of an Amon file
+  # via cell_measures: area: areacella.
+  # ============================================================
+
+  - name: areacella
+    inputs:
+      - path: *dp
+        pattern: atmos_mon_rsdt_mon_.*\.nc
+    compound_name: atmos.areacella.ti-u-hxy-u.fx.GLB
+    model_variable: rsdt
+    pipelines:
+      - areacella_pipeline
+
   # ============================================================
   # Monthly 2D surface (Amon)
   # ============================================================
