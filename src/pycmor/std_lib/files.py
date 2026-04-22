@@ -109,6 +109,48 @@ def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
     return ds
 
 
+def _recover_bounds_from_inputs(ds, rule, coord_name, declared_bounds_name):
+    """Pull a bounds variable from the first ``rule.inputs`` file when the
+    live dataset has lost it (XIOS bounds carry an extra nvertex dim and
+    are dropped by simple ``ds[var]`` variable selection)."""
+    import numpy as np
+
+    if rule is None:
+        return None
+    candidates = [n for n in (declared_bounds_name, f"bounds_{coord_name}", f"{coord_name}_bnds") if n]
+    try:
+        inputs = getattr(rule, "inputs", None) or []
+        for input_collection in inputs:
+            files = getattr(input_collection, "files", None) or []
+            for file_path in files:
+                try:
+                    src = xr.open_dataset(str(file_path), decode_times=False)
+                except Exception:
+                    continue
+                try:
+                    for cand in candidates:
+                        if cand not in src.variables:
+                            continue
+                        bvar = src[cand]
+                        # Expect shape (n_cells, nvertex) aligned with coord length.
+                        if bvar.ndim != 2 or bvar.shape[0] != ds[coord_name].size:
+                            continue
+                        cell_dim = ds[coord_name].dims[0]
+                        vdim = bvar.dims[1]
+                        return xr.DataArray(
+                            np.asarray(bvar.values),
+                            dims=(cell_dim, vdim),
+                            attrs={"units": bvar.attrs.get("units", "degrees")},
+                        )
+                finally:
+                    src.close()
+                # Only inspect the first file that opens; bounds are time-invariant.
+                return None
+    except Exception as e:
+        logger.debug(f"  → bounds recovery for '{coord_name}' failed: {e}")
+    return None
+
+
 def _ensure_lat_lon_bounds_impl(ds, rule=None):
     """
     Add lat_bnds/lon_bnds to a dataset.
@@ -126,7 +168,10 @@ def _ensure_lat_lon_bounds_impl(ds, rule=None):
     if not isinstance(ds, xr.Dataset):
         return ds
     # Adopt XIOS-style `bounds_lat` / `bounds_lon` bounds if present (rename to
-    # the CF-standard `<coord>_bnds` form and update the `bounds` attr).
+    # the CF-standard `<coord>_bnds` form and update the `bounds` attr). If the
+    # referenced bounds variable was dropped during variable selection (XIOS
+    # stores bounds as data_vars with an extra ``nvertex`` dim), try pulling
+    # it from the first input file named by ``rule.inputs``.
     for name in ("lat", "latitude", "lon", "longitude"):
         if name not in ds.variables:
             continue
@@ -134,6 +179,18 @@ def _ensure_lat_lon_bounds_impl(ds, rule=None):
         xios_bname = f"bounds_{name}"
         if cf_bname not in ds.variables and xios_bname in ds.variables:
             ds = ds.rename({xios_bname: cf_bname})
+            ds[name].attrs["bounds"] = cf_bname
+            ds[cf_bname].encoding["_FillValue"] = None
+            continue
+        declared = ds[name].attrs.get("bounds")
+        if declared and declared in ds.variables:
+            continue
+        # Declared bounds missing; try to re-attach from the first input file.
+        if cf_bname in ds.variables:
+            continue
+        recovered = _recover_bounds_from_inputs(ds, rule, name, declared)
+        if recovered is not None:
+            ds[cf_bname] = recovered
             ds[name].attrs["bounds"] = cf_bname
             ds[cf_bname].encoding["_FillValue"] = None
     regular = []
