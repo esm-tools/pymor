@@ -412,6 +412,7 @@ def get_encoding_with_chunks(
     chunks: Dict[str, int] = None,
     compression_level: int = 1,
     enable_compression: bool = True,
+    compression_codec: str = "zlib",
 ) -> Dict[str, Dict]:
     """
     Generate encoding dictionary with chunking and compression settings.
@@ -451,9 +452,20 @@ def get_encoding_with_chunks(
             var_encoding["chunksizes"] = var_chunks
 
         if enable_compression:
-            var_encoding["zlib"] = True
-            var_encoding["complevel"] = compression_level
-            var_encoding["shuffle"] = True
+            if compression_codec == "zlib":
+                var_encoding["zlib"] = True
+                var_encoding["complevel"] = compression_level
+                var_encoding["shuffle"] = True
+            else:
+                # netCDF4-python accepts: zstd, blosc_lz, blosc_lz4, blosc_lz4hc,
+                # blosc_zlib, blosc_zstd, bzip2, szip. zstd/blosc require
+                # libnetcdf >= 4.9.0 and may need HDF5_PLUGIN_PATH set.
+                var_encoding["compression"] = compression_codec
+                var_encoding["complevel"] = compression_level
+                if compression_codec.startswith("blosc"):
+                    var_encoding["blosc_shuffle"] = 1
+                elif compression_codec == "zstd":
+                    var_encoding["shuffle"] = True
 
         # CF forbids _FillValue on bounds variables. Respect an explicit None
         # already set upstream, and skip any *_bnds / *_bounds variable.

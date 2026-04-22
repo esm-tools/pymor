@@ -190,6 +190,27 @@ def _is_dask_backed(ds):
     return any(v.chunks is not None for v in ds.data_vars.values())
 
 
+def _get_write_scheduler(rule):
+    """Return the dask scheduler to use around xr.save_mfdataset.
+
+    Default is ``"synchronous"`` — safe with any HDF5 build, but serialises
+    zlib compression and caps throughput at single-thread speed (typically
+    10–30 MB/s) for large compressed outputs.
+
+    Override to ``"threads"`` (much faster on thread-safe HDF5 builds) via:
+
+    * rule attribute ``netcdf_write_scheduler``, or
+    * pycmor config key ``netcdf_write_scheduler``.
+    """
+    val = rule.get("netcdf_write_scheduler") if hasattr(rule, "get") else None
+    if not val and hasattr(rule, "_pycmor_cfg"):
+        try:
+            val = rule._pycmor_cfg("netcdf_write_scheduler")
+        except Exception:
+            val = None
+    return val or "synchronous"
+
+
 def _encoding_from_dask_chunks(ds, rule):
     """
     Build netCDF encoding that matches existing dask chunks.
@@ -202,6 +223,7 @@ def _encoding_from_dask_chunks(ds, rule):
     compression_level = getattr(rule, "netcdf_compression_level", compression_level)
     enable_compression = rule._pycmor_cfg("netcdf_enable_compression")
     enable_compression = getattr(rule, "netcdf_enable_compression", enable_compression)
+    compression_codec = getattr(rule, "netcdf_compression_codec", None) or "zlib"
 
     encoding = {}
     for var in ds.data_vars:
@@ -211,9 +233,17 @@ def _encoding_from_dask_chunks(ds, rule):
             # Use the max chunk size per dimension (chunks may be uneven at boundaries)
             var_encoding["chunksizes"] = tuple(max(c) for c in da.chunks)
         if enable_compression:
-            var_encoding["zlib"] = True
-            var_encoding["complevel"] = compression_level
-            var_encoding["shuffle"] = True
+            if compression_codec == "zlib":
+                var_encoding["zlib"] = True
+                var_encoding["complevel"] = compression_level
+                var_encoding["shuffle"] = True
+            else:
+                var_encoding["compression"] = compression_codec
+                var_encoding["complevel"] = compression_level
+                if compression_codec.startswith("blosc"):
+                    var_encoding["blosc_shuffle"] = 1
+                elif compression_codec == "zstd":
+                    var_encoding["shuffle"] = True
         encoding[var] = var_encoding
 
     logger.info(f"Using dask-aligned netCDF chunks: {encoding.get(list(ds.data_vars)[0], {}).get('chunksizes', 'none')}")
@@ -598,9 +628,12 @@ def _save_dataset_with_native_timespan(
     else:
         chunk_encoding = _calculate_netcdf_chunks(datasets[0], rule)
 
-    # Use synchronous scheduler for dask-backed data to avoid HDF5 thread-safety issues
+    # Default scheduler is "synchronous" to be safe with HDF5 thread-safety;
+    # configurable per-rule (netcdf_write_scheduler) for write benchmarks
+    # or when using a thread-safe HDF5 build (then "threads" is much faster).
+    _write_sched = _get_write_scheduler(rule)
     if is_dask:
-        with dask.config.set(scheduler="synchronous"):
+        with dask.config.set(scheduler=_write_sched):
             xr.save_mfdataset(
                 datasets,
                 paths,
@@ -654,6 +687,7 @@ def _calculate_netcdf_chunks(ds: xr.Dataset, rule) -> dict:
     prefer_time = rule._pycmor_cfg("netcdf_chunk_prefer_time")
     compression_level = rule._pycmor_cfg("netcdf_compression_level")
     enable_compression = rule._pycmor_cfg("netcdf_enable_compression")
+    compression_codec = "zlib"
 
     # Allow per-rule override of chunking settings (including from inherit block)
     chunk_algorithm = getattr(rule, "netcdf_chunk_algorithm", chunk_algorithm)
@@ -662,6 +696,7 @@ def _calculate_netcdf_chunks(ds: xr.Dataset, rule) -> dict:
     prefer_time = getattr(rule, "netcdf_chunk_prefer_time", prefer_time)
     compression_level = getattr(rule, "netcdf_compression_level", compression_level)
     enable_compression = getattr(rule, "netcdf_enable_compression", enable_compression)
+    compression_codec = getattr(rule, "netcdf_compression_codec", compression_codec)
 
     # Calculate chunks based on algorithm
     chunk_functions = {
@@ -686,6 +721,7 @@ def _calculate_netcdf_chunks(ds: xr.Dataset, rule) -> dict:
             chunks=chunks,
             compression_level=compression_level,
             enable_compression=enable_compression,
+            compression_codec=compression_codec,
         )
         logger.info(f"Calculated NetCDF chunks: {chunks}")
         return encoding
@@ -989,7 +1025,8 @@ def save_dataset(da: xr.DataArray, rule):
                             _ds[time_label].attrs.pop("units", None)
                             _ds[time_label].encoding["units"] = _units
             if is_dask:
-                with dask.config.set(scheduler="synchronous"):
+                _write_sched = _get_write_scheduler(rule)
+                with dask.config.set(scheduler=_write_sched):
                     xr.save_mfdataset(
                         datasets,
                         paths,
