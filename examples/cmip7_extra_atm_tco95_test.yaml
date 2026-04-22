@@ -170,7 +170,7 @@ rules:
     compound_name: atmos.hurs.tavg-h2m-hxy-u.1hr.GLB
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atmos_1h_sfc_2d_*.nc
+    second_input_pattern: atmos_1h_sfc_2d_.*\.nc
     second_variable: 2d
     pipelines:
       - hurs_pipeline
@@ -202,7 +202,7 @@ rules:
     compound_name: atmos.hurs.tavg-h2m-hxy-u.1hr.30S-90S
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atmos_1h_sfc_2d_*.nc
+    second_input_pattern: atmos_1h_sfc_2d_.*\.nc
     second_variable: 2d
     pipelines:
       - hurs_south_pipeline
@@ -250,7 +250,7 @@ rules:
     compound_name: atmos.sfcWind.tavg-h10m-hxy-u.1hr.30S-90S
     model_variable: 10u
     second_input_path: *dp
-    second_input_pattern: atmos_1h_sfc_10v_*.nc
+    second_input_pattern: atmos_1h_sfc_10v_.*\.nc
     second_variable: 10v
     pipelines:
       - sfcwind_south_pipeline
@@ -267,7 +267,7 @@ rules:
     compound_name: atmos.hurs.tpt-h2m-hxy-u.3hr.GLB
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atmos_3h_pt_2d_*.nc
+    second_input_pattern: atmos_3h_pt_2d_.*\.nc
     second_variable: 2d
     pipelines:
       - hurs_pipeline

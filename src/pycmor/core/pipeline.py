@@ -374,7 +374,6 @@ class AreacellaFxPipeline(FrozenPipeline):
 
     STEPS = (
         "pycmor.core.gather_inputs.load_mfdataset",
-        "pycmor.std_lib.generic.get_variable",
         "pycmor.std_lib.cell_measures.compute_areacella",
         "pycmor.std_lib.attributes.set_global",
         "pycmor.std_lib.attributes.set_variable",

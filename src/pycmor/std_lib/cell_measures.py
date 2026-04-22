@@ -65,41 +65,114 @@ def compute_areacello(data, rule):
 
 
 def compute_areacella(data, rule):
-    """Atmospheric grid-cell area from lat/lon on a regular grid.
+    """Atmospheric grid-cell area from lat/lon coordinates.
 
-    Uses the spherical-Earth formula
-    ``area = R² · Δλ · |sin(φ+Δφ/2) − sin(φ−Δφ/2)|`` (Earth radius
-    R = 6 371 000 m). ``data`` is any field on the target grid; only
-    its lat/lon coords are used.
+    Supports two grid layouts:
+
+    * Regular grid — ``lat`` and ``lon`` are 1D along distinct dimensions.
+      Uses ``area = R² · Δλ · |sin(φ+Δφ/2) − sin(φ−Δφ/2)|`` with mean Δλ, Δφ.
+    * Unstructured / reduced Gaussian — ``lat`` and ``lon`` are auxiliary
+      coordinates along a single dim (e.g. ``cell``), with ``bounds_lat``
+      ``(cell, nvertex)`` and ``bounds_lon`` ``(cell, nvertex)`` providing
+      the corner coordinates. Per-cell area uses the same spherical-strip
+      formula with each cell's lat/lon bounds.
+
+    Earth radius R = 6 371 000 m.
     """
     R = 6371000.0
 
     lat = None
     lon = None
     for coord_name in data.coords:
-        if "lat" in coord_name.lower():
+        cname = str(coord_name).lower()
+        if cname in ("lat", "latitude") or cname.endswith("_lat"):
             lat = data.coords[coord_name]
-        if "lon" in coord_name.lower():
+        if cname in ("lon", "longitude") or cname.endswith("_lon"):
             lon = data.coords[coord_name]
+    if lat is None or lon is None:
+        for coord_name in data.coords:
+            cname = str(coord_name).lower()
+            if lat is None and "lat" in cname and "bound" not in cname:
+                lat = data.coords[coord_name]
+            if lon is None and "lon" in cname and "bound" not in cname:
+                lon = data.coords[coord_name]
     if lat is None or lon is None:
         raise ValueError("Cannot find lat/lon coordinates in input data")
 
-    lat_vals = np.deg2rad(lat.values)
-    lon_vals = np.deg2rad(lon.values)
+    unstructured = (lat.ndim == 1 and lon.ndim == 1 and lat.dims == lon.dims)
 
-    dlat = float(np.abs(np.diff(lat_vals).mean()))
-    dlon = float(np.abs(np.diff(lon_vals).mean()))
+    if unstructured:
+        # Use bounds_lat / bounds_lon (or equivalent) for per-cell area.
+        ds_src = data if isinstance(data, xr.Dataset) else data._coords.get("__parent__", None)
+        # Try common bound-variable names on the source Dataset/DataArray.
+        candidates_lat = [lat.attrs.get("bounds"), "bounds_lat", "lat_bnds", "lat_bounds"]
+        candidates_lon = [lon.attrs.get("bounds"), "bounds_lon", "lon_bnds", "lon_bounds"]
+        lat_bnds = lon_bnds = None
+        search_objs = []
+        if isinstance(data, xr.Dataset):
+            search_objs.append(data)
+        search_objs.append(data.coords)
+        for obj in search_objs:
+            for k in candidates_lat:
+                if k and k in obj:
+                    lat_bnds = obj[k]
+                    break
+            for k in candidates_lon:
+                if k and k in obj:
+                    lon_bnds = obj[k]
+                    break
+            if lat_bnds is not None and lon_bnds is not None:
+                break
+        if lat_bnds is None or lon_bnds is None:
+            raise ValueError(
+                "Unstructured grid detected but lat/lon bounds not found "
+                "(expected e.g. 'bounds_lat', 'bounds_lon')"
+            )
 
-    lat_upper = lat_vals + dlat / 2
-    lat_lower = lat_vals - dlat / 2
-    area_1d = R**2 * dlon * np.abs(np.sin(lat_upper) - np.sin(lat_lower))
-    area_2d = np.broadcast_to(area_1d[:, np.newaxis], (len(lat_vals), len(lon_vals)))
+        # open_mfdataset may broadcast bounds along the time dim; drop anything
+        # that isn't the cell dim or the nvertex/vertices dim.
+        cell_dim_name = lat.dims[0]
+        def _reduce_to_cell_nvertex(bnds):
+            for d in list(bnds.dims):
+                if d == cell_dim_name:
+                    continue
+                if bnds.sizes[d] <= 32:  # nvertex-like: keep
+                    continue
+                bnds = bnds.isel({d: 0})
+            return bnds
+        lat_bnds = _reduce_to_cell_nvertex(lat_bnds)
+        lon_bnds = _reduce_to_cell_nvertex(lon_bnds)
 
-    result = xr.DataArray(
-        area_2d,
-        dims=[lat.dims[0], lon.dims[0]],
-        coords={lat.name: lat, lon.name: lon},
-    )
+        lat_b = np.deg2rad(np.asarray(lat_bnds.values))
+        lon_b = np.deg2rad(np.asarray(lon_bnds.values))
+        lat_max = lat_b.max(axis=-1)
+        lat_min = lat_b.min(axis=-1)
+        # Handle longitude wrap-around: width is the smaller of forward/backward span.
+        lon_span = lon_b.max(axis=-1) - lon_b.min(axis=-1)
+        lon_span = np.where(lon_span > np.pi, 2 * np.pi - lon_span, lon_span)
+        area_1d = R**2 * lon_span * np.abs(np.sin(lat_max) - np.sin(lat_min))
+
+        cell_dim = lat.dims[0]
+        result = xr.DataArray(
+            area_1d,
+            dims=[cell_dim],
+            coords={lat.name: lat, lon.name: lon},
+        )
+    else:
+        lat_vals = np.deg2rad(lat.values)
+        lon_vals = np.deg2rad(lon.values)
+        dlat = float(np.abs(np.diff(lat_vals).mean()))
+        dlon = float(np.abs(np.diff(lon_vals).mean()))
+        lat_upper = lat_vals + dlat / 2
+        lat_lower = lat_vals - dlat / 2
+        area_1d = R**2 * dlon * np.abs(np.sin(lat_upper) - np.sin(lat_lower))
+        area_2d = np.broadcast_to(area_1d[:, np.newaxis], (len(lat_vals), len(lon_vals)))
+        result = xr.DataArray(
+            area_2d,
+            dims=[lat.dims[0], lon.dims[0]],
+            coords={lat.name: lat, lon.name: lon},
+        )
+
     result.attrs = {
         "units": "m2",
         "standard_name": "cell_area",

@@ -29,10 +29,15 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
     missing_value = rule._pycmor_cfg("xarray_default_dataarray_attrs_missing_value")
     attrs = rule.data_request_variable.attrs.copy()  # avoid modifying original
 
-    # Set missing value in attrs if not present
-    for attr in ["missing_value", "_FillValue"]:
-        if attrs.get(attr) is None:
-            attrs[attr] = missing_value
+    # Flag variables (CF flag-type) must not carry missing_value/_FillValue.
+    is_flag = ("flag_values" in attrs) or ("flag_meanings" in attrs) \
+        or ("flag_values" in da.attrs) or ("flag_meanings" in da.attrs)
+
+    # Set missing value in attrs if not present (skip flag variables)
+    if not is_flag:
+        for attr in ["missing_value", "_FillValue"]:
+            if attrs.get(attr) is None:
+                attrs[attr] = missing_value
 
     skip_setting_unit_attr = rule._pycmor_cfg("xarray_default_dataarray_processing_skip_unit_attr_from_drv")
     if skip_setting_unit_attr:
@@ -58,7 +63,15 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
             da.encoding["_FillValue"] = v
         if k == "missing_value":
             try:
-                cast = da.dtype.type(v) if da.dtype.kind in "fi" else np.float32(v)
+                if da.dtype.kind == "i":
+                    info = np.iinfo(da.dtype)
+                    if not (info.min <= v <= info.max):
+                        continue  # value doesn't fit integer dtype; skip attr
+                    cast = da.dtype.type(v)
+                elif da.dtype.kind == "f":
+                    cast = da.dtype.type(v)
+                else:
+                    cast = np.float32(v)
             except Exception:
                 cast = np.float32(v)
             da.attrs["missing_value"] = cast

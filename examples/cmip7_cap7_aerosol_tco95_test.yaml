@@ -105,7 +105,7 @@ rules:
     inputs:
       - path: *ghg
         pattern: cfc11_input4MIPs_GHGConcentrations_CMIP_CR-CMIP-1-0-0_gm_1750-2022\.nc
-    compound_name: atmosChem.cfc11.tavg-u-hm-air.mon.GLB
+    compound_name: atmosChem.cfc11.tavg-u-hm-u.mon.GLB
     model_variable: cfc11
     scale_factor: 1.0e-12
     scaled_units: "mol mol-1"
@@ -118,7 +118,7 @@ rules:
     inputs:
       - path: *ghg
         pattern: cfc12_input4MIPs_GHGConcentrations_CMIP_CR-CMIP-1-0-0_gm_1750-2022\.nc
-    compound_name: atmosChem.cfc12.tavg-u-hm-air.mon.GLB
+    compound_name: atmosChem.cfc12.tavg-u-hm-u.mon.GLB
     model_variable: cfc12
     scale_factor: 1.0e-12
     scaled_units: "mol mol-1"
@@ -133,7 +133,7 @@ rules:
     inputs:
       - path: *ghg
         pattern: ch4_input4MIPs_GHGConcentrations_CMIP_CR-CMIP-1-0-0_gm_1750-2022\.nc
-    compound_name: atmosChem.ch4.tavg-u-hm-air.mon.GLB
+    compound_name: atmosChem.ch4.tavg-u-hm-u.mon.GLB
     model_variable: ch4
     scale_factor: 1.0e-9
     scaled_units: "mol mol-1"
@@ -148,7 +148,7 @@ rules:
     inputs:
       - path: *ghg
         pattern: n2o_input4MIPs_GHGConcentrations_CMIP_CR-CMIP-1-0-0_gm_1750-2022\.nc
-    compound_name: atmosChem.n2o.tavg-u-hm-air.mon.GLB
+    compound_name: atmosChem.n2o.tavg-u-hm-u.mon.GLB
     model_variable: n2o
     scale_factor: 1.0e-9
     scaled_units: "mol mol-1"

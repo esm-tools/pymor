@@ -1024,7 +1024,7 @@ rules:
     inputs:
       - path: *dp
         pattern: m_snow\.fesom\..*\.nc
-    compound_name: seaIce.sisnmass.tavg-u-hm-si.day.NH
+    compound_name: seaIce.sisnmass.tavg-u-hm-u.day.NH
     model_variable: m_snow
     hemisphere: "N"
     pipelines:
@@ -1034,7 +1034,7 @@ rules:
     inputs:
       - path: *dp
         pattern: m_snow\.fesom\..*\.nc
-    compound_name: seaIce.sisnmass.tavg-u-hm-si.day.SH
+    compound_name: seaIce.sisnmass.tavg-u-hm-u.day.SH
     model_variable: m_snow
     hemisphere: "S"
     pipelines:
@@ -1044,7 +1044,7 @@ rules:
     inputs:
       - path: *dp
         pattern: m_snow\.fesom\..*\.nc
-    compound_name: seaIce.sisnmass.tavg-u-hm-si.mon.NH
+    compound_name: seaIce.sisnmass.tavg-u-hm-u.mon.NH
     model_variable: m_snow
     hemisphere: "N"
     pipelines:
@@ -1054,7 +1054,7 @@ rules:
     inputs:
       - path: *dp
         pattern: m_snow\.fesom\..*\.nc
-    compound_name: seaIce.sisnmass.tavg-u-hm-si.mon.SH
+    compound_name: seaIce.sisnmass.tavg-u-hm-u.mon.SH
     model_variable: m_snow
     hemisphere: "S"
     pipelines:

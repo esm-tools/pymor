@@ -391,7 +391,7 @@ rules:
     compound_name: atmos.sfcWind.tavg-h10m-hxy-u.mon.GLB
     model_variable: 10u
     second_input_path: *dp
-    second_input_pattern: atm_remapped_1m_10v_1m_*.nc
+    second_input_pattern: atm_remapped_1m_10v_1m_.*\.nc
     second_variable: 10v
     pipelines:
       - sfcwind_pipeline
@@ -403,7 +403,7 @@ rules:
     compound_name: atmos.hurs.tavg-h2m-hxy-u.mon.GLB
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atm_remapped_1m_2d_1m_*.nc
+    second_input_pattern: atm_remapped_1m_2d_1m_.*\.nc
     second_variable: 2d
     pipelines:
       - hurs_pipeline
@@ -415,7 +415,7 @@ rules:
     compound_name: atmos.huss.tavg-h2m-hxy-u.mon.GLB
     model_variable: 2d
     second_input_path: *dp
-    second_input_pattern: atm_remapped_1m_sp_1m_*.nc
+    second_input_pattern: atm_remapped_1m_sp_1m_.*\.nc
     second_variable: sp
     pipelines:
       - huss_pipeline
@@ -427,7 +427,7 @@ rules:
     compound_name: atmos.clwvi.tavg-u-hxy-u.mon.GLB
     model_variable: tclw
     second_input_path: *dp
-    second_input_pattern: atm_remapped_1m_tciw_1m_*.nc
+    second_input_pattern: atm_remapped_1m_tciw_1m_.*\.nc
     second_variable: tciw
     pipelines:
       - clwvi_pipeline
@@ -569,7 +569,7 @@ rules:
     compound_name: atmos.sfcWind.tavg-h10m-hxy-u.day.GLB
     model_variable: 10u
     second_input_path: *dp
-    second_input_pattern: atm_remapped_1d_cmip7_10v_1d_cmip7_*.nc
+    second_input_pattern: atm_remapped_1d_cmip7_10v_1d_cmip7_.*\.nc
     second_variable: 10v
     pipelines:
       - sfcwind_pipeline
@@ -581,7 +581,7 @@ rules:
     compound_name: atmos.hurs.tavg-h2m-hxy-u.day.GLB
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atm_remapped_1d_cmip7_2d_1d_cmip7_*.nc
+    second_input_pattern: atm_remapped_1d_cmip7_2d_1d_cmip7_.*\.nc
     second_variable: 2d
     pipelines:
       - hurs_pipeline
@@ -593,7 +593,7 @@ rules:
     compound_name: atmos.huss.tavg-h2m-hxy-u.day.GLB
     model_variable: 2d
     second_input_path: *dp
-    second_input_pattern: atm_remapped_1d_cmip7_sp_1d_cmip7_*.nc
+    second_input_pattern: atm_remapped_1d_cmip7_sp_1d_cmip7_.*\.nc
     second_variable: sp
     pipelines:
       - huss_pipeline
@@ -748,7 +748,7 @@ rules:
     compound_name: atmos.huss.tpt-h2m-hxy-u.3hr.GLB
     model_variable: 2d
     second_input_path: *dp
-    second_input_pattern: atmos_3h_pt_sp_3h_pt_*.nc
+    second_input_pattern: atmos_3h_pt_sp_3h_pt_.*\.nc
     second_variable: sp
     pipelines:
       - huss_pipeline
@@ -786,7 +786,7 @@ rules:
     compound_name: atmos.hurs.tavg-h2m-hxy-u.6hr.GLB
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atmos_6h_2d_6h_*.nc
+    second_input_pattern: atmos_6h_2d_6h_.*\.nc
     second_variable: 2d
     pipelines:
       - hurs_pipeline

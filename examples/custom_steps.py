@@ -51,6 +51,7 @@ Function index (keep this list in sync when adding/removing steps; helps avoid d
 import glob as _glob
 import logging
 import os as _os
+import re as _re
 from typing import Optional
 
 import numpy as np
@@ -1898,9 +1899,13 @@ def _load_secondary_mf(rule, path_key, pattern_key, variable_key):
     pattern = rule.get(pattern_key)
     if path is None or pattern is None:
         raise ValueError(f"Rule must specify '{path_key}' and '{pattern_key}'")
-    files = sorted(_glob.glob(_os.path.join(path, pattern)))
+    # Patterns are regex (consistent with pycmor's gather_inputs), matched against filenames in `path`.
+    regex = _re.compile(pattern)
+    files = sorted(
+        _os.path.join(path, f) for f in _os.listdir(path) if regex.fullmatch(f)
+    )
     if not files:
-        raise FileNotFoundError(f"No files matching {_os.path.join(path, pattern)}")
+        raise FileNotFoundError(f"No files matching regex {pattern!r} in {path}")
     ds = xr.open_mfdataset(files, use_cftime=True)
     time_dimname = rule.get("time_dimname")
     if time_dimname and time_dimname in ds.dims and "time" not in ds.dims:
@@ -2001,7 +2006,10 @@ def compute_hur_plev(data, rule):
     """
     hus = _load_secondary_mf(rule, "second_input_path", "second_input_pattern", "second_variable")
     # pfull from the pressure-level coord; broadcast over (time,lat,lon)
-    plev_name = next((n for n in ("plev", "plev19", "pressure", "lev") if n in data.coords), None)
+    plev_name = next(
+        (n for n in ("plev", "plev19", "plev39", "plev7h", "plev8", "pressure_levels", "pressure", "lev") if n in data.coords),
+        None,
+    )
     if plev_name is None:
         raise ValueError(f"compute_hur_plev: no plev-like coord on ta (coords={list(data.coords)})")
     pfull = data[plev_name]

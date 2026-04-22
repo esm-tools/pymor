@@ -457,10 +457,13 @@ def get_encoding_with_chunks(
 
         # CF forbids _FillValue on bounds variables. Respect an explicit None
         # already set upstream, and skip any *_bnds / *_bounds variable.
+        # Flag variables (with flag_values/flag_meanings) also get no _FillValue,
+        # since 1e20 cannot round-trip through int32.
         _sentinel = object()
         _pre = ds[var].encoding.get("_FillValue", _sentinel)
         _is_bounds = str(var).endswith(("_bnds", "_bounds"))
-        if _pre is None or _is_bounds:
+        _is_flag = ("flag_values" in ds[var].attrs) or ("flag_meanings" in ds[var].attrs)
+        if _pre is None or _is_bounds or _is_flag:
             var_encoding["_FillValue"] = None
         else:
             var_encoding["_FillValue"] = 1.0e20

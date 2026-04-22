@@ -343,7 +343,7 @@ rules:
     compound_name: atmos.clwvi.tavg-u-hxy-u.day.GLB
     model_variable: tclw
     second_input_path: *dp
-    second_input_pattern: "atmos_day_cap7_clivi_*.nc"
+    second_input_pattern: "atmos_day_cap7_clivi_.*\.nc"
     second_variable: clivi
     pipelines:
       - clwvi_pipeline
@@ -364,7 +364,7 @@ rules:
     compound_name: atmos.hurs.tmax-h2m-hxy-u.day.GLB
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: "atm_remapped_1d_cmip7_2d_*.nc"
+    second_input_pattern: "atm_remapped_1d_cmip7_2d_.*\.nc"
     second_variable: 2d
     pipelines:
       - hurs_pipeline
@@ -376,7 +376,7 @@ rules:
     compound_name: atmos.hurs.tmin-h2m-hxy-u.day.GLB
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: "atm_remapped_1d_cmip7_2d_*.nc"
+    second_input_pattern: "atm_remapped_1d_cmip7_2d_.*\.nc"
     second_variable: 2d
     pipelines:
       - hurs_pipeline
@@ -434,7 +434,7 @@ rules:
     compound_name: atmos.huss.tpt-h2m-hxy-u.1hr.GLB
     model_variable: 2d
     second_input_path: *dp
-    second_input_pattern: "atmos_1h_sfc_sp_*.nc"
+    second_input_pattern: "atmos_1h_sfc_sp_.*\.nc"
     second_variable: sp
     pipelines:
       - huss_pipeline
@@ -495,7 +495,7 @@ rules:
     compound_name: atmos.sfcWind.tavg-h10m-hxy-u.1hr.GLB
     model_variable: 10u
     second_input_path: *dp
-    second_input_pattern: "atmos_1h_sfc_10v_*.nc"
+    second_input_pattern: "atmos_1h_sfc_10v_.*\.nc"
     second_variable: 10v
     pipelines:
       - sfcwind_pipeline
@@ -703,7 +703,7 @@ rules:
     compound_name: landIce.snd.tavg-u-hxy-lnd.mon.GLB
     model_variable: sd
     second_input_path: *dp
-    second_input_pattern: "atm_remapped_1m_rsn_*.nc"
+    second_input_pattern: "atm_remapped_1m_rsn_.*\.nc"
     second_variable: rsn
     pipelines:
       - snd_pipeline
