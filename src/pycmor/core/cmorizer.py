@@ -1009,7 +1009,20 @@ class CMORizer:
         return {name: True for name in succeeded}
 
     def _cleanup_dask_workers(self):
-        """Release cached Dask task results and trigger garbage collection on workers."""
+        """Release cached Dask task results and trigger GC on workers AND the
+        main process. Threaded-scheduler saves do their compute in main-process
+        threads, so cleaning only the workers misses the dominant source of
+        inter-rule memory accumulation on HR runs."""
+        # Main process cleanup first — this is where threaded-scheduler saves
+        # leak refs (dask graph, xarray Datasets, blosc thread-pool buffers).
+        try:
+            import gc as _gc
+            _gc.collect()
+            __import__("ctypes").CDLL("libc.so.6").malloc_trim(0)
+        except Exception:
+            pass
+        # Worker-side cleanup (only relevant when compute runs on real workers,
+        # e.g. non-lazy trigger_compute or synchronous save_dataset).
         if self._cluster is None:
             return
         try:

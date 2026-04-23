@@ -169,8 +169,10 @@ def process(config_file):
     #           so we need to re-create the report logger here. Paul does not like this at all.
     add_report_logger()
     from .core.banner import show_banner
+    from .core.env_check import run_env_check
 
     show_banner()
+    run_env_check()
     logger.info(f"Processing {config_file}")
     with open(config_file, "r") as f:
         cfg = yaml.safe_load(f)
