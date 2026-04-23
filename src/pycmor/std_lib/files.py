@@ -137,10 +137,13 @@ def _recover_bounds_from_inputs(ds, rule, coord_name, declared_bounds_name):
                             continue
                         cell_dim = ds[coord_name].dims[0]
                         vdim = bvar.dims[1]
+                        # CF §7.1: bounds variables must not carry their own
+                        # attributes (units, standard_name, ...) -- they inherit
+                        # from the parent coord. Pass an empty attrs dict.
                         return xr.DataArray(
                             np.asarray(bvar.values),
                             dims=(cell_dim, vdim),
-                            attrs={"units": bvar.attrs.get("units", "degrees")},
+                            attrs={},
                         )
                 finally:
                     src.close()
@@ -270,13 +273,15 @@ def _attach_bounds_from_mesh(ds, rule, coord_names):
                     )
                     continue
             # Rename the mesh vertex dim to match the variable's spatial dim.
+            # CF §7.1: bounds variables must not carry their own attributes
+            # (they inherit from the parent coord); pass an empty attrs dict.
             dim_name = coord.dims[0]
             vdim = mb.dims[1]
             data = mb.values
             ds[bname] = xr.DataArray(
                 data,
                 dims=(dim_name, vdim),
-                attrs={"units": mb.attrs.get("units", "degrees")},
+                attrs={},
             )
             ds[bname].encoding["_FillValue"] = None
             ds[name].attrs["bounds"] = bname
