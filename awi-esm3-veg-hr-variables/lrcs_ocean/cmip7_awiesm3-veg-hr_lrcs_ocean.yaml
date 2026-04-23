@@ -14,6 +14,7 @@ pycmor:
   warn_on_no_rule: False
   parallel: False
   dask_cluster: "slurm"
+  dask_n_workers: 1
   dask_cluster_scaling_mode: "fixed"
   dask_cluster_scaling_fixed_jobs: 1
 
@@ -322,6 +323,10 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
+  # Write-perf defaults rolled out from HR atm core bench:
+  netcdf_compression_codec: blosc_zstd
+  netcdf_compression_level: 3
+  netcdf_write_scheduler: threads
   data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom
   source_id: AWI-ESM-3
   institution_id: AWI
@@ -913,43 +918,46 @@ rules:
   # msftm — meridional overturning in density space
   # Input: dMOC from FESOM (ldiag_dMOC=.true.), already a (lat, rho) streamfunction field.
   # Custom step maps dMOC bins to CMIP rho coordinate and computes cumulative streamfunction.
-  - name: msftm_mon
-    inputs:
-      - path: *dp
-        pattern: dMOC\.fesom\..*\.nc
-    compound_name: ocean.msftm.tavg-rho-hyb-sea.mon.GLB
-    model_variable: dMOC
-    reference_density: 1025.0
-    pipelines:
-      - msftm_density_pipeline
+  # DISABLED: pipeline function not implemented (compute_msftm[m(pa)]_*).
+  # - name: msftm_mon
+  # inputs:
+  # - path: *dp
+  # pattern: dMOC\.fesom\..*\.nc
+  # compound_name: ocean.msftm.tavg-rho-hyb-sea.mon.GLB
+  # model_variable: dMOC
+  # reference_density: 1025.0
+  # pipelines:
+  # - msftm_density_pipeline
 
   # msftmmpa — MOC due to parameterized mesoscale advection, depth-space
   # Input: bolus_v (meridional bolus velocity from GM scheme, m/s).
   # Requires fer_gm=.true. in namelist.io; zero field when GM is disabled.
   # Custom step: integrate bolus_v zonally and cumulatively over depth → (lat, depth) streamfunction.
-  - name: msftmmpa_depth_mon
-    inputs:
-      - path: *dp
-        pattern: bolus_v\.fesom\..*\.nc
-    compound_name: ocean.msftmmpa.tavg-ol-hyb-sea.mon.GLB
-    model_variable: bolus_v
-    reference_density: 1025.0
-    lazy_write: true
-    pipelines:
-      - msftmmpa_depth_pipeline
+  # DISABLED: pipeline function not implemented (compute_msftm[m(pa)]_*).
+  # - name: msftmmpa_depth_mon
+  # inputs:
+  # - path: *dp
+  # pattern: bolus_v\.fesom\..*\.nc
+  # compound_name: ocean.msftmmpa.tavg-ol-hyb-sea.mon.GLB
+  # model_variable: bolus_v
+  # reference_density: 1025.0
+  # lazy_write: true
+  # pipelines:
+  # - msftmmpa_depth_pipeline
 
   # msftmmpa — MOC due to parameterized mesoscale advection, density-space
   # Same bolus_v input; custom step bins into density classes instead of depth layers.
-  - name: msftmmpa_density_mon
-    inputs:
-      - path: *dp
-        pattern: bolus_v\.fesom\..*\.nc
-    compound_name: ocean.msftmmpa.tavg-rho-hyb-sea.mon.GLB
-    model_variable: bolus_v
-    reference_density: 1025.0
-    lazy_write: true
-    pipelines:
-      - msftmmpa_density_pipeline
+  # DISABLED: pipeline function not implemented (compute_msftm[m(pa)]_*).
+  # - name: msftmmpa_density_mon
+  # inputs:
+  # - path: *dp
+  # pattern: bolus_v\.fesom\..*\.nc
+  # compound_name: ocean.msftmmpa.tavg-rho-hyb-sea.mon.GLB
+  # model_variable: bolus_v
+  # reference_density: 1025.0
+  # lazy_write: true
+  # pipelines:
+  # - msftmmpa_density_pipeline
 
   # ============================================================
   # HARD: 3D salt transport (sfx, sfy)
