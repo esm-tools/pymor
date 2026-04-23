@@ -1,0 +1,129 @@
+# Focused development yaml for three not-yet-implemented ocean streamfunction
+# custom steps: compute_msftm_density, compute_msftmmpa_depth,
+# compute_msftmmpa_density. CORE2 (LR) mesh + LR_test_01 output so a full
+# iteration fits in minutes.
+#
+# As of 2026-04-23:
+#   - bolus_v.fesom.<YEAR>.nc   exists   -> msftmmpa_depth_mon / msftmmpa_density_mon testable
+#   - dMOC.fesom.<YEAR>.nc      MISSING  -> needs FESOM rerun with ldiag_dMOC=.true.
+#                                          msftm_mon will fail on input discovery until then.
+
+general:
+  name: "dev-msftm-lrcs-test"
+  cmor_version: "CMIP7"
+  mip: "CMIP"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
+
+pycmor:
+  warn_on_no_rule: False
+  parallel: False
+  dask_cluster: "local"
+  dask_n_workers: 1
+
+pipelines:
+  - name: msftm_density_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_msftm_density
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  - name: msftmmpa_depth_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_msftmmpa_depth
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  - name: msftmmpa_density_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_msftmmpa_density
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+inherit:
+  netcdf_compression_codec: blosc_zstd
+  netcdf_compression_level: 3
+  netcdf_write_scheduler: threads
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/LR_test_01/outdata/fesom
+  source_id: AWI-ESM3-VEG-LR
+  institution_id: AWI
+  experiment_id: piControl
+  activity_id: CMIP
+  parent_experiment_id: no parent
+  variant_label: r1i1p1f1
+  grid_label: gn
+  mesh_path: &mp /work/ab0246/a270092/input/fesom2/core2
+  grid_file: /work/ab0246/a270092/input/fesom2/core2/mesh.nc
+  basin_mask_file: /work/ab0246/a270092/input/fesom2/core2/basin_mask.nc
+  time_dimname: time
+  grid: "FESOM 2.6 unstructured grid CORE2 (126858 surface nodes)"
+  nominal_resolution: "100 km"
+  institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
+  output_directory: ./cmorized_output/dev_msftm_lrcs_test
+  year_start: 1900
+  year_end: 1901
+
+rules:
+  # MOC in density space — needs dMOC diagnostic from FESOM (ldiag_dMOC=.true.).
+  # Will fail on "no input files" until the model is rerun.
+  - name: msftm_mon
+    inputs:
+      - path: *dp
+        pattern: dMOC\.fesom\..*\.nc
+    compound_name: ocean.msftm.tavg-rho-hyb-sea.mon.GLB
+    model_variable: dMOC
+    reference_density: 1025.0
+    pipelines:
+      - msftm_density_pipeline
+
+  # MOC by parameterised eddy advection, depth-space.
+  # Integrate bolus_v zonally and cumulatively over depth → (lat, depth) streamfunction.
+  - name: msftmmpa_depth_mon
+    inputs:
+      - path: *dp
+        pattern: bolus_v\.fesom\..*\.nc
+    compound_name: ocean.msftmmpa.tavg-ol-hyb-sea.mon.GLB
+    model_variable: bolus_v
+    reference_density: 1025.0
+    lazy_write: true
+    pipelines:
+      - msftmmpa_depth_pipeline
+
+  # MOC by parameterised eddy advection, density-space.
+  # Same bolus_v input; bin into density classes instead of depth layers.
+  - name: msftmmpa_density_mon
+    inputs:
+      - path: *dp
+        pattern: bolus_v\.fesom\..*\.nc
+    compound_name: ocean.msftmmpa.tavg-rho-hyb-sea.mon.GLB
+    model_variable: bolus_v
+    reference_density: 1025.0
+    lazy_write: true
+    pipelines:
+      - msftmmpa_density_pipeline

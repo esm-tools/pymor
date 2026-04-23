@@ -22,7 +22,7 @@ module load netcdf-c/4.9.3pre-gcc-11.2.0
 # netcdf-c/4.9.3pre pulls hdf5-1.14.2 via its RPATHs; that build happens to
 # also be threadsafe (verified with H5is_library_threadsafe).
 export LD_LIBRARY_PATH=/sw/spack-levante/hdf5-1.14.2-gxhi2f/lib:$LD_LIBRARY_PATH
-conda activate pycmor_py312_ts
+conda activate pycmor_py312
 
 cd /work/ab0246/a270092/software/pycmor
 

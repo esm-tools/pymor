@@ -26,9 +26,13 @@ export HDF5_USE_FILE_LOCKING=FALSE
 export OMP_NUM_THREADS=1
 
 # HR has 10x the LR grid size; fewer, larger workers fit better.
+# Also inject the blosc_zstd + threaded + larger time chunks knobs into
+# the inherit: block so every rule uses them without yaml edits.
+# (BitGroom-5 is already pycmor's default.)
 sed -e 's/dask_cluster: "slurm"/dask_cluster: "local"/' \
-    -e '/dask_cluster:/a\  dask_n_workers: 4' \
+    -e '/dask_cluster:/a\  dask_n_workers: 1' \
     -e 's|output_directory: .*|output_directory: ./cmorized_output/core_atm_hr|' \
+    -e '/^inherit:/a\  netcdf_compression_codec: blosc_zstd\n  netcdf_compression_level: 3\n  netcdf_write_scheduler: threads' \
     awi-esm3-veg-hr-variables/core_atm/cmip7_awiesm3-veg-hr_atmos.yaml > $PYCMOR_SCRATCH/core_atm_hr.yaml
 
 pycmor process $PYCMOR_SCRATCH/core_atm_hr.yaml

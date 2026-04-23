@@ -34,6 +34,28 @@ inherit:
   time_dimname: time_counter
   output_directory: ./cmorized_output/bench_hr_wap_day
 
+pipelines:
+  # DefaultPipeline steps (module paths copied verbatim from
+  # pycmor.core.pipeline.DefaultPipeline.STEPS) with a rechunk_time step
+  # inserted just before save_dataset, so the dask chunks match the
+  # larger netCDF chunks we want on disk.
+  - name: bench_rechunk_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - pycmor.std_lib.add_vertical_bounds
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:rechunk_time
+      - pycmor.std_lib.files.save_dataset
+
 rules:
   - name: wap_day
     inputs:
@@ -51,3 +73,11 @@ rules:
     # multiple chunks compress+write concurrently rather than in a
     # single-core stream.
     netcdf_write_scheduler: threads
+    # Rechunk before save so HDF5 stores 30-day chunks instead of 1-day
+    # chunks -> ~12x fewer chunk-writes + metadata ops on save.
+    time_chunk_size: 30
+    # Lossy BitGroom quantization to 5 sig digits is now the pycmor
+    # default; set `netcdf_quantize_mode: null` on any rule that must
+    # stay bit-exact. Leaving the defaults is what we're benching here.
+    pipelines:
+      - bench_rechunk_pipeline
