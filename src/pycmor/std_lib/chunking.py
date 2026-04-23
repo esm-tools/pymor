@@ -413,6 +413,8 @@ def get_encoding_with_chunks(
     compression_level: int = 1,
     enable_compression: bool = True,
     compression_codec: str = "zlib",
+    quantize_mode: str = "BitGroom",
+    significant_digits: int = 5,
 ) -> Dict[str, Dict]:
     """
     Generate encoding dictionary with chunking and compression settings.
@@ -466,6 +468,23 @@ def get_encoding_with_chunks(
                     var_encoding["blosc_shuffle"] = 1
                 elif compression_codec == "zstd":
                     var_encoding["shuffle"] = True
+
+        # Lossy bit-level quantization (libnetcdf >= 4.9). Only apply to
+        # float data variables; skip bounds/coord variables (CF requires
+        # exact values) and integer flag/index variables (bit-exact).
+        _var_name = str(var)
+        _is_bounds_var = (
+            _var_name.endswith(("_bnds", "_bounds"))
+            or _var_name.startswith("bounds_")
+        )
+        if (
+            quantize_mode
+            and significant_digits
+            and ds[var].dtype.kind == "f"
+            and not _is_bounds_var
+        ):
+            var_encoding["quantize_mode"] = quantize_mode
+            var_encoding["significant_digits"] = int(significant_digits)
 
         # CF forbids _FillValue on bounds variables. Respect an explicit None
         # already set upstream, and skip any *_bnds / *_bounds variable.

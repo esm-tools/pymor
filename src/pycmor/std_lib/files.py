@@ -331,6 +331,14 @@ def _encoding_from_dask_chunks(ds, rule):
     enable_compression = rule._pycmor_cfg("netcdf_enable_compression")
     enable_compression = getattr(rule, "netcdf_enable_compression", enable_compression)
     compression_codec = getattr(rule, "netcdf_compression_codec", None) or "zlib"
+    # Defaults: BitGroom-5 is active for all float data variables unless
+    # a rule/inherit block explicitly sets ``netcdf_quantize_mode: null``
+    # (or an unset sig-digits) to opt out. Bounds / coord variables are
+    # always skipped below.
+    quantize_mode = "BitGroom"
+    if hasattr(rule, "netcdf_quantize_mode"):
+        quantize_mode = rule.netcdf_quantize_mode  # may be None to opt out
+    significant_digits = getattr(rule, "netcdf_significant_digits", 5)
 
     encoding = {}
     for var in ds.data_vars:
@@ -351,6 +359,22 @@ def _encoding_from_dask_chunks(ds, rule):
                     var_encoding["blosc_shuffle"] = 1
                 elif compression_codec == "zstd":
                     var_encoding["shuffle"] = True
+        # Lossy bit-level quantization (libnetcdf >= 4.9). Only apply to
+        # float data variables; skip integer flag/index vars (bit-exact)
+        # and bounds/coord variables (CF requires exact values).
+        _var_name = str(var)
+        _is_bounds_var = (
+            _var_name.endswith(("_bnds", "_bounds"))
+            or _var_name.startswith("bounds_")
+        )
+        if (
+            quantize_mode
+            and significant_digits
+            and da.dtype.kind == "f"
+            and not _is_bounds_var
+        ):
+            var_encoding["quantize_mode"] = quantize_mode
+            var_encoding["significant_digits"] = int(significant_digits)
         # CF forbids _FillValue on bounds variables; respect explicit None and
         # skip *_bnds / *_bounds. For data variables, set the CMIP-required
         # 1.0e20 fill (xarray's default for float32 is NaN otherwise).
@@ -805,6 +829,8 @@ def _calculate_netcdf_chunks(ds: xr.Dataset, rule) -> dict:
     compression_level = rule._pycmor_cfg("netcdf_compression_level")
     enable_compression = rule._pycmor_cfg("netcdf_enable_compression")
     compression_codec = "zlib"
+    quantize_mode = "BitGroom"
+    significant_digits = 5
 
     # Allow per-rule override of chunking settings (including from inherit block)
     chunk_algorithm = getattr(rule, "netcdf_chunk_algorithm", chunk_algorithm)
@@ -814,6 +840,10 @@ def _calculate_netcdf_chunks(ds: xr.Dataset, rule) -> dict:
     compression_level = getattr(rule, "netcdf_compression_level", compression_level)
     enable_compression = getattr(rule, "netcdf_enable_compression", enable_compression)
     compression_codec = getattr(rule, "netcdf_compression_codec", compression_codec)
+    # Setting ``netcdf_quantize_mode: null`` in the rule/inherit opts out.
+    if hasattr(rule, "netcdf_quantize_mode"):
+        quantize_mode = rule.netcdf_quantize_mode
+    significant_digits = getattr(rule, "netcdf_significant_digits", significant_digits)
 
     # Calculate chunks based on algorithm
     chunk_functions = {
@@ -839,6 +869,8 @@ def _calculate_netcdf_chunks(ds: xr.Dataset, rule) -> dict:
             compression_level=compression_level,
             enable_compression=enable_compression,
             compression_codec=compression_codec,
+            quantize_mode=quantize_mode,
+            significant_digits=significant_digits,
         )
         logger.info(f"Calculated NetCDF chunks: {chunks}")
         return encoding
