@@ -3492,3 +3492,25 @@ def compute_sltbasin(data, rule):
     )
     return out.to_dataset()
 
+
+def rechunk_time(data, rule):
+    """Rechunk the dask array along the time dim to a larger block.
+
+    Used for write-perf benches: fewer, larger netCDF chunks reduce
+    per-chunk HDF5 metadata overhead during save_dataset. Controlled
+    by the ``time_chunk_size`` rule attribute (integer number of time
+    steps per chunk). No-op if unset or if the data has no time dim.
+    """
+    n = rule.get("time_chunk_size") if hasattr(rule, "get") else None
+    if not n:
+        return data
+    n = int(n)
+    time_dim = None
+    for candidate in ("time", "time_counter"):
+        if hasattr(data, "dims") and candidate in data.dims:
+            time_dim = candidate
+            break
+    if time_dim is None:
+        return data
+    return data.chunk({time_dim: n})
+
