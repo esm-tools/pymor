@@ -5,14 +5,18 @@ Various utility functions needed around the package
 import importlib
 import inspect
 import os
+import sys
 import tempfile
 import time
 from functools import partial
 
-import pkg_resources
-import requests
-
 from .logging import logger
+
+# Use importlib.metadata for Python 3.9+
+if sys.version_info >= (3, 10):
+    from importlib.metadata import entry_points
+else:
+    from importlib_metadata import entry_points
 
 
 def get_callable(name):
@@ -105,7 +109,9 @@ def get_entrypoint_by_name(name, group="pycmor.steps"):
     if group == "pycmor.steps":
         groups_to_try.append("pymor.steps")  # legacy fallback
     for grp in groups_to_try:
-        for entry_point in pkg_resources.iter_entry_points(group=grp):
+        # Use importlib.metadata.entry_points() instead of deprecated pkg_resources
+        eps = entry_points(group=grp) if hasattr(entry_points(), "__getitem__") else entry_points().get(grp, [])
+        for entry_point in eps:
             if entry_point.name == name:
                 return entry_point.load()
 
@@ -138,9 +144,7 @@ def generate_partial_function(func: callable, open_arg: str, *args, **kwargs):
             f"argument '{open_arg}' by using the provided arguments {args=} and "
             f"keyword arguments {kwargs=}."
         )
-    logger.debug(
-        f"Generating partial function for '{func.__name__}' with open argument '{open_arg}'"
-    )
+    logger.debug(f"Generating partial function for '{func.__name__}' with open argument '{open_arg}'")
     # Get the signature of the function
     signature = inspect.signature(func)
     # Get the parameter names
@@ -148,9 +152,7 @@ def generate_partial_function(func: callable, open_arg: str, *args, **kwargs):
     # Get the index of the open argument
     open_arg_index = param_names.index(open_arg)
     # Get the names of the arguments to be fixed
-    fixed_args = (
-        param_names[:open_arg_index] + param_names[open_arg_index + 1 :]  # noqa: E203
-    )
+    fixed_args = param_names[:open_arg_index] + param_names[open_arg_index + 1 :]  # noqa: E203
     # Get the values of the arguments to be fixed
     fixed_values = [kwargs[arg] for arg in fixed_args if arg in kwargs]
     # Remove the fixed arguments from the keyword arguments
@@ -160,9 +162,7 @@ def generate_partial_function(func: callable, open_arg: str, *args, **kwargs):
     return partial(func, *fixed_values, *args, **kwargs)
 
 
-def can_be_partialized(
-    func: callable, open_arg: str, arg_list: list, kwargs_dict: dict
-) -> bool:
+def can_be_partialized(func: callable, open_arg: str, arg_list: list, kwargs_dict: dict) -> bool:
     """
     Checks if a function can be reasonably partialized with a single argument open.
 
@@ -231,7 +231,7 @@ def get_callable_by_script(step_signature):
     if not step_signature.startswith("script://"):
         raise ValueError(f"Step signature '{step_signature}' is not a script step")
     script_spec = step_signature.split("script://")[1]
-    script_path = script_spec.split(":")[0]
+    script_path = os.path.expandvars(script_spec.split(":")[0])
     function_name = script_spec.split(":")[1]
     return get_function_from_script(script_path, function_name)
 
@@ -248,12 +248,11 @@ def wait_for_workers(client, n_workers, timeout=600):
     Returns:
     bool: True if the required number of workers are available, False if timeout occurred
     """
+
     start_time = time.time()
     while len(client.scheduler_info()["workers"]) < n_workers:
         if time.time() - start_time > timeout:
-            logger.critical(
-                f"Timeout reached. Only {len(client.scheduler_info()['workers'])} workers available."
-            )
+            logger.critical(f"Timeout reached. Only {len(client.scheduler_info()['workers'])} workers available.")
             return False
         time.sleep(1)  # Wait for 1 second before checking again
     logger.info(f"{n_workers} workers are now available.")
@@ -284,9 +283,7 @@ def git_url_to_api_url(git_url, path="", branch="main"):
     # Extract repo owner and name
     parts = git_url.replace("https://github.com/", "").strip("/").split("/")
     if len(parts) < 2:
-        raise ValueError(
-            "Invalid GitHub URL. Must include both owner and repository name."
-        )
+        raise ValueError("Invalid GitHub URL. Must include both owner and repository name.")
 
     repo_owner, repo_name = parts[:2]
 
@@ -307,6 +304,8 @@ def list_files_in_directory(git_url, directory_path, branch="main"):
     Returns:
     - list of str, filenames in the directory.
     """
+    import requests
+
     api_url = git_url_to_api_url(git_url, path=directory_path, branch=branch)
 
     response = requests.get(api_url)
@@ -315,9 +314,7 @@ def list_files_in_directory(git_url, directory_path, branch="main"):
         filenames = [item["name"] for item in contents if item["type"] == "file"]
         return filenames
     else:
-        raise ValueError(
-            f"Failed to fetch directory contents. Status code: {response.status_code}"
-        )
+        raise ValueError(f"Failed to fetch directory contents. Status code: {response.status_code}")
 
 
 def download_json_tables_from_url(url: str, filenames: list):
@@ -334,6 +331,8 @@ def download_json_tables_from_url(url: str, filenames: list):
     str :
         The directory where the JSON tables were downloaded.
     """
+    import requests
+
     directory = tempfile.mkdtemp()
     logger.debug(f"Downloading JSON tables from '{url}' to '{directory}'")
     for filename in filenames:

@@ -54,14 +54,14 @@ Quick Start
    print(result.frequency)     # 'M'
    print(result.is_exact)      # True
    print(result.status)        # 'valid'
-   
+
    # Check if resolution is fine enough for resampling
    check = da.timefreq.check_resolution(target_approx_interval=30.4375)
    print(check['is_valid_for_resampling'])  # True
-   
+
    # Safe resampling with automatic resolution validation
    resampled = da.timefreq.resample_safe(
-       freq_str="M", 
+       freq_str="M",
        target_approx_interval=30.4375,
        calendar="360_day",
        method="mean"
@@ -73,13 +73,13 @@ Quick Start
 
    # Infer frequency from dataset's time dimension
    info = ds.timefreq.infer_frequency(time_dim="time", log=False)
-   
+
    # Check resolution for entire dataset
    check = ds.timefreq.check_resolution(
-       target_approx_interval=30.4375, 
+       target_approx_interval=30.4375,
        time_dim="time"
    )
-   
+
    # Safe dataset resampling
    resampled_ds = ds.timefreq.resample_safe(
        freq_str="M",
@@ -113,7 +113,7 @@ When ``return_metadata=True``, frequency inference functions return a ``Frequenc
 
    # Get detailed metadata
    result = infer_frequency(times, return_metadata=True)
-   
+
    # Access fields by name (much cleaner than tuple unpacking!)
    if result.frequency:
        print(f"Found {result.frequency} frequency")
@@ -138,7 +138,7 @@ The ``status`` field in ``FrequencyResult`` indicates the quality and characteri
 .. code-block:: python
 
    import cftime
-   from toypycmor.infer_freq import infer_frequency
+   from pycmor.core.infer_freq import infer_frequency
 
    # Valid: Perfect monthly spacing
    times_valid = [
@@ -187,18 +187,31 @@ Core Functions
 Accessor Methods
 ~~~~~~~~~~~~~~~~
 
-The following methods are available via xarray accessors:
+Time frequency functionality is available through xarray accessors. For comprehensive
+documentation of all accessor methods, including both specialized (``timefreq``) and
+unified (``pymor``) accessors, see:
 
-**DataArray Accessor (``da.timefreq``):**
+.. seealso::
+   :doc:`accessors` - Complete guide to pycmor xarray accessors
+
+**Quick Reference:**
 
 .. automethod:: pycmor.core.infer_freq.TimeFrequencyAccessor.infer_frequency
 .. automethod:: pycmor.core.infer_freq.TimeFrequencyAccessor.check_resolution
 .. automethod:: pycmor.core.infer_freq.TimeFrequencyAccessor.resample_safe
 
-**Dataset Accessor (``ds.timefreq``):**
-
 .. automethod:: pycmor.core.infer_freq.DatasetFrequencyAccessor.infer_frequency
 .. automethod:: pycmor.core.infer_freq.DatasetFrequencyAccessor.resample_safe
+
+.. code-block:: python
+
+   # Specialized accessor (domain-specific)
+   result = data.timefreq.infer_frequency()
+   check = data.timefreq.check_resolution(target_approx_interval=30.0)
+
+   # Unified accessor (recommended for new code)
+   result = data.pycmor.infer_frequency()
+   check = data.pycmor.check_resolution(target_approx_interval=30.0)
 
 Calendar Support
 ----------------

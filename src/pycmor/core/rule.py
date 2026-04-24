@@ -45,9 +45,7 @@ class Rule:
             The DataRequestVariables this rule should create
         """
         self.name = name
-        self.inputs = [
-            InputFileCollection.from_dict(inp_dict) for inp_dict in (inputs or [])
-        ]
+        self.inputs = [InputFileCollection.from_dict(inp_dict) for inp_dict in (inputs or [])]
         self.cmor_variable = cmor_variable
         self.pipelines = pipelines or [pipeline.DefaultPipeline()]
         self.tables = tables or []
@@ -115,13 +113,9 @@ class Rule:
         """
         if hasattr(self, key) and not force:
             if warn:
-                warnings.warn(
-                    f"Attribute {key} already exists. Use force=True to overwrite."
-                )
+                warnings.warn(f"Attribute {key} already exists. Use force=True to overwrite.")
             else:
-                raise AttributeError(
-                    f"Attribute {key} already exists. Use force=True to overwrite."
-                )
+                raise AttributeError(f"Attribute {key} already exists. Use force=True to overwrite.")
         return setattr(self, key, value)
 
     def __str__(self):
@@ -177,15 +171,48 @@ class Rule:
         should contain a list of dictionaries that can be used to build Pipeline objects, and
         the ``cmor_variable`` is just a string.
 
+        If cmor_variable is not provided but compound_name is, the variable name
+        will be extracted from the compound_name.
+
         Parameters
         ----------
         data : dict
             A dictionary containing the rule data.
         """
+        # Handle cmor_variable extraction from compound_name if needed
+        if "cmor_variable" in data and "compound_name" in data:
+            # Both provided - validate they are consistent
+            provided_cmor_variable = data["cmor_variable"]
+            compound_name = data["compound_name"]
+            parts = compound_name.split(".")
+            if len(parts) >= 2:
+                extracted_variable = parts[1]  # variable is the second part
+                if provided_cmor_variable != extracted_variable:
+                    raise ValueError(
+                        f"cmor_variable '{provided_cmor_variable}' does not match "
+                        f"variable extracted from compound_name '{compound_name}' ('{extracted_variable}')"
+                    )
+                cmor_variable = data.pop("cmor_variable")  # Remove from data
+            else:
+                raise ValueError(f"Invalid compound_name format: {compound_name}")
+        elif "cmor_variable" in data:
+            # Only cmor_variable provided
+            cmor_variable = data.pop("cmor_variable")
+        elif "compound_name" in data:
+            # Only compound_name provided - extract cmor_variable from it
+            compound_name = data["compound_name"]
+            parts = compound_name.split(".")
+            if len(parts) >= 2:
+                cmor_variable = parts[1]  # variable is the second part
+            else:
+                raise ValueError(f"Invalid compound_name format: {compound_name}")
+        else:
+            raise ValueError("Either cmor_variable or compound_name must be provided")
+
         return cls(
             name=data.pop("name", None),
             inputs=data.pop("inputs"),
-            cmor_variable=data.pop("cmor_variable"),
+            cmor_variable=cmor_variable,
             pipelines=data.pop("pipelines", []),
             **data,
         )
@@ -212,9 +239,7 @@ class Rule:
         """Add a data request variable to the rule."""
         self.data_request_variables.append(drv)
         # Filter out Nones
-        self.data_request_variables = [
-            v for v in self.data_request_variable if v is not None
-        ]
+        self.data_request_variables = [v for v in self.data_request_variable if v is not None]
 
     def remove_data_request_variable(self, drv):
         """Remove a data request variable from the rule."""
@@ -223,7 +248,7 @@ class Rule:
     @property
     def input_patterns(self):
         """Return a list of compiled regex patterns for the input files."""
-        return [re.compile(f"{inp.path}/{inp.pattern}") for inp in self.inputs]
+        return [re.compile(f"{inp.path}/{inp.pattern_str}") for inp in self.inputs]
 
     def clone(self):
         """Creates a copy of this rule object as it is currently configured."""
@@ -271,17 +296,16 @@ class Rule:
             "institution_id",  # optional
             "model_component",  # optional
             "further_info_url",  # optional
+            "compound_name",  # optional, used for CMIP7 table_id derivation
         )
         # attribute `creation_date` is the time-stamp of inputs directory
         try:
-            afile = next(
-                f for file_collection in self.inputs for f in file_collection.files
-            )
+            afile = next(f for file_collection in self.inputs for f in file_collection.files)
             afile = pathlib.Path(afile)
-            dir_timestamp = datetime.datetime.fromtimestamp(
-                afile.parent.stat().st_ctime
-            )
-        except FileNotFoundError:
+            dir_timestamp = datetime.datetime.fromtimestamp(afile.parent.stat().st_ctime)
+        except (StopIteration, FileNotFoundError) as e:
+            logger.warning("No input files found to determine timestamp of directory!")
+            logger.warning(f"Error message was: {e}")
             # No input files, so use the current time -- this is a fallback triggered for test cases
             dir_timestamp = datetime.datetime.now()
         time_format = "%Y-%m-%dT%H:%M:%SZ"
