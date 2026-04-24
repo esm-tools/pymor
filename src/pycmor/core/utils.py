@@ -231,7 +231,7 @@ def get_callable_by_script(step_signature):
     if not step_signature.startswith("script://"):
         raise ValueError(f"Step signature '{step_signature}' is not a script step")
     script_spec = step_signature.split("script://")[1]
-    script_path = script_spec.split(":")[0]
+    script_path = os.path.expandvars(script_spec.split(":")[0])
     function_name = script_spec.split(":")[1]
     return get_function_from_script(script_path, function_name)
 
