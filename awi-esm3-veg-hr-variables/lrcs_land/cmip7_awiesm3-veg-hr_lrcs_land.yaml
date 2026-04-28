@@ -30,7 +30,7 @@ pipelines:
   # LPJ-GUESS monthly loader (Jan..Dec format)
   - name: lpjg_monthly_pipeline
     steps:
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_lpjguess_monthly
+      - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -45,7 +45,7 @@ pipelines:
   - name: sftgif_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_sftgif
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sftgif
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -58,7 +58,7 @@ pipelines:
   - name: mrsofc_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_mrsofc
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_mrsofc
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -71,7 +71,7 @@ pipelines:
   - name: rootd_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_rootd
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_rootd
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates

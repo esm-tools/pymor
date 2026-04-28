@@ -33,7 +33,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:fraction_to_percent
+      - script://$PYCMOR_HOME/examples/custom_steps.py:fraction_to_percent
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
@@ -50,7 +50,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:scale_by_constant
+      - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
@@ -67,7 +67,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_sispeed
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sispeed
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -83,7 +83,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_ice_mass_transport
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_ice_mass_transport
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
@@ -100,7 +100,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_sistressave
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sistressave
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -116,7 +116,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_sistressmax
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sistressmax
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -132,7 +132,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_siflcondtop
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_siflcondtop
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -148,7 +148,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_sihc
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sihc
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -164,7 +164,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_sisnhc
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sisnhc
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -180,7 +180,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_sitempbot
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sitempbot
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -196,7 +196,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_sifb
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sifb
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -212,7 +212,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_simpeffconc
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_simpeffconc
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -228,7 +228,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_constant_field
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_constant_field
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -244,7 +244,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:regrid_regular_to_fesom
+      - script://$PYCMOR_HOME/examples/custom_steps.py:regrid_regular_to_fesom
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -260,8 +260,8 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:regrid_regular_to_fesom
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:mask_where_no_seaice
+      - script://$PYCMOR_HOME/examples/custom_steps.py:regrid_regular_to_fesom
+      - script://$PYCMOR_HOME/examples/custom_steps.py:mask_where_no_seaice
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -277,7 +277,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:integrate_over_hemisphere
+      - script://$PYCMOR_HOME/examples/custom_steps.py:integrate_over_hemisphere
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable

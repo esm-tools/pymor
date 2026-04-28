@@ -34,7 +34,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_sisnhc_from_msnow
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sisnhc_from_msnow
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable

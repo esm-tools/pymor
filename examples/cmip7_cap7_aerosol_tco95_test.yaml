@@ -38,8 +38,8 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:upsample_to_monthly
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:scale_by_constant
+      - script://$PYCMOR_HOME/examples/custom_steps.py:upsample_to_monthly
+      - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -55,7 +55,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:scale_by_constant
+      - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable

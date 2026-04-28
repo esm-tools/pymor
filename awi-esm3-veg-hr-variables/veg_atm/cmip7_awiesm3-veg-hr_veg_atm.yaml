@@ -31,8 +31,8 @@ jobqueue:
 pipelines:
   - name: fire_emission_pipeline
     steps:
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_lpjguess_monthly
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_fire_emission
+      - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_fire_emission
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable

@@ -25,7 +25,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:vertical_integrate
+      - script://$PYCMOR_HOME/examples/custom_steps.py:vertical_integrate
       - pycmor.std_lib.add_vertical_bounds
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.units.handle_unit_conversion
@@ -45,8 +45,8 @@ pipelines:
   # Ofx pipeline: compute bathymetry from mesh depth_lev
   - name: fx_deptho_pipeline
     steps:
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_deptho
+      - script://$PYCMOR_HOME/examples/custom_steps.py:load_gridfile
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_deptho
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -58,8 +58,8 @@ pipelines:
   # Ofx pipeline: compute sea area fraction from mesh
   - name: fx_sftof_pipeline
     steps:
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_sftof
+      - script://$PYCMOR_HOME/examples/custom_steps.py:load_gridfile
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sftof
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -71,8 +71,8 @@ pipelines:
   # Ofx pipeline: compute static layer thickness from depth_bnds
   - name: fx_thkcello_pipeline
     steps:
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_thkcello_fx
+      - script://$PYCMOR_HOME/examples/custom_steps.py:load_gridfile
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_thkcello_fx
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -84,8 +84,8 @@ pipelines:
   # Ofx pipeline: compute static mass per area (rho_0 * thkcello)
   - name: fx_masscello_pipeline
     steps:
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_masscello_fx
+      - script://$PYCMOR_HOME/examples/custom_steps.py:load_gridfile
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_masscello_fx
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -99,7 +99,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_mass_transport
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_mass_transport
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
@@ -116,7 +116,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_zostoga
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_zostoga
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates

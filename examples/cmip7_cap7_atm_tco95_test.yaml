@@ -33,7 +33,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_hurs
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_hurs
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
@@ -50,7 +50,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_huss
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_huss
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
@@ -67,7 +67,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_sfcwind
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sfcwind
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
@@ -84,7 +84,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_clwvi
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_clwvi
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
@@ -101,7 +101,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_snc
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_snc
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
@@ -118,7 +118,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_snd
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_snd
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
@@ -134,7 +134,7 @@ pipelines:
   - name: rtmt_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_rtmt
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_rtmt
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -150,7 +150,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:scale_by_constant
+      - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -166,7 +166,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:extract_single_plevel
+      - script://$PYCMOR_HOME/examples/custom_steps.py:extract_single_plevel
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global

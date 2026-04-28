@@ -4,6 +4,7 @@ Provides validation of user configuration files by checking against a schema.
 
 import glob
 import importlib
+import os
 import pathlib
 
 from cerberus import Validator
@@ -59,6 +60,7 @@ class PipelineSectionValidator(Validator):
             if value.startswith("script://"):
                 script_path = value.replace("script://", "")
                 script_path = script_path.rsplit(":", 1)[0]
+                script_path = os.path.expandvars(script_path)
                 try:
                     pathlib.Path(script_path).expanduser().resolve()
                 except TypeError as e:

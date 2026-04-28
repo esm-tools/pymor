@@ -32,7 +32,7 @@ pipelines:
   - name: msftmz_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_msftmz
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_msftmz
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -44,7 +44,7 @@ pipelines:
   - name: hfbasin_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_hfbasin
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_hfbasin
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -56,7 +56,7 @@ pipelines:
   - name: sltbasin_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_sltbasin
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sltbasin
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -69,7 +69,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_square
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_square
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -85,7 +85,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:scale_by_constant
+      - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
@@ -102,7 +102,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:extract_bottom
+      - script://$PYCMOR_HOME/examples/custom_steps.py:extract_bottom
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -121,7 +121,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_msftbarot
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_msftbarot
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -137,7 +137,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_surface_pressure
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_surface_pressure
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -153,7 +153,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:vertical_integrate
+      - script://$PYCMOR_HOME/examples/custom_steps.py:vertical_integrate
       - pycmor.std_lib.add_vertical_bounds
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.units.handle_unit_conversion
@@ -169,8 +169,8 @@ pipelines:
   # Static volcello from mesh: cell_area × layer_thickness
   - name: volcello_fx_pipeline
     steps:
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_volcello_fx
+      - script://$PYCMOR_HOME/examples/custom_steps.py:load_gridfile
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_volcello_fx
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -184,7 +184,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_volcello_time
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_volcello_time
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -200,7 +200,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:extract_surface
+      - script://$PYCMOR_HOME/examples/custom_steps.py:extract_surface
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -216,8 +216,8 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:scale_by_constant
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:vertical_integrate
+      - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
+      - script://$PYCMOR_HOME/examples/custom_steps.py:vertical_integrate
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
@@ -234,7 +234,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_salt_transport
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_salt_transport
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -250,7 +250,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_salt_transport_integrated
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_salt_transport_integrated
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -266,7 +266,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_msftm_density
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_msftm_density
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -282,7 +282,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_msftmmpa_depth
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_msftmmpa_depth
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -298,7 +298,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_msftmmpa_density
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_msftmmpa_density
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -312,7 +312,7 @@ pipelines:
   # Ofx: load grid file, extract variable
   - name: fx_extract_pipeline
     steps:
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_gridfile
+      - script://$PYCMOR_HOME/examples/custom_steps.py:load_gridfile
       - pycmor.std_lib.generic.get_variable
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable

@@ -38,7 +38,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:select_southern_hemisphere
+      - script://$PYCMOR_HOME/examples/custom_steps.py:select_southern_hemisphere
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -52,7 +52,7 @@ pipelines:
   # LPJ-GUESS monthly loader (Jan..Dec format)
   - name: lpjg_monthly_pipeline
     steps:
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_lpjguess_monthly
+      - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -66,8 +66,8 @@ pipelines:
   # LPJ-GUESS monthly loader + sum additional files (c3PftFrac)
   - name: lpjg_monthly_sum_pipeline
     steps:
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_lpjguess_monthly
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:sum_lpjguess_monthly_files
+      - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly
+      - script://$PYCMOR_HOME/examples/custom_steps.py:sum_lpjguess_monthly_files
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -82,7 +82,7 @@ pipelines:
   - name: temporal_diff_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_temporal_diff
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_temporal_diff
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -97,7 +97,7 @@ pipelines:
   - name: mrsow_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_mrsow
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_mrsow
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable

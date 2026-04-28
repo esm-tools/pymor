@@ -3,6 +3,9 @@
 # compute_msftmmpa_density. CORE2 (LR) mesh + LR_test_01 output so a full
 # iteration fits in minutes.
 #
+# Requires PYCMOR_HOME to be set, e.g.:
+#   export PYCMOR_HOME=/work/ab0246/a270092/software/pycmor
+#
 # As of 2026-04-23:
 #   - bolus_v.fesom.<YEAR>.nc   exists   -> msftmmpa_depth_mon / msftmmpa_density_mon testable
 #   - dMOC.fesom.<YEAR>.nc      MISSING  -> needs FESOM rerun with ldiag_dMOC=.true.
@@ -25,7 +28,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_msftm_density
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_msftm_density
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -40,7 +43,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_msftmmpa_depth
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_msftmmpa_depth
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -55,7 +58,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:compute_msftmmpa_density
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_msftmmpa_density
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
