@@ -211,6 +211,20 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  - name: surface_2d_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   # Scale by constant then vertically integrate (hfx_int_day, hfy_int_day)
   - name: scale_and_integrate_pipeline
     steps:
@@ -471,22 +485,22 @@ rules:
   - name: uos
     inputs:
       - path: *dp
-        pattern: unod\.fesom\..*\.nc
+        pattern: unod_sfc\.fesom\..*\.nc
     compound_name: ocean.uos.tavg-u-hxy-sea.day.GLB
-    model_variable: unod
+    model_variable: unod_sfc
     lazy_write: true
     pipelines:
-      - surface_extract_pipeline
+      - surface_2d_pipeline
 
   - name: vos
     inputs:
       - path: *dp
-        pattern: vnod\.fesom\..*\.nc
+        pattern: vnod_sfc\.fesom\..*\.nc
     compound_name: ocean.vos.tavg-u-hxy-sea.day.GLB
-    model_variable: vnod
+    model_variable: vnod_sfc
     lazy_write: true
     pipelines:
-      - surface_extract_pipeline
+      - surface_2d_pipeline
 
   # hfx_int_day — daily vertically integrated ocean heat X transport
   # Same approach as monthly hfxint in cap7_ocean: utemp × rho_0*cp then integrate over depth.
