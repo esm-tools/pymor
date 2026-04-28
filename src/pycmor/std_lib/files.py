@@ -40,6 +40,7 @@ Table 2: Precision of time labels used in file names
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import xarray as xr
 from xarray.core.utils import is_scalar
@@ -379,6 +380,41 @@ def _save_dataset_with_native_timespan(
     )
 
 
+_GEO_COORD_NAMES = frozenset(
+    {
+        "lat", "lon", "latitude", "longitude",
+        "lat_bnds", "lon_bnds", "lat_bounds", "lon_bounds",
+        "latitude_bnds", "longitude_bnds", "latitude_bounds", "longitude_bounds",
+    }
+)
+
+
+def _cast_geo_coords_to_float64(da):
+    """Cast geographic coordinate variables to float64 (CMOR3 / CF requirement).
+
+    Accepts both xr.DataArray and xr.Dataset.
+    """
+    coord_updates = {
+        name: da[name].astype(np.float64)
+        for name in da.coords
+        if name in _GEO_COORD_NAMES and da[name].dtype != np.float64
+    }
+    if coord_updates:
+        for name in coord_updates:
+            logger.debug(
+                f"Casting {name!r} from {da[name].dtype} to float64 for CMIP compliance"
+            )
+        da = da.assign_coords(coord_updates)
+    if isinstance(da, xr.Dataset):
+        for name in list(da.data_vars):
+            if name in _GEO_COORD_NAMES and da[name].dtype != np.float64:
+                logger.debug(
+                    f"Casting {name!r} from {da[name].dtype} to float64 for CMIP compliance"
+                )
+                da[name] = da[name].astype(np.float64)
+    return da
+
+
 def save_dataset(da: xr.DataArray, rule):
     """
     Save dataset to one or more files.
@@ -436,6 +472,10 @@ def save_dataset(da: xr.DataArray, rule):
     # Set default calendar if none is specified
     if time_encoding.get("calendar") is None:
         time_encoding["calendar"] = "standard"
+
+    # CMOR3 / CF requirement: geographic coordinates must be float64
+    da = _cast_geo_coords_to_float64(da)
+
     if not has_time_axis(da):
         filepath = create_filepath(da, rule)
         return da.to_netcdf(
@@ -455,7 +495,6 @@ def save_dataset(da: xr.DataArray, rule):
         )
     if isinstance(da, xr.DataArray):
         da = da.to_dataset()
-
     # Set time variable attributes
     if rule._pycmor_cfg("xarray_time_set_standard_name"):
         da[time_label].attrs["standard_name"] = "time"
@@ -510,8 +549,6 @@ def save_dataset(da: xr.DataArray, rule):
         da[time_label].attrs["calendar"] = time_encoding["calendar"]
 
     # Ensure the encoding is set on the time variable itself
-    if isinstance(da, xr.DataArray):
-        da = da.to_dataset()
     da[time_label].encoding.update(time_encoding)
 
     if not has_time_axis(da):
