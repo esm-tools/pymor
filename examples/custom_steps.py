@@ -3513,4 +3513,214 @@ def rechunk_time(data, rule):
     if time_dim is None:
         return data
     return data.chunk({time_dim: n})
+# ===========================================================================
+# added by LASZLO - 29.04.2026
+# LPJ-GUESS depth-layered and pool loaders (mrsll, mrsol, tsl, cSoilPools)
+# ===========================================================================
+
+# LPJ-GUESS soil depth layer boundaries (in metres)
+# Columns: Depth0.1, Depth0.2, ..., Depth1.5
+# These represent the bottom of each 10 cm layer
+_DEPTH_LAYER_BOTTOMS = np.array([
+    0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9,
+    1.0, 1.1, 1.2, 1.3, 1.4, 1.5
+])
+_DEPTH_LAYER_TOPS = np.concatenate(([0.0], _DEPTH_LAYER_BOTTOMS[:-1]))
+_DEPTH_LAYER_CENTRES = (_DEPTH_LAYER_TOPS + _DEPTH_LAYER_BOTTOMS) / 2.0
+
+# Column names as they appear in the .out file header
+_DEPTH_COLS = [
+    "Depth0.1", "Depth0.2", "Depth0.3", "Depth0.4", "Depth0.5",
+    "Depth0.6", "Depth0.7", "Depth0.8", "Depth0.9", "Depth1",
+    "Depth1.1", "Depth1.2", "Depth1.3", "Depth1.4", "Depth1.5",
+]
+
+# cSoilPools pool names
+_POOL_NAMES = ["Fast", "Medium", "Slow"]
+
+
+def load_lpjguess_monthly_depth(data, rule):
+    """
+    Load LPJ-GUESS monthly depth-layered .out files.
+
+    Format: Lon / Lat / Year / Mth / Depth0.1 / ... / Depth1.5
+    Returns xr.Dataset with dims (time, sdepth, ncells).
+    """
+    import cftime
+    import pandas as pd
+
+    input_collection = rule.inputs[0]
+    base_path = input_collection.path
+    pattern_str = input_collection.pattern_str
+
+    files = sorted(base_path.glob(pattern_str))
+    if not files:
+        raise FileNotFoundError(
+            f"No LPJ-GUESS depth files found matching {base_path}/{pattern_str}"
+        )
+    logger.info(f"Loading {len(files)} LPJ-GUESS monthly depth .out files")
+
+    frames = []
+    for f in files:
+        logger.info(f"  * {f}")
+        df = pd.read_csv(f, sep=r"\s+")
+        frames.append(df)
+    df_all = pd.concat(frames, ignore_index=True)
+
+    years = np.sort(df_all["Year"].unique())
+
+    # Build cell index
+    coords_df = df_all[["Lon", "Lat"]].drop_duplicates()
+    coords_df = coords_df.sort_values(
+        ["Lat", "Lon"], ascending=[False, True]
+    ).reset_index(drop=True)
+    lon_vals = coords_df["Lon"].values
+    lat_vals = coords_df["Lat"].values
+    ncells = len(coords_df)
+    cell_map = {(row.Lon, row.Lat): i for i, row in coords_df.iterrows()}
+
+    # Time axis
+    times = []
+    for yr in years:
+        for m in range(1, 13):
+            times.append(cftime.DatetimeProlepticGregorian(int(yr), m, 15))
+
+    n_times = len(times)
+    n_depths = len(_DEPTH_COLS)
+    values = np.full((n_times, n_depths, ncells), np.nan, dtype=np.float64)
+
+    for _, row in df_all.iterrows():
+        cell_idx = cell_map.get((row["Lon"], row["Lat"]))
+        if cell_idx is None:
+            continue
+        yr_idx = np.searchsorted(years, row["Year"])
+        m_idx = int(row["Mth"]) - 1
+        t_idx = yr_idx * 12 + m_idx
+        for d_idx, dcol in enumerate(_DEPTH_COLS):
+            values[t_idx, d_idx, cell_idx] = row[dcol]
+
+    model_variable = rule.get("model_variable", "Total")
+
+    # sdepth coordinate = layer centre depths (metres)
+    # sdepth_bnds = layer top/bottom boundaries
+    sdepth_bnds = np.column_stack([_DEPTH_LAYER_TOPS, _DEPTH_LAYER_BOTTOMS])
+
+    da = xr.DataArray(
+        values,
+        dims=["time", "sdepth", "ncells"],
+        coords={
+            "time": times,
+            "sdepth": _DEPTH_LAYER_CENTRES,
+            "lon": ("ncells", lon_vals),
+            "lat": ("ncells", lat_vals),
+        },
+        name=model_variable,
+    )
+    ds = da.to_dataset()
+
+    # Add depth bounds
+    ds["sdepth_bnds"] = xr.DataArray(
+        sdepth_bnds,
+        dims=["sdepth", "bnds"],
+        attrs={"long_name": "depth layer boundaries", "units": "m"},
+    )
+    ds["sdepth"].attrs = {
+        "axis": "Z",
+        "positive": "down",
+        "long_name": "depth",
+        "units": "m",
+        "bounds": "sdepth_bnds",
+    }
+
+    source_units = rule.get("source_units")
+    if source_units:
+        ds[model_variable].attrs["units"] = source_units
+
+    return ds
+
+
+def load_lpjguess_monthly_pool(data, rule):
+    """
+    Load LPJ-GUESS monthly pool .out files (e.g. cSoilPools).
+
+    Format: Lon / Lat / Year / Mth / Fast / Medium / Slow
+    Returns xr.Dataset with dims (time, soilCpool, ncells).
+    The soilCpool dimension has 3 values: Fast, Medium, Slow.
+    """
+    import cftime
+    import pandas as pd
+
+    input_collection = rule.inputs[0]
+    base_path = input_collection.path
+    pattern_str = input_collection.pattern_str
+
+    files = sorted(base_path.glob(pattern_str))
+    if not files:
+        raise FileNotFoundError(
+            f"No LPJ-GUESS pool files found matching {base_path}/{pattern_str}"
+        )
+    logger.info(f"Loading {len(files)} LPJ-GUESS monthly pool .out files")
+
+    frames = []
+    for f in files:
+        logger.info(f"  * {f}")
+        df = pd.read_csv(f, sep=r"\s+")
+        frames.append(df)
+    df_all = pd.concat(frames, ignore_index=True)
+
+    years = np.sort(df_all["Year"].unique())
+
+    coords_df = df_all[["Lon", "Lat"]].drop_duplicates()
+    coords_df = coords_df.sort_values(
+        ["Lat", "Lon"], ascending=[False, True]
+    ).reset_index(drop=True)
+    lon_vals = coords_df["Lon"].values
+    lat_vals = coords_df["Lat"].values
+    ncells = len(coords_df)
+    cell_map = {(row.Lon, row.Lat): i for i, row in coords_df.iterrows()}
+
+    times = []
+    for yr in years:
+        for m in range(1, 13):
+            times.append(cftime.DatetimeProlepticGregorian(int(yr), m, 15))
+
+    n_times = len(times)
+    n_pools = len(_POOL_NAMES)
+    values = np.full((n_times, n_pools, ncells), np.nan, dtype=np.float64)
+
+    for _, row in df_all.iterrows():
+        cell_idx = cell_map.get((row["Lon"], row["Lat"]))
+        if cell_idx is None:
+            continue
+        yr_idx = np.searchsorted(years, row["Year"])
+        m_idx = int(row["Mth"]) - 1
+        t_idx = yr_idx * 12 + m_idx
+        for p_idx, pool in enumerate(_POOL_NAMES):
+            values[t_idx, p_idx, cell_idx] = row[pool]
+
+    model_variable = rule.get("model_variable", "Total")
+
+    da = xr.DataArray(
+        values,
+        dims=["time", "soilCpool", "ncells"],
+        coords={
+            "time": times,
+            "soilCpool": _POOL_NAMES,
+            "lon": ("ncells", lon_vals),
+            "lat": ("ncells", lat_vals),
+        },
+        name=model_variable,
+    )
+    ds = da.to_dataset()
+
+    ds["soilCpool"].attrs = {
+        "long_name": "soil carbon pool",
+        "units": "1",
+    }
+
+    source_units = rule.get("source_units")
+    if source_units:
+        ds[model_variable].attrs["units"] = source_units
+
+    return ds
 

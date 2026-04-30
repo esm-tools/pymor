@@ -707,3 +707,34 @@ rules:
     source_units: "kg m-2 s-1"
     pipelines:
       - lpjg_monthly_pipeline
+
+  # ============================================================
+  # added by LASZLO - 29.04.2026
+  # LPJ-GUESS lut and height variables
+  # ============================================================
+
+  - name: nbpLut_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/nbpLut_monthly.out"
+    compound_name: land.nbpLut.tavg-u-hxy-multi.mon.GLB
+    model_variable: psl
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_lut_pipeline
+  - name: sweLut_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/sweLut_monthly.out"
+    compound_name: land.sweLut.tavg-u-hxy-multi.mon.GLB
+    model_variable: psl
+    source_units: m
+    pipeline: lpjg_monthly_lut_pipeline
+  - name: vegHeight_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/vegHeight_monthly.out"
+    compound_name: land.vegHeight.tavg-u-hxy-veg.mon.GLB
+    model_variable: Total
+    source_units: m
+    pipeline: lpjg_monthly_pipeline
+    pipeline: lpjg_monthly_pipeline

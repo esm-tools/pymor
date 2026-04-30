@@ -43,6 +43,38 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # added by LASZLO - 29.04.2026
+  # LPJ-GUESS monthly depth-layered loader (Lon/Lat/Year/Mth/Depth0.1..Depth1.5 format)
+  - name: lpjg_monthly_depth_pipeline
+    steps:
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_lpjguess_monthly_depth
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.set_time_bounds
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # added by LASZLO - 29.04.2026
+  # LPJ-GUESS monthly carbon pool loader (Lon/Lat/Year/Mth/Fast/Medium/Slow format)
+  - name: lpjg_monthly_pool_pipeline
+    steps:
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_lpjguess_monthly_pool
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.set_time_bounds
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
 inherit:
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd
@@ -594,3 +626,542 @@ rules:
         pattern: atmos_1h_tas_.*\.nc
     compound_name: land.tas.tavg-u-hxy-u.1hr.GLB
     model_variable: 2t
+
+  # ============================================================
+  # added by LASZLO - 29.04.2026
+  # LPJ-GUESS monthly variables (62 new rules)
+  # ============================================================
+
+  - name: cnc_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/cnc_monthly.out"
+    compound_name: land.cnc.tavg-u-hxy-u.mon.GLB
+    model_variable: Total
+    source_units: '%'
+    pipeline: lpjg_monthly_pipeline
+  - name: cVegGrass_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/cVegGrass_monthly.out"
+    compound_name: land.cVeg.tavg-u-hxy-ng.mon.GLB
+    model_variable: Total
+    source_units: kg m-2
+    pipeline: lpjg_monthly_pipeline
+  - name: cVegShrub_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/cVegShrub_monthly.out"
+    compound_name: land.cVeg.tavg-u-hxy-shb.mon.GLB
+    model_variable: Total
+    source_units: kg m-2
+    pipeline: lpjg_monthly_pipeline
+  - name: cVegTree_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/cVegTree_monthly.out"
+    compound_name: land.cVeg.tavg-u-hxy-tree.mon.GLB
+    model_variable: Total
+    source_units: kg m-2
+    pipeline: lpjg_monthly_pipeline
+  - name: evspsbl_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/evspsbl_monthly.out"
+    compound_name: atmos.evspsbl.tavg-u-hxy-u.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: fco2antt_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/fco2antt_monthly.out"
+    compound_name: atmos.fco2antt.tavg-u-hxy-u.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: fco2nat_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/fco2nat_monthly.out"
+    compound_name: atmos.fco2nat.tavg-u-hxy-u.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: fHarvestToProduct_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/fHarvestToProduct_monthly.out"
+    compound_name: land.fHarvestToProduct.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: fN2O_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/fN2O_monthly.out"
+    compound_name: land.fN2O.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: fNAnthDisturb_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/fNAnthDisturb_monthly.out"
+    compound_name: land.fNAnthDisturb.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: fNdep_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/fNdep_monthly.out"
+    compound_name: land.fNdep.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: fNfert_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/fNfert_monthly.out"
+    compound_name: land.fNfert.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: fNgasNonFire_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/fNgasNonFire_monthly.out"
+    compound_name: land.fNgasNonFire.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: fNnetmin_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/fNnetmin_monthly.out"
+    compound_name: land.fNnetmin.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: fNOx_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/fNOx_monthly.out"
+    compound_name: land.fNOx.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: fNProduct_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/fNProduct_monthly.out"
+    compound_name: land.fNProduct.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: fNVegLitter_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/fNVegLitter_monthly.out"
+    compound_name: land.fNVegLitter.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: fVegLitterMortality_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/fVegLitterMortality_monthly.out"
+    compound_name: land.fVegLitterMortality.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: fVegLitterSenescence_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/fVegLitterSenescence_monthly.out"
+    compound_name: land.fVegLitterSenescence.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: gppGrass_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/gppGrass_monthly.out"
+    compound_name: land.gpp.tavg-u-hxy-ng.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: gppShrub_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/gppShrub_monthly.out"
+    compound_name: land.gpp.tavg-u-hxy-shb.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: gppTree_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/gppTree_monthly.out"
+    compound_name: land.gpp.tavg-u-hxy-tree.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: grassFracC3_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/grassFracC3_monthly.out"
+    compound_name: land.grassFracC3.tavg-u-hxy-u.mon.GLB
+    model_variable: Total
+    source_units: '%'
+    pipeline: lpjg_monthly_pipeline
+  - name: grassFracC4_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/grassFracC4_monthly.out"
+    compound_name: land.grassFracC4.tavg-u-hxy-u.mon.GLB
+    model_variable: Total
+    source_units: '%'
+    pipeline: lpjg_monthly_pipeline
+  - name: mrro_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/mrro_monthly.out"
+    compound_name: land.mrro.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: mrros_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/mrros_monthly.out"
+    compound_name: land.mrros.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: mrso_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/mrso_monthly.out"
+    compound_name: land.mrso.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2
+    pipeline: lpjg_monthly_pipeline
+  - name: mrsos_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/mrsos_monthly.out"
+    compound_name: land.mrsol.tavg-d10cm-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2
+    pipeline: lpjg_monthly_pipeline
+  - name: nLeaf_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/nLeaf_monthly.out"
+    compound_name: land.nLeaf.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2
+    pipeline: lpjg_monthly_pipeline
+  - name: nLitterCwd_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/nLitterCwd_monthly.out"
+    compound_name: land.nLitterCwd.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2
+    pipeline: lpjg_monthly_pipeline
+  - name: nLitterSubSurf_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/nLitterSubSurf_monthly.out"
+    compound_name: land.nLitterSubSurf.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2
+    pipeline: lpjg_monthly_pipeline
+  - name: nLitterSurf_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/nLitterSurf_monthly.out"
+    compound_name: land.nLitterSurf.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2
+    pipeline: lpjg_monthly_pipeline
+  - name: nMineralNH4_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/nMineralNH4_monthly.out"
+    compound_name: land.nMineralNH4.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2
+    pipeline: lpjg_monthly_pipeline
+  - name: nMineralNO3_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/nMineralNO3_monthly.out"
+    compound_name: land.nMineralNO3.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2
+    pipeline: lpjg_monthly_pipeline
+  - name: nOther_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/nOther_monthly.out"
+    compound_name: land.nOther.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2
+    pipeline: lpjg_monthly_pipeline
+  - name: nppGrass_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/nppGrass_monthly.out"
+    compound_name: land.npp.tavg-u-hxy-ng.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: nppLeaf_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/nppLeaf_monthly.out"
+    compound_name: land.nppLeaf.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: nppOther_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/nppOther_monthly.out"
+    compound_name: land.nppOther.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: nppRoot_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/nppRoot_monthly.out"
+    compound_name: land.nppRoot.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: nppShrub_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/nppShrub_monthly.out"
+    compound_name: land.npp.tavg-u-hxy-shb.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: nppStem_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/nppStem_monthly.out"
+    compound_name: land.nppStem.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: nppTree_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/nppTree_monthly.out"
+    compound_name: land.npp.tavg-u-hxy-tree.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: nRoot_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/nRoot_monthly.out"
+    compound_name: land.nRoot.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2
+    pipeline: lpjg_monthly_pipeline
+  - name: nStem_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/nStem_monthly.out"
+    compound_name: land.nStem.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2
+    pipeline: lpjg_monthly_pipeline
+  - name: raGrass_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/raGrass_monthly.out"
+    compound_name: land.ra.tavg-u-hxy-ng.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: raShrub_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/raShrub_monthly.out"
+    compound_name: land.ra.tavg-u-hxy-shb.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: raTree_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/raTree_monthly.out"
+    compound_name: land.ra.tavg-u-hxy-tree.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: rhGrass_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/rhGrass_monthly.out"
+    compound_name: land.rh.tavg-u-hxy-ng.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: rhShrub_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/rhShrub_monthly.out"
+    compound_name: land.rh.tavg-u-hxy-shb.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: rhTree_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/rhTree_monthly.out"
+    compound_name: land.rh.tavg-u-hxy-tree.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: snc_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/snc_monthly.out"
+    compound_name: landIce.snc.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: '%'
+    pipeline: lpjg_monthly_pipeline
+  - name: snd_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/snd_monthly.out"
+    compound_name: landIce.snd.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: m
+    pipeline: lpjg_monthly_pipeline
+  - name: snw_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/snw_monthly.out"
+    compound_name: landIce.snw.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2
+    pipeline: lpjg_monthly_pipeline
+  - name: treeFracBdlEvg_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/treeFracBdlEvg_monthly.out"
+    compound_name: land.treeFracBdlEvg.tavg-u-hxy-u.mon.GLB
+    model_variable: Total
+    source_units: '%'
+    pipeline: lpjg_monthly_pipeline
+  - name: treeFracNdlDcd_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/treeFracNdlDcd_monthly.out"
+    compound_name: land.treeFracNdlDcd.tavg-u-hxy-u.mon.GLB
+    model_variable: Total
+    source_units: '%'
+    pipeline: lpjg_monthly_pipeline
+  - name: treeFracNdlEvg_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/treeFracNdlEvg_monthly.out"
+    compound_name: land.treeFracNdlEvg.tavg-u-hxy-u.mon.GLB
+    model_variable: Total
+    source_units: '%'
+    pipeline: lpjg_monthly_pipeline
+  - name: vegHeightShrub_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/vegHeightShrub_monthly.out"
+    compound_name: land.vegHeight.tavg-u-hxy-shb.mon.GLB
+    model_variable: Total
+    source_units: m
+    pipeline: lpjg_monthly_pipeline
+  - name: vegHeightTree_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/vegHeightTree_monthly.out"
+    compound_name: land.vegHeight.tavg-u-hxy-tree.mon.GLB
+    model_variable: Total
+    source_units: m
+    pipeline: lpjg_monthly_pipeline
+  - name: wetlandCH4cons_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/wetlandCH4cons_monthly.out"
+    compound_name: land.wetlandCH4cons.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: wetlandCH4_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/wetlandCH4_monthly.out"
+    compound_name: land.wetlandCH4.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: wetlandCH4prod_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/wetlandCH4prod_monthly.out"
+    compound_name: land.wetlandCH4prod.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2 s-1
+    pipeline: lpjg_monthly_pipeline
+  - name: wetlandFrac_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/wetlandFrac_monthly.out"
+    compound_name: land.wetlandFrac.tavg-u-hxy-u.mon.GLB
+    model_variable: Total
+    source_units: '%'
+    pipeline: lpjg_monthly_pipeline
+  # ============================================================
+  # added by LASZLO - 29.04.2026
+  # LPJ-GUESS depth-layered and pool variables
+  # ============================================================
+
+  - name: mrsll_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/mrsll_monthly.out"
+    compound_name: land.mrsll.tavg-sl-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2
+    pipeline: lpjg_monthly_depth_pipeline
+  - name: mrsol_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/mrsol_monthly.out"
+    compound_name: land.mrsol.tavg-sl-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2
+    pipeline: lpjg_monthly_depth_pipeline
+  - name: tsl_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/tsl_monthly.out"
+    compound_name: land.tsl.tavg-sl-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: K
+    pipeline: lpjg_monthly_depth_pipeline
+  - name: cSoilPools_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/cSoilPools_monthly.out"
+    compound_name: land.cSoilPools.tavg-u-hxy-lnd.mon.GLB
+    model_variable: Total
+    source_units: kg m-2
+    pipeline: lpjg_monthly_pool_pipeline

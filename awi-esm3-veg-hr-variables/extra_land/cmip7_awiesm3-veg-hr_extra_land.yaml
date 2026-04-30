@@ -287,3 +287,57 @@ rules:
     model_variable: 2t
     pipelines:
       - southern_hemisphere_pipeline
+
+  # ============================================================
+  # added by LASZLO - 29.04.2026
+  # LPJ-GUESS PFT fraction sub-types
+  # ============================================================
+
+  - name: c3PftFrac_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/c3PftFrac_monthly.out"
+    compound_name: land.c3PftFrac.tavg-u-hxy-u.mon.GLB
+    model_variable: Total
+    source_units: '%'
+    pipeline: lpjg_monthly_pipeline
+  - name: c4PftFrac_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/c4PftFrac_monthly.out"
+    compound_name: land.c4PftFrac.tavg-u-hxy-u.mon.GLB
+    model_variable: Total
+    source_units: '%'
+    pipeline: lpjg_monthly_pipeline
+  - name: cropFracC3_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/cropFracC3_monthly.out"
+    compound_name: land.cropFracC3.tavg-u-hxy-u.mon.GLB
+    model_variable: Total
+    source_units: '%'
+    pipeline: lpjg_monthly_pipeline
+  - name: cropFracC4_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/cropFracC4_monthly.out"
+    compound_name: land.cropFracC4.tavg-u-hxy-u.mon.GLB
+    model_variable: Total
+    source_units: '%'
+    pipeline: lpjg_monthly_pipeline
+  - name: pastureFracC3_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/pastureFracC3_monthly.out"
+    compound_name: land.pastureFracC3.tavg-u-hxy-u.mon.GLB
+    model_variable: Total
+    source_units: '%'
+    pipeline: lpjg_monthly_pipeline
+  - name: pastureFracC4_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/pastureFracC4_monthly.out"
+    compound_name: land.pastureFracC4.tavg-u-hxy-u.mon.GLB
+    model_variable: Total
+    source_units: '%'
+    pipeline: lpjg_monthly_pipeline
