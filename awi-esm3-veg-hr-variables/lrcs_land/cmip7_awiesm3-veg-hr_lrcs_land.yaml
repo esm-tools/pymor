@@ -141,7 +141,7 @@ rules:
   - name: sftgif
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_static_.*\.nc
+        pattern: atmos_mon_land_static_(tvl|tvh|cvl|cvh)_.*\.nc
     compound_name: land.sftgif.ti-u-hxy-u.fx.GLB
     model_variable: sftgif
     pipelines:
@@ -151,7 +151,7 @@ rules:
   - name: mrsofc
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_static_.*\.nc
+        pattern: atmos_mon_land_static_slt_.*\.nc
     compound_name: land.mrsofc.ti-u-hxy-lnd.fx.GLB
     model_variable: mrsofc
     pipelines:
@@ -161,7 +161,7 @@ rules:
   - name: rootd
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_static_.*\.nc
+        pattern: atmos_mon_land_static_(tvl|tvh|cvl|cvh)_.*\.nc
     compound_name: land.rootd.ti-u-hxy-lnd.fx.GLB
     model_variable: rootd
     pipelines:

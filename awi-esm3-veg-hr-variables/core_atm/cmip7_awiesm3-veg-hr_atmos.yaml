@@ -509,7 +509,7 @@ rules:
     compound_name: atmos.hur.tavg-p19-hxy-air.mon.GLB
     model_variable: ta
     second_input_path: *dp
-    second_input_pattern: "atmos_mon_pl_hus_mon_pl_.*\\.nc"
+    second_input_pattern: "atmos_mon_pl_hus_.*\\.nc"
     second_variable: hus
     pipelines: [hur_plev_pipeline]
     lazy_write: true
@@ -669,7 +669,7 @@ rules:
     compound_name: atmos.hur.tavg-p19-hxy-u.day.GLB
     model_variable: ta
     second_input_path: *dp
-    second_input_pattern: "atmos_day_pl_hus_day_pl_.*\\.nc"
+    second_input_pattern: "atmos_day_pl_hus_.*\\.nc"
     second_variable: hus
     pipelines: [hur_plev_pipeline]
     lazy_write: true
