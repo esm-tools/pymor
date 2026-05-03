@@ -24,6 +24,7 @@ source ~/loadconda.sh
 conda activate pycmor_py312
 
 cd /work/ab0246/a270092/software/pycmor
+export PYCMOR_HOME=/work/ab0246/a270092/software/pycmor
 
 PYCMOR_SCRATCH=/scratch/a/a270092/pycmor_tmp/$$
 mkdir -p $PYCMOR_SCRATCH/prefect/storage

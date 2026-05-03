@@ -260,8 +260,42 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # msftm_density_pipeline, msftmmpa_depth_pipeline, msftmmpa_density_pipeline
-  # excluded: custom steps not yet implemented
+  # Meridional overturning in density space (resolved + parameterized).
+  # Direct binning of std_dens_DIV (and std_dens_DIVbolus if present).
+  - name: msftm_density_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_msftm_density
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # MOC due to parameterized mesoscale advection — depth-space (calc_zmoc on bolus_w).
+  - name: msftmmpa_depth_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_msftmmpa_depth
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # MOC due to parameterized mesoscale advection — density-space (std_dens_DIVbolus).
+  - name: msftmmpa_density_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_msftmmpa_density
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
 
   # Ofx: load grid file, extract variable
   - name: fx_extract_pipeline
@@ -2626,7 +2660,7 @@ inherit:
   netcdf_compression_codec: blosc_zstd
   netcdf_compression_level: 3
   netcdf_write_scheduler: threads
-  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/LR_test_01/outdata/fesom
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/LR_run_test/outdata/fesom
   source_id: AWI-ESM3-VEG-LR
   institution_id: AWI
   experiment_id: piControl
@@ -3206,13 +3240,39 @@ rules:
     pipelines:
       - sltbasin_pipeline
 
+  # Density-space overturning (resolved + GM bolus from std_dens_DIVbolus).
+  - name: msftm_density
+    inputs:
+      - path: *dp
+        pattern: std_dens_DIV\.fesom\..*\.nc
+    compound_name: ocean.msftm.tavg-rho-hyb-sea.mon.GLB
+    model_variable: msftm
+    pipelines:
+      - msftm_density_pipeline
+
+  # MOC due to parameterised eddy advection — depth-space (uses bolus_w).
+  - name: msftmmpa_depth
+    inputs:
+      - path: *dp
+        pattern: bolus_w\.fesom\..*\.nc
+    compound_name: ocean.msftmmpa.tavg-ol-hyb-sea.mon.GLB
+    model_variable: msftmmpa
+    pipelines:
+      - msftmmpa_depth_pipeline
+
+  # MOC due to parameterised eddy advection — density-space (std_dens_DIVbolus).
+  - name: msftmmpa_density
+    inputs:
+      - path: *dp
+        pattern: std_dens_DIVbolus\.fesom\..*\.nc
+    compound_name: ocean.msftmmpa.tavg-rho-hyb-sea.mon.GLB
+    model_variable: msftmmpa
+    pipelines:
+      - msftmmpa_density_pipeline
+
   # ============================================================
-  # DEFERRED (HR-only): density-space MOC + MOC-parameterized-mesoscale
-  # + decadal averages. Commented out because:
-  #   - msftm_* / msftmmpa_* need compute_msftm_density / compute_msftmmpa_*
-  #     custom steps that are not yet implemented in examples/custom_steps.py
-  #   - *_dec variants need at least 10 years of input; the LR test run
-  #     only covers 2 years (1900-1901) so they would fail.
+  # DEFERRED: decadal averages need at least 10 years of input;
+  # the LR test run only covers a few years so they would fail.
   # Uncomment once the custom steps land and a longer test run is available.
   # ============================================================
 

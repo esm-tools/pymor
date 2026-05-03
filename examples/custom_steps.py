@@ -29,6 +29,7 @@ Function index (keep this list in sync when adding/removing steps; helps avoid d
     compute_mass_transport, compute_salt_transport,
     compute_salt_transport_integrated, compute_heat_transport,
     compute_msftmz, compute_hfbasin, compute_sltbasin,
+    compute_msftm_density, compute_msftmmpa_depth, compute_msftmmpa_density,
     _node_edge_length, _elem_geometry,
     _load_basin_nodes, _mesh_nodes, _elem_lat_area, _basin_lat_sum
 
@@ -839,15 +840,23 @@ def compute_heat_transport(data, rule):
 
     horiz_dim = next((d for d in ("elem", "nod2", "ncells") if d in data.dims), data.dims[-1])
 
-    if horiz_dim in ("elem",) or data.sizes[horiz_dim] > 200000 and data.sizes[horiz_dim] != hnode.sizes.get("nod2", -1):
+    if (
+        horiz_dim in ("elem",)
+        or data.sizes[horiz_dim] > 200000
+        and data.sizes[horiz_dim] != hnode.sizes.get("nod2", -1)
+    ):
         # Element-based: utemp/vtemp live on triangles; interpolate hnode from 3 corner nodes.
         edge_arr, tri = _elem_geometry(grid_file)
-        hnode_node_dim = next((d for d in hnode.dims if hnode.sizes[d] == tri.max() + 1 or d in ("nod2", "ncells")), None)
+        hnode_node_dim = next(
+            (d for d in hnode.dims if hnode.sizes[d] == tri.max() + 1 or d in ("nod2", "ncells")), None
+        )
         if hnode_node_dim is None:
             raise ValueError(f"Cannot find node dim in hnode with dims {hnode.dims}")
-        hnode_elem = (hnode.isel({hnode_node_dim: xr.DataArray(tri[0], dims=[horiz_dim])})
-                      + hnode.isel({hnode_node_dim: xr.DataArray(tri[1], dims=[horiz_dim])})
-                      + hnode.isel({hnode_node_dim: xr.DataArray(tri[2], dims=[horiz_dim])})) / 3.0
+        hnode_elem = (
+            hnode.isel({hnode_node_dim: xr.DataArray(tri[0], dims=[horiz_dim])})
+            + hnode.isel({hnode_node_dim: xr.DataArray(tri[1], dims=[horiz_dim])})
+            + hnode.isel({hnode_node_dim: xr.DataArray(tri[2], dims=[horiz_dim])})
+        ) / 3.0
         edge = xr.DataArray(edge_arr, dims=[horiz_dim])
         result = data * factor * hnode_elem * edge
     else:
@@ -1080,12 +1089,7 @@ def compute_msftbarot(data, rule):
     if "depth_lev" in mesh and "depth" in mesh:
         depth_vals = mesh["depth"].values
         depth_lev = mesh["depth_lev"].values
-        H = np.array(
-            [
-                depth_vals[min(int(nl) - 1, len(depth_vals) - 1)] if nl > 0 else 0.0
-                for nl in depth_lev
-            ]
-        )
+        H = np.array([depth_vals[min(int(nl) - 1, len(depth_vals) - 1)] if nl > 0 else 0.0 for nl in depth_lev])
     elif "zbar_n_bottom" in mesh:
         H = np.abs(mesh["zbar_n_bottom"].values)
     else:
@@ -1392,8 +1396,7 @@ def compute_mass_transport(data, rule):
         # Data is on W-levels (interfaces), e.g. w with nz=48 vs 47 cell centers.
         # Average from interfaces to cell centers before multiplying by dz.
         logger.info(
-            f"W-level data detected ({nz_data} levels vs {len(dz)} layers). "
-            f"Averaging interfaces to cell centers."
+            f"W-level data detected ({nz_data} levels vs {len(dz)} layers). " f"Averaging interfaces to cell centers."
         )
         upper = data.isel({vertical_dim: slice(None, -1)})
         lower = data.isel({vertical_dim: slice(1, None)})
@@ -1522,10 +1525,7 @@ def compute_salt_transport_integrated(data, rule):
     component = rule.get("transport_component", "")
     transport_2d.attrs = {
         "units": "kg s-1",
-        "processing_note": (
-            f"Vertically integrated salt transport (sum over depth). "
-            f"Component: {component}."
-        ),
+        "processing_note": (f"Vertically integrated salt transport (sum over depth). " f"Component: {component}."),
     }
     return transport_2d
 
@@ -1901,9 +1901,7 @@ def _load_secondary_mf(rule, path_key, pattern_key, variable_key):
         raise ValueError(f"Rule must specify '{path_key}' and '{pattern_key}'")
     # Patterns are regex (consistent with pycmor's gather_inputs), matched against filenames in `path`.
     regex = _re.compile(pattern)
-    files = sorted(
-        _os.path.join(path, f) for f in _os.listdir(path) if regex.fullmatch(f)
-    )
+    files = sorted(_os.path.join(path, f) for f in _os.listdir(path) if regex.fullmatch(f))
     if not files:
         raise FileNotFoundError(f"No files matching regex {pattern!r} in {path}")
     ds = xr.open_mfdataset(files, use_cftime=True)
@@ -2007,7 +2005,11 @@ def compute_hur_plev(data, rule):
     hus = _load_secondary_mf(rule, "second_input_path", "second_input_pattern", "second_variable")
     # pfull from the pressure-level coord; broadcast over (time,lat,lon)
     plev_name = next(
-        (n for n in ("plev", "plev19", "plev39", "plev7h", "plev8", "pressure_levels", "pressure", "lev") if n in data.coords),
+        (
+            n
+            for n in ("plev", "plev19", "plev39", "plev7h", "plev8", "pressure_levels", "pressure", "lev")
+            if n in data.coords
+        ),
         None,
     )
     if plev_name is None:
@@ -3022,8 +3024,11 @@ def regrid_regular_to_fesom(data, rule):
 
     def _interp_timestep(arr2d):
         interp = RegularGridInterpolator(
-            (src_lat, src_lon), arr2d,
-            method="linear", bounds_error=False, fill_value=np.nan,
+            (src_lat, src_lon),
+            arr2d,
+            method="linear",
+            bounds_error=False,
+            fill_value=np.nan,
         )
         return interp(query_pts).astype(np.float32)
 
@@ -3033,8 +3038,7 @@ def regrid_regular_to_fesom(data, rule):
         result_np = _interp_timestep(data.values)
         result = xr.DataArray(result_np, dims=[node_dim], attrs=data.attrs)
     else:
-        slices = [_interp_timestep(data.isel({time_dim: t}).values)
-                  for t in range(len(data[time_dim]))]
+        slices = [_interp_timestep(data.isel({time_dim: t}).values) for t in range(len(data[time_dim]))]
         result = xr.DataArray(
             np.array(slices),
             dims=[time_dim, node_dim],
@@ -3102,6 +3106,7 @@ def extract_single_plevel(data, rule):
     plevel = float(rule.target_plevel)
 
     import xarray as xr
+
     da = data if isinstance(data, xr.DataArray) else data[var]
     # Find the pressure level dimension
     plev_dim = None
@@ -3129,9 +3134,9 @@ _BASIN_NAMES = ("atlantic", "pacific", "indian", "arctic", "southern")
 # CMIP basin axis (CMIP6_coordinate.json → 'basin') requires exactly three names.
 _CMIP_BASIN_NAMES = ("atlantic_arctic_ocean", "indian_pacific_ocean", "global_ocean")
 _CMIP_BASIN_AGG = {
-    "atlantic_arctic_ocean": (0, 3),           # atlantic + arctic
-    "indian_pacific_ocean":  (1, 2),           # pacific + indian
-    "global_ocean":          (0, 1, 2, 3, 4),  # all
+    "atlantic_arctic_ocean": (0, 3),  # atlantic + arctic
+    "indian_pacific_ocean": (1, 2),  # pacific + indian
+    "global_ocean": (0, 1, 2, 3, 4),  # all
 }
 # Subdivided basins are only meaningful north of this; south of it only global_ocean
 # is reported. CMIP convention ~34°S.
@@ -3154,6 +3159,8 @@ def _aggregate_to_cmip_basins(binned, lat_centers, cutoff=_BASIN_SOUTH_CUTOFF):
         if name != "global_ocean":
             out[..., j, south] = np.nan
     return out
+
+
 _RHO0 = 1030.0
 _CP = 3900.0
 
@@ -3252,7 +3259,7 @@ def _basin_lat_sum(values, loc_lat, loc_basin, lat_edges, basin_ids=_BASIN_IDS):
         if not sel.any():
             continue
         sub_vals = vals_flat[:, sel]  # (L, nsel)
-        sub_lat = lat_idx[sel]        # (nsel,)
+        sub_lat = lat_idx[sel]  # (nsel,)
         # accumulate column-wise into out[:, bi, sub_lat]
         # np.add.at with (row_idx, col_idx) broadcasts shapes
         rows = np.arange(flat_lead)[:, None]
@@ -3282,6 +3289,7 @@ def compute_msftmz(data, rule):
     we scale by ρ₀·10⁹ to get kg s-1).
     """
     import tripyview as tpv
+
     mesh_path = rule.get("mesh_path")
     if mesh_path is None:
         raise ValueError("compute_msftmz requires 'mesh_path' (FESOM mesh directory)")
@@ -3304,6 +3312,7 @@ def compute_msftmz(data, rule):
     # and rename w's vertical dim to match so only one vertical dim survives.
     try:
         import os as _os
+
         if _os.path.isfile(diagpath):
             with xr.open_dataset(diagpath) as _diag:
                 _na_dims = set(_diag["nod_area"].dims)
@@ -3324,8 +3333,8 @@ def compute_msftmz(data, rule):
 
     basin_to_key = {
         "atlantic_arctic_ocean": "aamoc",
-        "indian_pacific_ocean":  "ipmoc",
-        "global_ocean":          "gmoc",
+        "indian_pacific_ocean": "ipmoc",
+        "global_ocean": "gmoc",
     }
 
     # Global 1° lat grid matching tripyview's integer-lat convention
@@ -3334,8 +3343,7 @@ def compute_msftmz(data, rule):
 
     per_basin = {}
     for name, key in basin_to_key.items():
-        moc = tpv.calc_zmoc(mesh, w, dlat=dlat, which_moc=key,
-                            diagpath=diagpath, do_info=False, do_compute=True)
+        moc = tpv.calc_zmoc(mesh, w, dlat=dlat, which_moc=key, diagpath=diagpath, do_info=False, do_compute=True)
         # moc['zmoc']: dims (nz, lat) or (time, nz, lat) if time dim was kept
         per_basin[name] = moc["zmoc"]
 
@@ -3367,8 +3375,7 @@ def compute_msftmz(data, rule):
     # tripyview zmoc is in Sv; convert to kg s-1 (1 Sv = 1e9 kg s-1 since ρ₀~1000)
     out_kg = out * 1.0e9
 
-    time_coord = (data["time"].values if isinstance(data, xr.Dataset) and "time" in data.coords
-                  else np.arange(ntime))
+    time_coord = data["time"].values if isinstance(data, xr.Dataset) and "time" in data.coords else np.arange(ntime)
     # If tripyview collapsed the time dim (because input had none), use 1-element
     if not has_time and ntime == 1 and isinstance(time_coord, np.ndarray) and time_coord.size != 1:
         time_coord = time_coord[:1]
@@ -3383,8 +3390,7 @@ def compute_msftmz(data, rule):
             "lat": lat_centers,
         },
         name=rule.model_variable,
-        attrs={"units": "kg s-1",
-               "long_name": "Ocean Meridional Overturning Mass Streamfunction"},
+        attrs={"units": "kg s-1", "long_name": "Ocean Meridional Overturning Mass Streamfunction"},
     )
     return da_out.to_dataset()
 
@@ -3493,6 +3499,484 @@ def compute_sltbasin(data, rule):
     return out.to_dataset()
 
 
+# Default sigma2 density bins from FESOM 2.7 (gen_modules_diag.F90:55-66).
+# 89 levels, finer resolution around dense water classes. Override via the
+# rule attribute ``std_dens`` if your FESOM version uses a different array.
+_FESOM2_STD_DENS = np.array(
+    [
+        0.0,
+        30.0,
+        30.55556,
+        31.11111,
+        31.36,
+        31.66667,
+        31.91,
+        32.22222,
+        32.46,
+        32.77778,
+        33.01,
+        33.33333,
+        33.56,
+        33.88889,
+        34.11,
+        34.44444,
+        34.62,
+        35.00000,
+        35.05,
+        35.10622,
+        35.20319,
+        35.29239,
+        35.37498,
+        35.41300,
+        35.45187,
+        35.52380,
+        35.59136,
+        35.65506,
+        35.71531,
+        35.77247,
+        35.82685,
+        35.87869,
+        35.92823,
+        35.97566,
+        35.98,
+        36.02115,
+        36.06487,
+        36.10692,
+        36.14746,
+        36.18656,
+        36.22434,
+        36.26089,
+        36.29626,
+        36.33056,
+        36.36383,
+        36.39613,
+        36.42753,
+        36.45806,
+        36.48778,
+        36.51674,
+        36.54495,
+        36.57246,
+        36.59500,
+        36.59932,
+        36.62555,
+        36.65117,
+        36.67621,
+        36.68000,
+        36.70071,
+        36.72467,
+        36.74813,
+        36.75200,
+        36.77111,
+        36.79363,
+        36.81570,
+        36.83733,
+        36.85857,
+        36.87500,
+        36.87940,
+        36.89985,
+        36.91993,
+        36.93965,
+        36.95904,
+        36.97808,
+        36.99682,
+        37.01524,
+        37.03336,
+        37.05119,
+        37.06874,
+        37.08602,
+        37.10303,
+        37.11979,
+        37.13630,
+        37.15257,
+        37.16861,
+        37.18441,
+        37.50000,
+        37.75000,
+        40.00000,
+    ],
+    dtype=np.float64,
+)
+
+
+def _zmoc_basin_loop(mesh, w, diagpath):
+    """Run tpv.calc_zmoc for the three CMIP basins; return dict basin → ψ DataArray (Sv)."""
+    import tripyview as tpv
+
+    basin_to_key = {
+        "atlantic_arctic_ocean": "aamoc",
+        "indian_pacific_ocean": "ipmoc",
+        "global_ocean": "gmoc",
+    }
+    out = {}
+    for name, key in basin_to_key.items():
+        moc = tpv.calc_zmoc(
+            mesh,
+            w,
+            dlat=1.0,
+            which_moc=key,
+            diagpath=diagpath,
+            do_info=False,
+            do_compute=True,
+        )
+        out[name] = moc["zmoc"]
+    return out
+
+
+def _align_zmoc_to_cmip(per_basin, mesh, time_coord_source):
+    """Pack per-basin ψ(time, nz, lat) onto a CMIP (time, lev, basin, lat) grid.
+
+    Returns DataArray (in Sv — caller multiplies by 1e9 for kg/s).
+    """
+    first = next(iter(per_basin.values()))
+    has_time = "time" in first.dims
+    zdim = "nz" if "nz" in first.dims else ("nz1" if "nz1" in first.dims else None)
+    if zdim is None:
+        raise ValueError(f"zmoc has no vertical dim (dims={first.dims})")
+    nz = first.sizes[zdim]
+    ntime = first.sizes["time"] if has_time else 1
+    lev = np.asarray(mesh.zlev[:nz])
+
+    dlat = 1.0
+    lat_centers = np.arange(-90.0, 90.0 + dlat, dlat)
+    out = np.full((ntime, nz, 3, lat_centers.size), np.nan, dtype=np.float64)
+    for j, name in enumerate(_CMIP_BASIN_NAMES):
+        da = per_basin[name].reindex(lat=lat_centers)
+        vals = np.asarray(da.values)
+        if vals.ndim == 2:
+            out[0, :, j, :] = vals
+        else:
+            out[:, :, j, :] = vals
+
+    if has_time and "time" in first.coords:
+        time_coord = first["time"].values
+    elif isinstance(time_coord_source, xr.Dataset) and "time" in time_coord_source.coords:
+        time_coord = time_coord_source["time"].values
+    else:
+        time_coord = np.arange(ntime)
+    if not has_time and ntime == 1 and isinstance(time_coord, np.ndarray) and time_coord.size != 1:
+        time_coord = time_coord[:1]
+
+    return xr.DataArray(
+        out,
+        dims=("time", "lev", "basin", "lat"),
+        coords={"time": time_coord, "lev": lev, "basin": list(_CMIP_BASIN_NAMES), "lat": lat_centers},
+    )
+
+
+def _align_v_w_for_zmoc(w, mesh, diagpath):
+    """Apply the same lat/lon-coord and vertical-dim alignment that compute_msftmz uses."""
+    if "time" not in w.dims:
+        w = w.expand_dims("time")
+    w = w.load()
+    w = w.assign_coords(lat=("nod2", mesh.n_y), lon=("nod2", mesh.n_x))
+    try:
+        if _os.path.isfile(diagpath):
+            with xr.open_dataset(diagpath) as _diag:
+                _na_dims = set(_diag["nod_area"].dims)
+            _diag_vdim = None
+            for _src, _dst in (("nl", "nz"), ("nl1", "nz1"), ("nz", "nz"), ("nz1", "nz1")):
+                if _src in _na_dims:
+                    _diag_vdim = _dst
+                    break
+            if _diag_vdim is not None:
+                for _wv in ("nz", "nz1"):
+                    if _wv in w.dims and _wv != _diag_vdim:
+                        w = w.rename({_wv: _diag_vdim})
+                        break
+    except Exception:
+        pass
+    return w
+
+
+def compute_msftmmpa_depth(data, rule):
+    """
+    Ocean meridional overturning mass streamfunction due to parameterized
+    mesoscale advection, depth-space (CMIP msftmmpa with branding
+    tavg-ol-hyb-sea, a.k.a. msftmzmpa), kg s-1.
+
+    Mirrors :func:`compute_msftmz` but feeds FESOM's vertical *bolus*
+    velocity (``bolus_w``, GM scheme) into tripyview's calc_zmoc. The bolus
+    streamfunction is exactly the contribution of parameterized mesoscale
+    advection to the depth-space MOC.
+
+    Inputs:
+      data: xr.Dataset with 'bolus_w' (time, nz, nod2). Loaded by
+            ``pycmor.core.gather_inputs.load_mfdataset`` from
+            ``bolus_w.fesom.*.nc``.
+      rule.mesh_path: FESOM mesh directory.
+      rule.diag_file (optional): path to fesom.mesh.diag.nc.
+    Output: DataArray (time, lev, basin, lat) in kg s-1.
+    """
+    import tripyview as tpv
+
+    mesh_path = rule.get("mesh_path")
+    if mesh_path is None:
+        raise ValueError("compute_msftmmpa_depth requires 'mesh_path'")
+    diagpath = rule.get("diag_file", f"{mesh_path}/fesom.mesh.diag.nc")
+
+    mesh = tpv.load_mesh_fesom2(mesh_path, do_info=False)
+    if isinstance(data, xr.Dataset):
+        if "bolus_w" not in data.data_vars:
+            raise ValueError(f"compute_msftmmpa_depth expects 'bolus_w' in data; got {list(data.data_vars)}")
+        w = data[["bolus_w"]].rename({"bolus_w": "w"})
+    else:
+        w = data.to_dataset().rename({data.name: "w"})
+
+    w = _align_v_w_for_zmoc(w, mesh, diagpath)
+    per_basin = _zmoc_basin_loop(mesh, w, diagpath)
+    da_sv = _align_zmoc_to_cmip(per_basin, mesh, time_coord_source=data)
+    da_out = (
+        (da_sv * 1.0e9)
+        .rename(rule.model_variable)
+        .assign_attrs(
+            units="kg s-1",
+            long_name="Ocean Meridional Overturning Mass Streamfunction Due to Parameterized Mesoscale Advection",
+        )
+    )
+    return da_out.to_dataset()
+
+
+def _open_fesom_year_files(data_path, vname, years=None):
+    """Open <vname>.fesom.YYYY.nc files (optionally year-filtered) into one Dataset.
+
+    Returns ``None`` if no files match (so the caller can decide whether the
+    absence is fatal).
+    """
+    pat = _re.compile(rf"{_re.escape(vname)}\.fesom\.(\d{{4}})\.nc$")
+    paths = []
+    for fn in sorted(_os.listdir(data_path)):
+        m = pat.match(fn)
+        if m and (years is None or int(m.group(1)) in years):
+            paths.append(_os.path.join(data_path, fn))
+    if not paths:
+        return None
+    return xr.open_mfdataset(
+        paths,
+        combine="by_coords",
+        parallel=False,
+        decode_times=True,
+        use_cftime=True,
+        chunks={"time": 1},
+    )
+
+
+def _msftm_density_streamfunction(div_da, lat_nodes, basin_nodes):
+    """Bin density-class divergence → ψ(time, dens, basin, lat).
+
+    Accepts ``div_da`` with dims that include ``time`` (optional), ``ndens``,
+    and ``nod2`` in any order. Cumulative sum is taken N→S over lat. Returns
+    volume streamfunction (m³/s) on (ntime, ndens, 3, nlat). Caller scales to mass.
+
+    Implementation: per time step, scatter (ndens × nod2) values into
+    (ndens × nbasin × nlat) bins via a single ``np.bincount`` — orders of
+    magnitude faster than per-basin ``np.add.at`` for HR-mesh-sized inputs.
+    """
+    has_time = "time" in div_da.dims
+    target_dims = (("time",) if has_time else ()) + ("ndens", "nod2")
+    div_da = div_da.transpose(*target_dims)
+
+    ntime = div_da.sizes.get("time", 1)
+    ndens_n = div_da.sizes["ndens"]
+    lat_edges = _lat_edges(1.0)
+    lat_centers = 0.5 * (lat_edges[:-1] + lat_edges[1:])
+    nlat = lat_centers.size
+    basin_ids = _BASIN_IDS
+    nb = len(basin_ids)
+
+    # Precompute per-node bin index in a flat (basin × lat) space; -1 for nodes
+    # outside any tracked basin.
+    lat_idx_all = np.clip(np.searchsorted(lat_edges, lat_nodes, side="right") - 1, 0, nlat - 1)
+    bin_idx = np.full(lat_nodes.size, -1, dtype=np.int64)
+    for bi, bid in enumerate(basin_ids):
+        sel = basin_nodes == bid
+        bin_idx[sel] = bi * nlat + lat_idx_all[sel]
+    valid = bin_idx >= 0
+    bin_idx_v = bin_idx[valid]
+    nvalid = bin_idx_v.size
+    nbins5 = nb * nlat
+
+    # Full (ndens, nvalid) flat-bin index: dens-stride is nbins5.
+    dens_offset = (np.arange(ndens_n, dtype=np.int64) * nbins5)[:, None]
+    flat_idx = (dens_offset + bin_idx_v[None, :]).ravel()
+
+    binned3_all = np.zeros((ntime, ndens_n, 3, nlat), dtype=np.float64)
+    for t in range(ntime):
+        slab = (div_da.isel(time=t).values if has_time else div_da.values)  # (ndens, nod2)
+        slab_v = slab[:, valid]
+        slab_v = np.where(np.isfinite(slab_v), slab_v, 0.0).astype(np.float64)
+        binned = np.bincount(flat_idx, weights=slab_v.ravel(), minlength=ndens_n * nbins5)
+        binned5_t = binned.reshape(ndens_n, nb, nlat)
+        binned3_all[t] = _aggregate_to_cmip_basins(binned5_t, lat_centers)
+
+    # Per-class meridional flux at latitude j: ψ_class(ρ_c, j) = -Σ_{φ' ≥ φ} divergence
+    # (Gauss: cumsum N→S of horizontal divergence gives north flux at φ with this sign.)
+    psi_class = -np.flip(np.flip(binned3_all, axis=-1).cumsum(axis=-1), axis=-1)
+
+    # CMIP msftmrho convention: streamfunction is the cumulative integral over
+    # density. Match tripyview's calc_dmoc orientation — cumsum from densest to
+    # lightest (so ψ at ρ_max = ψ_class(ρ_max), ψ at ρ_min = total ≈ 0 by mass
+    # conservation). For a typical AMOC this gives ψ_max > 0 at the NADW
+    # interface (representing the upper-limb northward transport above ρ_c).
+    psi = np.flip(np.flip(psi_class, axis=-3).cumsum(axis=-3), axis=-3)
+    return psi, lat_centers
+
+
+def _normalize_dmoc_dim(da):
+    """Rename schema-variant dimension names to a canonical ('time', 'ndens', 'nod2')."""
+    rename = {}
+    if "std_dens" in da.dims:
+        rename["std_dens"] = "ndens"
+    if rename:
+        da = da.rename(rename)
+    return da
+
+
+def _resolve_rho_axis(div_da, rule_std_dens):
+    """Pick the rho coordinate values from rule.std_dens, then file coord, then default."""
+    if rule_std_dens is not None:
+        return np.asarray(rule_std_dens, dtype=np.float64)
+    for coord_name in ("std_dens", "ndens"):
+        if coord_name in div_da.coords:
+            vals = np.asarray(div_da[coord_name].values)
+            if np.issubdtype(vals.dtype, np.floating):
+                return vals.astype(np.float64)
+    return _FESOM2_STD_DENS.copy()
+
+
+def compute_msftm_density(data, rule):
+    """
+    Ocean meridional overturning mass streamfunction in density space
+    (CMIP msftm with branding tavg-rho-hyb-sea, a.k.a. msftmrho), kg s-1.
+
+    Total advective transport: cumulative-summed (lat) integrated divergence
+    of the resolved velocity (FESOM ``std_dens_DIV``), plus the GM bolus
+    contribution (``std_dens_DIVbolus``) when present in ``data_path``.
+    No-bolus configurations (HR with ``Fer_GM=.false.``) work too — bolus
+    files are detected at runtime and skipped silently if absent.
+
+    Pipeline shape: prepend ``pycmor.core.gather_inputs.load_mfdataset`` so
+    pycmor handles year-filtering of the primary ``std_dens_DIV`` files via
+    the rule's input pattern. The bolus addend (``std_dens_DIVbolus``) is
+    discovered in ``data_path`` using the year range of the loaded data.
+
+    Required rule attributes:
+      data_path: FESOM output directory
+      mesh_path: directory holding mesh.nc (or full mesh.nc path)
+      basin_mask_file: path to basin_mask.nc with ``basin`` (per-node id)
+
+    Output: DataArray (time, rho, basin, lat) in kg s-1.
+    """
+    if not isinstance(data, xr.Dataset) or "std_dens_DIV" not in data.data_vars:
+        raise ValueError(
+            "compute_msftm_density expects 'std_dens_DIV' in input data; got "
+            f"{list(data.data_vars) if isinstance(data, xr.Dataset) else type(data)}"
+        )
+    div = _normalize_dmoc_dim(data["std_dens_DIV"])  # (time, ndens, nod2)
+
+    data_path = rule.get("data_path")
+    mesh_path = rule.get("mesh_path")
+    basin_mask_file = rule.get("basin_mask_file")
+    if not all([data_path, mesh_path, basin_mask_file]):
+        raise ValueError("compute_msftm_density requires 'data_path', 'mesh_path', 'basin_mask_file' on the rule")
+
+    # Add GM bolus divergence if available, matched on the resolved div's year range.
+    if "time" in div.coords:
+        years = sorted({int(t.year) for t in div["time"].values}) if div.sizes.get("time", 0) else None
+    else:
+        years = None
+    bolus_ds = _open_fesom_year_files(data_path, "std_dens_DIVbolus", years)
+    if bolus_ds is not None:
+        bolus = _normalize_dmoc_dim(bolus_ds["std_dens_DIVbolus"])
+        # align on time/ndens; sum into resolved
+        div = div + bolus.reindex_like(div, method=None)
+
+    # Mesh + basin info
+    grid_file = mesh_path if _os.path.isfile(mesh_path) else _os.path.join(mesh_path, "mesh.nc")
+    with xr.open_dataset(grid_file) as m:
+        lat_nodes = m["lat"].values
+    with xr.open_dataset(basin_mask_file) as bm:
+        basin_nodes = bm["basin"].values
+
+    psi, lat_centers = _msftm_density_streamfunction(div, lat_nodes, basin_nodes)
+    psi_kg = psi * _RHO0  # m³/s × kg/m³ → kg/s
+
+    rho_coord = _resolve_rho_axis(div, rule.get("std_dens"))
+    time_coord = div["time"].values if "time" in div.coords else np.arange(psi_kg.shape[0])
+
+    da_out = xr.DataArray(
+        psi_kg,
+        dims=("time", "rho", "basin", "lat"),
+        coords={
+            "time": time_coord,
+            "rho": rho_coord,
+            "basin": list(_CMIP_BASIN_NAMES),
+            "lat": lat_centers,
+        },
+        name=rule.model_variable,
+        attrs={
+            "units": "kg s-1",
+            "long_name": "Ocean Meridional Overturning Mass Streamfunction",
+        },
+    )
+    return da_out.to_dataset()
+
+
+def compute_msftmmpa_density(data, rule):
+    """
+    Ocean meridional overturning mass streamfunction due to parameterized
+    mesoscale advection in density space (CMIP msftmmpa with branding
+    tavg-rho-hyb-sea, a.k.a. msftmrhompa), kg s-1.
+
+    Bolus-only contribution: identical pipeline to :func:`compute_msftm_density`
+    but driven by ``std_dens_DIVbolus`` (GM bolus density-class divergence).
+    Only run when ``Fer_GM=.true.`` produced bolus output; otherwise the
+    rule's input pattern won't match and the rule is skipped.
+
+    Required rule attributes: same as :func:`compute_msftm_density`.
+    Output: DataArray (time, rho, basin, lat) in kg s-1.
+    """
+    if not isinstance(data, xr.Dataset) or "std_dens_DIVbolus" not in data.data_vars:
+        raise ValueError(
+            "compute_msftmmpa_density expects 'std_dens_DIVbolus' in input data; got "
+            f"{list(data.data_vars) if isinstance(data, xr.Dataset) else type(data)}"
+        )
+    div = _normalize_dmoc_dim(data["std_dens_DIVbolus"])
+
+    mesh_path = rule.get("mesh_path")
+    basin_mask_file = rule.get("basin_mask_file")
+    if not all([mesh_path, basin_mask_file]):
+        raise ValueError("compute_msftmmpa_density requires 'mesh_path' and 'basin_mask_file' on the rule")
+
+    grid_file = mesh_path if _os.path.isfile(mesh_path) else _os.path.join(mesh_path, "mesh.nc")
+    with xr.open_dataset(grid_file) as m:
+        lat_nodes = m["lat"].values
+    with xr.open_dataset(basin_mask_file) as bm:
+        basin_nodes = bm["basin"].values
+
+    psi, lat_centers = _msftm_density_streamfunction(div, lat_nodes, basin_nodes)
+    psi_kg = psi * _RHO0
+
+    rho_coord = _resolve_rho_axis(div, rule.get("std_dens"))
+    time_coord = div["time"].values if "time" in div.coords else np.arange(psi_kg.shape[0])
+
+    da_out = xr.DataArray(
+        psi_kg,
+        dims=("time", "rho", "basin", "lat"),
+        coords={
+            "time": time_coord,
+            "rho": rho_coord,
+            "basin": list(_CMIP_BASIN_NAMES),
+            "lat": lat_centers,
+        },
+        name=rule.model_variable,
+        attrs={
+            "units": "kg s-1",
+            "long_name": "Ocean Meridional Overturning Mass Streamfunction Due to Parameterized Mesoscale Advection",
+        },
+    )
+    return da_out.to_dataset()
+
+
 def rechunk_time(data, rule):
     """Rechunk the dask array along the time dim to a larger block.
 
@@ -3513,6 +3997,8 @@ def rechunk_time(data, rule):
     if time_dim is None:
         return data
     return data.chunk({time_dim: n})
+
+
 # ===========================================================================
 # added by LASZLO - 29.04.2026
 # LPJ-GUESS depth-layered and pool loaders (mrsll, mrsol, tsl, cSoilPools)
@@ -3521,18 +4007,27 @@ def rechunk_time(data, rule):
 # LPJ-GUESS soil depth layer boundaries (in metres)
 # Columns: Depth0.1, Depth0.2, ..., Depth1.5
 # These represent the bottom of each 10 cm layer
-_DEPTH_LAYER_BOTTOMS = np.array([
-    0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9,
-    1.0, 1.1, 1.2, 1.3, 1.4, 1.5
-])
+_DEPTH_LAYER_BOTTOMS = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5])
 _DEPTH_LAYER_TOPS = np.concatenate(([0.0], _DEPTH_LAYER_BOTTOMS[:-1]))
 _DEPTH_LAYER_CENTRES = (_DEPTH_LAYER_TOPS + _DEPTH_LAYER_BOTTOMS) / 2.0
 
 # Column names as they appear in the .out file header
 _DEPTH_COLS = [
-    "Depth0.1", "Depth0.2", "Depth0.3", "Depth0.4", "Depth0.5",
-    "Depth0.6", "Depth0.7", "Depth0.8", "Depth0.9", "Depth1",
-    "Depth1.1", "Depth1.2", "Depth1.3", "Depth1.4", "Depth1.5",
+    "Depth0.1",
+    "Depth0.2",
+    "Depth0.3",
+    "Depth0.4",
+    "Depth0.5",
+    "Depth0.6",
+    "Depth0.7",
+    "Depth0.8",
+    "Depth0.9",
+    "Depth1",
+    "Depth1.1",
+    "Depth1.2",
+    "Depth1.3",
+    "Depth1.4",
+    "Depth1.5",
 ]
 
 # cSoilPools pool names
@@ -3555,9 +4050,7 @@ def load_lpjguess_monthly_depth(data, rule):
 
     files = sorted(base_path.glob(pattern_str))
     if not files:
-        raise FileNotFoundError(
-            f"No LPJ-GUESS depth files found matching {base_path}/{pattern_str}"
-        )
+        raise FileNotFoundError(f"No LPJ-GUESS depth files found matching {base_path}/{pattern_str}")
     logger.info(f"Loading {len(files)} LPJ-GUESS monthly depth .out files")
 
     frames = []
@@ -3571,9 +4064,7 @@ def load_lpjguess_monthly_depth(data, rule):
 
     # Build cell index
     coords_df = df_all[["Lon", "Lat"]].drop_duplicates()
-    coords_df = coords_df.sort_values(
-        ["Lat", "Lon"], ascending=[False, True]
-    ).reset_index(drop=True)
+    coords_df = coords_df.sort_values(["Lat", "Lon"], ascending=[False, True]).reset_index(drop=True)
     lon_vals = coords_df["Lon"].values
     lat_vals = coords_df["Lat"].values
     ncells = len(coords_df)
@@ -3656,9 +4147,7 @@ def load_lpjguess_monthly_pool(data, rule):
 
     files = sorted(base_path.glob(pattern_str))
     if not files:
-        raise FileNotFoundError(
-            f"No LPJ-GUESS pool files found matching {base_path}/{pattern_str}"
-        )
+        raise FileNotFoundError(f"No LPJ-GUESS pool files found matching {base_path}/{pattern_str}")
     logger.info(f"Loading {len(files)} LPJ-GUESS monthly pool .out files")
 
     frames = []
@@ -3671,9 +4160,7 @@ def load_lpjguess_monthly_pool(data, rule):
     years = np.sort(df_all["Year"].unique())
 
     coords_df = df_all[["Lon", "Lat"]].drop_duplicates()
-    coords_df = coords_df.sort_values(
-        ["Lat", "Lon"], ascending=[False, True]
-    ).reset_index(drop=True)
+    coords_df = coords_df.sort_values(["Lat", "Lon"], ascending=[False, True]).reset_index(drop=True)
     lon_vals = coords_df["Lon"].values
     lat_vals = coords_df["Lat"].values
     ncells = len(coords_df)
@@ -3723,4 +4210,3 @@ def load_lpjguess_monthly_pool(data, rule):
         ds[model_variable].attrs["units"] = source_units
 
     return ds
-
