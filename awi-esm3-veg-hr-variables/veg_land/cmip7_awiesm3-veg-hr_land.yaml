@@ -252,7 +252,7 @@ rules:
     compound_name: landIce.snd.tavg-u-hxy-lnd.day.GLB
     model_variable: sd
     second_input_path: *dp
-    second_input_pattern: atmos_day_land_rsn_day_land_.*\.nc
+    second_input_pattern: atmos_day_land_rsn_.*\.nc
     second_variable: rsn
     pipelines:
       - snd_pipeline

@@ -258,7 +258,7 @@ rules:
     compound_name: atmos.hurs.tpt-h2m-hxy-u.3hr.GLB
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atmos_3h_pt_2d_3h_pt_.*\.nc
+    second_input_pattern: atmos_3h_pt_2d_.*\.nc
     second_variable: 2d
     pipelines:
       - hurs_pipeline

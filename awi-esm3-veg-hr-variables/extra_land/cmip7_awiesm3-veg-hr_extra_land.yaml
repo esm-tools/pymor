@@ -160,31 +160,34 @@ rules:
   # Part 4: IFS/HTESSEL daily hydrology
   # ============================================================
 
-  # dcw: change in interception storage (skin reservoir content)
+  # dcw: change in interception storage (skin reservoir = src field).
+  # compute_temporal_diff converts m -> kg/m2 and takes the time diff.
   - name: dcw_day
     inputs:
       - path: *dp
-        pattern: atmos_day_land_.*\.nc
+        pattern: atmos_day_land_src_.*\.nc
     compound_name: land.dcw.tavg-u-hxy-lnd.day.GLB
     model_variable: skin_reservoir
     pipelines:
       - temporal_diff_pipeline
 
-  # dslw: change in soil moisture (all 4 HTESSEL layers)
+  # dslw: change in total soil moisture across all 4 HTESSEL layers
+  # (swvl1..swvl4). Loads four per-var files via load_mfdataset.
   - name: dslw_day
     inputs:
       - path: *dp
-        pattern: atmos_day_land_.*\.nc
+        pattern: atmos_day_land_swvl[1-4]_.*\.nc
     compound_name: land.dslw.tavg-u-hxy-lnd.day.GLB
     model_variable: soil_moisture
     pipelines:
       - temporal_diff_pipeline
 
-  # mrsow: total soil wetness (ratio of actual to saturated)
+  # mrsow: total soil wetness (ratio of actual to saturated). Reads the
+  # same swvl1..swvl4 layers as dslw_day.
   - name: mrsow_day
     inputs:
       - path: *dp
-        pattern: atmos_day_land_.*\.nc
+        pattern: atmos_day_land_swvl[1-4]_.*\.nc
     compound_name: land.mrsow.tavg-u-hxy-lnd.day.GLB
     model_variable: mrsow
     porosity: 0.472
