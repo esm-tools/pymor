@@ -639,7 +639,8 @@ rules:
     compound_name: land.cnc.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     source_units: '%'
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: cVegGrass_mon
     inputs:
       - path: *ldp
@@ -647,7 +648,8 @@ rules:
     compound_name: land.cVeg.tavg-u-hxy-ng.mon.GLB
     model_variable: Total
     source_units: kg m-2
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: cVegShrub_mon
     inputs:
       - path: *ldp
@@ -655,7 +657,8 @@ rules:
     compound_name: land.cVeg.tavg-u-hxy-shb.mon.GLB
     model_variable: Total
     source_units: kg m-2
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: cVegTree_mon
     inputs:
       - path: *ldp
@@ -663,7 +666,8 @@ rules:
     compound_name: land.cVeg.tavg-u-hxy-tree.mon.GLB
     model_variable: Total
     source_units: kg m-2
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: evspsbl_mon
     inputs:
       - path: *ldp
@@ -671,7 +675,8 @@ rules:
     compound_name: atmos.evspsbl.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: fco2antt_mon
     inputs:
       - path: *ldp
@@ -679,7 +684,8 @@ rules:
     compound_name: atmos.fco2antt.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: fco2nat_mon
     inputs:
       - path: *ldp
@@ -687,7 +693,8 @@ rules:
     compound_name: atmos.fco2nat.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: fHarvestToProduct_mon
     inputs:
       - path: *ldp
@@ -695,7 +702,8 @@ rules:
     compound_name: land.fHarvestToProduct.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: fN2O_mon
     inputs:
       - path: *ldp
@@ -703,7 +711,8 @@ rules:
     compound_name: land.fN2O.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: fNAnthDisturb_mon
     inputs:
       - path: *ldp
@@ -711,7 +720,8 @@ rules:
     compound_name: land.fNAnthDisturb.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: fNdep_mon
     inputs:
       - path: *ldp
@@ -719,7 +729,8 @@ rules:
     compound_name: land.fNdep.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: fNfert_mon
     inputs:
       - path: *ldp
@@ -727,7 +738,8 @@ rules:
     compound_name: land.fNfert.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: fNgasNonFire_mon
     inputs:
       - path: *ldp
@@ -735,7 +747,8 @@ rules:
     compound_name: land.fNgasNonFire.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: fNnetmin_mon
     inputs:
       - path: *ldp
@@ -743,7 +756,8 @@ rules:
     compound_name: land.fNnetmin.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: fNOx_mon
     inputs:
       - path: *ldp
@@ -751,7 +765,8 @@ rules:
     compound_name: land.fNOx.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: fNProduct_mon
     inputs:
       - path: *ldp
@@ -759,7 +774,8 @@ rules:
     compound_name: land.fNProduct.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: fNVegLitter_mon
     inputs:
       - path: *ldp
@@ -767,7 +783,8 @@ rules:
     compound_name: land.fNVegLitter.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: fVegLitterMortality_mon
     inputs:
       - path: *ldp
@@ -775,7 +792,8 @@ rules:
     compound_name: land.fVegLitterMortality.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: fVegLitterSenescence_mon
     inputs:
       - path: *ldp
@@ -783,7 +801,8 @@ rules:
     compound_name: land.fVegLitterSenescence.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: gppGrass_mon
     inputs:
       - path: *ldp
@@ -791,7 +810,8 @@ rules:
     compound_name: land.gpp.tavg-u-hxy-ng.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: gppShrub_mon
     inputs:
       - path: *ldp
@@ -799,7 +819,8 @@ rules:
     compound_name: land.gpp.tavg-u-hxy-shb.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: gppTree_mon
     inputs:
       - path: *ldp
@@ -807,7 +828,8 @@ rules:
     compound_name: land.gpp.tavg-u-hxy-tree.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: grassFracC3_mon
     inputs:
       - path: *ldp
@@ -815,7 +837,8 @@ rules:
     compound_name: land.grassFracC3.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     source_units: '%'
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: grassFracC4_mon
     inputs:
       - path: *ldp
@@ -823,7 +846,8 @@ rules:
     compound_name: land.grassFracC4.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     source_units: '%'
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: mrro_mon
     inputs:
       - path: *ldp
@@ -831,7 +855,8 @@ rules:
     compound_name: land.mrro.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: mrros_mon
     inputs:
       - path: *ldp
@@ -839,7 +864,8 @@ rules:
     compound_name: land.mrros.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: mrso_mon
     inputs:
       - path: *ldp
@@ -847,7 +873,8 @@ rules:
     compound_name: land.mrso.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: mrsos_mon
     inputs:
       - path: *ldp
@@ -855,7 +882,8 @@ rules:
     compound_name: land.mrsol.tavg-d10cm-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: nLeaf_mon
     inputs:
       - path: *ldp
@@ -863,7 +891,8 @@ rules:
     compound_name: land.nLeaf.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: nLitterCwd_mon
     inputs:
       - path: *ldp
@@ -871,7 +900,8 @@ rules:
     compound_name: land.nLitterCwd.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: nLitterSubSurf_mon
     inputs:
       - path: *ldp
@@ -879,7 +909,8 @@ rules:
     compound_name: land.nLitterSubSurf.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: nLitterSurf_mon
     inputs:
       - path: *ldp
@@ -887,7 +918,8 @@ rules:
     compound_name: land.nLitterSurf.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: nMineralNH4_mon
     inputs:
       - path: *ldp
@@ -895,7 +927,8 @@ rules:
     compound_name: land.nMineralNH4.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: nMineralNO3_mon
     inputs:
       - path: *ldp
@@ -903,7 +936,8 @@ rules:
     compound_name: land.nMineralNO3.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: nOther_mon
     inputs:
       - path: *ldp
@@ -911,7 +945,8 @@ rules:
     compound_name: land.nOther.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: nppGrass_mon
     inputs:
       - path: *ldp
@@ -919,7 +954,8 @@ rules:
     compound_name: land.npp.tavg-u-hxy-ng.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: nppLeaf_mon
     inputs:
       - path: *ldp
@@ -927,7 +963,8 @@ rules:
     compound_name: land.nppLeaf.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: nppOther_mon
     inputs:
       - path: *ldp
@@ -935,7 +972,8 @@ rules:
     compound_name: land.nppOther.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: nppRoot_mon
     inputs:
       - path: *ldp
@@ -943,7 +981,8 @@ rules:
     compound_name: land.nppRoot.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: nppShrub_mon
     inputs:
       - path: *ldp
@@ -951,7 +990,8 @@ rules:
     compound_name: land.npp.tavg-u-hxy-shb.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: nppStem_mon
     inputs:
       - path: *ldp
@@ -959,7 +999,8 @@ rules:
     compound_name: land.nppStem.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: nppTree_mon
     inputs:
       - path: *ldp
@@ -967,7 +1008,8 @@ rules:
     compound_name: land.npp.tavg-u-hxy-tree.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: nRoot_mon
     inputs:
       - path: *ldp
@@ -975,7 +1017,8 @@ rules:
     compound_name: land.nRoot.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: nStem_mon
     inputs:
       - path: *ldp
@@ -983,7 +1026,8 @@ rules:
     compound_name: land.nStem.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: raGrass_mon
     inputs:
       - path: *ldp
@@ -991,7 +1035,8 @@ rules:
     compound_name: land.ra.tavg-u-hxy-ng.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: raShrub_mon
     inputs:
       - path: *ldp
@@ -999,7 +1044,8 @@ rules:
     compound_name: land.ra.tavg-u-hxy-shb.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: raTree_mon
     inputs:
       - path: *ldp
@@ -1007,7 +1053,8 @@ rules:
     compound_name: land.ra.tavg-u-hxy-tree.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: rhGrass_mon
     inputs:
       - path: *ldp
@@ -1015,7 +1062,8 @@ rules:
     compound_name: land.rh.tavg-u-hxy-ng.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: rhShrub_mon
     inputs:
       - path: *ldp
@@ -1023,7 +1071,8 @@ rules:
     compound_name: land.rh.tavg-u-hxy-shb.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: rhTree_mon
     inputs:
       - path: *ldp
@@ -1031,7 +1080,8 @@ rules:
     compound_name: land.rh.tavg-u-hxy-tree.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: snc_mon
     inputs:
       - path: *ldp
@@ -1039,7 +1089,8 @@ rules:
     compound_name: landIce.snc.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: '%'
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: snd_mon
     inputs:
       - path: *ldp
@@ -1047,7 +1098,8 @@ rules:
     compound_name: landIce.snd.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: m
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: snw_mon
     inputs:
       - path: *ldp
@@ -1055,7 +1107,8 @@ rules:
     compound_name: landIce.snw.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: treeFracBdlEvg_mon
     inputs:
       - path: *ldp
@@ -1063,7 +1116,8 @@ rules:
     compound_name: land.treeFracBdlEvg.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     source_units: '%'
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: treeFracNdlDcd_mon
     inputs:
       - path: *ldp
@@ -1071,7 +1125,8 @@ rules:
     compound_name: land.treeFracNdlDcd.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     source_units: '%'
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: treeFracNdlEvg_mon
     inputs:
       - path: *ldp
@@ -1079,7 +1134,8 @@ rules:
     compound_name: land.treeFracNdlEvg.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     source_units: '%'
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: vegHeightShrub_mon
     inputs:
       - path: *ldp
@@ -1087,7 +1143,8 @@ rules:
     compound_name: land.vegHeight.tavg-u-hxy-shb.mon.GLB
     model_variable: Total
     source_units: m
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: vegHeightTree_mon
     inputs:
       - path: *ldp
@@ -1095,7 +1152,8 @@ rules:
     compound_name: land.vegHeight.tavg-u-hxy-tree.mon.GLB
     model_variable: Total
     source_units: m
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: wetlandCH4cons_mon
     inputs:
       - path: *ldp
@@ -1103,7 +1161,8 @@ rules:
     compound_name: land.wetlandCH4cons.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: wetlandCH4_mon
     inputs:
       - path: *ldp
@@ -1111,7 +1170,8 @@ rules:
     compound_name: land.wetlandCH4.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: wetlandCH4prod_mon
     inputs:
       - path: *ldp
@@ -1119,7 +1179,8 @@ rules:
     compound_name: land.wetlandCH4prod.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: wetlandFrac_mon
     inputs:
       - path: *ldp
@@ -1127,7 +1188,8 @@ rules:
     compound_name: land.wetlandFrac.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     source_units: '%'
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   # ============================================================
   # added by LASZLO - 29.04.2026
   # LPJ-GUESS depth-layered and pool variables
@@ -1140,7 +1202,8 @@ rules:
     compound_name: land.mrsll.tavg-sl-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2
-    pipeline: lpjg_monthly_depth_pipeline
+    pipelines:
+      - lpjg_monthly_depth_pipeline
   - name: mrsol_mon
     inputs:
       - path: *ldp
@@ -1148,7 +1211,8 @@ rules:
     compound_name: land.mrsol.tavg-sl-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2
-    pipeline: lpjg_monthly_depth_pipeline
+    pipelines:
+      - lpjg_monthly_depth_pipeline
   - name: tsl_mon
     inputs:
       - path: *ldp
@@ -1156,7 +1220,8 @@ rules:
     compound_name: land.tsl.tavg-sl-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: K
-    pipeline: lpjg_monthly_depth_pipeline
+    pipelines:
+      - lpjg_monthly_depth_pipeline
   - name: cSoilPools_mon
     inputs:
       - path: *ldp
@@ -1164,4 +1229,5 @@ rules:
     compound_name: land.cSoilPools.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2
-    pipeline: lpjg_monthly_pool_pipeline
+    pipelines:
+      - lpjg_monthly_pool_pipeline

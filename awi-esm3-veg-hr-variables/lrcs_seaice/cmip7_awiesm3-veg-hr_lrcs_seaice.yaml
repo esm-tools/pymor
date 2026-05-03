@@ -859,7 +859,7 @@ rules:
   - name: rsds_seaice
     inputs:
       - path: *odp
-        pattern: atmos_mon_rsds_.*\.nc
+        pattern: atmos_1h_sfc_rsds_.*\.nc
     compound_name: seaIce.rsds.tavg-u-hxy-si.mon.GLB
     model_variable: rsds
     aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/a_ice.fesom.*.nc
@@ -869,7 +869,7 @@ rules:
   - name: rsds_seaice_day
     inputs:
       - path: *odp
-        pattern: atmos_day_cap7_rsds_.*\.nc
+        pattern: atmos_1h_sfc_rsds_.*\.nc
     compound_name: seaIce.rsds.tavg-u-hxy-si.day.GLB
     model_variable: rsds
     aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/a_ice.fesom.*.nc
@@ -881,7 +881,7 @@ rules:
   - name: rsus_seaice
     inputs:
       - path: *odp
-        pattern: atmos_mon_rsus_.*\.nc
+        pattern: atmos_1h_sfc_rsus_.*\.nc
     compound_name: seaIce.rsus.tavg-u-hxy-si.mon.GLB
     model_variable: rsus
     aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/a_ice.fesom.*.nc
@@ -891,7 +891,7 @@ rules:
   - name: rsus_seaice_day
     inputs:
       - path: *odp
-        pattern: atmos_day_cap7_rsus_.*\.nc
+        pattern: atmos_1h_sfc_rsus_.*\.nc
     compound_name: seaIce.rsus.tavg-u-hxy-si.day.GLB
     model_variable: rsus
     aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/a_ice.fesom.*.nc
@@ -903,7 +903,7 @@ rules:
   - name: rlds_seaice
     inputs:
       - path: *odp
-        pattern: atmos_mon_rlds_.*\.nc
+        pattern: atmos_1h_sfc_rlds_.*\.nc
     compound_name: seaIce.rlds.tavg-u-hxy-si.mon.GLB
     model_variable: rlds
     aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/a_ice.fesom.*.nc
@@ -915,7 +915,7 @@ rules:
   - name: rlus_seaice
     inputs:
       - path: *odp
-        pattern: atmos_mon_rlus_.*\.nc
+        pattern: atmos_1h_sfc_rlus_.*\.nc
     compound_name: seaIce.rlus.tavg-u-hxy-si.mon.GLB
     model_variable: rlus
     aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/a_ice.fesom.*.nc

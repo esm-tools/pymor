@@ -277,10 +277,12 @@ rules:
     pipelines:
       - temporal_diff_pipeline
 
+  # dsw / mrtws need swvl1..swvl4 + sd + src loaded together to compute
+  # total water storage. Pattern matches the 6 per-var files via alternation.
   - name: dsw_day
     inputs:
       - path: *dp
-        pattern: atmos_day_land_.*\.nc
+        pattern: atmos_day_land_(swvl[1-4]|sd|src)_.*\.nc
     compound_name: land.dsw.tavg-u-hxy-lnd.day.GLB
     model_variable: total_water
     pipelines:
@@ -289,7 +291,7 @@ rules:
   - name: mrtws_day
     inputs:
       - path: *dp
-        pattern: atmos_day_land_.*\.nc
+        pattern: atmos_day_land_(swvl[1-4]|sd|src)_.*\.nc
     compound_name: land.mrtws.tavg-u-hxy-lnd.day.GLB
     model_variable: total_water
     pipelines:
@@ -720,7 +722,8 @@ rules:
     compound_name: land.nbpLut.tavg-u-hxy-multi.mon.GLB
     model_variable: psl
     source_units: kg m-2 s-1
-    pipeline: lpjg_monthly_lut_pipeline
+    pipelines:
+      - lpjg_monthly_lut_pipeline
   - name: sweLut_mon
     inputs:
       - path: *ldp
@@ -728,7 +731,8 @@ rules:
     compound_name: land.sweLut.tavg-u-hxy-multi.mon.GLB
     model_variable: psl
     source_units: m
-    pipeline: lpjg_monthly_lut_pipeline
+    pipelines:
+      - lpjg_monthly_lut_pipeline
   - name: vegHeight_mon
     inputs:
       - path: *ldp
@@ -736,5 +740,6 @@ rules:
     compound_name: land.vegHeight.tavg-u-hxy-veg.mon.GLB
     model_variable: Total
     source_units: m
-    pipeline: lpjg_monthly_pipeline
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
+      - lpjg_monthly_pipeline

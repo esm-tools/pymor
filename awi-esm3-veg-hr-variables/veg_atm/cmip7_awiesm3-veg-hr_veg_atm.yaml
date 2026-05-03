@@ -115,7 +115,7 @@ rules:
   - name: ps_3hrPt
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_pt_sp_.*\.nc
+        pattern: atmos_3h_pt_sp_.*\.nc
     compound_name: atmos.ps.tpt-u-hxy-u.3hr.GLB
     model_variable: sp
 
@@ -179,14 +179,14 @@ rules:
   - name: rls_mon
     inputs:
       - path: *dp
-        pattern: atm_remapped_mon_netrad_rls_.*\.nc
+        pattern: atmos_mon_netrad_rls_.*\.nc
     compound_name: atmos.rls.tavg-u-hxy-u.mon.GLB
     model_variable: rls
 
   - name: rss_mon
     inputs:
       - path: *dp
-        pattern: atm_remapped_mon_netrad_rss_.*\.nc
+        pattern: atmos_mon_netrad_rss_.*\.nc
     compound_name: atmos.rss.tavg-u-hxy-u.mon.GLB
     model_variable: rss
 
@@ -197,7 +197,7 @@ rules:
   - name: lwp_mon
     inputs:
       - path: *dp
-        pattern: atm_remapped_mon_netrad_lwp_.*\.nc
+        pattern: atmos_mon_netrad_lwp_.*\.nc
     compound_name: aerosol.lwp.tavg-u-hxy-u.mon.GLB
     model_variable: lwp
 
@@ -208,14 +208,14 @@ rules:
   - name: tsns_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_day_snow_tsns_.*\.nc
+        pattern: atmos_day_snow_tsns_.*\.nc
     compound_name: atmos.ts.tavg-u-hxy-sn.day.GLB
     model_variable: tsns
 
   - name: snmsl_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_day_snow_snmsl_.*\.nc
+        pattern: atmos_day_snow_snmsl_.*\.nc
     compound_name: atmos.snmsl.tavg-u-hxy-lnd.day.GLB
     model_variable: snmsl
 
