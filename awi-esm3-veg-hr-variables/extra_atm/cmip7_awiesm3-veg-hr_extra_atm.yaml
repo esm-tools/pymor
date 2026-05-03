@@ -177,17 +177,6 @@ rules:
     pipelines:
       - hurs_pipeline
 
-  - name: bldep_1hr
-    inputs:
-      - path: *dp
-        pattern: atmos_1h_bldep_.*\.nc
-    compound_name: atmos.bldep.tavg-u-hxy-u.1hr.GLB
-    model_variable: bldep
-
-  # ============================================================
-  # Part 2: 1hr 30S-90S regional subsets
-  # ============================================================
-
   - name: clt_1hr_south30
     inputs:
       - path: *dp
@@ -278,7 +267,7 @@ rules:
   - name: ts_3hr
     inputs:
       - path: *dp
-        pattern: atmos_3h_ts_.*\.nc
+        pattern: atmos_1h_ts_ts_1h_ts_.*\.nc
     compound_name: atmos.ts.tpt-u-hxy-u.3hr.GLB
     model_variable: ts
 

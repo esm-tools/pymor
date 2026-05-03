@@ -69,42 +69,42 @@ rules:
   - name: hfls_3hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_rad_hfls_.*\.nc
+        pattern: atmos_1h_sfc_hfls_1h_sfc_.*\.nc
     compound_name: atmos.hfls.tavg-u-hxy-u.3hr.GLB
     model_variable: hfls
 
   - name: hfss_3hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_rad_hfss_.*\.nc
+        pattern: atmos_1h_sfc_hfss_1h_sfc_.*\.nc
     compound_name: atmos.hfss.tavg-u-hxy-u.3hr.GLB
     model_variable: hfss
 
   - name: rlds_3hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_rad_rlds_.*\.nc
+        pattern: atmos_1h_sfc_rlds_1h_sfc_.*\.nc
     compound_name: atmos.rlds.tavg-u-hxy-u.3hr.GLB
     model_variable: rlds
 
   - name: rlus_3hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_rad_rlus_.*\.nc
+        pattern: atmos_1h_sfc_rlus_1h_sfc_.*\.nc
     compound_name: atmos.rlus.tavg-u-hxy-u.3hr.GLB
     model_variable: rlus
 
   - name: rsds_3hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_rad_rsds_.*\.nc
+        pattern: atmos_1h_sfc_rsds_1h_sfc_.*\.nc
     compound_name: atmos.rsds.tavg-u-hxy-u.3hr.GLB
     model_variable: rsds
 
   - name: rsus_3hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_3h_rad_rsus_.*\.nc
+        pattern: atmos_1h_sfc_rsus_1h_sfc_.*\.nc
     compound_name: atmos.rsus.tavg-u-hxy-u.3hr.GLB
     model_variable: rsus
 
@@ -165,21 +165,10 @@ rules:
   # 3hr instantaneous boundary layer depth
   # ============================================================
 
-  - name: bldep_3hrPt
-    inputs:
-      - path: *dp
-        pattern: atm_remapped_3h_bldep_bldep_.*\.nc
-    compound_name: atmos.bldep.tpt-u-hxy-u.3hr.GLB
-    model_variable: bldep
-
-  # ============================================================
-  # 6hr averaged snowfall flux
-  # ============================================================
-
   - name: prsn_6hr
     inputs:
       - path: *dp
-        pattern: atm_remapped_6h_prsn_prsn_.*\.nc
+        pattern: atmos_3h_prsn_prsn_3h_prsn_.*\.nc
     compound_name: atmos.prsn.tavg-u-hxy-u.6hr.GLB
     model_variable: prsn
 

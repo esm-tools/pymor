@@ -623,7 +623,7 @@ rules:
   - name: tas_1hr
     inputs:
       - path: *dp
-        pattern: atmos_1h_tas_.*\.nc
+        pattern: atmos_1h_sfc_2t_1h_sfc_.*\.nc
     compound_name: land.tas.tavg-u-hxy-u.1hr.GLB
     model_variable: 2t
 
