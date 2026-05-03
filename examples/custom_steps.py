@@ -3061,6 +3061,91 @@ def compute_rtmt(data, rule):
     return result.to_dataset()
 
 
+def regrid_oifs_to_fesom(data, rule):
+    """
+    Interpolate OIFS data from a reduced-Gaussian grid (flat 1D lat/lon
+    where each (lat[i], lon[i]) is one node) onto FESOM unstructured nodes
+    via nearest-neighbor on the unit sphere.
+
+    Both source and target are unstructured — there is no rectilinear lat/lon
+    intermediate. We build a KDTree on the source-grid Cartesian (x,y,z)
+    points and query nearest-neighbor for each FESOM node. KDTree indices
+    are cached via joblib (one set per (source-grid-id, mesh-id) pair) so
+    repeated rules pay the build cost once.
+
+    Suitable for smooth fields (radiation fluxes, sublimation, etc.). For
+    fields with sharp gradients consider a barycentric/linear interpolant.
+
+    Rule attributes:
+      - grid_file: path to FESOM mesh.nc (required; contains 'lon'/'lat' node coords)
+      - fesom_node_dim: name of node dimension in output (default: 'nod2')
+      - regrid_cache_dir: dir to cache KDTree indices (optional)
+    """
+    from scipy.spatial import cKDTree as _cKDTree
+    import hashlib
+    import os.path as _osp
+    import joblib as _joblib
+
+    grid_file = rule.get("grid_file")
+    if grid_file is None:
+        raise ValueError("Rule must specify 'grid_file' for regrid_oifs_to_fesom")
+
+    node_dim = rule.get("fesom_node_dim", "nod2")
+    cache_dir = rule.get("regrid_cache_dir")
+
+    mesh = xr.open_dataset(grid_file)
+    fesom_lon = mesh[next(n for n in ("lon", "longitude") if n in mesh)].values
+    fesom_lat = mesh[next(n for n in ("lat", "latitude") if n in mesh)].values
+    mesh.close()
+
+    src_lat = data.coords[next(n for n in ("lat", "latitude") if n in data.coords)].values
+    src_lon = data.coords[next(n for n in ("lon", "longitude") if n in data.coords)].values
+    if src_lat.shape != src_lon.shape:
+        raise ValueError(
+            f"regrid_oifs_to_fesom expects flat src lat/lon of equal length "
+            f"(reduced-Gaussian style); got lat={src_lat.shape} lon={src_lon.shape}"
+        )
+
+    # Cartesian unit-sphere coords for KDTree (avoids longitude wrap pathology)
+    def _to_xyz(lon_deg, lat_deg):
+        lon = np.radians(lon_deg)
+        lat = np.radians(lat_deg)
+        return np.stack([np.cos(lat) * np.cos(lon),
+                         np.cos(lat) * np.sin(lon),
+                         np.sin(lat)], axis=-1)
+
+    inds = None
+    if cache_dir:
+        key = hashlib.md5(
+            (str(src_lat.shape) + str(grid_file) + f"{src_lat[0]:.4f}_{src_lat[-1]:.4f}").encode()
+        ).hexdigest()
+        cache_file = _osp.join(cache_dir, f"oifs_to_fesom_inds_{key}.joblib")
+        if _osp.exists(cache_file):
+            inds = _joblib.load(cache_file)
+    if inds is None:
+        tree = _cKDTree(_to_xyz(src_lon, src_lat))
+        _, inds = tree.query(_to_xyz(fesom_lon, fesom_lat), k=1)
+        if cache_dir:
+            _os.makedirs(cache_dir, exist_ok=True)
+            _joblib.dump(inds, cache_file)
+
+    time_dim = "time" if "time" in data.dims else None
+    if time_dim is None:
+        out = data.values[inds]
+        result = xr.DataArray(out, dims=[node_dim], attrs=data.attrs)
+    else:
+        # Per-timestep gather; data shape is (T, N_src) -> (T, N_fesom)
+        out = data.values[..., inds]
+        result = xr.DataArray(
+            out,
+            dims=[time_dim, node_dim],
+            coords={time_dim: data[time_dim]},
+            attrs=data.attrs,
+        )
+    result.name = data.name
+    return result
+
+
 def regrid_regular_to_fesom(data, rule):
     """
     Interpolate data from a regular lat/lon grid onto FESOM unstructured nodes.
