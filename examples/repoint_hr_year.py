@@ -36,10 +36,13 @@ def resolve_run_dir(arg: str) -> str:
 
 
 def add_year_to_pattern(pat: str, year: str) -> str:
-    """Apply year filter to a single pattern string (regex form, as written in YAML)."""
-    # FESOM convention: <var>.fesom.<year>.nc — pattern ends in `\..*\.nc`
+    """Apply year filter to a single pattern/file string (yaml-as-written form)."""
+    # FESOM regex form: <var>\.fesom\..*\.nc  (used in `pattern:` lines)
     if r"\.fesom\." in pat:
         return re.sub(r"\\\.\.\*\\\.nc$", rf"\\.{year}\\.nc", pat)
+    # FESOM glob form: <var>.fesom.*.nc  (used in `*_file:` lines, literal path)
+    if ".fesom." in pat and pat.endswith(".nc"):
+        return re.sub(r"\.\*\.nc$", rf".{year}.nc", pat)
     # OIFS convention: atm[os|_remapped]_..._<year>-<year>.nc
     if pat.startswith("atmos_") or pat.startswith("atm_remapped_"):
         return re.sub(r"_\.\*\\\.nc$", rf"_{year}-{year}\\.nc", pat)
