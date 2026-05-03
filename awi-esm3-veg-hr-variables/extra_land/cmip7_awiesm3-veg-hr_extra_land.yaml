@@ -140,71 +140,12 @@ rules:
   # Part 2: LPJ-GUESS PFT fractions (monthly, Jan..Dec format)
   # ============================================================
 
-  # c3PftFrac is produced natively by LPJ-GUESS (see c3PftFrac_mon below
-  # which reads c3PftFrac_monthly.out directly). The old composite-sum rule
-  # — grassFracC3 + 4 tree-frac files via lpjg_monthly_sum_pipeline — was
-  # removed to avoid duplicate land.c3PftFrac.tavg-u-hxy-u.mon.GLB matches.
+  # PFT fraction rules (c3PftFrac, c4PftFrac, cropFracC3, cropFracC4,
+  # pastureFracC3, pastureFracC4) are now provided by the *_mon rules below
+  # — they read the native LPJ-GUESS <var>_monthly.out files directly. The
+  # older composite/aliased rules in this section were removed to avoid
+  # duplicate-rule errors against the *_mon variants.
 
-  # c4PftFrac = grassFracC4 (no C4 trees in LPJ-GUESS)
-  - name: c4PftFrac
-    inputs:
-      - path: *ldp
-        pattern: "*/run1/grassFracC4_monthly.out"
-    compound_name: land.c4PftFrac.tavg-u-hxy-u.mon.GLB
-    model_variable: grassFracC4
-    source_units: "%"
-    pipelines:
-      - lpjg_monthly_pipeline
-
-  # cropFracC3 (all zeros, run_landcover=0)
-  - name: cropFracC3
-    inputs:
-      - path: *ldp
-        pattern: "*/run1/cropFracC3_monthly.out"
-    compound_name: land.cropFracC3.tavg-u-hxy-u.mon.GLB
-    model_variable: cropFracC3
-    source_units: "%"
-    pipelines:
-      - lpjg_monthly_pipeline
-
-  # cropFracC4 (all zeros, run_landcover=0)
-  - name: cropFracC4
-    inputs:
-      - path: *ldp
-        pattern: "*/run1/cropFracC4_monthly.out"
-    compound_name: land.cropFracC4.tavg-u-hxy-u.mon.GLB
-    model_variable: cropFracC4
-    source_units: "%"
-    pipelines:
-      - lpjg_monthly_pipeline
-
-  # pastureFracC3 (all zeros, run_landcover=0)
-  - name: pastureFracC3
-    inputs:
-      - path: *ldp
-        pattern: "*/run1/pastureFracC3_monthly.out"
-    compound_name: land.pastureFracC3.tavg-u-hxy-u.mon.GLB
-    model_variable: pastureFracC3
-    source_units: "%"
-    pipelines:
-      - lpjg_monthly_pipeline
-
-  # pastureFracC4 (all zeros, run_landcover=0)
-  - name: pastureFracC4
-    inputs:
-      - path: *ldp
-        pattern: "*/run1/pastureFracC4_monthly.out"
-    compound_name: land.pastureFracC4.tavg-u-hxy-u.mon.GLB
-    model_variable: pastureFracC4
-    source_units: "%"
-    pipelines:
-      - lpjg_monthly_pipeline
-
-  # ============================================================
-  # Part 3: LPJ-GUESS LAI (monthly, daily not available)
-  # ============================================================
-
-  # lai monthly (daily requested but LPJ-GUESS only outputs monthly)
   - name: lai_mon
     inputs:
       - path: *ldp
