@@ -31,13 +31,18 @@ jobqueue:
     walltime: '00:30:00'
 
 pipelines:
-  # GHG scalar pipeline: load annual input4MIPs forcing file,
-  # upsample annual -> monthly, convert ppt -> mol/mol (scale 1e-12)
+  # GHG scalar pipeline: read piControl reference year (1850) from the
+  # centennial input4MIPs forcing record, broadcast to 12 monthly timestamps
+  # in the model run year, then convert ppt/ppb -> mol/mol via scale_factor.
+  # `year` (model year) is injected per-run by examples/repoint_hr_year.py;
+  # `forcing_year` is set in the inherit block for piControl semantics.
+  # Without this, the rule would emit one output file per year of the input
+  # record (273 files for a 1750-2022 forcing file).
   - name: ghg_scalar_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
-      - script://$PYCMOR_HOME/examples/custom_steps.py:upsample_to_monthly
+      - script://$PYCMOR_HOME/examples/custom_steps.py:broadcast_forcing_year_to_monthly
       - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -72,6 +77,10 @@ inherit:
   netcdf_write_scheduler: synchronous
   data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/oifs
   ghg_path: &ghg /work/ab0246/a270092/input/oifs-48r1/cmip7-data/ghg
+  # CMIP piControl reference year — read 1850 GHG values from the centennial
+  # input4MIPs forcing file regardless of the model run year. The cmor output
+  # time axis is rewritten to the model `year` (injected per-run by repoint).
+  forcing_year: 1850
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol

@@ -880,6 +880,105 @@ def compute_heat_transport(data, rule):
     return result
 
 
+def select_year(data, rule):
+    """
+    Slice a Dataset / DataArray to a single calendar year along its time
+    coordinate.
+
+    Intended for rules that read a long-record forcing file (input4MIPs GHG
+    concentrations, prescribed ozone, scenario forcings) but should only
+    cmorize one run-year at a time.
+
+    Pass-through if the rule sets neither ``year`` nor ``year_start``.
+
+    Rule attributes:
+      - ``year`` (preferred) or ``year_start``: int / str / 4-digit; the
+        year to retain on the time axis.
+
+    For piControl-style cases where the model year is *outside* the forcing
+    record (e.g. model year 1587 but forcing 1750-2022), use
+    ``broadcast_forcing_year_to_monthly`` instead.
+    """
+    year = rule.get("year") if hasattr(rule, "get") else None
+    if year is None:
+        year = getattr(rule, "year_start", None)
+    if year is None:
+        return data
+    year_str = str(int(year))
+    for name in ("time", "time_counter", "Time", "TIME", "t"):
+        if name in getattr(data, "coords", {}) or name in getattr(data, "dims", ()):
+            return data.sel({name: year_str})
+    raise ValueError(
+        f"select_year: no recognized time coordinate on data "
+        f"(looked for time / time_counter / Time / TIME / t); "
+        f"got coords={list(getattr(data, 'coords', {}))}"
+    )
+
+
+def broadcast_forcing_year_to_monthly(data, rule):
+    """
+    Select one reference year from a long forcing record and broadcast it
+    to 12 monthly timestamps labeled with the model run year.
+
+    piControl pattern: AWI-ESM3 runs with fixed 1850 GHG forcing perpetually,
+    but model calendar years are arbitrary (e.g. 1587). The cmor output must
+    contain the 1850 reference values, time-stamped within the model year.
+    Replaces the ``select_year`` + ``upsample_to_monthly`` combo for that
+    case (upsample-by-ffill produces only 1 record from 1 input, not 12).
+
+    Rule attributes:
+      - ``year``: int / str / 4-digit; the model run year (output timestamps).
+      - ``forcing_year``: int / str / 4-digit; year to read from the file
+        (e.g. 1850 for CMIP piControl reference).
+    """
+    year = rule.get("year") if hasattr(rule, "get") else getattr(rule, "year", None)
+    forcing_year = (
+        rule.get("forcing_year")
+        if hasattr(rule, "get")
+        else getattr(rule, "forcing_year", None)
+    )
+    if year is None or forcing_year is None:
+        raise ValueError(
+            "broadcast_forcing_year_to_monthly requires both `year` (model "
+            "run year) and `forcing_year` (year to read from forcing file)"
+        )
+    year_i = int(year)
+    forcing_year_i = int(forcing_year)
+
+    time_name = None
+    for name in ("time", "time_counter", "Time", "TIME", "t"):
+        if name in getattr(data, "coords", {}) or name in getattr(data, "dims", ()):
+            time_name = name
+            break
+    if time_name is None:
+        raise ValueError(
+            f"broadcast_forcing_year_to_monthly: no recognized time coord; "
+            f"got {list(getattr(data, 'coords', {}))}"
+        )
+
+    sliced = data.sel({time_name: str(forcing_year_i)})
+    if time_name in getattr(sliced, "dims", ()) and sliced.sizes[time_name] > 1:
+        sliced = sliced.mean(time_name, keep_attrs=True)
+    sliced = sliced.squeeze(drop=False)
+    if time_name in sliced.coords:
+        sliced = sliced.drop_vars(time_name)
+    if time_name in sliced.dims:
+        sliced = sliced.isel({time_name: 0}, drop=True)
+
+    # Build 12 mid-month timestamps for the model run year. Use cftime
+    # (proleptic_gregorian) because piControl model years can be outside
+    # the datetime64[ns] range (1678-2262) — e.g. AWI-ESM3 spinup at 1587.
+    import cftime
+    new_times = np.array(
+        [
+            cftime.DatetimeProlepticGregorian(year_i, m, 16, 12, 0, 0)
+            for m in range(1, 13)
+        ]
+    )
+    result = sliced.expand_dims({time_name: new_times})
+    return result
+
+
 def scale_by_constant(data, rule):
     """
     Multiply data by a constant factor from rule.scale_factor.
