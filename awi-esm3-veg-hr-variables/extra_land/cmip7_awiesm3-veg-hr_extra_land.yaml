@@ -63,21 +63,6 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # LPJ-GUESS monthly loader + sum additional files (c3PftFrac)
-  - name: lpjg_monthly_sum_pipeline
-    steps:
-      - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly
-      - script://$PYCMOR_HOME/examples/custom_steps.py:sum_lpjguess_monthly_files
-      - pycmor.std_lib.units.handle_unit_conversion
-      - pycmor.std_lib.attributes.set_global
-      - pycmor.std_lib.attributes.set_variable
-      - pycmor.std_lib.attributes.set_coordinates
-      - pycmor.std_lib.dimensions.map_dimensions
-      - pycmor.core.caching.manual_checkpoint
-      - pycmor.std_lib.generic.trigger_compute
-      - pycmor.std_lib.generic.show_data
-      - pycmor.std_lib.files.save_dataset
-
   # Temporal differencing (dcw, dslw)
   - name: temporal_diff_pipeline
     steps:
@@ -155,19 +140,10 @@ rules:
   # Part 2: LPJ-GUESS PFT fractions (monthly, Jan..Dec format)
   # ============================================================
 
-  # c3PftFrac = grassFracC3 + treeFracBdlDcd + treeFracBdlEvg + treeFracNdlDcd + treeFracNdlEvg
-  - name: c3PftFrac
-    inputs:
-      - path: *ldp
-        pattern: "*/run1/grassFracC3_monthly.out"
-    compound_name: land.c3PftFrac.tavg-u-hxy-u.mon.GLB
-    model_variable: c3PftFrac
-    additional_files: "treeFracBdlDcd_monthly.out,treeFracBdlEvg_monthly.out,treeFracNdlDcd_monthly.out,treeFracNdlEvg_monthly.out"
-    additional_pattern_prefix: "*/run1/"
-    output_variable: c3PftFrac
-    source_units: "%"
-    pipelines:
-      - lpjg_monthly_sum_pipeline
+  # c3PftFrac is produced natively by LPJ-GUESS (see c3PftFrac_mon below
+  # which reads c3PftFrac_monthly.out directly). The old composite-sum rule
+  # — grassFracC3 + 4 tree-frac files via lpjg_monthly_sum_pipeline — was
+  # removed to avoid duplicate land.c3PftFrac.tavg-u-hxy-u.mon.GLB matches.
 
   # c4PftFrac = grassFracC4 (no C4 trees in LPJ-GUESS)
   - name: c4PftFrac
