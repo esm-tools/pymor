@@ -275,50 +275,42 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # Meridional overturning in density space from FESOM dMOC output
+  # Meridional overturning in density space (resolved + parameterized).
+  # Direct binning of std_dens_DIV (resolved) with std_dens_DIVbolus added
+  # if present in data_path. No tripyview dependency.
   - name: msftm_density_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
-      - pycmor.std_lib.generic.get_variable
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_msftm_density
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
-      - pycmor.std_lib.attributes.set_coordinates
-      - pycmor.std_lib.dimensions.map_dimensions
-      - pycmor.core.caching.manual_checkpoint
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # MOC due to parameterized mesoscale advection — depth-space (bolus_v → lat×depth)
+  # MOC due to parameterized mesoscale advection — depth-space.
+  # Reuses the calc_zmoc flow on FESOM's vertical bolus velocity bolus_w.
   - name: msftmmpa_depth_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
-      - pycmor.std_lib.generic.get_variable
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_msftmmpa_depth
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
-      - pycmor.std_lib.attributes.set_coordinates
-      - pycmor.std_lib.dimensions.map_dimensions
-      - pycmor.core.caching.manual_checkpoint
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # MOC due to parameterized mesoscale advection — density-space (bolus_v → lat×rho)
+  # MOC due to parameterized mesoscale advection — density-space.
+  # Direct binning of std_dens_DIVbolus.
   - name: msftmmpa_density_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
-      - pycmor.std_lib.generic.get_variable
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_msftmmpa_density
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
-      - pycmor.std_lib.attributes.set_coordinates
-      - pycmor.std_lib.dimensions.map_dimensions
-      - pycmor.core.caching.manual_checkpoint
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
@@ -340,7 +332,7 @@ inherit:
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd
   netcdf_compression_level: 3
-  netcdf_write_scheduler: threads
+  netcdf_write_scheduler: synchronous
   data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom
   source_id: AWI-ESM-3
   institution_id: AWI
@@ -929,49 +921,41 @@ rules:
   # Overturning streamfunctions (msftm, msftmmpa)
   # ============================================================
 
-  # msftm — meridional overturning in density space
-  # Input: dMOC from FESOM (ldiag_dMOC=.true.), already a (lat, rho) streamfunction field.
-  # Custom step maps dMOC bins to CMIP rho coordinate and computes cumulative streamfunction.
-  # DISABLED: pipeline function not implemented (compute_msftm[m(pa)]_*).
-  # - name: msftm_mon
-  # inputs:
-  # - path: *dp
-  # pattern: dMOC\.fesom\..*\.nc
-  # compound_name: ocean.msftm.tavg-rho-hyb-sea.mon.GLB
-  # model_variable: dMOC
-  # reference_density: 1025.0
-  # pipelines:
-  # - msftm_density_pipeline
+  # msftm — meridional overturning in density space (resolved + parameterized).
+  # Inputs are the std_dens_*.fesom.YYYY.nc family written by FESOM when
+  # ldiag_dMOC=.true.; the custom step opens them itself, so the rule's
+  # input pattern just needs to match one of the files for rule discovery.
+  - name: msftm_density
+    inputs:
+      - path: *dp
+        pattern: std_dens_DIV\.fesom\..*\.nc
+    compound_name: ocean.msftm.tavg-rho-hyb-sea.mon.GLB
+    model_variable: msftm
+    pipelines:
+      - msftm_density_pipeline
 
-  # msftmmpa — MOC due to parameterized mesoscale advection, depth-space
-  # Input: bolus_v (meridional bolus velocity from GM scheme, m/s).
-  # Requires fer_gm=.true. in namelist.io; zero field when GM is disabled.
-  # Custom step: integrate bolus_v zonally and cumulatively over depth → (lat, depth) streamfunction.
-  # DISABLED: pipeline function not implemented (compute_msftm[m(pa)]_*).
-  # - name: msftmmpa_depth_mon
-  # inputs:
-  # - path: *dp
-  # pattern: bolus_v\.fesom\..*\.nc
-  # compound_name: ocean.msftmmpa.tavg-ol-hyb-sea.mon.GLB
-  # model_variable: bolus_v
-  # reference_density: 1025.0
-  # lazy_write: true
-  # pipelines:
-  # - msftmmpa_depth_pipeline
+  # msftmmpa — MOC due to parameterized mesoscale advection, depth-space.
+  # Uses bolus_w (vertical bolus velocity at nodes) — reuses the calc_zmoc
+  # flow with bolus_w in place of w. Requires fer_gm=.true.
+  - name: msftmmpa_depth
+    inputs:
+      - path: *dp
+        pattern: bolus_w\.fesom\..*\.nc
+    compound_name: ocean.msftmmpa.tavg-ol-hyb-sea.mon.GLB
+    model_variable: msftmmpa
+    pipelines:
+      - msftmmpa_depth_pipeline
 
-  # msftmmpa — MOC due to parameterized mesoscale advection, density-space
-  # Same bolus_v input; custom step bins into density classes instead of depth layers.
-  # DISABLED: pipeline function not implemented (compute_msftm[m(pa)]_*).
-  # - name: msftmmpa_density_mon
-  # inputs:
-  # - path: *dp
-  # pattern: bolus_v\.fesom\..*\.nc
-  # compound_name: ocean.msftmmpa.tavg-rho-hyb-sea.mon.GLB
-  # model_variable: bolus_v
-  # reference_density: 1025.0
-  # lazy_write: true
-  # pipelines:
-  # - msftmmpa_density_pipeline
+  # msftmmpa — MOC due to parameterized mesoscale advection, density-space.
+  # Uses std_dens_DIVbolus from FESOM's online density-class binning.
+  - name: msftmmpa_density
+    inputs:
+      - path: *dp
+        pattern: std_dens_DIVbolus\.fesom\..*\.nc
+    compound_name: ocean.msftmmpa.tavg-rho-hyb-sea.mon.GLB
+    model_variable: msftmmpa
+    pipelines:
+      - msftmmpa_density_pipeline
 
   # ============================================================
   # HARD: 3D salt transport (sfx, sfy)
