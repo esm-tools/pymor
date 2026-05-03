@@ -362,11 +362,11 @@ rules:
   - name: hurs_day_max
     inputs:
       - path: *dp
-        pattern: atmos_1d_cmip7_2t_.*\.nc
+        pattern: atm_remapped_1d_cmip7_2t_.*\.nc
     compound_name: atmos.hurs.tmax-h2m-hxy-u.day.GLB
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atmos_1d_cmip7_2d_.*\.nc
+    second_input_pattern: atm_remapped_1d_cmip7_2d_.*\.nc
     second_variable: 2d
     pipelines:
       - hurs_pipeline
@@ -374,11 +374,11 @@ rules:
   - name: hurs_day_min
     inputs:
       - path: *dp
-        pattern: atmos_1d_cmip7_2t_.*\.nc
+        pattern: atm_remapped_1d_cmip7_2t_.*\.nc
     compound_name: atmos.hurs.tmin-h2m-hxy-u.day.GLB
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atmos_1d_cmip7_2d_.*\.nc
+    second_input_pattern: atm_remapped_1d_cmip7_2d_.*\.nc
     second_variable: 2d
     pipelines:
       - hurs_pipeline
@@ -397,7 +397,7 @@ rules:
   - name: ta_day_700hPa
     inputs:
       - path: *dp
-        pattern: atmos_1d_pl_cmip7_t_.*\.nc
+        pattern: atm_remapped_1d_pl_cmip7_t_.*\.nc
     compound_name: atmos.ta.tavg-700hPa-hxy-air.day.GLB
     model_variable: t
     target_plevel: 70000
@@ -407,7 +407,7 @@ rules:
   - name: wap_day_500hPa
     inputs:
       - path: *dp
-        pattern: atmos_1d_pl_cmip7_w_.*\.nc
+        pattern: atm_remapped_1d_pl_cmip7_w_.*\.nc
     compound_name: atmos.wap.tavg-500hPa-hxy-air.day.GLB
     model_variable: w
     target_plevel: 50000

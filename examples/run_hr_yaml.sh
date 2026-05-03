@@ -14,6 +14,12 @@
 # output subdir name as $2 (default: derived from the yaml's parent dir).
 # All 17 HR production yamls share the same compute-node topology
 # (TCo319, 256 GB, 16 cores, 4 h wall); only the yaml + output dir change.
+#
+# Resubmit isolation: by default each run goes to <OUTROOT>/<tier>/. If you
+# want per-attempt isolation (so re-running a tier doesn't mix output with
+# a prior failed attempt), set ATTEMPT_SUBDIR=1 and the run will write to
+# <OUTROOT>/<tier>/job_${SLURM_JOB_ID}/ instead. The latest-attempt
+# symlink is updated to point at the most recent attempt.
 
 set -euo pipefail
 
@@ -35,8 +41,16 @@ export OMP_NUM_THREADS=1
 
 # Use /scratch for outputs (fast). Setstripe 8 for parallel I/O if lfs exists.
 OUTROOT=${OUTROOT:-/scratch/a/a270092/pycmor_hr_out}
-OUTDIR=$OUTROOT/$OUTSUB
-mkdir -p "$OUTDIR"
+ATTEMPT_SUBDIR=${ATTEMPT_SUBDIR:-0}
+if [ "$ATTEMPT_SUBDIR" = "1" ] && [ -n "${SLURM_JOB_ID:-}" ]; then
+    OUTDIR=$OUTROOT/$OUTSUB/job_$SLURM_JOB_ID
+    LATEST_LINK=$OUTROOT/$OUTSUB/latest
+    mkdir -p "$OUTDIR"
+    ln -sfn "job_$SLURM_JOB_ID" "$LATEST_LINK"
+else
+    OUTDIR=$OUTROOT/$OUTSUB
+    mkdir -p "$OUTDIR"
+fi
 command -v lfs >/dev/null && lfs setstripe -c 8 "$OUTDIR" 2>/dev/null || true
 
 # Override yaml: use local dask cluster on this compute node (slurm dispatch
