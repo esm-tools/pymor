@@ -157,7 +157,7 @@ rules:
   - name: toz_mon
     inputs:
       - path: *dp
-        pattern: atmos_1m_tco3_.*\.nc
+        pattern: atm_remapped_1m_tco3_.*\.nc
     compound_name: aerosol.toz.tavg-u-hxy-u.mon.GLB
     model_variable: tco3
     scale_factor: 0.46697

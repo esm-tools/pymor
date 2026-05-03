@@ -120,7 +120,7 @@ rules:
   - name: areacellr
     inputs:
       - path: *dp
-        pattern: atm_remapped_1m_lsm_1m_.*\.nc
+        pattern: atm_remapped_1m_lsm_.*\.nc
     compound_name: land.areacellr.ti-u-hxy-u.fx.GLB
     model_variable: lsm
     pipelines:
@@ -130,7 +130,7 @@ rules:
   - name: orog_south30
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_orog_mon_land_.*\.nc
+        pattern: atmos_mon_land_orog_.*\.nc
     compound_name: land.orog.ti-u-hxy-u.fx.30S-90S
     model_variable: orog
     pipelines:
@@ -199,7 +199,7 @@ rules:
   - name: tas_1hr_south30
     inputs:
       - path: *dp
-        pattern: atmos_1h_sfc_2t_1h_sfc_.*\.nc
+        pattern: atmos_1h_sfc_2t_.*\.nc
     compound_name: land.tas.tavg-u-hxy-u.1hr.30S-90S
     model_variable: 2t
     pipelines:

@@ -254,7 +254,7 @@ rules:
   - name: hurs_3hr
     inputs:
       - path: *dp
-        pattern: atmos_3h_pt_2t_3h_pt_.*\.nc
+        pattern: atmos_3h_pt_2t_.*\.nc
     compound_name: atmos.hurs.tpt-h2m-hxy-u.3hr.GLB
     model_variable: 2t
     second_input_path: *dp
@@ -267,7 +267,7 @@ rules:
   - name: ts_3hr
     inputs:
       - path: *dp
-        pattern: atmos_1h_ts_ts_1h_ts_.*\.nc
+        pattern: atmos_1h_ts_ts_.*\.nc
     compound_name: atmos.ts.tpt-u-hxy-u.3hr.GLB
     model_variable: ts
 

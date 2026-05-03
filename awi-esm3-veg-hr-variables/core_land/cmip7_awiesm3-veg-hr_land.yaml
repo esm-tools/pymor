@@ -90,56 +90,56 @@ rules:
   - name: evspsbl
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_evspsbl_mon_land_.*\.nc
+        pattern: atmos_mon_land_evspsbl_.*\.nc
     compound_name: atmos.evspsbl.tavg-u-hxy-u.mon.GLB
     model_variable: evspsbl
 
   - name: mrro
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_mrro_mon_land_.*\.nc
+        pattern: atmos_mon_land_mrro_.*\.nc
     compound_name: land.mrro.tavg-u-hxy-lnd.mon.GLB
     model_variable: mrro
 
   - name: mrros
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_mrros_mon_land_.*\.nc
+        pattern: atmos_mon_land_mrros_.*\.nc
     compound_name: land.mrros.tavg-u-hxy-lnd.mon.GLB
     model_variable: mrros
 
   - name: snw
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_snw_mon_land_.*\.nc
+        pattern: atmos_mon_land_snw_.*\.nc
     compound_name: landIce.snw.tavg-u-hxy-lnd.mon.GLB
     model_variable: snw
 
   - name: orog
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_orog_mon_land_.*\.nc
+        pattern: atmos_mon_land_orog_.*\.nc
     compound_name: land.orog.ti-u-hxy-u.fx.GLB
     model_variable: orog
 
   - name: lai
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_lai_mon_land_.*\.nc
+        pattern: atmos_mon_land_lai_.*\.nc
     compound_name: land.lai.tavg-u-hxy-lnd.mon.GLB
     model_variable: lai
 
   - name: mrso
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_mrso_mon_land_.*\.nc
+        pattern: atmos_mon_land_mrso_.*\.nc
     compound_name: land.mrso.tavg-u-hxy-lnd.mon.GLB
     model_variable: mrso
 
   - name: mrsol
     inputs:
       - path: *dp
-        pattern: atmos_mon_land_mrsol_mon_land_.*\.nc
+        pattern: atmos_mon_land_mrsol_.*\.nc
     compound_name: land.mrsol.tavg-d10cm-hxy-lnd.mon.GLB
     model_variable: mrsol
 
@@ -148,7 +148,7 @@ rules:
   - name: snc
     inputs:
       - path: *dp
-        pattern: atm_remapped_1m_sd_1m_.*\.nc
+        pattern: atm_remapped_1m_sd_.*\.nc
     compound_name: landIce.snc.tavg-u-hxy-lnd.mon.GLB
     model_variable: sd
     pipelines:
@@ -161,7 +161,7 @@ rules:
   - name: areacella
     inputs:
       - path: *dp
-        pattern: atm_remapped_1m_lsm_1m_.*\.nc
+        pattern: atm_remapped_1m_lsm_.*\.nc
     compound_name: atmos.areacella.ti-u-hxy-u.fx.GLB
     model_variable: lsm
     pipelines:
@@ -170,7 +170,7 @@ rules:
   - name: slthick
     inputs:
       - path: *dp
-        pattern: atm_remapped_1m_lsm_1m_.*\.nc
+        pattern: atm_remapped_1m_lsm_.*\.nc
     compound_name: land.slthick.ti-sl-hxy-lnd.fx.GLB
     model_variable: lsm
     pipelines:
