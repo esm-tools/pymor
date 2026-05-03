@@ -220,7 +220,8 @@ rules:
     compound_name: land.c3PftFrac.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     source_units: '%'
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: c4PftFrac_mon
     inputs:
       - path: *ldp
@@ -228,7 +229,8 @@ rules:
     compound_name: land.c4PftFrac.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     source_units: '%'
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: cropFracC3_mon
     inputs:
       - path: *ldp
@@ -236,7 +238,8 @@ rules:
     compound_name: land.cropFracC3.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     source_units: '%'
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: cropFracC4_mon
     inputs:
       - path: *ldp
@@ -244,7 +247,8 @@ rules:
     compound_name: land.cropFracC4.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     source_units: '%'
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: pastureFracC3_mon
     inputs:
       - path: *ldp
@@ -252,7 +256,8 @@ rules:
     compound_name: land.pastureFracC3.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     source_units: '%'
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: pastureFracC4_mon
     inputs:
       - path: *ldp
@@ -260,4 +265,5 @@ rules:
     compound_name: land.pastureFracC4.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     source_units: '%'
-    pipeline: lpjg_monthly_pipeline
+    pipelines:
+      - lpjg_monthly_pipeline
