@@ -25,8 +25,14 @@ hoped.** Two facts that took me too long to converge on:
    it adds enough wall-time overhead to nullify the parallelism win.
 
 So: **default slab loop ON for 6hr/daily/monthly heavy rules; opt-out
-for 1hr-class fields**. Estimated throughput uplift on the full
-cap7_atm yaml: ~1.7× (most rules are not 1hr).
+for 1hr-class fields**. Realistic throughput uplift on the full
+cap7_atm yaml depends on output layout — see *Post-merge benches*
+section below: with current append-mode pycmor patch, **~1.5× faster
+on 6hr-class rules** (the slab loop alone wins about 1.87×, but
+single-file append eats some of it back; sequential pyconcat would
+eat more). For a full **1.87× per heavy rule**, the merge step needs
+to be pipelined with the next rule's processing — a Prefect-side
+change not yet attempted.
 
 ## Bench rule under test
 
@@ -114,11 +120,24 @@ use blosc_zstd-3 compression so ncrcat can't read them.
 | 24678232 | (cancelled before run) | – | – | – | – |
 | 24678427 | ncrcat-blosc (NCO 5.3.3 + HDF5_PLUGIN_PATH) | 0:00.35 | – | 0.15 GB | FAILED — same blosc issue |
 | 24678474 | pyconcat (Python netCDF4) | **3:30** | 2.1 GB | **31.9 GB** | OK — but cgroup peak high (forgot to fadvise inputs) |
-| 24678570 | pyconcat retry (+ fadvise inputs) | TBD | TBD | 4.61 GB at 1:33 | RUNNING when handoff written |
+| 24678570 | pyconcat retry (+ fadvise inputs) | **4:30** | **2.15 GB** | **19.76 GB** | OK — 38 % drop in cgroup peak from input fadvise; heap cost is small, but page cache during merge still ~17 GB above the ua-slab (v13) peak |
 
 **Production-viable post-merge tool**: pyconcat (Python netCDF4 streaming
-copy) at ~3:30 wall + ~5 GB peak (with input fadvise). NCO is blocked
-on missing BLOSC plugin in Levante's NCO builds.
+copy) at **4:30 wall + 2.15 GB heap + 19.76 GB cgroup peak** (with
+both-side fadvise). NCO is blocked on missing BLOSC plugin in Levante's
+NCO builds. The merge isn't free: **adding pyconcat per-rule erases
+some of the slab-loop wall savings**:
+
+| flow | wall (ua) | wall (uas) | peak heap |
+|---|---|---|---|
+| baseline (no slab) | 10:03 | 10:01 | 8.5 GB / 6.9 GB |
+| slab + append (current pycmor patch) | 13:11 (v14) | 18:25 (v15) | 0.51 GB / 0.62 GB |
+| slab + separate + pyconcat | 10:43 + 4:30 = **15:13** | 19:38 + 4:30 = **24:08** | 0.50 / 2.15 GB during merge |
+
+For ua-class, **append mode is actually the better all-in option**
+(13:11 vs 15:13). The separate-files variant only wins if pyconcat
+can be pipelined with the next rule's processing (Prefect-side change,
+not yet attempted).
 
 ## What I changed in the codebase
 
@@ -253,15 +272,24 @@ Acceptance: ≥48/52 rules complete, MaxRSS per worker ≤16 GB, total wall
 
 ### c. Build the post-merge step into pycmor
 
-Currently the slab loop emits N separate slab files (when used in
-`save_dataset` via my patch, it's append-mode single-file — but append
-adds ~30 % wall). Better:
-- Emit separate slab files during processing
-- After `save_dataset` returns, kick off pyconcat in a follow-up step
-  that the cmorizer schedules
-- Net wall = process time + 3:30 merge, but **the merge can run
-  concurrently with the next rule** (different I/O queue). Real wall
-  approaches process-only time.
+The pyconcat retry (24678570) measured **4:30 wall + 19.76 GB cgroup
+peak + 2.15 GB heap** for the merge. The merge is not free, and a
+naïve sequential post-merge per-rule actually loses to append mode on
+total wall:
+
+```
+ua: slab+separate (10:43) + pyconcat (4:30) = 15:13
+ua: slab+append (13:11)   = 13:11   ← current pycmor patch
+```
+
+For separate-files-with-merge to win, the merge must be **pipelined
+with the next rule's processing** so it overlaps. That requires a
+Prefect-side change (separate task queue for the merge step, scheduled
+on a different worker thread or subprocess so it can run concurrently
+with the next rule's load+compute).
+
+Until that's wired in, the **current append-mode default in
+`_save_one_with_slab_loop` is the better all-in option.**
 
 ### d. XIOS-side fix for 1hr-class rules
 
