@@ -414,17 +414,53 @@ def _fadvise_dontneed(path):
         logger.debug(f"  → fadvise(DONTNEED) failed for {path}: {exc}")
 
 
+def _is_time_like_dim(ds, dim):
+    """Detect time-like dims for the slab-loop unlimited_dims list.
+
+    Catches:
+      * dims whose name starts with ``time`` (CMIP/CF convention: time,
+        time1, time2, time_counter, ...)
+      * dims that have an associated coord variable with CF time
+        attributes (``standard_name == "time"`` or a units string of the
+        form ``"<unit> since <date>"``)
+
+    The naïve "size matches primary time axis" heuristic misses aux
+    time dims with different sizes (climatology bounds, sub-daily stats)
+    — those still need to be unlimited so the slab-loop's append-mode
+    writes don't choke on a size mismatch.
+    """
+    name = str(dim).lower()
+    if name == "time" or name.startswith("time"):
+        return True
+    coord = ds.coords.get(dim) if hasattr(ds, "coords") else None
+    if coord is None:
+        return False
+    sn = str(coord.attrs.get("standard_name", "")).lower()
+    if sn == "time":
+        return True
+    units = str(coord.attrs.get("units", "")).lower()
+    if " since " in units:
+        return True
+    return False
+
+
 def _save_one_with_slab_loop(ds, path, encoding, extra_kwargs, rule, slab_size):
     """Append-along-unlimited-time write of `ds` in slabs of `slab_size`
     timesteps each. Encoding (chunksizes / compression / quantize) is
     applied on the first slab; subsequent slabs append.
 
-    On the first slab, every dimension whose size matches the time axis
-    length is marked unlimited. CMIP datasets often carry auxiliary time
-    dimensions (``time1``, ``time2`` for sub-time statistics) at the same
-    size as ``time``; if any of those is left as a fixed dim on slab 0,
-    appending slab 1 fails with
-    ``ValueError("Unable to update size for existing dimension 'time1' (n != m)")``.
+    On the first slab, every dimension recognised as time-like (name
+    starts with ``time`` or coord has CF time attributes) is marked
+    unlimited. CMIP datasets often carry auxiliary time dimensions
+    (``time1``, ``time2`` for sub-time statistics, climatology bounds,
+    or differently-aggregated outputs); if any of those is left as a
+    fixed dim on slab 0, appending slab 1 fails with
+    ``ValueError("Unable to update size for existing dimension
+    'time1' (n != m)")``.
+
+    The heuristic catches both the same-size case (``time1`` = primary
+    time length) and the different-size case (``time1`` is a separate
+    aggregation axis with different length per slab).
 
     After each slab and at end of loop, calls posix_fadvise(POSIX_FADV_DONTNEED)
     on the output file (and on the rule's input files at end-of-loop) so
@@ -440,10 +476,11 @@ def _save_one_with_slab_loop(ds, path, encoding, extra_kwargs, rule, slab_size):
         return
     n = int(ds.sizes[time_label])
     n_slabs = (n + slab_size - 1) // slab_size
-    # Auxiliary time-like dims (time1, time2, ...) that share the time-axis
-    # length and would otherwise be written fixed-size on slab 0, breaking
-    # subsequent appends.
-    unlimited_dims = [d for d, s in ds.sizes.items() if int(s) == n]
+    # Mark every time-like dim unlimited so subsequent appends don't choke
+    # on size mismatch. See _is_time_like_dim docstring.
+    unlimited_dims = [d for d in ds.dims if _is_time_like_dim(ds, d)]
+    if time_label not in unlimited_dims:
+        unlimited_dims.append(time_label)
     logger.info(
         f"slab-loop save: {n} timesteps along '{time_label}', "
         f"slab_size={slab_size} → {n_slabs} slabs → {path} "
