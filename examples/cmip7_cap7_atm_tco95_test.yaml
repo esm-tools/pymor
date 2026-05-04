@@ -145,22 +145,6 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # geopotential (m2/s2) to geopotential height (m): divide by g
-  - name: geopotential_height_pipeline
-    steps:
-      - pycmor.core.gather_inputs.load_mfdataset
-      - pycmor.std_lib.generic.get_variable
-      - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
-      - pycmor.std_lib.units.handle_unit_conversion
-      - pycmor.std_lib.attributes.set_global
-      - pycmor.std_lib.attributes.set_variable
-      - pycmor.std_lib.attributes.set_coordinates
-      - pycmor.std_lib.dimensions.map_dimensions
-      - pycmor.core.caching.manual_checkpoint
-      - pycmor.std_lib.generic.trigger_compute
-      - pycmor.std_lib.generic.show_data
-      - pycmor.std_lib.files.save_dataset
-
   # extract single pressure level (ta@700, wap@500)
   - name: single_plevel_pipeline
     steps:
@@ -626,11 +610,7 @@ rules:
         pattern: atmos_6h_pl7h_zg_.*\.nc
     compound_name: atmos.zg.tpt-p7h-hxy-air.6hr.GLB
     model_variable: zg
-    scale_factor: 0.10197162129779283
-    scaled_units: "m"
     lazy_write: true
-    pipelines:
-      - geopotential_height_pipeline
 
 
   # ============================================================
