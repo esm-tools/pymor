@@ -293,8 +293,8 @@ inherit:
   netcdf_compression_codec: blosc_zstd
   netcdf_compression_level: 3
   netcdf_write_scheduler: synchronous
-  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom
-  oifs_data_path: &odp /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/oifs
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+  oifs_data_path: &odp /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/oifs
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
@@ -474,7 +474,7 @@ rules:
         pattern: uice\.fesom\..*\.nc
     compound_name: seaIce.sispeed.tavg-u-hxy-si.mon.GLB
     model_variable: uice
-    second_input_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/vice.fesom.*.nc
+    second_input_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/vice.fesom.*.nc
     second_variable: vice
     pipelines:
       - sispeed_pipeline
@@ -485,7 +485,7 @@ rules:
         pattern: uice\.fesom\..*\.nc
     compound_name: seaIce.sidmasstranx.tavg-u-hxy-u.mon.GLB
     model_variable: uice
-    mice_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/m_ice.fesom.*.nc
+    mice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/m_ice.fesom.*.nc
     pipelines:
       - ice_mass_transport_pipeline
 
@@ -495,7 +495,7 @@ rules:
         pattern: vice\.fesom\..*\.nc
     compound_name: seaIce.sidmasstrany.tavg-u-hxy-u.mon.GLB
     model_variable: vice
-    mice_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/m_ice.fesom.*.nc
+    mice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/m_ice.fesom.*.nc
     pipelines:
       - ice_mass_transport_pipeline
 
@@ -507,7 +507,7 @@ rules:
         pattern: sgm11\.fesom\..*\.nc
     compound_name: seaIce.sistressave.tpt-u-hxy-si.mon.GLB
     model_variable: sgm11
-    sgm22_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/sgm22\.fesom\..*\.nc
+    sgm22_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/sgm22\.fesom\..*\.nc
     pipelines:
       - sistressave_pipeline
 
@@ -517,8 +517,8 @@ rules:
         pattern: sgm11\.fesom\..*\.nc
     compound_name: seaIce.sistressmax.tpt-u-hxy-si.mon.GLB
     model_variable: sgm11
-    sgm22_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/sgm22\.fesom\..*\.nc
-    sgm12_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/sgm12\.fesom\..*\.nc
+    sgm22_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/sgm22\.fesom\..*\.nc
+    sgm12_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/sgm12\.fesom\..*\.nc
     pipelines:
       - sistressmax_pipeline
 
@@ -588,8 +588,8 @@ rules:
         pattern: ist\.fesom\..*\.nc
     compound_name: seaIce.siflcondtop.tavg-u-hxy-si.mon.GLB
     model_variable: ist
-    sss_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/sss.fesom.*.nc
-    hice_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/h_ice.fesom.*.nc
+    sss_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/sss.fesom.*.nc
+    hice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/h_ice.fesom.*.nc
     k_ice: 2.1656
     pipelines:
       - siflcondtop_pipeline
@@ -601,8 +601,8 @@ rules:
         pattern: h_ice\.fesom\..*\.nc
     compound_name: seaIce.sihc.tavg-u-hxy-sea.mon.GLB
     model_variable: h_ice
-    ist_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/ist.fesom.*.nc
-    sss_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/sss.fesom.*.nc
+    ist_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/ist.fesom.*.nc
+    sss_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/sss.fesom.*.nc
     rho_ice: 910.0
     c_ice: 2090.0
     L_f: 334000.0
@@ -638,7 +638,7 @@ rules:
         pattern: h_ice\.fesom\..*\.nc
     compound_name: seaIce.sifb.tavg-u-hxy-si.mon.GLB
     model_variable: h_ice
-    snow_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/h_snow.fesom.*.nc
+    snow_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/h_snow.fesom.*.nc
     snow_variable: h_snow
     rho_ice: 910.0
     rho_snow: 330.0
@@ -725,8 +725,8 @@ rules:
         pattern: apnd\.fesom\..*\.nc
     compound_name: seaIce.simpeffconc.tavg-u-hxy-si.mon.GLB
     model_variable: apnd
-    ipnd_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/ipnd.fesom.*.nc
-    hpnd_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/hpnd.fesom.*.nc
+    ipnd_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/ipnd.fesom.*.nc
+    hpnd_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/hpnd.fesom.*.nc
     pipelines:
       - simpeffconc_pipeline
 
@@ -850,7 +850,7 @@ rules:
     compound_name: seaIce.sbl.tavg-u-hxy-si.mon.GLB
     model_variable: sbl
     time_dimname: time_counter
-    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/a_ice.fesom.*.nc
+    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/a_ice.fesom.*.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -862,7 +862,7 @@ rules:
         pattern: atmos_1h_sfc_rsds_.*\.nc
     compound_name: seaIce.rsds.tavg-u-hxy-si.mon.GLB
     model_variable: rsds
-    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/a_ice.fesom.*.nc
+    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/a_ice.fesom.*.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -872,7 +872,7 @@ rules:
         pattern: atmos_1h_sfc_rsds_.*\.nc
     compound_name: seaIce.rsds.tavg-u-hxy-si.day.GLB
     model_variable: rsds
-    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/a_ice.fesom.*.nc
+    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/a_ice.fesom.*.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -884,7 +884,7 @@ rules:
         pattern: atmos_1h_sfc_rsus_.*\.nc
     compound_name: seaIce.rsus.tavg-u-hxy-si.mon.GLB
     model_variable: rsus
-    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/a_ice.fesom.*.nc
+    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/a_ice.fesom.*.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -894,7 +894,7 @@ rules:
         pattern: atmos_1h_sfc_rsus_.*\.nc
     compound_name: seaIce.rsus.tavg-u-hxy-si.day.GLB
     model_variable: rsus
-    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/a_ice.fesom.*.nc
+    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/a_ice.fesom.*.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -906,7 +906,7 @@ rules:
         pattern: atmos_1h_sfc_rlds_.*\.nc
     compound_name: seaIce.rlds.tavg-u-hxy-si.mon.GLB
     model_variable: rlds
-    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/a_ice.fesom.*.nc
+    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/a_ice.fesom.*.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -918,7 +918,7 @@ rules:
         pattern: atmos_1h_sfc_rlus_.*\.nc
     compound_name: seaIce.rlus.tavg-u-hxy-si.mon.GLB
     model_variable: rlus
-    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/a_ice.fesom.*.nc
+    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/a_ice.fesom.*.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -932,7 +932,7 @@ rules:
     compound_name: seaIce.sifllattop.tavg-u-hxy-si.mon.GLB
     model_variable: slhf
     time_dimname: time_counter
-    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/a_ice.fesom.*.nc
+    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/a_ice.fesom.*.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -946,7 +946,7 @@ rules:
     compound_name: seaIce.siflsenstop.tavg-u-hxy-si.mon.GLB
     model_variable: sshf
     time_dimname: time_counter
-    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/a_ice.fesom.*.nc
+    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/a_ice.fesom.*.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -966,7 +966,7 @@ rules:
   - name: siconca_day
     inputs:
       - path: *odp
-        pattern: atm_remapped_1d_cmip7_ci_.*\.nc
+        pattern: atm_remapped_1d_ci_.*\.nc
     compound_name: seaIce.siconca.tavg-u-hxy-u.day.GLB
     model_variable: ci
     grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
@@ -985,7 +985,7 @@ rules:
         pattern: uice\.fesom\..*\.nc
     compound_name: seaIce.sispeed.tavg-u-hxy-si.day.GLB
     model_variable: uice
-    second_input_file: /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/fesom/vice.fesom.*.nc
+    second_input_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/vice.fesom.*.nc
     second_variable: vice
     pipelines:
       - sispeed_pipeline

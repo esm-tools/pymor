@@ -138,7 +138,7 @@ inherit:
   netcdf_compression_codec: blosc_zstd
   netcdf_compression_level: 3
   netcdf_write_scheduler: synchronous
-  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/oifs
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/oifs
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
@@ -542,46 +542,46 @@ rules:
   - name: tas_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_cmip7_2t_.*\.nc
+        pattern: atm_remapped_1d_2t_.*\.nc
     compound_name: atmos.tas.tavg-h2m-hxy-u.day.GLB
     model_variable: 2t
 
   - name: psl_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_cmip7_msl_.*\.nc
+        pattern: atm_remapped_1d_msl_.*\.nc
     compound_name: atmos.psl.tavg-u-hxy-u.day.GLB
     model_variable: msl
 
   - name: ps_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_cmip7_sp_.*\.nc
+        pattern: atm_remapped_1d_sp_.*\.nc
     compound_name: atmos.ps.tavg-u-hxy-u.day.GLB
     model_variable: sp
 
   - name: uas_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_cmip7_10u_.*\.nc
+        pattern: atm_remapped_1d_10u_.*\.nc
     compound_name: atmos.uas.tavg-h10m-hxy-u.day.GLB
     model_variable: 10u
 
   - name: vas_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_cmip7_10v_.*\.nc
+        pattern: atm_remapped_1d_10v_.*\.nc
     compound_name: atmos.vas.tavg-h10m-hxy-u.day.GLB
     model_variable: 10v
 
   - name: sfcWind_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_cmip7_10u_.*\.nc
+        pattern: atm_remapped_1d_10u_.*\.nc
     compound_name: atmos.sfcWind.tavg-h10m-hxy-u.day.GLB
     model_variable: 10u
     second_input_path: *dp
-    second_input_pattern: atm_remapped_1d_cmip7_10v_.*\.nc
+    second_input_pattern: atm_remapped_1d_10v_.*\.nc
     second_variable: 10v
     pipelines:
       - sfcwind_pipeline
@@ -589,11 +589,11 @@ rules:
   - name: hurs_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_cmip7_2t_.*\.nc
+        pattern: atm_remapped_1d_2t_.*\.nc
     compound_name: atmos.hurs.tavg-h2m-hxy-u.day.GLB
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atm_remapped_1d_cmip7_2d_.*\.nc
+    second_input_pattern: atm_remapped_1d_2d_.*\.nc
     second_variable: 2d
     pipelines:
       - hurs_pipeline
@@ -601,11 +601,11 @@ rules:
   - name: huss_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_cmip7_2d_.*\.nc
+        pattern: atm_remapped_1d_2d_.*\.nc
     compound_name: atmos.huss.tavg-h2m-hxy-u.day.GLB
     model_variable: 2d
     second_input_path: *dp
-    second_input_pattern: atm_remapped_1d_cmip7_sp_.*\.nc
+    second_input_pattern: atm_remapped_1d_sp_.*\.nc
     second_variable: sp
     pipelines:
       - huss_pipeline
@@ -617,7 +617,7 @@ rules:
   - name: ta_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_pl_cmip7_t_.*\.nc
+        pattern: atm_remapped_1d_pl_t_.*\.nc
     compound_name: atmos.ta.tavg-p19-hxy-air.day.GLB
     model_variable: t
     lazy_write: true
@@ -625,7 +625,7 @@ rules:
   - name: ua_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_pl_cmip7_u_.*\.nc
+        pattern: atm_remapped_1d_pl_u_.*\.nc
     compound_name: atmos.ua.tavg-p19-hxy-air.day.GLB
     model_variable: u
     lazy_write: true
@@ -633,7 +633,7 @@ rules:
   - name: va_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_pl_cmip7_v_.*\.nc
+        pattern: atm_remapped_1d_pl_v_.*\.nc
     compound_name: atmos.va.tavg-p19-hxy-air.day.GLB
     model_variable: v
     lazy_write: true
@@ -641,7 +641,7 @@ rules:
   - name: hus_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_pl_cmip7_q_.*\.nc
+        pattern: atm_remapped_1d_pl_q_.*\.nc
     compound_name: atmos.hus.tavg-p19-hxy-u.day.GLB
     model_variable: q
     lazy_write: true
@@ -649,7 +649,7 @@ rules:
   - name: wap_day
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_pl_cmip7_w_.*\.nc
+        pattern: atm_remapped_1d_pl_w_.*\.nc
     compound_name: atmos.wap.tavg-p19-hxy-u.day.GLB
     model_variable: w
     lazy_write: true

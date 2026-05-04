@@ -184,7 +184,7 @@ inherit:
   netcdf_compression_codec: blosc_zstd
   netcdf_compression_level: 3
   netcdf_write_scheduler: synchronous
-  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/HR_test_01/outdata/oifs
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/oifs
   source_id: AWI-ESM-3
   institution_id: AWI
   experiment_id: picontrol
@@ -232,14 +232,14 @@ rules:
   - name: rluscs_day
     inputs:
       - path: *dp
-        pattern: atmos_day_cap7_rluscs_.*\.nc
+        pattern: atmos_day_rluscs_.*\.nc
     compound_name: atmos.rluscs.tavg-u-hxy-u.day.GLB
     model_variable: rluscs
 
   - name: rsuscs_day
     inputs:
       - path: *dp
-        pattern: atmos_day_cap7_rsuscs_.*\.nc
+        pattern: atmos_day_rsuscs_.*\.nc
     compound_name: atmos.rsuscs.tavg-u-hxy-u.day.GLB
     model_variable: rsuscs
 
@@ -253,56 +253,56 @@ rules:
   - name: rldscs_day
     inputs:
       - path: *dp
-        pattern: atmos_day_cap7_rldscs_.*\.nc
+        pattern: atmos_day_rldscs_.*\.nc
     compound_name: atmos.rldscs.tavg-u-hxy-u.day.GLB
     model_variable: rldscs
 
   - name: rsdscs_day
     inputs:
       - path: *dp
-        pattern: atmos_day_cap7_rsdscs_.*\.nc
+        pattern: atmos_day_rsdscs_.*\.nc
     compound_name: atmos.rsdscs.tavg-u-hxy-u.day.GLB
     model_variable: rsdscs
 
   - name: rlut_day
     inputs:
       - path: *dp
-        pattern: atmos_day_cap7_rlut_.*\.nc
+        pattern: atmos_day_rlut_.*\.nc
     compound_name: atmos.rlut.tavg-u-hxy-u.day.GLB
     model_variable: rlut
 
   - name: rlutcs_day
     inputs:
       - path: *dp
-        pattern: atmos_day_cap7_rlutcs_.*\.nc
+        pattern: atmos_day_rlutcs_.*\.nc
     compound_name: atmos.rlutcs.tavg-u-hxy-u.day.GLB
     model_variable: rlutcs
 
   - name: rsdt_day
     inputs:
       - path: *dp
-        pattern: atmos_day_cap7_rsdt_.*\.nc
+        pattern: atmos_day_rsdt_.*\.nc
     compound_name: atmos.rsdt.tavg-u-hxy-u.day.GLB
     model_variable: rsdt
 
   - name: rsut_day
     inputs:
       - path: *dp
-        pattern: atmos_day_cap7_rsut_.*\.nc
+        pattern: atmos_day_rsut_.*\.nc
     compound_name: atmos.rsut.tavg-u-hxy-u.day.GLB
     model_variable: rsut
 
   - name: rsutcs_day
     inputs:
       - path: *dp
-        pattern: atmos_day_cap7_rsutcs_.*\.nc
+        pattern: atmos_day_rsutcs_.*\.nc
     compound_name: atmos.rsutcs.tavg-u-hxy-u.day.GLB
     model_variable: rsutcs
 
   - name: prc_day
     inputs:
       - path: *dp
-        pattern: atmos_day_cap7_prc_.*\.nc
+        pattern: atmos_day_prc_.*\.nc
     compound_name: atmos.prc.tavg-u-hxy-u.day.GLB
     model_variable: prc
 
@@ -316,21 +316,21 @@ rules:
   - name: prw_day
     inputs:
       - path: *dp
-        pattern: atmos_day_cap7_prw_.*\.nc
+        pattern: atmos_day_prw_.*\.nc
     compound_name: atmos.prw.tavg-u-hxy-u.day.GLB
     model_variable: prw
 
   - name: clivi_day
     inputs:
       - path: *dp
-        pattern: atmos_day_cap7_clivi_.*\.nc
+        pattern: atmos_day_clivi_.*\.nc
     compound_name: atmos.clivi.tavg-u-hxy-u.day.GLB
     model_variable: clivi
 
   - name: snw_day
     inputs:
       - path: *dp
-        pattern: atmos_day_cap7_snw_.*\.nc
+        pattern: atmos_day_snw_.*\.nc
     compound_name: landIce.snw.tavg-u-hxy-lnd.day.GLB
     model_variable: snw
 
@@ -341,11 +341,11 @@ rules:
   - name: clwvi_day
     inputs:
       - path: *dp
-        pattern: atmos_day_cap7_tclw_.*\.nc
+        pattern: atmos_day_tclw_.*\.nc
     compound_name: atmos.clwvi.tavg-u-hxy-u.day.GLB
     model_variable: tclw
     second_input_path: *dp
-    second_input_pattern: atmos_day_cap7_clivi_.*\.nc
+    second_input_pattern: atmos_day_clivi_.*\.nc
     second_variable: clivi
     pipelines:
       - clwvi_pipeline
@@ -362,11 +362,11 @@ rules:
   - name: hurs_day_max
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_cmip7_2t_.*\.nc
+        pattern: atm_remapped_1d_2t_.*\.nc
     compound_name: atmos.hurs.tmax-h2m-hxy-u.day.GLB
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atm_remapped_1d_cmip7_2d_.*\.nc
+    second_input_pattern: atm_remapped_1d_2d_.*\.nc
     second_variable: 2d
     pipelines:
       - hurs_pipeline
@@ -374,11 +374,11 @@ rules:
   - name: hurs_day_min
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_cmip7_2t_.*\.nc
+        pattern: atm_remapped_1d_2t_.*\.nc
     compound_name: atmos.hurs.tmin-h2m-hxy-u.day.GLB
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atm_remapped_1d_cmip7_2d_.*\.nc
+    second_input_pattern: atm_remapped_1d_2d_.*\.nc
     second_variable: 2d
     pipelines:
       - hurs_pipeline
@@ -386,7 +386,7 @@ rules:
   - name: sfcWind_day_max
     inputs:
       - path: *dp
-        pattern: atmos_day_cap7_minmax_sfcWindmax_.*\.nc
+        pattern: atmos_day_minmax_sfcWindmax_.*\.nc
     compound_name: atmos.sfcWind.tmax-h10m-hxy-u.day.GLB
     model_variable: sfcWindmax
 
@@ -397,7 +397,7 @@ rules:
   - name: ta_day_700hPa
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_pl_cmip7_t_.*\.nc
+        pattern: atm_remapped_1d_pl_t_.*\.nc
     compound_name: atmos.ta.tavg-700hPa-hxy-air.day.GLB
     model_variable: t
     target_plevel: 70000
@@ -407,7 +407,7 @@ rules:
   - name: wap_day_500hPa
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_pl_cmip7_w_.*\.nc
+        pattern: atm_remapped_1d_pl_w_.*\.nc
     compound_name: atmos.wap.tavg-500hPa-hxy-air.day.GLB
     model_variable: w
     target_plevel: 50000
@@ -660,7 +660,7 @@ rules:
   - name: ta_mon_ml
     inputs:
       - path: *dp
-        pattern: atmos_mon_ml_cap7_ta_.*\.nc
+        pattern: atmos_mon_ml_ta_.*\.nc
     compound_name: atmos.ta.tavg-al-hxy-u.mon.GLB
     model_variable: ta
     lazy_write: true
@@ -668,7 +668,7 @@ rules:
   - name: hus_mon_ml
     inputs:
       - path: *dp
-        pattern: atmos_mon_ml_cap7_hus_.*\.nc
+        pattern: atmos_mon_ml_hus_.*\.nc
     compound_name: atmos.hus.tavg-al-hxy-u.mon.GLB
     model_variable: hus
     lazy_write: true
@@ -678,7 +678,7 @@ rules:
   - name: hur_mon_ml
     inputs:
       - path: *dp
-        pattern: atmos_mon_ml_cap7_hur_.*\.nc
+        pattern: atmos_mon_ml_hur_.*\.nc
     compound_name: atmos.hur.tavg-al-hxy-u.mon.GLB
     model_variable: hur
     lazy_write: true
