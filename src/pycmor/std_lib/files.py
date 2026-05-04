@@ -297,6 +297,146 @@ def _is_dask_backed(ds):
     return any(v.chunks is not None for v in ds.data_vars.values())
 
 
+def _rule_get(rule, key, default=None):
+    if hasattr(rule, "get"):
+        v = rule.get(key)
+        if v is not None:
+            return v
+    return getattr(rule, key, default)
+
+
+def _resolve_slab_size(ds, rule):
+    """Decide a per-output slab_size (along the time axis) for streaming
+    write. Returns None when slab-loop should be skipped (small dataset
+    or rule opts out).
+
+    Resolution order:
+      1. ``rule.slab_size`` — explicit override (int).
+      2. ``rule.slab_target_bytes`` — target raw bytes per slab; default 1 GB.
+         slab_size = floor(target / bytes_per_step), clamped to [1, n_steps].
+      3. Skip slab loop if ds.nbytes <= 2 × target (small enough to fit
+         without slabbing).
+
+    Slab-loop is also skipped when the dataset has no time axis or only
+    one timestep. ``rule.slab_size: 0`` or ``False`` opts out explicitly.
+    """
+    explicit = _rule_get(rule, "slab_size")
+    if explicit is False or (isinstance(explicit, int) and explicit <= 0):
+        return None
+    time_label = get_time_label(ds) if isinstance(ds, xr.Dataset) else None
+    if not time_label or ds.sizes.get(time_label, 1) <= 1:
+        return None
+    n_steps = int(ds.sizes[time_label])
+    if explicit:
+        try:
+            return max(1, min(int(explicit), n_steps))
+        except (TypeError, ValueError):
+            return None
+    target = int(_rule_get(rule, "slab_target_bytes", 1_000_000_000) or 0)
+    if target <= 0:
+        return None
+    if int(ds.nbytes) <= 2 * target:
+        return None
+    bytes_per_step = max(1, int(ds.nbytes) // n_steps)
+    slab = max(1, target // bytes_per_step)
+    return min(slab, n_steps)
+
+
+def _save_one_with_slab_loop(ds, path, encoding, extra_kwargs, rule, slab_size):
+    """Append-along-unlimited-time write of `ds` in slabs of `slab_size`
+    timesteps each. Encoding (chunksizes / compression / quantize) is
+    applied on the first slab; subsequent slabs append.
+
+    Calls posix_fadvise(POSIX_FADV_DONTNEED) on the output file after each
+    slab so the kernel reclaims page cache instead of letting it grow to
+    the full file size.
+    """
+    import gc
+    import os as _os
+
+    time_label = get_time_label(ds)
+    if not time_label or ds.sizes.get(time_label, 1) <= 1 or slab_size <= 0:
+        # No-op safety net: just write once.
+        ds.to_netcdf(path, mode="w", format="NETCDF4", encoding=encoding if encoding else None, **extra_kwargs)
+        return
+    n = int(ds.sizes[time_label])
+    n_slabs = (n + slab_size - 1) // slab_size
+    logger.info(f"slab-loop save: {n} timesteps along '{time_label}', slab_size={slab_size} → {n_slabs} slabs → {path}")
+    if Path(path).exists():
+        Path(path).unlink()
+    for i in range(n_slabs):
+        s, e = i * slab_size, min((i + 1) * slab_size, n)
+        slab = ds.isel({time_label: slice(s, e)})
+        if i == 0:
+            kwargs = dict(extra_kwargs)
+            kwargs["unlimited_dims"] = [time_label]
+            slab.to_netcdf(path, mode="w", format="NETCDF4", encoding=encoding if encoding else None, **kwargs)
+        else:
+            slab.to_netcdf(path, mode="a")
+        try:
+            fd = _os.open(str(path), _os.O_RDONLY)
+            try:
+                _os.posix_fadvise(fd, 0, 0, _os.POSIX_FADV_DONTNEED)
+            finally:
+                _os.close(fd)
+        except Exception as exc:
+            logger.debug(f"  → fadvise(DONTNEED) failed for {path}: {exc}")
+        del slab
+        gc.collect()
+
+
+def _save_loop_or_mf(datasets, paths, encoding, extra_kwargs, rule):
+    """Save list of (dataset, path) pairs.
+
+    When ``rule.slab_size`` is set (or auto-derived from
+    ``rule.slab_target_bytes``, default 1 GB), each dataset is written
+    via a slab-loop with explicit free + posix_fadvise(DONTNEED) between
+    slabs. Caps cgroup peak at ~slab-size of input page cache + ~1 GB
+    output buffer, which lets more rules run concurrently per worker
+    node — see bench_hr_ua_6hr_results.md for the data behind this.
+
+    When ``rule.save_per_file`` is truthy (legacy bench knob), loops
+    `to_netcdf` per dataset (one full dataset per file, no slab split)
+    and drops references between iterations.
+
+    When ``rule.save_engine`` is set, threads it through as the xarray
+    backend engine (e.g. ``h5netcdf``).
+
+    Default (none of the above): a single ``xr.save_mfdataset`` call,
+    matching pre-slab behaviour for small datasets.
+    """
+    save_per_file = bool(_rule_get(rule, "save_per_file", False))
+    engine = _rule_get(rule, "save_engine")
+    base_kwargs = dict(extra_kwargs)
+    if engine:
+        base_kwargs["engine"] = engine
+    enc = encoding if encoding else None
+    # Decide whether to engage the slab loop on a per-dataset basis. Each
+    # dataset in the list is its own output file, so slab decisions are
+    # independent (one rule may produce both a small fx file and a heavy
+    # time-resolved file via different paths through this helper).
+    use_slab = []
+    for d in datasets:
+        slab_size = _resolve_slab_size(d, rule)
+        use_slab.append(slab_size)
+
+    if any(s is not None for s in use_slab):
+        for i, (d, p, slab_size) in enumerate(zip(datasets, paths, use_slab)):
+            if slab_size is not None:
+                _save_one_with_slab_loop(d, p, enc, base_kwargs, rule, slab_size)
+            else:
+                d.to_netcdf(p, mode="w", format="NETCDF4", encoding=enc, **base_kwargs)
+            datasets[i] = None
+        return
+
+    if save_per_file:
+        for i, (ds, p) in enumerate(zip(datasets, paths)):
+            ds.to_netcdf(p, mode="w", format="NETCDF4", encoding=enc, **base_kwargs)
+            datasets[i] = None
+        return
+    xr.save_mfdataset(datasets, paths, encoding=enc, **base_kwargs)
+
+
 def _get_write_scheduler(rule):
     """Return the dask scheduler to use around xr.save_mfdataset.
 
@@ -775,19 +915,9 @@ def _save_dataset_with_native_timespan(
     _write_sched = _get_write_scheduler(rule)
     if is_dask:
         with dask.config.set(scheduler=_write_sched):
-            xr.save_mfdataset(
-                datasets,
-                paths,
-                encoding=chunk_encoding if chunk_encoding else None,
-                **extra_kwargs,
-            )
+            _save_loop_or_mf(datasets, paths, chunk_encoding, extra_kwargs, rule)
     else:
-        xr.save_mfdataset(
-            datasets,
-            paths,
-            encoding=chunk_encoding if chunk_encoding else None,
-            **extra_kwargs,
-        )
+        _save_loop_or_mf(datasets, paths, chunk_encoding, extra_kwargs, rule)
     return da
 
 
@@ -1176,17 +1306,7 @@ def save_dataset(da: xr.DataArray, rule):
             if is_dask:
                 _write_sched = _get_write_scheduler(rule)
                 with dask.config.set(scheduler=_write_sched):
-                    xr.save_mfdataset(
-                        datasets,
-                        paths,
-                        encoding=final_encoding,
-                        **extra_kwargs,
-                    )
+                    _save_loop_or_mf(datasets, paths, final_encoding, extra_kwargs, rule)
             else:
-                xr.save_mfdataset(
-                    datasets,
-                    paths,
-                    encoding=final_encoding,
-                    **extra_kwargs,
-                )
+                _save_loop_or_mf(datasets, paths, final_encoding, extra_kwargs, rule)
             return da
