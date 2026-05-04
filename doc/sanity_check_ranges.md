@@ -343,7 +343,7 @@ output files, so they can be used as an independent sanity check.
 | volo | ocean | m3 | 1.33e18 | 1.335e18 | 1.34e18 | Global ocean volume ~1.335e18 m3 |
 | vos | ocean | m s-1 | -2 | ~0 | 2.5 | OSCAR surface currents |
 | vsf | ocean | kg m-2 s-1 | -1e-4 | ~0 | 1e-4 | Virtual salt flux |
-| vsfcorr | ocean | kg m-2 s-1 | -1e-4 | ~0 | 1e-4 | Salt flux correction |
+| vsfcorr | ocean | kg m-2 s-1 | -1e-4 | ~0 | 1e-4 | Salt flux correction; exactly 0 in coupled runs (no SSS restoring) |
 | vsfsit | ocean | kg m-2 s-1 | -1e-4 | ~0 | 1e-4 | Ice-related virtual salt flux |
 | wap | atmos | Pa s-1 | -5 | ~0 | 5 | ERA5 omega |
 | wetlandCH4 | land | kg m-2 s-1 | -1e-9 | ~5e-12 | ~5e-9 | Net wetland CH4 ~150-200 TgCH4/yr global; Saunois 2020 |
