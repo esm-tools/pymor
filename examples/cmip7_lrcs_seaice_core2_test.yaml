@@ -908,12 +908,14 @@ rules:
   # Virtual salt flux into sea water from ice thermodynamics
 
 
+  # integrate_over_hemisphere returns sum(a_ice * cell_area) in m2 — pint converts to "1e6 km2".
   - name: siarea_north_day
     inputs:
       - path: *dp
         pattern: a_ice\.fesom\..*\.nc
     compound_name: seaIce.siarea.tavg-u-hm-u.day.NH
     model_variable: a_ice
+    model_unit: "m2"
     hemisphere: "N"
     pipelines:
       - hemisphere_integral_pipeline
@@ -925,6 +927,7 @@ rules:
         pattern: a_ice\.fesom\..*\.nc
     compound_name: seaIce.siarea.tavg-u-hm-u.day.SH
     model_variable: a_ice
+    model_unit: "m2"
     hemisphere: "S"
     pipelines:
       - hemisphere_integral_pipeline
@@ -974,12 +977,14 @@ rules:
   # Ocean drag coefficient (constant from namelist.ice: cd_oce_ice=0.0055)
 
 
+  # integrate_over_hemisphere returns sum(1{a_ice>0.15} * cell_area) in m2 — pint converts to "1e6 km2".
   - name: siextent_north_day
     inputs:
       - path: *dp
         pattern: a_ice\.fesom\..*\.nc
     compound_name: seaIce.siextent.tavg-u-hm-u.day.NH
     model_variable: a_ice
+    model_unit: "m2"
     hemisphere: "N"
     extent_threshold: 0.15
     pipelines:
@@ -992,6 +997,7 @@ rules:
         pattern: a_ice\.fesom\..*\.nc
     compound_name: seaIce.siextent.tavg-u-hm-u.day.SH
     model_variable: a_ice
+    model_unit: "m2"
     hemisphere: "S"
     extent_threshold: 0.15
     pipelines:

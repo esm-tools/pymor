@@ -189,6 +189,28 @@ def compute_areacello(data, rule):
     return result
 
 
+def _layer_thickness_from_bnds(bnds):
+    """
+    Compute per-level layer thickness from a 1D depth_bnds array of interfaces.
+
+    Robust to malformed mesh files where the trailing interface is corrupt
+    (observed on FESOM2 DARS mesh.nc: last depth_bnds entry was a stray 70 m
+    that produced a -6180 m diff). Replaces non-positive diffs with NaN so
+    sanity checks treat them as missing.
+    """
+    bnds = np.asarray(bnds, dtype=float)
+    thickness = np.diff(bnds)
+    bad = ~(thickness > 0)
+    if bad.any():
+        n_bad = int(bad.sum())
+        logger.warning(
+            f"Mesh depth_bnds produced {n_bad} non-positive layer thickness(es); "
+            f"setting to NaN. Likely a corrupt trailing interface in mesh.nc."
+        )
+        thickness = np.where(bad, np.nan, thickness)
+    return thickness
+
+
 def compute_thkcello_fx(data, rule):
     """
     Compute static ocean layer thickness from mesh depth bounds.
@@ -200,9 +222,7 @@ def compute_thkcello_fx(data, rule):
     Output: xr.DataArray (1D, per level)
     """
     if "depth_bnds" in data:
-        bnds = data["depth_bnds"].values
-        # depth_bnds has shape (nlevels+1,) — interfaces between layers
-        thickness = np.diff(bnds)
+        thickness = _layer_thickness_from_bnds(data["depth_bnds"].values)
         result = xr.DataArray(
             thickness,
             dims=["lev"],
@@ -226,8 +246,7 @@ def compute_masscello_fx(data, rule):
     """
     rho_0 = float(rule.get("reference_density", 1025.0))
     if "depth_bnds" in data:
-        bnds = data["depth_bnds"].values
-        thickness = np.diff(bnds)
+        thickness = _layer_thickness_from_bnds(data["depth_bnds"].values)
         mass = rho_0 * thickness
         result = xr.DataArray(
             mass,
@@ -1122,18 +1141,24 @@ def compute_surface_pressure(data, rule):
     """
     Compute sea water pressure at sea surface from SSH.
 
-    pso = rho_0 * g * ssh  [Pa]
+    pso = p_atm + rho_0 * g * ssh  [Pa]
 
-    For a Boussinesq model, surface pressure is the weight of the
-    water column above the geoid approximated by rho_0 * g * ssh.
+    CMIP `pso` is absolute sea-water pressure at the surface, which equals
+    atmospheric loading plus the hydrostatic head from SSH. Without an
+    explicit p_atm field, we add a constant reference atmospheric pressure
+    (101325 Pa = standard atmosphere) so the output is centred near 1 atm
+    rather than around zero.
 
     Rule attributes (optional):
       - reference_density: float (default 1025.0 kg/m3)
       - gravity: float (default 9.80665 m/s2)
+      - reference_atmospheric_pressure: float (default 101325.0 Pa); set
+        to 0 to recover the legacy anomaly behaviour.
     """
     rho_0 = float(rule.get("reference_density", 1025.0))
     g = float(rule.get("gravity", 9.80665))
-    result = rho_0 * g * data
+    p_atm = float(rule.get("reference_atmospheric_pressure", 101325.0))
+    result = p_atm + rho_0 * g * data
     result.attrs = data.attrs.copy()
     result.attrs["units"] = "Pa"
     result.name = data.name

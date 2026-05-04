@@ -130,6 +130,23 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # LPJ-GUESS monthly Lut loader with scale step (water-equivalent → m, etc.)
+  # Pint cannot convert kg/m2 (water mass per area) to m without a hydrostatic
+  # context; use scale_by_constant 0.001 (mm → m) before the unit relabel.
+  - name: lpjg_monthly_lut_scaled_pipeline
+    steps:
+      - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly_lut
+      - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
 inherit:
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd
@@ -730,9 +747,13 @@ rules:
         pattern: "*/run1/sweLut_monthly.out"
     compound_name: land.sweLut.tavg-u-hxy-multi.mon.GLB
     model_variable: psl
+    # LPJ-GUESS sweLut .out is water-equivalent in mm (== kg m-2). CMIP7 unit is m.
+    # No pint context exists for water-equivalent; pre-scale 1/1000 then relabel as m.
+    scale_factor: 0.001
+    scaled_units: "m"
     source_units: m
     pipelines:
-      - lpjg_monthly_lut_pipeline
+      - lpjg_monthly_lut_scaled_pipeline
   - name: vegHeight_mon
     inputs:
       - path: *ldp
