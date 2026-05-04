@@ -18,7 +18,7 @@ output files, so they can be used as an independent sanity check.
 
 | Variable | Realm | Units | Expected Min | Expected Mean | Expected Max | Source/Rationale |
 |---|---|---|---|---|---|---|
-| absscint | ocean | kg m-2 | 0 | ~140 | ~400 | Depth-integrated salinity: ~35 g/kg * 1035 kg/m3 * depth; WOA climatology |
+| absscint | ocean | kg m-2 | 0 | ~1.4e5 | ~1.6e5 | rho*S*H ≈ 1025*35e-3*4000m; Locarnini 2018 (WOA18) |
 | areacella | atmos | m2 | ~1e8 | ~5e10 | ~6e10 | Typical 1deg grid cell area; Earth surface 5.1e14 m2 / Ngrid |
 | areacello | ocean | m2 | ~1e7 | ~4e10 | ~6e10 | Ocean grid cell; FESOM unstructured varies with resolution |
 | areacellr | land | m2 | ~1e7 | ~5e10 | ~6e10 | River grid cell, order 1deg |
@@ -66,49 +66,49 @@ output files, so they can be used as an independent sanity check.
 | difvho | ocean | m2 s-1 | ~1e-6 | ~1e-4 | ~1e-2 | Vertical diffusivity; Munk/Ledwell |
 | difvso | ocean | m2 s-1 | ~1e-6 | ~1e-4 | ~1e-2 | Vertical salt diffusivity |
 | dslw | land | kg m-2 | -100 | ~0 | 100 | Soil moisture change; steady state ~0 |
-| dsn | land | kg m-2 | -500 | ~0 | 500 | SWE change annual; ~0 in steady state |
-| dsw | land | kg m-2 | -50 | ~0 | 50 | Surface water storage change ~0 |
-| emibbbc | aerosol | kg m-2 s-1 | 0 | ~1e-13 | ~1e-10 | 1850 BB BC emissions; CMIP6 input4MIPs |
-| emibbch4 | aerosol | kg m-2 s-1 | 0 | ~1e-12 | ~1e-9 | 1850 BB CH4; CMIP6 |
-| emibbco | aerosol | kg m-2 s-1 | 0 | ~1e-11 | ~1e-8 | 1850 BB CO; CMIP6 |
-| emibbdms | aerosol | kg m-2 s-1 | 0 | ~0 | ~1e-12 | DMS from BB small |
-| emibboa | aerosol | kg m-2 s-1 | 0 | ~1e-12 | ~1e-9 | 1850 BB OA; CMIP6 |
-| emibbso2 | aerosol | kg m-2 s-1 | 0 | ~1e-13 | ~1e-10 | 1850 BB SO2; CMIP6 |
-| emibbvoc | aerosol | kg m-2 s-1 | 0 | ~1e-12 | ~1e-9 | 1850 BB NMVOC; CMIP6 |
+| dsn | land | kg m-2 | -2000 | ~0 | 2000 | SWE change; HR maritime mountain cells reach 1500-2000 (Mortimer 2020 GlobSnow v3); ~0 mean in steady state |
+| dsw | land | kg m-2 | -500 | ~0 | 500 | Surface water storage change; Pantanal/Amazon flood pulse ±300-500 (Tapley 2019 GRACE); ~0 mean steady state |
+| emibbbc | aerosol | kg m-2 s-1 | 0 | ~1e-13 | ~1e-9 | 1850 BB BC; van Marle 2017 (BB4CMIP/input4MIPs); per-cell savanna fire peaks ~10x global mean |
+| emibbch4 | aerosol | kg m-2 s-1 | 0 | ~1e-12 | ~1e-8 | 1850 BB CH4; van Marle 2017 (BB4CMIP) |
+| emibbco | aerosol | kg m-2 s-1 | 0 | ~1e-11 | ~1e-7 | 1850 BB CO; van Marle 2017 (BB4CMIP); active savanna pixels Andreae 2019 |
+| emibbdms | aerosol | kg m-2 s-1 | 0 | ~0 | ~1e-12 | DMS from BB negligible (Andreae 2019) |
+| emibboa | aerosol | kg m-2 s-1 | 0 | ~1e-12 | ~1e-8 | 1850 BB OA; van Marle 2017 (BB4CMIP) |
+| emibbso2 | aerosol | kg m-2 s-1 | 0 | ~1e-13 | ~1e-9 | 1850 BB SO2; van Marle 2017 (BB4CMIP) |
+| emibbvoc | aerosol | kg m-2 s-1 | 0 | ~1e-12 | ~1e-8 | 1850 BB NMVOC; van Marle 2017 (BB4CMIP) |
 | esn | land | kg m-2 s-1 | 0 | ~1e-6 | ~5e-5 | Snow sublimation; polar climatology |
 | evspsbl | atmos | kg m-2 s-1 | 0 | ~3.2e-5 | ~2e-4 | Global mean E ~2.8 mm/day; GPCP/ERA5 |
 | evspsblpot | land | kg m-2 s-1 | 0 | ~5e-5 | ~3e-4 | PET highest subtropics |
 | evspsblsoi | land | kg m-2 s-1 | 0 | ~1e-5 | ~1e-4 | Soil evap component |
 | evspsblveg | land | kg m-2 s-1 | 0 | ~1e-5 | ~1.5e-4 | Canopy evap/transpiration |
 | fAnthDisturb | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl: no anthropogenic; ~0 |
-| fBNF | land | kg m-2 s-1 | 0 | ~3e-12 | ~3e-11 | Biological N fixation ~100 TgN/yr; Vitousek |
+| fBNF | land | kg m-2 s-1 | 0 | ~3e-12 | ~3e-10 | Natural BNF ~100 TgN/yr global (Vitousek 2013); tropical legume stands reach ~1e-9 (Davies-Barnard & Friedlingstein 2020) |
 | fCLandToOcean | land | kg m-2 s-1 | 0 | ~1e-11 | ~1e-9 | Riverine C ~0.9 PgC/yr; IPCC AR6 |
 | fco2antt | atmos | kg m-2 s-1 | 0 | ~0 | ~0 | piControl 1850: no anthropogenic CO2 emissions; LUH2/CMIP6 |
-| fco2nat | atmos | kg m-2 s-1 | -1e-7 | ~0 | ~1e-7 | Natural land+ocean CO2 flux; piControl globally balanced; drift ~±0.3 PgC/yr (Friedlingstein 2022) |
+| fco2nat | atmos | kg m-2 s-1 | -3e-7 | ~0 | ~3e-7 | Natural land+ocean CO2 flux; piControl globally balanced (Friedlingstein 2022 GCB); HR upwelling/forest cells reach ±3e-7 (Hoffman 2014 C4MIP) |
 | fDeforestToAtmos | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl: no deforestation |
 | fDeforestToProduct | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl: no deforestation |
-| fFire | land | kg m-2 s-1 | 0 | ~5e-11 | ~5e-9 | Natural fire dominant in piControl |
-| fFireAll | land | kg m-2 s-1 | 0 | ~5e-11 | ~5e-9 | GFED ~2 PgC/yr global |
-| fFireNat | land | kg m-2 s-1 | 0 | ~5e-11 | ~5e-9 | GFED natural |
+| fFire | land | kg m-2 s-1 | 0 | ~5e-11 | ~5e-8 | Natural fire dominant in piControl; active savanna pixels 1-5 kg C m-2 yr-1 (van der Werf 2017 GFED4s; Andela 2019) |
+| fFireAll | land | kg m-2 s-1 | 0 | ~5e-11 | ~5e-8 | GFED4s ~2 PgC/yr global (van der Werf 2017); active fire pixels reach 5e-8 |
+| fFireNat | land | kg m-2 s-1 | 0 | ~5e-11 | ~5e-8 | GFED4s natural-only (Randerson 2017) |
 | fHarvestToAtmos | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl: negligible harvest |
 | fHarvestToProduct | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl negligible harvest; LUH2 1850 |
 | fLitterFire | land | kg m-2 s-1 | 0 | ~2e-11 | ~2e-9 | Litter burning component |
 | fLitterSoil | land | kg m-2 s-1 | 0 | ~2e-9 | ~5e-8 | Litter->soil turnover |
 | fLuc | land | kg m-2 s-1 | -1e-9 | ~0 | ~1e-9 | piControl LUC ~0; CMIP6 spec |
 | fLulccAtmLut | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl LUC ~0 |
-| fN2O | land | kg m-2 s-1 | 0 | ~5e-13 | ~3e-11 | Pre-industrial land N2O ~7 TgN-N2O/yr (Tian et al. 2020) |
+| fN2O | land | kg m-2 s-1 | 0 | ~5e-13 | ~3e-10 | Pre-industrial land N2O ~7 TgN-N2O/yr (Tian 2020); tropical wet-forest hotspots ~order higher (Davidson & Kanter 2014) |
 | fNAnthDisturb | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl: no anthropogenic disturbance |
-| fNdep | land | kg m-2 s-1 | 0 | ~3e-13 | ~5e-12 | Pre-industrial N deposition ~5 TgN/yr; Galloway 2004 |
+| fNdep | land | kg m-2 s-1 | 0 | ~3e-13 | ~5e-11 | 1850 N deposition ~5 TgN/yr (Galloway 2004; Lamarque 2013 input4MIPs); lightning-active tropics reach ~3e-11 |
 | fNfert | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl: no synthetic/manure fertiliser; LUH2 1850 |
-| fNgas | land | kg m-2 s-1 | 0 | ~3e-12 | ~3e-10 | Gaseous N loss |
-| fNgasFire | land | kg m-2 s-1 | 0 | ~1e-12 | ~1e-10 | N from fires small fraction |
-| fNgasNonFire | land | kg m-2 s-1 | 0 | ~3e-12 | ~3e-10 | Non-fire gaseous N loss ~50 TgN/yr (denitrification + NH3); IPCC AR6 |
-| fNLandToOcean | land | kg m-2 s-1 | 0 | ~1e-12 | ~1e-10 | Riverine N flux ~40 TgN/yr |
-| fNleach | land | kg m-2 s-1 | 0 | ~1e-12 | ~1e-10 | N leaching |
-| fNLitterSoil | land | kg m-2 s-1 | 0 | ~3e-11 | ~1e-9 | N litter-to-soil |
-| fNloss | land | kg m-2 s-1 | 0 | ~5e-12 | ~5e-10 | Total N loss |
+| fNgas | land | kg m-2 s-1 | 0 | ~3e-12 | ~3e-9 | Gaseous N loss; tropical denitrification/NH3 hotspots ~1e-9 (Davidson 2009; Bouwman 2013) |
+| fNgasFire | land | kg m-2 s-1 | 0 | ~1e-12 | ~1e-9 | N from fires; active fire cells ~1e-9 (Andreae 2019) |
+| fNgasNonFire | land | kg m-2 s-1 | 0 | ~3e-12 | ~3e-9 | Non-fire gaseous N loss ~50 TgN/yr (IPCC AR6); per-cell hotspots Davidson 2009 |
+| fNLandToOcean | land | kg m-2 s-1 | 0 | ~1e-12 | ~1e-8 | Riverine N flux ~40 TgN/yr globally; concentrated in major river-mouth cells (Beusen 2016 GlobalNEWS; Seitzinger 2010) |
+| fNleach | land | kg m-2 s-1 | 0 | ~1e-12 | ~1e-9 | N leaching; tropical wet-forest peaks ~1e-9 (Boyer 2006; Galloway 2004) |
+| fNLitterSoil | land | kg m-2 s-1 | 0 | ~3e-11 | ~1e-8 | N litter-to-soil; tropical-forest peaks ~1e-8 (Cleveland 2013; Schmidt 2011) |
+| fNloss | land | kg m-2 s-1 | 0 | ~5e-12 | ~5e-9 | Total N loss; sum of leach+gas hotspots in tropical wet forests (Galloway 2004; Cleveland 2013) |
 | fNnetmin | land | kg m-2 s-1 | 0 | ~5e-12 | ~3e-10 | Net N mineralisation ~80 TgN/yr; Cleveland 2013 |
-| fNOx | land | kg m-2 s-1 | 0 | ~3e-13 | ~3e-11 | Soil NOx emissions ~5-10 TgN/yr; Yienger & Levy 1995 |
+| fNOx | land | kg m-2 s-1 | 0 | ~3e-13 | ~3e-10 | Soil NOx ~5-10 TgN/yr global (Yienger & Levy 1995); semi-arid pulse cells ~5e-11, agricultural peaks ~1e-10 (Hudman 2012; Vinken 2014) |
 | fNProduct | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl: no LU products; LUH2 1850 |
 | fNup | land | kg m-2 s-1 | 0 | ~3e-10 | ~3e-8 | Plant N uptake; Cleveland |
 | fNVegLitter | land | kg m-2 s-1 | 0 | ~5e-11 | ~3e-9 | N litterfall; ratio to fVegLitter via canopy C:N~30 (TRENDY) |
@@ -117,7 +117,7 @@ output files, so they can be used as an independent sanity check.
 | fracLut | land | % | 0 | ~25 | 100 | Per-tile fraction; LUH2 |
 | fracOutLut | land | % | 0 | ~0 | ~0 | piControl no LU transitions |
 | friver | ocean | kg m-2 s-1 | 0 | ~1e-5 | ~1e-2 | River discharge, Amazon mouth high |
-| fVegFire | land | kg m-2 s-1 | 0 | ~3e-11 | ~3e-9 | Vegetation fire C flux |
+| fVegFire | land | kg m-2 s-1 | 0 | ~3e-11 | ~3e-8 | Vegetation fire C flux; active savanna pixels ~3e-8 (van der Werf 2017 GFED4s) |
 | fVegLitter | land | kg m-2 s-1 | 0 | ~2e-9 | ~5e-8 | Litterfall ~60 PgC/yr |
 | fVegLitterMortality | land | kg m-2 s-1 | 0 | ~5e-10 | ~3e-8 | Mortality litter flux ~10-30% of total litterfall (Pugh et al. 2019) |
 | fVegLitterSenescence | land | kg m-2 s-1 | 0 | ~1.5e-9 | ~5e-8 | Senescence dominates litterfall; ~70-90% of total ~60 PgC/yr |
@@ -128,9 +128,9 @@ output files, so they can be used as an independent sanity check.
 | grassFracC4 | land | % | 0 | ~5 | 100 | C4 natural grass fraction; tropical/subtropical; LUH2/CMIP6 |
 | hfbasin | ocean | W | -2e15 | ~0 | 2e15 | Northward heat transport per basin; peak ~1.3 PW Atlantic; Trenberth 2001 |
 | hfds | ocean | W m-2 | -300 | ~2 | 300 | Net heat into ocean; ~2 W/m2 piControl drift |
-| hfdsl | land | W m-2 | -100 | ~0 | 100 | Ground heat flux annual ~0 |
+| hfdsl | land | W m-2 | -300 | ~0 | 300 | Ground heat flux; subtropical desert monthly extremes ±200 (Wang & Bras 1999; Baldocchi 2018 FLUXNET2015); ~0 annual mean |
 | hfls | atmos | W m-2 | 0 | ~80 | 250 | LH flux; CERES/ERA5 |
-| hfss | atmos | W m-2 | -50 | ~20 | 150 | SH flux; CERES/ERA5 |
+| hfss | atmos | W m-2 | -150 | ~20 | 300 | SH flux; cold-air outbreaks over Kuroshio/Gulf Stream and warm-season deserts (Hersbach 2020 ERA5; CERES-EBAF) |
 | hfx | ocean | W | -2e15 | ~0 | 2e15 | Zonal heat transport; Trenberth |
 | hfy | ocean | W | -2e15 | ~0 | 2e15 | Meridional heat transport peak ~2 PW |
 | hur | atmos | % | 0 | ~60 | 100 | RH profile; ERA5 |
@@ -157,8 +157,8 @@ output files, so they can be used as an independent sanity check.
 | mrsolLut | land | kg m-2 | 0 | ~100 | ~500 | Per-tile upper soil moisture |
 | mrsow | land | 1 | 0 | ~0.5 | 1 | Soil wetness fraction |
 | mrtws | land | kg m-2 | 0 | ~1500 | ~1e5 | GRACE TWS incl. groundwater/ice |
-| msftbarot | ocean | kg s-1 | -2e11 | 0 | 2e11 | ACC ~150 Sv *1025 kg/m3 |
-| msftm | ocean | kg s-1 | -2e10 | 0 | 2e10 | AMOC ~15-20 Sv; CMIP6 piControl |
+| msftbarot | ocean | kg s-1 | -5e11 | 0 | 5e11 | ACC ~173 Sv (Donohue 2016); HR (1/12 deg) gyre interiors reach 250-300 Sv (Treguier 2014) |
+| msftm | ocean | kg s-1 | -1e11 | 0 | 1e11 | Global MOC streamfunction extremes ~80 Sv (Deacon Cell+AABW; Talley 2013, Lumpkin & Speer 2007); AMOC alone ~17 Sv (Smeed 2018 RAPID) |
 | msftmmpa | ocean | kg s-1 | -5e10 | 0 | 5e10 | Mesoscale MOC component smaller than resolved |
 | n2o | atmosChem | mol mol-1 | ~1e-7 | ~2.72e-7 | ~3.5e-7 | Pre-industrial N2O ~272 ppb; Flueckiger 2002 ice cores; strat depleted |
 | nbp | land | kg m-2 s-1 | -1e-7 | ~0 (piControl balanced) | 1e-7 | piControl NBP near zero, Friedlingstein 2022 |
@@ -187,17 +187,17 @@ output files, so they can be used as an independent sanity check.
 | nVeg | land | kg m-2 | 0 | ~0.1 | ~2 | Vegetation N pool |
 | obvfsq | ocean | s-2 | 0 | ~1e-5 | ~1e-3 | N^2 pycnocline values |
 | od550aer | aerosol | 1 | ~0.02 | ~0.12 | ~1 | MODIS/AERONET AOD climatology |
-| opottempdiff | ocean | W m-2 | -50 | ~0 | 50 | Diapycnal mixing tendency small |
+| opottempdiff | ocean | W m-2 | -500 | ~0 | 500 | Diapycnal/isopycnal mixing tendency; convective adjustment + overflows (Denmark Strait, Faroe Bank) reach ~500 (Kuhlbrodt 2007; Griffies 2015 OMIP) |
 | opottempmint | ocean | degC kg m-2 | -1e7 | ~1e7 | 1e8 | rho*theta*depth, ~1025*10*4000 tropics |
-| opottemprmadvect | ocean | W m-2 | -500 | ~0 | 500 | Advective heat tendency |
+| opottemprmadvect | ocean | W m-2 | -5000 | ~0 | 5000 | Residual-mean advective heat tendency; HR eddy-active regions reach few thousand W m-2 (Griffies 2015 OMIP; Treguier 2017) |
 | opottemptend | ocean | W m-2 | -500 | ~0 | 500 | Total theta tendency, piControl near 0 global |
 | orog | land | m | 0 | ~800 | ~8848 | ETOPO topography |
-| osaltdiff | ocean | kg m-2 s-1 | -1e-5 | ~0 | 1e-5 | Salt tendency from mixing |
+| osaltdiff | ocean | kg m-2 s-1 | -1e-4 | ~0 | 1e-4 | Diffusive salt tendency; convective regions and overflow plumes ~1e-4 (Griffies 2015 OMIP) |
 | osaltrmadvect | ocean | kg m-2 s-1 | -1e-4 | ~0 | 1e-4 | Advective salt tendency |
 | osalttend | ocean | kg m-2 s-1 | -1e-4 | ~0 | 1e-4 | Total salt tendency ~0 in piControl |
 | pastureFrac | land | % | 0 | ~3 | ~50 | LUH2 1850 pasture mostly low |
-| pastureFracC3 | land | % | 0 | ~0 (piControl) | ~5 | Minimal pasture in 1850 |
-| pastureFracC4 | land | % | 0 | ~0 (piControl) | ~5 | Minimal pasture in 1850 |
+| pastureFracC3 | land | % | 0 | ~0 (piControl) | ~30 | LUH2 v2h 1850 rangeland fraction reaches ~30% in semi-arid grid cells (Hurtt 2020); global mean small |
+| pastureFracC4 | land | % | 0 | ~0 (piControl) | ~30 | LUH2 v2h 1850 rangeland fraction reaches ~30% in semi-arid grid cells (Hurtt 2020); global mean small |
 | pbo | ocean | Pa | 0 | ~4e7 | ~1.1e8 | rho*g*H; 4000m ocean |
 | pfull | atmos | Pa | ~1 | ~5e4 | ~101325 | Model level pressures |
 | phcint | ocean | J m-2 | 0 | ~1e10 | ~5e10 | Ocean heat content rho*cp*T*H |
@@ -239,7 +239,7 @@ output files, so they can be used as an independent sanity check.
 | rsut | atmos | W m-2 | 0 | ~100 | 400 | CERES TOA reflected SW |
 | rsutcs | atmos | W m-2 | 0 | ~53 | 300 | Clear-sky TOA reflected |
 | rtmt | atmos | W m-2 | -200 | ~0 (piControl balanced) | 200 | Net TOA ~0 in piControl |
-| sbl | landIce | kg m-2 s-1 | -1e-5 | ~1e-7 | 1e-5 | Snow/ice sublimation small |
+| sbl | landIce | kg m-2 s-1 | -1e-4 | ~1e-7 | 1e-4 | Snow/ice sublimation; Antarctic Plateau katabatic events reach ~1e-4 (Lenaerts 2012 RACMO; Box & Steffen 2001) |
 | scint | ocean | kg m-2 | 0 | ~1.4e5 | ~1.5e5 | S*rho*H, ~35 PSU*1025*4000m |
 | sfcWind | atmos | m s-1 | 0 | ~6.5 | ~40 | ERA5 10m wind daily max |
 | sfdsi | ocean | kg m-2 s-1 | -1e-5 | ~0 | 1e-5 | Sea-ice salt flux |
@@ -271,13 +271,13 @@ output files, so they can be used as an independent sanity check.
 | sifllattop | seaIce | W m-2 | -100 | ~-10 | 50 | Latent heat flux over sea ice (downward positive); ERA5 polar climatology |
 | siflsenstop | seaIce | W m-2 | -100 | ~-10 | 100 | Sensible heat flux over sea ice (downward positive); ERA5 polar climatology |
 | sihc | seaIce | J m-2 | -1e9 | -1e8 | 0 | c*rho*h*dT; negative=cold |
-| simass | seaIce | kg m-2 | 0 | 30 | 5000 | h*rho_ice, up to ~5m thick |
+| simass | seaIce | kg m-2 | 0 | 30 | 8000 | h*rho_ice; Lincoln Sea / north-Greenland multi-year ridges 8-10 m (Schweiger 2011 PIOMAS; Kwok 2018 ICESat-2/CryoSat-2) |
 | simpconc | seaIce | % | 0 | 5 | 50 | CICE melt-pond frac |
 | simpeffconc | seaIce | % | 0 | 3 | 40 | CICE effective pond frac |
 | simprefrozen | seaIce | m | 0 | 0.02 | 0.3 | CICE topo melt-pond |
 | simpthick | seaIce | m | 0 | 0.05 | 0.5 | CICE melt-pond depth |
 | sisaltmass | seaIce | kg m-2 | 0 | 0.15 | 25 | ~5 psu * simass/1000 |
-| sisnhc | seaIce | J m-2 | -2e7 | -2e6 | 0 | c_snow*rho*h*dT |
+| sisnhc | seaIce | J m-2 | -5e7 | -2e6 | 0 | c_snow*rho*h*dT; deeper drifted snow on ridges (h~1.5-2 m) extends magnitude to ~5e7 (Sturm 2002; Massom 2001) |
 | sisnmass | seaIce | kg | 0 | 2e15 | 1e16 | NH snow-on-ice total |
 | sispeed | seaIce | m s-1 | 0 | 0.05 | 1.0 | IABP drift buoys |
 | sistressave | seaIce | N m-1 | -5e4 | 0 | 5e4 | CICE stress tensor |
@@ -287,7 +287,7 @@ output files, so they can be used as an independent sanity check.
 | sistrydtop | seaIce | N m-2 | -1 | 0 | 1 | Atm stress on ice |
 | sistryubot | seaIce | N m-2 | -1 | 0 | 1 | Ocean stress on ice |
 | sitempbot | seaIce | K | 271 | 271.35 | 273.15 | Freezing point sea water |
-| sithick | seaIce | m | 0 | 0.3 (ice zone 1-3) | 8 | PIOMAS/ICESat |
+| sithick | seaIce | m | 0 | 0.3 (ice zone 1-3) | 12 | Multi-year ridged ice grid cells reach 8-10 m monthly mean (Laxon 2013 CryoSat-2; Petty 2020 ICESat-2; Belter 2020 AWI atlas); piControl can support thicker (Kay 2015 CESM-LE) |
 | sitimefrac | seaIce | 1 | 0 | 0.1 | 1 | Fraction of year with ice |
 | siu | seaIce | m s-1 | -1 | 0 | 1 | IABP drift buoys |
 | siv | seaIce | m s-1 | -1 | 0 | 1 | IABP drift buoys |
