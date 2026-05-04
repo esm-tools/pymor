@@ -162,7 +162,7 @@ inherit:
   netcdf_compression_codec: blosc_zstd
   netcdf_compression_level: 3
   netcdf_write_scheduler: threads
-  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/LR_test_01/outdata/fesom
+  data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/LR_run_test3/outdata/fesom
   source_id: AWI-ESM3-VEG-LR
   institution_id: AWI
   experiment_id: piControl
@@ -438,7 +438,7 @@ rules:
         pattern: temp\.fesom\..*\.nc
     compound_name: ocean.zostoga.tavg-u-hm-sea.mon.GLB
     model_variable: temp
-    salt_file: /work/bb1469/a270092/runtime/awiesm3-develop/LR_test_01/outdata/fesom/salt.fesom.1900.nc
+    salt_file: /work/bb1469/a270092/runtime/awiesm3-develop/LR_run_test3/outdata/fesom/salt.fesom.1900.nc
     salt_variable: salt
     reference_density: 1025.0
     pipelines:
