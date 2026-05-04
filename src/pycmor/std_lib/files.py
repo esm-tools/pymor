@@ -305,20 +305,58 @@ def _rule_get(rule, key, default=None):
     return getattr(rule, key, default)
 
 
+def _native_chunks_per_slab(ds, time_label, slab_size):
+    """Estimate native NetCDF source chunks read per slab for the
+    largest data variable. Used by `_resolve_slab_size` to skip the
+    slab loop when the chunk B-tree traversal cost would dominate
+    wall time (1hr-class fields with ~8760 native chunks/file).
+    """
+    biggest_nbytes = 0
+    biggest_var = None
+    for v in ds.data_vars:
+        nb = int(ds[v].nbytes)
+        if nb > biggest_nbytes:
+            biggest_nbytes = nb
+            biggest_var = v
+    if biggest_var is None:
+        return 0
+    da = ds[biggest_var]
+    # Prefer encoding (native NetCDF chunks); fall back to dask chunks.
+    chunksizes = da.encoding.get("chunksizes")
+    if not chunksizes and da.chunks is not None:
+        chunksizes = tuple(max(c) for c in da.chunks)
+    if not chunksizes:
+        return 0
+    n = 1
+    for dim, csz in zip(da.dims, chunksizes):
+        if not csz:
+            continue
+        if dim == time_label:
+            # along the slabbing axis: slab_size / chunk_along_time
+            n *= max(1, (slab_size + csz - 1) // csz)
+        else:
+            n *= max(1, (ds.sizes.get(dim, csz) + csz - 1) // csz)
+    return n
+
+
 def _resolve_slab_size(ds, rule):
     """Decide a per-output slab_size (along the time axis) for streaming
     write. Returns None when slab-loop should be skipped (small dataset
     or rule opts out).
 
     Resolution order:
-      1. ``rule.slab_size`` — explicit override (int).
+      1. ``rule.slab_size`` — explicit override (int). ``0``/``False`` opts out.
       2. ``rule.slab_target_bytes`` — target raw bytes per slab; default 1 GB.
          slab_size = floor(target / bytes_per_step), clamped to [1, n_steps].
       3. Skip slab loop if ds.nbytes <= 2 × target (small enough to fit
          without slabbing).
+      4. Chunk-count guard: skip slab loop if estimated native chunks per
+         slab > ``rule.slab_max_native_chunks`` (default 600). Per-slab
+         B-tree traversal of >>600 native chunks dominates wall time on
+         1hr-class fields (8760 chunks total) — verified by bench v15/v16.
 
     Slab-loop is also skipped when the dataset has no time axis or only
-    one timestep. ``rule.slab_size: 0`` or ``False`` opts out explicitly.
+    one timestep.
     """
     explicit = _rule_get(rule, "slab_size")
     if explicit is False or (isinstance(explicit, int) and explicit <= 0):
@@ -329,17 +367,51 @@ def _resolve_slab_size(ds, rule):
     n_steps = int(ds.sizes[time_label])
     if explicit:
         try:
-            return max(1, min(int(explicit), n_steps))
+            slab = max(1, min(int(explicit), n_steps))
         except (TypeError, ValueError):
             return None
-    target = int(_rule_get(rule, "slab_target_bytes", 1_000_000_000) or 0)
-    if target <= 0:
-        return None
-    if int(ds.nbytes) <= 2 * target:
-        return None
-    bytes_per_step = max(1, int(ds.nbytes) // n_steps)
-    slab = max(1, target // bytes_per_step)
-    return min(slab, n_steps)
+    else:
+        target = int(_rule_get(rule, "slab_target_bytes", 1_000_000_000) or 0)
+        if target <= 0:
+            return None
+        if int(ds.nbytes) <= 2 * target:
+            return None
+        bytes_per_step = max(1, int(ds.nbytes) // n_steps)
+        slab = min(max(1, target // bytes_per_step), n_steps)
+    # Chunk-count guard: skip slab loop for high-chunk-count inputs.
+    max_chunks = int(_rule_get(rule, "slab_max_native_chunks", 600) or 0)
+    if max_chunks > 0:
+        n_chunks = _native_chunks_per_slab(ds, time_label, slab)
+        if n_chunks > max_chunks:
+            logger.info(
+                f"slab loop skipped: {n_chunks} native source chunks/slab "
+                f"exceeds slab_max_native_chunks={max_chunks} (1hr-class field?)"
+            )
+            return None
+    return slab
+
+
+def _input_paths_from_rule(rule):
+    """Best-effort enumeration of input file paths for a rule. Used to
+    fadvise(DONTNEED) at end-of-loop so the next rule's run starts with
+    a clean page cache."""
+    paths = []
+    for collection in getattr(rule, "inputs", []) or []:
+        for f in getattr(collection, "files", []) or []:
+            paths.append(str(f))
+    return paths
+
+
+def _fadvise_dontneed(path):
+    import os as _os
+    try:
+        fd = _os.open(str(path), _os.O_RDONLY)
+        try:
+            _os.posix_fadvise(fd, 0, 0, _os.POSIX_FADV_DONTNEED)
+        finally:
+            _os.close(fd)
+    except Exception as exc:
+        logger.debug(f"  → fadvise(DONTNEED) failed for {path}: {exc}")
 
 
 def _save_one_with_slab_loop(ds, path, encoding, extra_kwargs, rule, slab_size):
@@ -347,12 +419,19 @@ def _save_one_with_slab_loop(ds, path, encoding, extra_kwargs, rule, slab_size):
     timesteps each. Encoding (chunksizes / compression / quantize) is
     applied on the first slab; subsequent slabs append.
 
-    Calls posix_fadvise(POSIX_FADV_DONTNEED) on the output file after each
-    slab so the kernel reclaims page cache instead of letting it grow to
-    the full file size.
+    On the first slab, every dimension whose size matches the time axis
+    length is marked unlimited. CMIP datasets often carry auxiliary time
+    dimensions (``time1``, ``time2`` for sub-time statistics) at the same
+    size as ``time``; if any of those is left as a fixed dim on slab 0,
+    appending slab 1 fails with
+    ``ValueError("Unable to update size for existing dimension 'time1' (n != m)")``.
+
+    After each slab and at end of loop, calls posix_fadvise(POSIX_FADV_DONTNEED)
+    on the output file (and on the rule's input files at end-of-loop) so
+    the kernel reclaims page cache instead of letting it grow to the full
+    file size during the rule and persist into the next rule.
     """
     import gc
-    import os as _os
 
     time_label = get_time_label(ds)
     if not time_label or ds.sizes.get(time_label, 1) <= 1 or slab_size <= 0:
@@ -361,7 +440,15 @@ def _save_one_with_slab_loop(ds, path, encoding, extra_kwargs, rule, slab_size):
         return
     n = int(ds.sizes[time_label])
     n_slabs = (n + slab_size - 1) // slab_size
-    logger.info(f"slab-loop save: {n} timesteps along '{time_label}', slab_size={slab_size} → {n_slabs} slabs → {path}")
+    # Auxiliary time-like dims (time1, time2, ...) that share the time-axis
+    # length and would otherwise be written fixed-size on slab 0, breaking
+    # subsequent appends.
+    unlimited_dims = [d for d, s in ds.sizes.items() if int(s) == n]
+    logger.info(
+        f"slab-loop save: {n} timesteps along '{time_label}', "
+        f"slab_size={slab_size} → {n_slabs} slabs → {path} "
+        f"(unlimited dims: {unlimited_dims})"
+    )
     if Path(path).exists():
         Path(path).unlink()
     for i in range(n_slabs):
@@ -369,20 +456,20 @@ def _save_one_with_slab_loop(ds, path, encoding, extra_kwargs, rule, slab_size):
         slab = ds.isel({time_label: slice(s, e)})
         if i == 0:
             kwargs = dict(extra_kwargs)
-            kwargs["unlimited_dims"] = [time_label]
+            kwargs["unlimited_dims"] = unlimited_dims
             slab.to_netcdf(path, mode="w", format="NETCDF4", encoding=encoding if encoding else None, **kwargs)
         else:
             slab.to_netcdf(path, mode="a")
-        try:
-            fd = _os.open(str(path), _os.O_RDONLY)
-            try:
-                _os.posix_fadvise(fd, 0, 0, _os.POSIX_FADV_DONTNEED)
-            finally:
-                _os.close(fd)
-        except Exception as exc:
-            logger.debug(f"  → fadvise(DONTNEED) failed for {path}: {exc}")
+        _fadvise_dontneed(path)
         del slab
         gc.collect()
+    # Tell the kernel we're done with the input files for this rule, so
+    # the next rule starts with reclaimable pages instead of inheriting
+    # this rule's input cache. Per-slab fadvise on inputs is wasted work
+    # (dask reads chunks lazily), but one pass at end of loop is cheap
+    # and meaningfully reduces cumulative cgroup pressure across rules.
+    for src in _input_paths_from_rule(rule):
+        _fadvise_dontneed(src)
 
 
 def _save_loop_or_mf(datasets, paths, encoding, extra_kwargs, rule):
