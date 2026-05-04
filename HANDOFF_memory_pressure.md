@@ -226,12 +226,30 @@ if n_native_source_chunks_per_slab > 600:
 to numpy *while still holding the dask source*. Peak doubles. Don't
 go there for memory pressure.
 
-### 4. Append mode adds ~30 % wall
+### 4. Append mode adds ~30 % wall but wins on memory
 
 Single-file output via `mode='a'` along unlimited dim re-walks the
 HDF5 B-tree on each append. For 13 slabs of ua: ~30 % wall penalty
-vs separate files. For 73 slabs: catastrophic. Recommendation: emit
-separate files, then post-merge with pyconcat.
+vs separate files (13:11 vs 10:43). For 73 slabs: catastrophic
+(don't slab 1hr-class fields at all).
+
+**Surprise**: pyconcat post-merge costs more memory than append:
+
+|  | append (v14) | separate + sequential pyconcat |
+|---|---|---|
+| heap (MaxRSS) | **0.51 GB** | **2.15 GB** during merge (4× higher) |
+| cgroup peak | **15.1 GB** | **19.76 GB** during merge |
+| total wall (ua) | 13:11 | 10:43 + 4:30 = 15:13 |
+
+So append wins on **all three metrics** (heap, cgroup peak, total wall)
+for sequential execution. Separate-files is only better if the merge
+can be **pipelined** with the next rule's processing on a different
+worker thread / subprocess (so it overlaps).
+
+**Recommendation: default to append mode**, which is what the current
+`_save_one_with_slab_loop` patch already does. Pipelined separate+merge
+is a higher-ceiling option for later if Prefect-side scheduling is
+extended.
 
 ### 5. ncrcat is blocked on Levante
 
@@ -270,26 +288,23 @@ Submit cap7_atm with my patch in `pycmor/std_lib/files.py`:
 Acceptance: ≥48/52 rules complete, MaxRSS per worker ≤16 GB, total wall
 < 2:30.
 
-### c. Build the post-merge step into pycmor
+### c. Pipelined post-merge (only if append mode is hitting limits)
 
-The pyconcat retry (24678570) measured **4:30 wall + 19.76 GB cgroup
-peak + 2.15 GB heap** for the merge. The merge is not free, and a
-naïve sequential post-merge per-rule actually loses to append mode on
-total wall:
+**Skip this for now** — append mode (current default) wins on all
+three metrics: heap (0.51 vs 2.15 GB), cgroup peak (15.1 vs 19.76 GB),
+and total wall (13:11 vs 15:13 sequential). Only revisit if (a)
+append-mode wall becomes the bottleneck after at-scale validation
+in (b), or (b) someone's willing to wire up Prefect-side concurrent
+scheduling so pyconcat overlaps the next rule's processing on a
+different worker thread / subprocess.
 
-```
-ua: slab+separate (10:43) + pyconcat (4:30) = 15:13
-ua: slab+append (13:11)   = 13:11   ← current pycmor patch
-```
-
-For separate-files-with-merge to win, the merge must be **pipelined
-with the next rule's processing** so it overlaps. That requires a
-Prefect-side change (separate task queue for the merge step, scheduled
-on a different worker thread or subprocess so it can run concurrently
-with the next rule's load+compute).
-
-Until that's wired in, the **current append-mode default in
-`_save_one_with_slab_loop` is the better all-in option.**
+If revisiting, the implementation sketch:
+- Slab loop emits N temp files (use `_save_one_with_slab_loop` with
+  a `slab_layout: 'separate'` rule attr)
+- After `save_dataset` returns, register a follow-up Prefect task
+  `pyconcat_merge(temp_paths, dst, time_dim)` and mark it as runnable
+  on a different worker
+- Delete temp files on merge success
 
 ### d. XIOS-side fix for 1hr-class rules
 
