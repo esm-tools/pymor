@@ -355,8 +355,18 @@ def _resolve_slab_size(ds, rule):
          B-tree traversal of >>600 native chunks dominates wall time on
          1hr-class fields (8760 chunks total) — verified by bench v15/v16.
 
-    Slab-loop is also skipped when the dataset has no time axis or only
-    one timestep.
+    Slab-loop is also skipped when:
+      - the dataset has no time axis or only one timestep
+      - any aux time-like dim (time1, time2, ...) has size != primary
+        time length. Such dims belong to sub-time-statistic outputs
+        (daily max of hourly, climatology bounds, etc.) where each
+        slab's aux-time length is driven by the slab content — xarray's
+        append-mode can't reconcile mismatched aux-time sizes across
+        slabs. Falling back to the default save path uses more memory
+        for those specific rules but completes correctly. Verified by
+        the parallel agent's P3/P5/P6 runs against cap7_atm: 17 rules
+        in that yaml have this pattern (prsn_3hr, ps_6hr, psl_6hr,
+        ts_6hr, and similar sub-time rules).
     """
     explicit = _rule_get(rule, "slab_size")
     if explicit is False or (isinstance(explicit, int) and explicit <= 0):
@@ -365,6 +375,20 @@ def _resolve_slab_size(ds, rule):
     if not time_label or ds.sizes.get(time_label, 1) <= 1:
         return None
     n_steps = int(ds.sizes[time_label])
+    # Multi-time-axis guard: any aux time-like dim with a size that
+    # doesn't match the primary time length means slab boundaries aren't
+    # alignable across the aux axis. Skip the slab loop for safety.
+    if isinstance(ds, xr.Dataset):
+        for d in ds.dims:
+            if d == time_label:
+                continue
+            if _is_time_like_dim(ds, d) and int(ds.sizes[d]) != n_steps:
+                logger.info(
+                    f"slab loop skipped: aux time-like dim '{d}' has size "
+                    f"{ds.sizes[d]} != primary time '{time_label}' "
+                    f"(size {n_steps}); slab boundaries not alignable"
+                )
+                return None
     if explicit:
         try:
             slab = max(1, min(int(explicit), n_steps))
