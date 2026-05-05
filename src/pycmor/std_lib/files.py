@@ -38,6 +38,9 @@ Table 2: Precision of time labels used in file names
 
 """
 
+import os
+import threading
+import time
 from pathlib import Path
 
 import pandas as pd
@@ -56,6 +59,62 @@ from .dataset_helpers import get_time_label, has_time_axis
 from .global_attributes import _collect_external_cell_measures
 
 import dask
+
+
+class _Heartbeat:
+    """Context manager that emits periodic ``logger.info`` "still running"
+    lines while a long-running block executes. Used by ``save_dataset``
+    so multi-minute operations don't appear as silent stalls in tier-job
+    logs (the rule-level Prefect events fire only at task boundaries,
+    so a 30-minute ``to_netcdf`` looks like a hang to monitoring).
+
+    The interval defaults to 60 s and is overridable via the env var
+    ``PYCMOR_HEARTBEAT_INTERVAL_S`` (set to 0 to disable). The thread
+    is a daemon and exits cleanly when the with-block ends; if the
+    block raises, the thread still terminates because of the
+    ``threading.Event`` wait.
+    """
+
+    def __init__(self, label, interval=None):
+        if interval is None:
+            try:
+                interval = float(os.environ.get("PYCMOR_HEARTBEAT_INTERVAL_S", "60"))
+            except (TypeError, ValueError):
+                interval = 60.0
+        self.label = label
+        self.interval = interval
+        self._stop = threading.Event()
+        self._t0 = None
+        self._th = None
+
+    def __enter__(self):
+        if self.interval <= 0:
+            return self
+        self._t0 = time.monotonic()
+
+        def _tick():
+            n = 0
+            while not self._stop.wait(self.interval):
+                n += 1
+                elapsed = time.monotonic() - self._t0
+                logger.info(
+                    f"  ⟳ {self.label} still running "
+                    f"(t={elapsed:.0f}s, heartbeat #{n})"
+                )
+
+        self._th = threading.Thread(
+            target=_tick, name=f"hb-{self.label}", daemon=True
+        )
+        self._th.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._stop.set()
+        if self._th is not None and self._t0 is not None:
+            elapsed = time.monotonic() - self._t0
+            status = "ok" if exc_type is None else f"failed ({exc_type.__name__})"
+            logger.info(f"  ✓ {self.label} done in {elapsed:.0f}s [{status}]")
+        return False
 
 
 def _ensure_external_variables(ds):
@@ -985,6 +1044,12 @@ def save_dataset(da: xr.DataArray, rule):
     NOTE: prior to calling this function, call dask.compute() method,
     otherwise tasks will progress very slow.
     """
+    cmor_var = getattr(rule, "cmor_variable", None) or getattr(rule, "name", "?")
+    with _Heartbeat(f"save_dataset[{cmor_var}]"):
+        return _save_dataset_impl(da, rule)
+
+
+def _save_dataset_impl(da: xr.DataArray, rule):
     time_dtype = rule._pycmor_cfg("xarray_time_dtype")
     time_unlimited = rule._pycmor_cfg("xarray_time_unlimited")
     extra_kwargs = {}
