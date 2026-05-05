@@ -486,6 +486,92 @@ The only remaining path to meaningful wall improvement is **Round
 configuration. This is a coordination ask outside pycmor, not a
 feature pycmor can ship.
 
+---
+
+## Round 4: contention sweep on mini-cap7
+
+After closing the four direction-specific candidates above, ran a
+controlled sweep over `(N_workers, mem_per_worker)` at fixed TPW=4
+to characterise where the production default actually sits on the
+throughput curve. Mini-cap7 = 7 heaviest cap7_atm rules
+(ua_6hr_pl7h, va_6hr_pl7h, ta_6hr_pl7h, hus_6hr_pl7h, zg_6hr_pl7h,
+uas_1hr, ts_1hr) on 3 separate `/work` data copies (lfs setstripe
+-c 8) per ensemble member to avoid page-cache sharing.
+
+Note: zg_6hr_pl7h's mini-cap7 rule omits the `scale_factor` for
+geopotential→height conversion present in the production yaml, so
+it always fails on a unit conversion error. This is intentional —
+zg is testing the contention mechanism, not the unit pipeline. Max
+viable rules = 6, max files ≈ 11 per run.
+
+### Sweep grid
+
+8 configs × 3 ensemble = 24 jobs. Walltime 1:30 per job.
+
+| TAG | W | Mem/worker | total slots | total commit |
+|---|---|---|---|---|
+| 2x4x64GB | 2 | 64 GB | 8  | 128 GB (production default) |
+| 2x4x32GB | 2 | 32 GB | 8  | 64 GB  |
+| 3x4x32GB | 3 | 32 GB | 12 | 96 GB  |
+| 3x4x48GB | 3 | 48 GB | 12 | 144 GB |
+| 4x4x16GB | 4 | 16 GB | 16 | 64 GB  |
+| 4x4x24GB | 4 | 24 GB | 16 | 96 GB  |
+| 4x4x32GB | 4 | 32 GB | 16 | 128 GB |
+| 4x4x40GB | 4 | 40 GB | 16 | 160 GB |
+
+### Results
+
+| config | walls (min) | mean | mean cgrp GB | files / 11 | deadlocks/3 | viable |
+|---|---|---|---|---|---|---|
+| 2x4x32GB | 30.9, 27.4, 28.6 | 29.0 | 49.3 | 11.0 | 0 | yes (same as default, less mem) |
+| 2x4x64GB | 30.9, 27.4, 29.4 | **29.2** | 49.2 | 11.0 | 0 | reference |
+| **3x4x48GB** | 27.9, 22.3, 24.3 | **24.8** | 49.4 | 11.0 | 0 | **yes — 15 % faster, comfortable mem** |
+| **4x4x16GB** | 25.9, 22.3, 24.2 | **24.1** | 49.7 | 11.0 | 0 | **yes — 17 % faster, tight mem** |
+| 4x4x40GB | 33.1, 28.2 | 30.7 | 49.6 | 11.0 | 1 | borderline |
+| 3x4x32GB | 24.7, 26.4 | 25.5 | 34.0 | 7.3 | 1 | partial completion |
+| 4x4x32GB | 22.3, 28.3 | 25.3 | 34.1 | 7.3 | 1 | partial completion |
+| 4x4x24GB | 25.9 | 25.9 | 18.8 | 3.7 | 2 | deadlock prone |
+
+### Findings
+
+1. **Two configs improve over the production default**:
+   - `4x4x16GB` (17 % wall reduction, smaller mem)
+   - `3x4x48GB` (15 % wall reduction, comfortable mem)
+
+2. **Counter-intuitive memory effect**: `4x4x16GB` (16 GB/worker —
+   tightest in the sweep) ran cleanly with no deadlocks and the
+   fastest mean wall. The parallel agent's earlier report flagged
+   `4x4x32` and `4x4x48` as OOM-cascading on the full cap7_atm,
+   so the mini-cap7 result may not generalise to sustained
+   52-rule load. Tight-mem configs need cap7_atm validation
+   before being declared production-ready.
+
+3. **Probabilistic deadlocks at high concurrency**: at 12 (3W ×
+   TPW=4) or 16 (4W × TPW=4) total slots vs 7 simultaneous parent
+   tasks each requiring sub-slots for child step-tasks, the
+   scheduler over-subscribes and some runs deadlock. `4x4x24GB`
+   deadlocked 2/3 ensemble members. `3x4x32GB`, `4x4x32GB`,
+   `4x4x40GB` each deadlocked 1/3.
+
+4. **New universal failure surfaced**:
+   `TypeError("Could not serialize object of type _HLGExprSequence")`
+   in `save_dataset` task across every parallel-mode run (8-13
+   occurrences per run). Prefect retries handle it for most rules
+   so they eventually succeed, but real compute is being wasted on
+   the retries. Should be tracked as a separate bug — not on the
+   throughput-optimisation critical path.
+
+### Recommendation
+
+`3x4x48GB` is the conservative production-default candidate:
+- 15 % wall reduction at cap7_atm scale (if it generalises).
+- Comfortable mem headroom (no OOM cascade risk like 4x4x16/32).
+- 0/3 deadlocks in the mini-cap7 ensemble.
+
+Need cap7_atm at-scale validation (1 full run, ~3 h) to confirm
+before changing the default. If it lands ≥48/52 in <2:30, ship
+the new default.
+
 ## Files to add / modify
 
 ```
