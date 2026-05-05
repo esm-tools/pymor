@@ -100,12 +100,43 @@ def _ensure_coordinates_attr(ds):
     return ds
 
 
+def _strip_unportable_encoding(ds):
+    """Drop encoding keys that vary by xarray backend engine and would
+    otherwise propagate from the load engine into the save call.
+
+    Specifically: when the input was opened with ``engine="h5netcdf"``,
+    coord variables (``lat``, ``lon``, ``time*``, etc.) get an
+    ``encoding`` with ``compression="unknown"`` because h5netcdf doesn't
+    recognise the BLOSC HDF5 filter (filter id 32001). The default
+    netcdf4 backend instead reports ``blosc={...}``. xarray's
+    ``to_netcdf`` then fails on save with
+    ``ValueError("Unsupported value for compression kwarg ...")``.
+
+    Data variables are unaffected because pycmor builds their encoding
+    from scratch in ``_encoding_from_dask_chunks``. We only need to
+    sanitise coords + non-data variables.
+    """
+    if not isinstance(ds, xr.Dataset):
+        return ds
+    bad_keys = ("compression", "compression_opts")
+    for name in list(ds.coords) + [v for v in ds.variables if v not in ds.data_vars]:
+        var = ds.variables.get(name)
+        if var is None:
+            continue
+        val = var.encoding.get("compression")
+        if val in (None, "unknown") or val is False:
+            for k in bad_keys:
+                var.encoding.pop(k, None)
+    return ds
+
+
 def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
     """Wrap _ensure_lat_lon_bounds with post-passes that announce external
     cell_measures (CF 1.11 §7.2) and refresh the ``coordinates`` attr."""
     ds = _ensure_lat_lon_bounds_impl(ds, rule)
     ds = _ensure_external_variables(ds)
     ds = _ensure_coordinates_attr(ds)
+    ds = _strip_unportable_encoding(ds)
     return ds
 
 

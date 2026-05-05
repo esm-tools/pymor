@@ -320,6 +320,26 @@ def load_mfdataset(data, rule_spec):
     """
     Load a dataset from a list of files using xarray.
 
+    Optional perf tuning (default off, opt-in via rule attrs or
+    pycmor config keys; see OPTIMIZATION_PLAN.md round 1):
+
+    - ``xarray_open_mfdataset_engine_override`` (str): override the
+      backend engine per-rule, e.g. ``"h5netcdf"``. h5netcdf is
+      "often faster" than the default netcdf4 backend for
+      ``open_mfdataset`` per the xarray docs, especially with many
+      small chunks.
+
+    - ``xarray_open_mfdataset_inline_array`` (bool): pass
+      ``inline_array=True`` to ``xr.open_mfdataset``. Compacts the
+      dask task graph by inlining chunks as values rather than
+      separate task references — useful when the input has many
+      small chunks (XIOS outputs at 5840–8760 chunks/file).
+
+    NOTE: HDF5 chunk-cache tuning (``rdcc_nbytes``) was investigated
+    but requires a custom H5NetCDFStore wrapper to plumb through
+    xarray's backend kwargs filter; deferred to round 1.5 if engine
+    swap alone proves a win.
+
     Parameters
     ----------
     data : Any
@@ -329,6 +349,28 @@ def load_mfdataset(data, rule_spec):
     """
     engine = rule_spec._pymor_cfg("xarray_open_mfdataset_engine")
     parallel = rule_spec._pymor_cfg("xarray_open_mfdataset_parallel")
+
+    # Round-1 perf knobs (opt-in)
+    def _cfg_first(*keys, default=None):
+        for k in keys:
+            if hasattr(rule_spec, "get"):
+                v = rule_spec.get(k)
+                if v is not None:
+                    return v
+            try:
+                v = rule_spec._pymor_cfg(k)
+                if v is not None:
+                    return v
+            except Exception:
+                pass
+        return default
+
+    inline_array = bool(_cfg_first("xarray_open_mfdataset_inline_array", default=False))
+    # Allow override of engine via rule attr (e.g. "h5netcdf")
+    engine_override = _cfg_first("xarray_open_mfdataset_engine_override")
+    if engine_override:
+        engine = engine_override
+
     all_files = []
     for file_collection in rule_spec.inputs:
         for f in file_collection.files:
@@ -340,10 +382,18 @@ def load_mfdataset(data, rule_spec):
     if year_start is not None and year_end is not None:
         all_files = _filter_files_by_year_range(all_files, int(year_start), int(year_end))
         logger.info(f"Year filter: {year_start}–{year_end}, {len(all_files)} files after filtering")
-    logger.info(f"Loading {len(all_files)} files using {engine} backend on xarray...")
+
+    open_kwargs = dict(parallel=parallel, use_cftime=True, engine=engine)
+    if inline_array:
+        open_kwargs["inline_array"] = True
+
+    logger.info(
+        f"Loading {len(all_files)} files using {engine} backend "
+        f"(inline_array={inline_array}) on xarray..."
+    )
     for f in all_files:
         logger.info(f"  * {f}")
-    mf_ds = xr.open_mfdataset(all_files, parallel=parallel, use_cftime=True, engine=engine)
+    mf_ds = xr.open_mfdataset(all_files, **open_kwargs)
     # Rename non-standard time dimension if specified in rule (e.g., OpenIFS uses different names)
     time_dimname = rule_spec.get("time_dimname")
     if time_dimname and time_dimname in mf_ds.dims and "time" not in mf_ds.dims:
