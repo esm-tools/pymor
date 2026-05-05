@@ -352,10 +352,113 @@ watchdog bug in `run_bench_hr_ua_6hr.sh`.
 
 ## Files
 
-- `src/pycmor/std_lib/files.py` — patched (auto-derive slab loop)
-- `examples/bench_rechunk.py` — bench-only steps
-- `examples/cmip7_bench_hr_*.yaml` — bench yamls (~20)
-- `examples/run_bench_hr_*.sh` — runscripts (~20)
+- `src/pycmor/std_lib/files.py` — **REVERTED to pre-slab-loop state (1c7f2d7)**.
+  Earlier slab-loop patches removed; nothing left in the production code from
+  this investigation.
+- `examples/bench_rechunk.py` — bench-only steps (kept as historical record)
+- `examples/cmip7_bench_hr_*.yaml` — bench yamls (~20, kept)
+- `examples/run_bench_hr_*.sh` — runscripts (~20, kept; the v1 + repacked
+  runscripts now use the cgroup-v2 watchdog path)
 - `examples/run_bench_pyconcat.sh` — Python netCDF4 streaming concat
+- `examples/repack_one.py` + `examples/run_repack_one.sh` — Python streaming
+  HDF5 chunk-reshape preserving blosc compression
 - `bench_hr_ua_6hr_results.md` — earlier narrative version
 - `HANDOFF_memory_pressure.md` — this file
+
+---
+
+## FINAL UPDATE: Investigation closed with negative result
+
+The slab-loop save path was reverted in commit `1c7f2d7`. The follow-up
+"input rechunking is the unlock" hypothesis was tested with a 5×5 ensemble
+and also fails. **Production stays at 2×4×64 baseline (48/52 rules in 2:57).**
+
+### Why slab loop was reverted
+
+The slab-loop benches that we believed succeeded (v12, v14, v15, v16) were
+all **silent truncations**. xarray's `to_netcdf(mode='a')` along an unlimited
+time dim refuses any size mismatch — even off-by-one. The partial trailing
+slab always failed:
+
+```
+ValueError("Unable to update size for existing dimension 'time1' (n != m)")
+```
+
+Verification: v12 output is `time1=30` not 1460. v14, v15, v16 each lost
+one slab's worth at the end. Every "successful" append-mode run was
+short by the trailing partial slab.
+
+Three iterative fixes (size-match guard cd8341f, name-based detection
+f8bc0ae, parallel-axis guard 3174c79, slab rebalancing 5d90ccd) addressed
+specific manifestations but never the root cause: **xarray's mode='a' is
+not a "extend along unlimited" API**, it requires shape-exact compatibility.
+The whole approach is unsalvageable as-is. Option D (separate-files +
+post-merge) is technically possible but adds wall and the slab loop's
+value proposition was already weak (see below).
+
+### Why input rechunking also doesn't help
+
+5-member ensembles, single-rule bench on ua_6hr_pl7h:
+
+| metric | source input (5) | repacked input (5) |
+|---|---|---|
+| wall mean (warm-cache, runs 2-5) | **2:45** | **3:00** |
+| wall first run (cold cache) | 4:54 | 3:07 |
+| MaxRSS mean | **~10 GB** | **~120 GB** |
+| cgroup peak mean | **~31 GB** | **~125 GB** |
+
+Apples-to-apples (warm cache): **source is 9 % faster**, and repacked is
+**12× heavier in heap, 4× heavier in cgroup peak**. The "36 % faster"
+single-comparison reading we initially saw was a page-cache artifact —
+the source run was the first read of a cold-cache file (4:54), the
+repacked run was a warm-cache file (3:07).
+
+Why repacked is heavier: dask reads whole HDF5 chunks at a time. With
+source's `(1, 2, 421120)` chunks (~3 MB each), only a few are resident.
+With repacked's `(120, 7, 421120)` chunks (~1.4 GB raw each), holding
+even a handful in flight blows up heap. The bigger chunks unlock
+metadata-walk speed (15 s → 0.03 s file open, real) but at the cost of
+much higher in-flight working set.
+
+### What we actually learned
+
+1. **Page cache hit rate dominates single-rule wall**. Cold-cache:
+   ~4:54. Warm-cache: ~2:45. That's a 1.7× swing from caching alone,
+   far larger than any of our patches moved.
+
+2. **The parallel agent's "1.7 MB/s aggregate read rate" diagnosis
+   during P7** likely captured cold-cache contention behavior at the
+   start of a multi-rule run. Once the inputs are warm, throughput
+   recovers.
+
+3. **MaxRSS ≠ cgroup peak**. The 8.5 GB we measured early as
+   "anonymous heap" was correct; the 30 GB cgroup peak is mostly Linux
+   page cache and is not what dask-nanny watches. So earlier
+   memory-budget math was over-conservative.
+
+4. **The slab-loop heap reduction (8.5 → 0.5 GB MaxRSS) was real**, but:
+   - It can't be delivered safely with `mode='a'` on partial trailing
+     slabs (silent truncation).
+   - The implied parallelism uplift (more workers per node) doesn't
+     improve cap7_atm wall, because (P5 vs P6 verified) single-rule
+     wall is already the critical path. Adding workers doesn't help
+     when N rules each take ~30 min and they don't pipeline.
+
+5. **Input HDF5 chunk count matters under contention but not on
+   warm-cache single-rule.** A model-side XIOS XML fix to write fewer,
+   larger chunks at simulation time would still be valuable for
+   cold-start runs and might shift the multi-rule contention profile.
+   This is the only remaining optimization angle worth pursuing, and
+   it's owned by the FESOM/AWI-ESM3 model team, not pycmor.
+
+### Recommendation for the next agent
+
+- Don't reopen the slab-loop direction. The append-mode bug is
+  fundamental in xarray; option D (separate + post-merge) adds wall
+  with marginal benefit since slab loop's value proposition was weak.
+- Don't bother with offline input repacking. It buys nothing on warm
+  cache and costs heap.
+- If anyone wants to chase further wall savings: coordinate with the
+  FESOM team on XIOS XML chunking. Otherwise, accept current
+  production at 2×4×64 / 48/52 / 2:57.
+

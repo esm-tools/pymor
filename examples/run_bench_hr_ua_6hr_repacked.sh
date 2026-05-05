@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=pycmor-bench-ua-6hr
+#SBATCH --job-name=pycmor-bench-ua-6hr-repacked
 #SBATCH --partition=compute
 #SBATCH --account=ba0989
 #SBATCH --nodes=1
@@ -7,8 +7,8 @@
 #SBATCH --cpus-per-task=64
 #SBATCH --mem=256G
 #SBATCH --time=01:00:00
-#SBATCH --output=pycmor_bench_hr_ua_6hr_%j.log
-#SBATCH --error=pycmor_bench_hr_ua_6hr_%j.log
+#SBATCH --output=pycmor_bench_hr_ua_6hr_repacked_%j.log
+#SBATCH --error=pycmor_bench_hr_ua_6hr_repacked_%j.log
 
 # Single-rule benchmark for the heaviest cap7_atm rule class
 # (6hr_pl7h fields). Designed for memory-pressure investigation by
@@ -42,7 +42,7 @@ export TMPDIR=$PYCMOR_SCRATCH
 export HDF5_USE_FILE_LOCKING=FALSE
 export OMP_NUM_THREADS=1
 
-OUTROOT=${OUTROOT:-/scratch/a/a270092/pycmor_bench_ua_6hr}
+OUTROOT=${OUTROOT:-/scratch/a/a270092/pycmor_bench_ua_6hr_repacked}
 OUTDIR=$OUTROOT/${SLURM_JOB_ID:-$$}
 mkdir -p "$OUTDIR"
 command -v lfs >/dev/null && lfs setstripe -c 8 "$OUTDIR" 2>/dev/null || true
@@ -50,7 +50,7 @@ command -v lfs >/dev/null && lfs setstripe -c 8 "$OUTDIR" 2>/dev/null || true
 # Repoint the yaml's output_directory into per-run scratch.
 python3 - <<PY
 import yaml
-y = yaml.safe_load(open("examples/cmip7_bench_hr_ua_6hr.yaml"))
+y = yaml.safe_load(open("examples/cmip7_bench_hr_ua_6hr_repacked.yaml"))
 y["inherit"]["output_directory"] = "${OUTDIR}"
 yaml.safe_dump(y, open("$PYCMOR_SCRATCH/bench.yaml", "w"), sort_keys=False)
 PY
@@ -61,8 +61,6 @@ echo "input file:"
 ls -lh /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/oifs/atmos_6h_pl7h_ua_1587-1587.nc
 
 # Memory watchdog: log the cgroup-v2 memory.current every 5 s.
-# Levante uses cgroup-v2 hybrid hierarchy; the job slice is
-# /sys/fs/cgroup/system.slice/slurmstepd.scope/job_<id>/memory.current
 WATCH_LOG=$OUTDIR/cgroup_mem_v2.tsv
 JOB=${SLURM_JOB_ID:-$$}
 CG_PATH=/sys/fs/cgroup/system.slice/slurmstepd.scope/job_$JOB/memory.current
