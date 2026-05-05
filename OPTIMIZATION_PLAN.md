@@ -374,6 +374,118 @@ requires the deepest changes. Round 3.E and 3.F are cheap to test
 but have small expected impact. Round 3.G is the right answer in the
 long run but is out of pycmor's hands.
 
+---
+
+## Round 3 audit results: all four dead
+
+After auditing each Round 3 candidate against the actual data, all four
+turn out to be either low-ceiling, already-in-effect, or unverifiable
+without a multi-day at-scale test. Detailed findings below.
+
+### D — Shared input loading: dead
+
+Audit: parsed `awi-esm3-veg-hr-variables/cap7_atm/cmip7_awiesm3-veg-hr_cap7_atm.yaml`.
+
+```
+52 rules, 49 distinct input patterns
+3 patterns shared by >1 rule:
+  2x atmos_1h_sfc_rlds_*.nc       (rlds_day, rlds_1hr)
+  2x atmos_3h_prsn_prsn_*.nc      (prsn_day, prsn_3hr)
+  2x atm_remapped_1d_2t_*.nc      (hurs_day_max, hurs_day_min)
+46 rules have unique inputs (no sharing).
+Maximum I/O reduction from shared loading: 5.8 %
+```
+
+XIOS naturally writes one variable per stream, so input sharing is
+structurally limited across cap7_*. ~1 week of cmorizer scheduling
+refactor for ≤6 % I/O reduction → **dead**.
+
+### E — Cache prewarming: dead
+
+Per-step timings from bench logs (lazy_write=true, ua_6hr_pl7h):
+
+| step | duration |
+|---|---|
+| load_mfdataset | ~0.3 s (metadata only, lazy graph build) |
+| get_variable | ~0.02 s |
+| timeavg | ~0.4 s |
+| handle_unit_conversion | ~0.03 s |
+| set_global / set_variable / set_coordinates / map_dimensions | ~2 s combined |
+| manual_checkpoint / trigger_compute / show_data | ~0.1 s combined |
+| **save_dataset** | **1:46 (warm) to 3:30 (cold)** |
+
+`save_dataset` is **>99 % of single-rule wall** because `lazy_write=true`
+defers all real work (chunk reads, decompress, transform, recompress,
+write) into the save step. There's effectively no compute-phase to
+overlap I/O with via prewarming. Reward ceiling is single-digit
+seconds per rule. **Dead**.
+
+### F — Lustre input striping: already in effect
+
+`lfs getstripe` on a heavy input (`atmos_6h_pl7h_ua_1587-1587.nc`)
+reveals Lustre Progressive File Layout (PFL):
+
+```
+[0, 1 GB):       stripe_count=1, stripe_size=1 MB
+[1 GB, 4 GB):    stripe_count=4
+[4 GB, EOF]:     stripe_count=16
+```
+
+For a 13 GB file: 1 GB on 1 OST, 3 GB on 4 OSTs, 9 GB on 16 OSTs.
+Most of the file is already heavily striped. `lfs migrate -c 8` would
+be a regression on the bulk of the file. **Dead — Lustre is already
+parallelising disk reads via PFL.**
+
+### G — XIOS-side input chunking: empirically unverified
+
+The hypothesis is sound (fewer B-tree walks per concurrent reader →
+less metadata serialisation under contention). But:
+
+- Single-rule warm-cache 5×5 ensemble: source mean **2:45**,
+  repacked (chunks `(120, 7, 421120)`) mean **3:00**. Repacked
+  *slightly slower*.
+- Multi-rule contention with repacked inputs has not been measured.
+- Repacked file showed 12× heap blowup at the chunk size we tested
+  (1.4 GB raw per chunk × dask in-flight = 112 GB MaxRSS). Even if
+  the throughput benefit holds at scale, practical chunk size needs
+  to be much smaller than (120, 7, 421120) — we don't know the right
+  value without further benching.
+- And it's owned by the FESOM/AWI-ESM3 model team, not pycmor —
+  needs coordination on the model side. **Not actionable from pycmor.**
+
+---
+
+## Final closing summary
+
+After Phase 1 (slab loop, input rechunking), Phase 2 Round 1
+(load-step optimizations), Round 2 (Prefect collapse), and Round 3
+audit, **every cheap optimization investigated turned out to be a
+non-win or out-of-reach**:
+
+| direction | status |
+|---|---|
+| slab loop | reverted (mode='a' silent truncation) |
+| offline input rechunk | repack 12× heavier in heap, no warm-cache wall win |
+| h5netcdf engine | save 2.8× slower |
+| inline_array=True | 2× wall regression on 5840-chunk arrays |
+| Prefect task collapse | 1-second wall delta |
+| Round 3.D shared loading | ≤5.8 % I/O reduction; dead |
+| Round 3.E cache prewarming | <1 s reward; dead |
+| Round 3.F Lustre striping | already in effect via PFL |
+| Round 3.G XIOS chunking | unverified, owned by FESOM team |
+
+**The bottleneck is the work itself**: HDF5 chunk reads, blosc
+decompression, xarray pipeline compute, recompression, write. Each
+is well-optimised at the library level. No application-layer leverage
+remains.
+
+**Production stays at 2×4×64 (48/52 rules in 2:57).**
+
+The only remaining path to meaningful wall improvement is **Round
+3.G — XIOS-side input chunking** in the FESOM/AWI-ESM3 model
+configuration. This is a coordination ask outside pycmor, not a
+feature pycmor can ship.
+
 ## Files to add / modify
 
 ```
