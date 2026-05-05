@@ -514,6 +514,32 @@ def _save_one_with_slab_loop(ds, path, encoding, extra_kwargs, rule, slab_size):
         return
     n = int(ds.sizes[time_label])
     n_slabs = (n + slab_size - 1) // slab_size
+    # Rebalance slab boundaries so every slab is floor_size or ceil_size
+    # (within ±1 of each other). Without this, the trailing slab can be
+    # much smaller than the chunksize set on slab 0's mode='w' write
+    # (e.g. n=1459 / slab_size=84 → 17 slabs of 84 + 1 of 31), which
+    # breaks xarray's mode='a' alignment along the unlimited time dim
+    # (`ValueError: Unable to update size for existing dimension 'time1'
+    # (31 != 84)`). With balanced slabs, every slab fits in exactly one
+    # output chunk of size ceil_size, and append-mode extends cleanly.
+    floor_size = n // n_slabs
+    num_ceil = n - n_slabs * floor_size
+    ceil_size = floor_size + 1 if num_ceil > 0 else floor_size
+    # Override the time-axis chunksize in the encoding to ceil_size so
+    # the on-disk chunk shape matches the largest slab we will write.
+    # Leave non-time chunksizes alone.
+    adj_encoding = {var: dict(enc) for var, enc in (encoding or {}).items()}
+    for var, enc in adj_encoding.items():
+        cs = enc.get("chunksizes")
+        if not cs or var not in ds.variables:
+            continue
+        var_dims = ds[var].dims
+        if time_label not in var_dims:
+            continue
+        idx = var_dims.index(time_label)
+        new_cs = list(cs)
+        new_cs[idx] = min(int(cs[idx]), ceil_size)
+        enc["chunksizes"] = tuple(new_cs)
     # Mark every time-like dim unlimited so subsequent appends don't choke
     # on size mismatch. See _is_time_like_dim docstring.
     unlimited_dims = [d for d in ds.dims if _is_time_like_dim(ds, d)]
@@ -521,18 +547,22 @@ def _save_one_with_slab_loop(ds, path, encoding, extra_kwargs, rule, slab_size):
         unlimited_dims.append(time_label)
     logger.info(
         f"slab-loop save: {n} timesteps along '{time_label}', "
-        f"slab_size={slab_size} → {n_slabs} slabs → {path} "
+        f"n_slabs={n_slabs} (sizes: {num_ceil}×{ceil_size} + "
+        f"{n_slabs - num_ceil}×{floor_size}) → {path} "
         f"(unlimited dims: {unlimited_dims})"
     )
     if Path(path).exists():
         Path(path).unlink()
+    offset = 0
     for i in range(n_slabs):
-        s, e = i * slab_size, min((i + 1) * slab_size, n)
+        sz = ceil_size if i < num_ceil else floor_size
+        s, e = offset, offset + sz
+        offset = e
         slab = ds.isel({time_label: slice(s, e)})
         if i == 0:
             kwargs = dict(extra_kwargs)
             kwargs["unlimited_dims"] = unlimited_dims
-            slab.to_netcdf(path, mode="w", format="NETCDF4", encoding=encoding if encoding else None, **kwargs)
+            slab.to_netcdf(path, mode="w", format="NETCDF4", encoding=adj_encoding if adj_encoding else None, **kwargs)
         else:
             slab.to_netcdf(path, mode="a")
         _fadvise_dontneed(path)
