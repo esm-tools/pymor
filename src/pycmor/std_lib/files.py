@@ -375,18 +375,32 @@ def _resolve_slab_size(ds, rule):
     if not time_label or ds.sizes.get(time_label, 1) <= 1:
         return None
     n_steps = int(ds.sizes[time_label])
-    # Multi-time-axis guard: any aux time-like dim with a size that
-    # doesn't match the primary time length means slab boundaries aren't
-    # alignable across the aux axis. Skip the slab loop for safety.
+    # Multi-time-axis guard: skip the slab loop whenever any aux
+    # time-like dim is present alongside the primary time axis. Two
+    # failure modes apply, both bite "tpt" sub-time-statistic rules
+    # (ps_6hr, psl_6hr, ts_6hr, prsn_3hr and similar in cap7_atm):
+    #   1) aux dim size != primary size → slab boundaries can't align
+    #      across the aux axis (cd8341f catches this).
+    #   2) aux dim size == primary size (parallel time axes — e.g.
+    #      `time` and `time1` both 1459 timesteps, holding different
+    #      timestamp metadata for the same logical step). isel along
+    #      the chosen primary doesn't slice the parallel aux, so each
+    #      slab carries the full aux dim → append-mode fails with
+    #      "Unable to update size for existing dimension 'time1'".
+    # Falling back to the default save_dataset path uses more memory
+    # for those specific rules but completes correctly. Same ledger as
+    # the chunk-count guard.
     if isinstance(ds, xr.Dataset):
         for d in ds.dims:
             if d == time_label:
                 continue
-            if _is_time_like_dim(ds, d) and int(ds.sizes[d]) != n_steps:
+            if _is_time_like_dim(ds, d):
                 logger.info(
-                    f"slab loop skipped: aux time-like dim '{d}' has size "
-                    f"{ds.sizes[d]} != primary time '{time_label}' "
-                    f"(size {n_steps}); slab boundaries not alignable"
+                    f"slab loop skipped: aux time-like dim '{d}' "
+                    f"(size {ds.sizes[d]}) present alongside primary "
+                    f"time '{time_label}' (size {n_steps}); slab loop "
+                    f"only slices the primary axis, leaving '{d}' "
+                    f"inconsistent across slabs"
                 )
                 return None
     if explicit:
