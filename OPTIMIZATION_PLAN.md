@@ -294,6 +294,86 @@ break.
 Implementation plan to be filled in once the pipeline runner code
 is read.
 
+### Round 2 result: also a regression-free non-win
+
+Patched `pycmor.core.pipeline.Pipeline._prefectize_steps` to optionally
+collapse all steps into one Prefect Task. Activated via per-pipeline
+yaml `collapse_steps: true` or env var `PYCMOR_PREFECT_COLLAPSE=1`.
+Two prerequisites needed in addition:
+- `pycmor.core.validate`: add `collapse_steps` to the pipelines schema
+  (else the yaml fails Cerberus validation).
+- The collapsed loop has to **unwrap Prefect State objects** because
+  `pycmor.core.caching.manual_checkpoint` returns
+  `Completed(data=ds)` when the workflow backend is "prefect", relying
+  on the per-step Task chain to unwrap. Inside one collapsed Task,
+  the loop has to do `state.result(raise_on_failure=True)` itself.
+
+Controlled pair (same yaml, same node assignment timing,
+`ua_6hr_pl7h`):
+
+| variant | wall | MaxRSS | cgroup | n_finished_tasks |
+|---|---|---|---|---|
+| baseline (13 tasks) | **7:12** | 11.2 GB | 33.9 GB | 13 |
+| collapse (1 task) | **7:13** | 10.5 GB | 32.1 GB | 2 |
+
+**1-second wall difference**. No measurable win.
+
+The "2.4 sec/task" Prefect benchmark I cited was for **Kubernetes-orchestrated production Prefect** with API-server telemetry. Our **local Prefect with DaskTaskRunner** has far lower per-task overhead — probably <100 ms. The 27-min-overhead-per-cap7_atm estimate was wildly off; actual overhead is <1 second per rule.
+
+**Round 2 axis closed.** Patches kept (default off, opt-in via yaml/env):
+- `src/pycmor/core/pipeline.py`: `collapse_steps` kwarg + env var
+- `src/pycmor/core/validate.py`: schema entry
+- State-unwrap inside the collapsed loop
+
+These will sit dormant unless someone explicitly opts in.
+
+---
+
+## Investigation closing summary
+
+After Phase 1 (slab loop, input rechunking) and Phase 2 (Round 1
+load-step, Round 2 orchestration), all four cheap optimizations
+researched failed to deliver a wall-time win on `ua_6hr_pl7h`:
+
+| direction | result |
+|---|---|
+| slab loop (Phase 1) | xarray `mode='a'` silent-truncates partial trailing slabs; reverted |
+| input rechunking (Phase 1) | source 9% faster on warm cache, repacked 12× heavier in heap |
+| h5netcdf engine (Round 1A) | save step 2.8× slower (chunked-data read path) |
+| inline_array=True (Round 1B) | dask graph blowup on 5840-chunk arrays; 2× wall regression |
+| Prefect task collapse (Round 2) | local Prefect overhead is ~zero; 1-second wall diff |
+
+The bottleneck is "the work itself" — I/O (HDF5 chunk reads, blosc
+decompress) + compute (xarray pipeline) + write (recompress, save).
+All of these are well-optimized at the library level; we have no
+cheap leverage at the application level.
+
+**Production stays at 2×4×64 (48/52 rules in 2:57).**
+
+The remaining theoretical wins are **architectural (Round 3)** and
+each is a multi-day-to-multi-week engineering effort:
+
+- **D — Shared input loading**: when N rules read the same XIOS file,
+  load once and dispatch instead of N separate loads. Owner:
+  pycmor cmorizer scheduling logic. Estimate: ~1 week. Reward
+  bounded by how much input overlap actually exists in cap7_atm
+  (needs an audit).
+- **E — Cache prewarming**: read input files into OS page cache
+  in parallel before pycmor processes a rule. Doesn't reduce total
+  I/O, only overlaps it with prior compute. Limited reward;
+  estimate: 1–2 days for a clean implementation.
+- **F — Lustre input striping** (`lfs migrate -c 8`): re-stripe input
+  files across more OSTs. ~one-time per simulation year. Helps under
+  concurrent contention. Estimate: minutes to apply, hours to bench.
+- **G — XIOS-side input chunking**: model team owns; needs
+  coordination with FESOM/AWI-ESM3 maintainers.
+
+Of these, **Round 3.D** has the highest theoretical reward (could be
+2-4× I/O reduction on rules that share files in cap7_atm) but
+requires the deepest changes. Round 3.E and 3.F are cheap to test
+but have small expected impact. Round 3.G is the right answer in the
+long run but is out of pycmor's hands.
+
 ## Files to add / modify
 
 ```

@@ -295,6 +295,7 @@ PIPELINES_SCHEMA = {
                     "allowed": ["prefect", "native"],
                 },
                 "cache_expiration": {"required": False},
+                "collapse_steps": {"type": "boolean", "required": False},
             },
         },
     },

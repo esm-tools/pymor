@@ -3,6 +3,7 @@ Pipeline of the data processing steps.
 """
 
 import copy
+import os
 from datetime import timedelta
 
 import randomname
@@ -26,6 +27,7 @@ class Pipeline:
         cache_policy=None,
         dask_cluster=None,
         cache_expiration=None,
+        collapse_steps=None,
     ):
         self._steps = args
         self.name = name or randomname.get_name()
@@ -35,6 +37,15 @@ class Pipeline:
         if workflow_backend is None:
             workflow_backend = "prefect"
         self._workflow_backend = workflow_backend
+        # Round-2 perf knob: if set, collapse all pipeline steps into a
+        # single Prefect task. Trades per-step task caching for ~13×
+        # less Prefect orchestration overhead per rule (Prefect 3.x:
+        # ~2.4 s/task scheduler latency × 13 steps × N rules adds up).
+        # Default off; can be set per-pipeline via yaml ``collapse_steps``
+        # or globally via env var ``PYCMOR_PREFECT_COLLAPSE=1``.
+        if collapse_steps is None:
+            collapse_steps = os.environ.get("PYCMOR_PREFECT_COLLAPSE", "0") in ("1", "true", "True", "yes")
+        self._collapse_steps = bool(collapse_steps)
         if cache_policy is None:
             self._cache_policy = TASK_SOURCE + INPUTS
             self._prefect_cache_kwargs["cache_policy"] = self._cache_policy
@@ -92,16 +103,55 @@ class Pipeline:
     def _prefectize_steps(self):
         # Turn all steps into Prefect tasks:
         raw_steps = copy.deepcopy(self._steps)
-        prefect_tasks = []
-        for i, step in enumerate(self._steps):
-            logger.debug(f"[{i+1}/{len(self._steps)}] Converting step {step.__name__} to Prefect task.")
-            prefect_tasks.append(
-                Task(
-                    fn=step,
-                    **self._prefect_cache_kwargs,
-                    # cache_key_fn=generate_cache_key,
-                )
+
+        if self._collapse_steps and self._steps:
+            # Collapse all pipeline steps into a single Prefect task to
+            # eliminate per-step orchestration overhead. Step bodies still
+            # execute in order; only the Task wrapping is consolidated.
+            #
+            # Some steps (e.g. ``pycmor.core.caching.manual_checkpoint``)
+            # return a Prefect ``State`` object when the workflow backend
+            # is "prefect", relying on the per-step Prefect Task chain
+            # to unwrap it. With all steps in one Task, we have to do
+            # the unwrapping ourselves.
+            steps_to_run = list(self._steps)
+
+            def _run_collapsed_pipeline(data, rule_spec):
+                from prefect.states import State
+                for step in steps_to_run:
+                    result = step(data, rule_spec)
+                    if isinstance(result, State):
+                        try:
+                            result = result.result(raise_on_failure=True)
+                        except Exception:
+                            # Step intentionally returned a state without a
+                            # data payload; pass the prior data through.
+                            result = data
+                    data = result
+                return data
+
+            _run_collapsed_pipeline.__name__ = f"{self.name}_collapsed"
+            logger.debug(
+                f"Collapsing {len(self._steps)} steps into one Prefect task "
+                f"({_run_collapsed_pipeline.__name__})."
             )
+            prefect_tasks = [
+                Task(
+                    fn=_run_collapsed_pipeline,
+                    **self._prefect_cache_kwargs,
+                )
+            ]
+        else:
+            prefect_tasks = []
+            for i, step in enumerate(self._steps):
+                logger.debug(f"[{i+1}/{len(self._steps)}] Converting step {step.__name__} to Prefect task.")
+                prefect_tasks.append(
+                    Task(
+                        fn=step,
+                        **self._prefect_cache_kwargs,
+                        # cache_key_fn=generate_cache_key,
+                    )
+                )
 
         self._steps = prefect_tasks
         self._steps_are_prefectized = True
@@ -192,6 +242,7 @@ class Pipeline:
                 name=data.get("name"),
                 cache_expiration=data.get("cache_expiration"),
                 workflow_backend=data.get("workflow_backend"),
+                collapse_steps=data.get("collapse_steps"),
             )
         if "steps" in data:
             return cls.from_callable_strings(
@@ -199,6 +250,7 @@ class Pipeline:
                 name=data.get("name"),
                 cache_expiration=data.get("cache_expiration"),
                 workflow_backend=data.get("workflow_backend"),
+                collapse_steps=data.get("collapse_steps"),
             )
         raise ValueError("Pipeline data must have 'uses' or 'steps' key")
 
