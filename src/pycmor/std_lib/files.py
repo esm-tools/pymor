@@ -297,338 +297,6 @@ def _is_dask_backed(ds):
     return any(v.chunks is not None for v in ds.data_vars.values())
 
 
-def _rule_get(rule, key, default=None):
-    if hasattr(rule, "get"):
-        v = rule.get(key)
-        if v is not None:
-            return v
-    return getattr(rule, key, default)
-
-
-def _native_chunks_per_slab(ds, time_label, slab_size):
-    """Estimate native NetCDF source chunks read per slab for the
-    largest data variable. Used by `_resolve_slab_size` to skip the
-    slab loop when the chunk B-tree traversal cost would dominate
-    wall time (1hr-class fields with ~8760 native chunks/file).
-    """
-    biggest_nbytes = 0
-    biggest_var = None
-    for v in ds.data_vars:
-        nb = int(ds[v].nbytes)
-        if nb > biggest_nbytes:
-            biggest_nbytes = nb
-            biggest_var = v
-    if biggest_var is None:
-        return 0
-    da = ds[biggest_var]
-    # Prefer encoding (native NetCDF chunks); fall back to dask chunks.
-    chunksizes = da.encoding.get("chunksizes")
-    if not chunksizes and da.chunks is not None:
-        chunksizes = tuple(max(c) for c in da.chunks)
-    if not chunksizes:
-        return 0
-    n = 1
-    for dim, csz in zip(da.dims, chunksizes):
-        if not csz:
-            continue
-        if dim == time_label:
-            # along the slabbing axis: slab_size / chunk_along_time
-            n *= max(1, (slab_size + csz - 1) // csz)
-        else:
-            n *= max(1, (ds.sizes.get(dim, csz) + csz - 1) // csz)
-    return n
-
-
-def _resolve_slab_size(ds, rule):
-    """Decide a per-output slab_size (along the time axis) for streaming
-    write. Returns None when slab-loop should be skipped (small dataset
-    or rule opts out).
-
-    Resolution order:
-      1. ``rule.slab_size`` — explicit override (int). ``0``/``False`` opts out.
-      2. ``rule.slab_target_bytes`` — target raw bytes per slab; default 1 GB.
-         slab_size = floor(target / bytes_per_step), clamped to [1, n_steps].
-      3. Skip slab loop if ds.nbytes <= 2 × target (small enough to fit
-         without slabbing).
-      4. Chunk-count guard: skip slab loop if estimated native chunks per
-         slab > ``rule.slab_max_native_chunks`` (default 600). Per-slab
-         B-tree traversal of >>600 native chunks dominates wall time on
-         1hr-class fields (8760 chunks total) — verified by bench v15/v16.
-
-    Slab-loop is also skipped when:
-      - the dataset has no time axis or only one timestep
-      - any aux time-like dim (time1, time2, ...) has size != primary
-        time length. Such dims belong to sub-time-statistic outputs
-        (daily max of hourly, climatology bounds, etc.) where each
-        slab's aux-time length is driven by the slab content — xarray's
-        append-mode can't reconcile mismatched aux-time sizes across
-        slabs. Falling back to the default save path uses more memory
-        for those specific rules but completes correctly. Verified by
-        the parallel agent's P3/P5/P6 runs against cap7_atm: 17 rules
-        in that yaml have this pattern (prsn_3hr, ps_6hr, psl_6hr,
-        ts_6hr, and similar sub-time rules).
-    """
-    explicit = _rule_get(rule, "slab_size")
-    if explicit is False or (isinstance(explicit, int) and explicit <= 0):
-        return None
-    time_label = get_time_label(ds) if isinstance(ds, xr.Dataset) else None
-    if not time_label or ds.sizes.get(time_label, 1) <= 1:
-        return None
-    n_steps = int(ds.sizes[time_label])
-    # Multi-time-axis guard: skip the slab loop whenever any aux
-    # time-like dim is present alongside the primary time axis. Two
-    # failure modes apply, both bite "tpt" sub-time-statistic rules
-    # (ps_6hr, psl_6hr, ts_6hr, prsn_3hr and similar in cap7_atm):
-    #   1) aux dim size != primary size → slab boundaries can't align
-    #      across the aux axis (cd8341f catches this).
-    #   2) aux dim size == primary size (parallel time axes — e.g.
-    #      `time` and `time1` both 1459 timesteps, holding different
-    #      timestamp metadata for the same logical step). isel along
-    #      the chosen primary doesn't slice the parallel aux, so each
-    #      slab carries the full aux dim → append-mode fails with
-    #      "Unable to update size for existing dimension 'time1'".
-    # Falling back to the default save_dataset path uses more memory
-    # for those specific rules but completes correctly. Same ledger as
-    # the chunk-count guard.
-    if isinstance(ds, xr.Dataset):
-        for d in ds.dims:
-            if d == time_label:
-                continue
-            if _is_time_like_dim(ds, d):
-                logger.info(
-                    f"slab loop skipped: aux time-like dim '{d}' "
-                    f"(size {ds.sizes[d]}) present alongside primary "
-                    f"time '{time_label}' (size {n_steps}); slab loop "
-                    f"only slices the primary axis, leaving '{d}' "
-                    f"inconsistent across slabs"
-                )
-                return None
-    if explicit:
-        try:
-            slab = max(1, min(int(explicit), n_steps))
-        except (TypeError, ValueError):
-            return None
-    else:
-        target = int(_rule_get(rule, "slab_target_bytes", 1_000_000_000) or 0)
-        if target <= 0:
-            return None
-        if int(ds.nbytes) <= 2 * target:
-            return None
-        bytes_per_step = max(1, int(ds.nbytes) // n_steps)
-        slab = min(max(1, target // bytes_per_step), n_steps)
-    # Chunk-count guard: skip slab loop for high-chunk-count inputs.
-    max_chunks = int(_rule_get(rule, "slab_max_native_chunks", 600) or 0)
-    if max_chunks > 0:
-        n_chunks = _native_chunks_per_slab(ds, time_label, slab)
-        if n_chunks > max_chunks:
-            logger.info(
-                f"slab loop skipped: {n_chunks} native source chunks/slab "
-                f"exceeds slab_max_native_chunks={max_chunks} (1hr-class field?)"
-            )
-            return None
-    return slab
-
-
-def _input_paths_from_rule(rule):
-    """Best-effort enumeration of input file paths for a rule. Used to
-    fadvise(DONTNEED) at end-of-loop so the next rule's run starts with
-    a clean page cache."""
-    paths = []
-    for collection in getattr(rule, "inputs", []) or []:
-        for f in getattr(collection, "files", []) or []:
-            paths.append(str(f))
-    return paths
-
-
-def _fadvise_dontneed(path):
-    import os as _os
-    try:
-        fd = _os.open(str(path), _os.O_RDONLY)
-        try:
-            _os.posix_fadvise(fd, 0, 0, _os.POSIX_FADV_DONTNEED)
-        finally:
-            _os.close(fd)
-    except Exception as exc:
-        logger.debug(f"  → fadvise(DONTNEED) failed for {path}: {exc}")
-
-
-def _is_time_like_dim(ds, dim):
-    """Detect time-like dims for the slab-loop unlimited_dims list.
-
-    Catches:
-      * dims whose name starts with ``time`` (CMIP/CF convention: time,
-        time1, time2, time_counter, ...)
-      * dims that have an associated coord variable with CF time
-        attributes (``standard_name == "time"`` or a units string of the
-        form ``"<unit> since <date>"``)
-
-    The naïve "size matches primary time axis" heuristic misses aux
-    time dims with different sizes (climatology bounds, sub-daily stats)
-    — those still need to be unlimited so the slab-loop's append-mode
-    writes don't choke on a size mismatch.
-    """
-    name = str(dim).lower()
-    if name == "time" or name.startswith("time"):
-        return True
-    coord = ds.coords.get(dim) if hasattr(ds, "coords") else None
-    if coord is None:
-        return False
-    sn = str(coord.attrs.get("standard_name", "")).lower()
-    if sn == "time":
-        return True
-    units = str(coord.attrs.get("units", "")).lower()
-    if " since " in units:
-        return True
-    return False
-
-
-def _save_one_with_slab_loop(ds, path, encoding, extra_kwargs, rule, slab_size):
-    """Append-along-unlimited-time write of `ds` in slabs of `slab_size`
-    timesteps each. Encoding (chunksizes / compression / quantize) is
-    applied on the first slab; subsequent slabs append.
-
-    On the first slab, every dimension recognised as time-like (name
-    starts with ``time`` or coord has CF time attributes) is marked
-    unlimited. CMIP datasets often carry auxiliary time dimensions
-    (``time1``, ``time2`` for sub-time statistics, climatology bounds,
-    or differently-aggregated outputs); if any of those is left as a
-    fixed dim on slab 0, appending slab 1 fails with
-    ``ValueError("Unable to update size for existing dimension
-    'time1' (n != m)")``.
-
-    The heuristic catches both the same-size case (``time1`` = primary
-    time length) and the different-size case (``time1`` is a separate
-    aggregation axis with different length per slab).
-
-    After each slab and at end of loop, calls posix_fadvise(POSIX_FADV_DONTNEED)
-    on the output file (and on the rule's input files at end-of-loop) so
-    the kernel reclaims page cache instead of letting it grow to the full
-    file size during the rule and persist into the next rule.
-    """
-    import gc
-
-    time_label = get_time_label(ds)
-    if not time_label or ds.sizes.get(time_label, 1) <= 1 or slab_size <= 0:
-        # No-op safety net: just write once.
-        ds.to_netcdf(path, mode="w", format="NETCDF4", encoding=encoding if encoding else None, **extra_kwargs)
-        return
-    n = int(ds.sizes[time_label])
-    n_slabs = (n + slab_size - 1) // slab_size
-    # Rebalance slab boundaries so every slab is floor_size or ceil_size
-    # (within ±1 of each other). Without this, the trailing slab can be
-    # much smaller than the chunksize set on slab 0's mode='w' write
-    # (e.g. n=1459 / slab_size=84 → 17 slabs of 84 + 1 of 31), which
-    # breaks xarray's mode='a' alignment along the unlimited time dim
-    # (`ValueError: Unable to update size for existing dimension 'time1'
-    # (31 != 84)`). With balanced slabs, every slab fits in exactly one
-    # output chunk of size ceil_size, and append-mode extends cleanly.
-    floor_size = n // n_slabs
-    num_ceil = n - n_slabs * floor_size
-    ceil_size = floor_size + 1 if num_ceil > 0 else floor_size
-    # Override the time-axis chunksize in the encoding to ceil_size so
-    # the on-disk chunk shape matches the largest slab we will write.
-    # Leave non-time chunksizes alone.
-    adj_encoding = {var: dict(enc) for var, enc in (encoding or {}).items()}
-    for var, enc in adj_encoding.items():
-        cs = enc.get("chunksizes")
-        if not cs or var not in ds.variables:
-            continue
-        var_dims = ds[var].dims
-        if time_label not in var_dims:
-            continue
-        idx = var_dims.index(time_label)
-        new_cs = list(cs)
-        new_cs[idx] = min(int(cs[idx]), ceil_size)
-        enc["chunksizes"] = tuple(new_cs)
-    # Mark every time-like dim unlimited so subsequent appends don't choke
-    # on size mismatch. See _is_time_like_dim docstring.
-    unlimited_dims = [d for d in ds.dims if _is_time_like_dim(ds, d)]
-    if time_label not in unlimited_dims:
-        unlimited_dims.append(time_label)
-    logger.info(
-        f"slab-loop save: {n} timesteps along '{time_label}', "
-        f"n_slabs={n_slabs} (sizes: {num_ceil}×{ceil_size} + "
-        f"{n_slabs - num_ceil}×{floor_size}) → {path} "
-        f"(unlimited dims: {unlimited_dims})"
-    )
-    if Path(path).exists():
-        Path(path).unlink()
-    offset = 0
-    for i in range(n_slabs):
-        sz = ceil_size if i < num_ceil else floor_size
-        s, e = offset, offset + sz
-        offset = e
-        slab = ds.isel({time_label: slice(s, e)})
-        if i == 0:
-            kwargs = dict(extra_kwargs)
-            kwargs["unlimited_dims"] = unlimited_dims
-            slab.to_netcdf(path, mode="w", format="NETCDF4", encoding=adj_encoding if adj_encoding else None, **kwargs)
-        else:
-            slab.to_netcdf(path, mode="a")
-        _fadvise_dontneed(path)
-        del slab
-        gc.collect()
-    # Tell the kernel we're done with the input files for this rule, so
-    # the next rule starts with reclaimable pages instead of inheriting
-    # this rule's input cache. Per-slab fadvise on inputs is wasted work
-    # (dask reads chunks lazily), but one pass at end of loop is cheap
-    # and meaningfully reduces cumulative cgroup pressure across rules.
-    for src in _input_paths_from_rule(rule):
-        _fadvise_dontneed(src)
-
-
-def _save_loop_or_mf(datasets, paths, encoding, extra_kwargs, rule):
-    """Save list of (dataset, path) pairs.
-
-    When ``rule.slab_size`` is set (or auto-derived from
-    ``rule.slab_target_bytes``, default 1 GB), each dataset is written
-    via a slab-loop with explicit free + posix_fadvise(DONTNEED) between
-    slabs. Caps cgroup peak at ~slab-size of input page cache + ~1 GB
-    output buffer, which lets more rules run concurrently per worker
-    node — see bench_hr_ua_6hr_results.md for the data behind this.
-
-    When ``rule.save_per_file`` is truthy (legacy bench knob), loops
-    `to_netcdf` per dataset (one full dataset per file, no slab split)
-    and drops references between iterations.
-
-    When ``rule.save_engine`` is set, threads it through as the xarray
-    backend engine (e.g. ``h5netcdf``).
-
-    Default (none of the above): a single ``xr.save_mfdataset`` call,
-    matching pre-slab behaviour for small datasets.
-    """
-    save_per_file = bool(_rule_get(rule, "save_per_file", False))
-    engine = _rule_get(rule, "save_engine")
-    base_kwargs = dict(extra_kwargs)
-    if engine:
-        base_kwargs["engine"] = engine
-    enc = encoding if encoding else None
-    # Decide whether to engage the slab loop on a per-dataset basis. Each
-    # dataset in the list is its own output file, so slab decisions are
-    # independent (one rule may produce both a small fx file and a heavy
-    # time-resolved file via different paths through this helper).
-    use_slab = []
-    for d in datasets:
-        slab_size = _resolve_slab_size(d, rule)
-        use_slab.append(slab_size)
-
-    if any(s is not None for s in use_slab):
-        for i, (d, p, slab_size) in enumerate(zip(datasets, paths, use_slab)):
-            if slab_size is not None:
-                _save_one_with_slab_loop(d, p, enc, base_kwargs, rule, slab_size)
-            else:
-                d.to_netcdf(p, mode="w", format="NETCDF4", encoding=enc, **base_kwargs)
-            datasets[i] = None
-        return
-
-    if save_per_file:
-        for i, (ds, p) in enumerate(zip(datasets, paths)):
-            ds.to_netcdf(p, mode="w", format="NETCDF4", encoding=enc, **base_kwargs)
-            datasets[i] = None
-        return
-    xr.save_mfdataset(datasets, paths, encoding=enc, **base_kwargs)
-
-
 def _get_write_scheduler(rule):
     """Return the dask scheduler to use around xr.save_mfdataset.
 
@@ -1107,9 +775,19 @@ def _save_dataset_with_native_timespan(
     _write_sched = _get_write_scheduler(rule)
     if is_dask:
         with dask.config.set(scheduler=_write_sched):
-            _save_loop_or_mf(datasets, paths, chunk_encoding, extra_kwargs, rule)
+            xr.save_mfdataset(
+                datasets,
+                paths,
+                encoding=chunk_encoding if chunk_encoding else None,
+                **extra_kwargs,
+            )
     else:
-        _save_loop_or_mf(datasets, paths, chunk_encoding, extra_kwargs, rule)
+        xr.save_mfdataset(
+            datasets,
+            paths,
+            encoding=chunk_encoding if chunk_encoding else None,
+            **extra_kwargs,
+        )
     return da
 
 
@@ -1498,7 +1176,17 @@ def save_dataset(da: xr.DataArray, rule):
             if is_dask:
                 _write_sched = _get_write_scheduler(rule)
                 with dask.config.set(scheduler=_write_sched):
-                    _save_loop_or_mf(datasets, paths, final_encoding, extra_kwargs, rule)
+                    xr.save_mfdataset(
+                        datasets,
+                        paths,
+                        encoding=final_encoding,
+                        **extra_kwargs,
+                    )
             else:
-                _save_loop_or_mf(datasets, paths, final_encoding, extra_kwargs, rule)
+                xr.save_mfdataset(
+                    datasets,
+                    paths,
+                    encoding=final_encoding,
+                    **extra_kwargs,
+                )
             return da
