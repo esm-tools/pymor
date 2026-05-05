@@ -148,7 +148,7 @@ Complex variables that cannot be expressed as XIOS expressions are computed in `
 - **select_southern_hemisphere**: lat subset for 30S-90S regional variables (orog, tas)
 
 ### CAP7 atmosphere custom steps
-- **compute_rtmt**: net downward radiative flux at model top (rsdt - rsut + rlds - rlus)
+- **compute_rtmt**: net downward radiative flux at model top (rsdt - rsut - rlut)
 - **extract_single_plevel**: extract single pressure level from multi-level dataset (ta@700hPa, wap@500hPa)
 
 ### CAP7 sea ice custom steps
