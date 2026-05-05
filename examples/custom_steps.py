@@ -2780,12 +2780,20 @@ def compute_snd(data, rule):
 
     snd = sd * 1000 / rsn  (SWE in m water equiv → physical depth in m)
     Where rsn = 0, snd = 0 (no snow).
+
+    Both inputs are 12-monthly OIFS-remapped FESOM fields with the same
+    structure, but XIOS sometimes writes ``time_centered`` values that
+    differ at the millisecond level between separate output files,
+    which trips xarray's default ``join='exact'`` and raises
+    ``AlignmentError``. Force coord-equality with ``join='override'``
+    before the arithmetic so the time axis takes from ``sd``.
     """
     if isinstance(data, xr.Dataset):
         sd = data["sd"]
     else:
         sd = data
     rsn = _load_secondary_mf(rule, "second_input_path", "second_input_pattern", "second_variable")
+    sd, rsn = xr.align(sd, rsn, join="override")
 
     snd = xr.where(rsn > 0, sd * 1000.0 / rsn, 0.0)
     snd.attrs["units"] = "m"
@@ -3066,17 +3074,27 @@ def compute_rtmt(data, rule):
     """
     Compute net downward radiative flux at top of model.
 
-    rtmt = rsdt - rsut + rlds - rlus
+    rtmt = rsdt - rsut - rlut
+
+    where:
+      rsdt = downwelling shortwave at TOA
+      rsut = upwelling shortwave at TOA
+      rlut = outgoing longwave at TOA (OLR)
+
+    The earlier formula ``(rsdt - rsut) + (rlds - rlus)`` mixed TOA
+    shortwave with surface longwave, which is not physically the TOA
+    radiation balance. CMIP variable definition for ``rtmt`` is the
+    standard TOA net flux given by the formula above. ``rlut`` is
+    available in OIFS XIOS output (atmos_{day,mon}_rlut_*.nc).
 
     Primary input (data) should be a Dataset containing rsdt, rsut,
-    rlds, and rlus from the _day_cap7 or monthly XIOS output.
+    and rlut from the monthly XIOS output.
     """
     rsdt = data["rsdt"]
     rsut = data["rsut"]
-    rlds = data["rlds"]
-    rlus = data["rlus"]
+    rlut = data["rlut"]
 
-    result = (rsdt - rsut) + (rlds - rlus)
+    result = rsdt - rsut - rlut
     result.attrs = {
         "units": "W m-2",
         "standard_name": "net_downward_radiative_flux_at_top_of_atmosphere_model",

@@ -192,6 +192,7 @@ rules:
         pattern: atmos_1h_sfc_hfls_.*\.nc
     compound_name: atmos.hfls.tavg-u-hxy-u.day.GLB
     model_variable: hfls
+    lazy_write: true
 
   - name: hfss_day
     inputs:
@@ -199,6 +200,7 @@ rules:
         pattern: atmos_1h_sfc_hfss_.*\.nc
     compound_name: atmos.hfss.tavg-u-hxy-u.day.GLB
     model_variable: hfss
+    lazy_write: true
 
   - name: rlus_day
     inputs:
@@ -206,6 +208,7 @@ rules:
         pattern: atmos_1h_sfc_rlus_.*\.nc
     compound_name: atmos.rlus.tavg-u-hxy-u.day.GLB
     model_variable: rlus
+    lazy_write: true
 
   - name: rsus_day
     inputs:
@@ -213,6 +216,7 @@ rules:
         pattern: atmos_1h_sfc_rsus_.*\.nc
     compound_name: atmos.rsus.tavg-u-hxy-u.day.GLB
     model_variable: rsus
+    lazy_write: true
 
   - name: rluscs_day
     inputs:
@@ -234,6 +238,7 @@ rules:
         pattern: atmos_1h_sfc_rlds_.*\.nc
     compound_name: atmos.rlds.tavg-u-hxy-u.day.GLB
     model_variable: rlds
+    lazy_write: true
 
   - name: rldscs_day
     inputs:
@@ -420,6 +425,7 @@ rules:
         pattern: atmos_1h_pt_2d_.*\.nc
     compound_name: atmos.huss.tpt-h2m-hxy-u.1hr.GLB
     model_variable: 2d
+    lazy_write: true
     second_input_path: *dp
     second_input_pattern: atmos_1h_sfc_sp_.*\.nc
     second_variable: sp
@@ -432,6 +438,7 @@ rules:
         pattern: atmos_1h_pt_msl_.*\.nc
     compound_name: atmos.psl.tpt-u-hxy-u.1hr.GLB
     model_variable: msl
+    lazy_write: true
 
   - name: ts_1hr
     inputs:
@@ -439,6 +446,7 @@ rules:
         pattern: atmos_1h_ts_ts_.*\.nc
     compound_name: atmos.ts.tavg-u-hxy-u.1hr.GLB
     model_variable: ts
+    lazy_write: true
 
   - name: uas_1hr
     inputs:
@@ -446,6 +454,7 @@ rules:
         pattern: atmos_1h_pt_10u_.*\.nc
     compound_name: atmos.uas.tpt-h10m-hxy-u.1hr.GLB
     model_variable: 10u
+    lazy_write: true
 
   - name: vas_1hr
     inputs:
@@ -453,6 +462,7 @@ rules:
         pattern: atmos_1h_pt_10v_.*\.nc
     compound_name: atmos.vas.tpt-h10m-hxy-u.1hr.GLB
     model_variable: 10v
+    lazy_write: true
 
   - name: ps_1hr
     inputs:
@@ -460,6 +470,7 @@ rules:
         pattern: atmos_1h_sfc_sp_.*\.nc
     compound_name: atmos.ps.tpt-u-hxy-u.1hr.GLB
     model_variable: sp
+    lazy_write: true
 
   - name: rlds_1hr
     inputs:
@@ -467,6 +478,7 @@ rules:
         pattern: atmos_1h_sfc_rlds_.*\.nc
     compound_name: atmos.rlds.tavg-u-hxy-u.1hr.GLB
     model_variable: rlds
+    lazy_write: true
 
   - name: rsds_1hr
     inputs:
@@ -474,6 +486,7 @@ rules:
         pattern: atmos_1h_sfc_rsds_.*\.nc
     compound_name: atmos.rsds.tavg-u-hxy-u.1hr.GLB
     model_variable: rsds
+    lazy_write: true
 
   - name: sfcWind_1hr
     inputs:
@@ -481,6 +494,7 @@ rules:
         pattern: atmos_1h_sfc_10u_.*\.nc
     compound_name: atmos.sfcWind.tavg-h10m-hxy-u.1hr.GLB
     model_variable: 10u
+    lazy_write: true
     second_input_path: *dp
     second_input_pattern: atmos_1h_sfc_10v_.*\.nc
     second_variable: 10v
@@ -606,7 +620,7 @@ rules:
   - name: rtmt_mon
     inputs:
       - path: *dp
-        pattern: atmos_mon_(rsdt|rsut|rlds|rlus)_.*\.nc
+        pattern: atmos_mon_(rsdt|rsut|rlut)_.*\.nc
     compound_name: atmos.rtmt.tavg-u-hxy-u.mon.GLB
     model_variable: rsdt
     pipelines:
