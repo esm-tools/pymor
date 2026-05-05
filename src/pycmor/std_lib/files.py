@@ -328,6 +328,40 @@ def _is_dask_backed(ds):
     return any(v.chunks is not None for v in ds.data_vars.values())
 
 
+def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
+    """Wrapper around ``to_netcdf`` that works around the
+    ``TypeError: Could not serialize object of type _HLGExprSequence``
+    failure (root cause: ``cannot pickle '_thread.lock' object``) seen
+    when a Prefect+DaskTaskRunner-backed distributed.Client is active
+    and xarray dispatches the array-store dask graph through it.
+
+    When the input is dask-backed: call ``to_netcdf(compute=False)`` to
+    get a Delayed without dispatching to the Client, then ``compute()``
+    it under ``dask.config.set(scheduler=...)`` so the graph runs
+    in-process (no inter-worker pickling).
+
+    When the input is eager (numpy-backed): just call ``to_netcdf``.
+    No dask graph is built, no serialization happens.
+
+    Alternative considered: ``lock=False`` at open time (xarray docs;
+    pydata/xarray#3961, #8442) avoids putting the lock in the graph
+    in the first place. We did not adopt that here because
+    (a) it requires a thread-safe HDF5 build (we have one on Levante),
+    (b) it shifts thread-safety responsibility to the caller, and
+    (c) the present approach works without changing input-loading code.
+    Worth revisiting in a future round if save-side perf becomes a
+    bottleneck.
+
+    See: dask/distributed#780, pydata/xarray#4406, dask/dask#10238.
+    """
+    if _is_dask_backed(ds_or_da):
+        delayed = ds_or_da.to_netcdf(*args, compute=False, **kwargs)
+        with dask.config.set(scheduler=scheduler):
+            delayed.compute()
+        return None
+    return ds_or_da.to_netcdf(*args, **kwargs)
+
+
 def _get_write_scheduler(rule):
     """Return the dask scheduler to use around xr.save_mfdataset.
 
@@ -803,21 +837,26 @@ def _save_dataset_with_native_timespan(
     # Default scheduler is "synchronous" to be safe with HDF5 thread-safety;
     # configurable per-rule (netcdf_write_scheduler) for write benchmarks
     # or when using a thread-safe HDF5 build (then "threads" is much faster).
+    #
+    # In parallel-mode (Prefect+dask-distributed), xr.save_mfdataset(compute=True)
+    # would dispatch the array-store dask graph through the global distributed
+    # Client, which then tries to pickle the graph for transport to workers.
+    # That fails with TypeError("Could not serialize object of type
+    # _HLGExprSequence") -> "cannot pickle '_thread.lock' object", because the
+    # netCDF4/HDF5 store's writer-lock isn't picklable. Workaround: use
+    # compute=False to get a delayed, then compute it explicitly with a
+    # synchronous scheduler — that runs in-process and avoids serialization.
     _write_sched = _get_write_scheduler(rule)
+    enc = chunk_encoding if chunk_encoding else None
     if is_dask:
+        delayed = xr.save_mfdataset(
+            datasets, paths, encoding=enc, compute=False, **extra_kwargs
+        )
         with dask.config.set(scheduler=_write_sched):
-            xr.save_mfdataset(
-                datasets,
-                paths,
-                encoding=chunk_encoding if chunk_encoding else None,
-                **extra_kwargs,
-            )
+            delayed.compute()
     else:
         xr.save_mfdataset(
-            datasets,
-            paths,
-            encoding=chunk_encoding if chunk_encoding else None,
-            **extra_kwargs,
+            datasets, paths, encoding=enc, **extra_kwargs
         )
     return da
 
@@ -981,11 +1020,13 @@ def save_dataset(da: xr.DataArray, rule):
             ds_temp = da
         ds_temp = _ensure_lat_lon_bounds_and_external_vars(ds_temp, rule)
         chunk_encoding = _calculate_netcdf_chunks(ds_temp, rule)
-        return ds_temp.to_netcdf(
+        return _safe_to_netcdf(
+            ds_temp,
             filepath,
             mode="w",
             format="NETCDF4",
             encoding=chunk_encoding if chunk_encoding else None,
+            scheduler=_get_write_scheduler(rule),
         )
     time_label = get_time_label(da)
     # Update unlimited_dims to use actual time dimension name (may be time1, time2, etc.)
@@ -1007,11 +1048,13 @@ def save_dataset(da: xr.DataArray, rule):
         final_encoding = {time_label: time_encoding}
         if chunk_encoding:
             final_encoding.update(chunk_encoding)
-        return ds_temp.to_netcdf(
+        return _safe_to_netcdf(
+            ds_temp,
             filepath,
             mode="w",
             format="NETCDF4",
             encoding=final_encoding,
+            scheduler=_get_write_scheduler(rule),
             **extra_kwargs,
         )
     if isinstance(da, xr.DataArray):
@@ -1113,11 +1156,13 @@ def save_dataset(da: xr.DataArray, rule):
         ds_temp = _ensure_lat_lon_bounds_and_external_vars(ds_temp, rule)
         da = ds_temp
         chunk_encoding = _calculate_netcdf_chunks(ds_temp, rule)
-        da.to_netcdf(
+        _safe_to_netcdf(
+            da,
             filepath,
             mode="w",
             format="NETCDF4",
             encoding=chunk_encoding if chunk_encoding else None,
+            scheduler=_get_write_scheduler(rule),
             **extra_kwargs,
         )
         return da
@@ -1204,20 +1249,19 @@ def save_dataset(da: xr.DataArray, rule):
                         if time_label in _ds.variables:
                             _ds[time_label].attrs.pop("units", None)
                             _ds[time_label].encoding["units"] = _units
+            # See the parallel-mode HLG-pickling note above the other
+            # save_mfdataset call site. Same workaround applies here.
             if is_dask:
                 _write_sched = _get_write_scheduler(rule)
+                delayed = xr.save_mfdataset(
+                    datasets, paths, encoding=final_encoding,
+                    compute=False, **extra_kwargs
+                )
                 with dask.config.set(scheduler=_write_sched):
-                    xr.save_mfdataset(
-                        datasets,
-                        paths,
-                        encoding=final_encoding,
-                        **extra_kwargs,
-                    )
+                    delayed.compute()
             else:
                 xr.save_mfdataset(
-                    datasets,
-                    paths,
-                    encoding=final_encoding,
+                    datasets, paths, encoding=final_encoding,
                     **extra_kwargs,
                 )
             return da
