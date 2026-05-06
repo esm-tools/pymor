@@ -983,6 +983,8 @@ class CMORizer:
             return unwrapped
 
     def _parallel_process_dask(self, external_client=None):
+        from distributed import as_completed
+
         if external_client:
             client = external_client
         else:
@@ -990,15 +992,70 @@ class CMORizer:
         if not wait_for_workers(client, 1):
             logger.error("Timeout reached waiting for dask cluster, sorry...")
             return
-        futures = [client.submit(self._process_rule, rule) for rule in self.rules]
+
+        # Bound the number of parents in flight to W * TPW. Without this,
+        # the naive ``[client.submit(...) for rule in self.rules]`` list-
+        # comprehension fires every rule simultaneously; once each parent
+        # reaches ``save_dataset`` -> ``to_netcdf`` -> ``dask.compute()``,
+        # ``distributed.secede()`` releases the parent's worker thread
+        # back to the pool, letting dask dispatch the next queued parent.
+        # With N=120+ rules of homogeneous heavy pipelines (cap7_land,
+        # lpjg_monthly_*) the scheduler ends up holding 50-100 concurrent
+        # save graphs; its asyncio loop and TCP accept queue back up,
+        # workers fail to (re-)connect, OSError("Timed out trying to
+        # connect to scheduler after 30 s") cascades. See
+        # ``DESIGN_PROPOSAL_subflow_deadlock.md`` §10.5.
+        # Match the everett config quirk used at line ~216 above:
+        # dask_n_workers / dask_threads_per_worker may come back as None
+        # or the literal string "None" depending on how the yaml parsed.
+        def _int_or_default(key, default):
+            v = self._pymor_cfg.get(key, default)
+            if v is None or str(v) == "None":
+                return default
+            return int(v)
+        n_workers = _int_or_default("dask_n_workers", 1)
+        tpw = _int_or_default("dask_threads_per_worker", 1)
+        max_in_flight = max(1, n_workers * tpw)
+        rule_iter = iter(self.rules)
+        futures = []
+        for _ in range(max_in_flight):
+            try:
+                rule = next(rule_iter)
+            except StopIteration:
+                break
+            futures.append(client.submit(self._process_rule, rule))
+        logger.info(
+            f"Submitting rules with rolling window: "
+            f"max_in_flight={max_in_flight} (n_workers={n_workers} * tpw={tpw}); "
+            f"total rules={len(self.rules)}"
+        )
+
+        results = []
         try:
-            results = client.gather(futures)
+            ac = as_completed(futures)
+            for fut in ac:
+                try:
+                    results.append(fut.result())
+                except Exception as exc:
+                    # Per-rule exceptions: log and continue. The behavior
+                    # of the prior ``client.gather(futures)`` was to
+                    # raise the first exception; matching ``return_when``
+                    # semantics here would change ``process()`` callers'
+                    # expectations. Easier to log + collect, preserving
+                    # the rolling-window throughput so a failing tier
+                    # doesn't stall the rest.
+                    logger.error(f"rule future raised: {type(exc).__name__}: {exc}")
+                fut.release()
+                try:
+                    rule = next(rule_iter)
+                except StopIteration:
+                    continue
+                ac.add(client.submit(self._process_rule, rule))
         finally:
-            # Drop scheduler-side bookkeeping for every rule (graphs +
-            # per-task state); without this the driver linearly grows
-            # ~1 GB/rule of completed-future cache and prefect/dask graph
-            # objects. We also kick a worker+driver GC sweep so the next
-            # caller has clean state.
+            # The list ``futures`` holds only the priming wave by now;
+            # the rolling-window submissions live on ``ac``. Both are
+            # released (priming) or already released (rolling) above,
+            # but we still need the worker GC sweep.
             for f in futures:
                 try:
                     f.release()
