@@ -263,6 +263,15 @@ class PycmorConfig:
             default=None,
             doc="Number of Dask workers for LocalCluster. Defaults to CPU count if not set.",
         )
+        dask_threads_per_worker = Option(
+            default=None,
+            doc="Threads per Dask worker for LocalCluster. Defaults to CPU count // n_workers if not set.",
+        )
+        dask_memory_limit = Option(
+            default=None,
+            doc="Per-worker memory limit (string like '12GB') for LocalCluster. "
+                "LocalCluster otherwise reads node-total RAM via psutil, which is unsafe under a cgroup cap.",
+        )
         dask_cluster_scaling_fixed_jobs = Option(
             default=5,
             doc="Number of jobs to create for Jobqueue-backed Dask Cluster",

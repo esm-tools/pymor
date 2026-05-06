@@ -34,6 +34,12 @@ export PREFECT_LOCAL_STORAGE_PATH=$PYCMOR_SCRATCH/prefect/storage
 export TMPDIR=$PYCMOR_SCRATCH
 export HDF5_USE_FILE_LOCKING=FALSE
 export OMP_NUM_THREADS=1
+# Round-2 collapse: all pipeline steps run in ONE Prefect task per
+# rule, avoiding inter-task dataset serialization (which fails with
+# "Could not serialize object of type _HLGExprSequence" / "cannot
+# pickle '_thread.lock' object" under parallel mode). Round-2 showed
+# 1-sec diff in single-rule mode but the real win is here in parallel.
+export PYCMOR_PREFECT_COLLAPSE=1
 
 DATA_PATH=/work/ab0246/a270092/bench_copies/copy${COPY_N}
 OUTROOT=/scratch/a/a270092/pycmor_mini_cap7_sweep

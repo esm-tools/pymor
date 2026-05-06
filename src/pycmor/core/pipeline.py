@@ -8,7 +8,7 @@ from datetime import timedelta
 
 import randomname
 from prefect import flow
-from prefect.cache_policies import INPUTS, TASK_SOURCE
+from prefect.cache_policies import INPUTS, NO_CACHE, TASK_SOURCE
 from prefect.tasks import Task
 from prefect_dask import DaskTaskRunner
 

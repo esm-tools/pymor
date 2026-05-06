@@ -22,6 +22,9 @@ pycmor:
   dask_threads_per_worker: 4
   dask_memory_limit: {{MEM_LIMIT}}
 
+# Use the global env var instead, set in the runscript:
+# export PYCMOR_PREFECT_COLLAPSE=1
+
 inherit:
   netcdf_compression_codec: blosc_zstd
   netcdf_compression_level: 3

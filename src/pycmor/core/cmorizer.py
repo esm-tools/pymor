@@ -216,6 +216,12 @@ class CMORizer:
             n_workers = self._pymor_cfg.get("dask_n_workers", None)
             if n_workers is not None and str(n_workers) != "None":
                 cluster_kwargs["n_workers"] = int(n_workers)
+            tpw = self._pymor_cfg.get("dask_threads_per_worker", None)
+            if tpw is not None and str(tpw) != "None":
+                cluster_kwargs["threads_per_worker"] = int(tpw)
+            mem = self._pymor_cfg.get("dask_memory_limit", None)
+            if mem is not None and str(mem) != "None":
+                cluster_kwargs["memory_limit"] = mem
         self._cluster = ClusterClass(**cluster_kwargs)
         set_dashboard_link(self._cluster)
         cluster_scaling_mode = self._pymor_cfg.get("dask_cluster_scaling_mode", "adapt")
@@ -981,15 +987,27 @@ class CMORizer:
             client = external_client
         else:
             client = Client(cluster=self._cluster)  # start a local Dask client
-        if wait_for_workers(client, 1):
-            futures = [client.submit(self._process_rule, rule) for rule in self.rules]
-
-            results = client.gather(futures)
-
-            logger.success("Processing completed.")
-            return results
-        else:
+        if not wait_for_workers(client, 1):
             logger.error("Timeout reached waiting for dask cluster, sorry...")
+            return
+        futures = [client.submit(self._process_rule, rule) for rule in self.rules]
+        try:
+            results = client.gather(futures)
+        finally:
+            # Drop scheduler-side bookkeeping for every rule (graphs +
+            # per-task state); without this the driver linearly grows
+            # ~1 GB/rule of completed-future cache and prefect/dask graph
+            # objects. We also kick a worker+driver GC sweep so the next
+            # caller has clean state.
+            for f in futures:
+                try:
+                    f.release()
+                except Exception:
+                    pass
+            del futures
+            self._cleanup_dask_workers()
+        logger.success("Processing completed.")
+        return results
 
     def serial_process(self):
         succeeded = []
@@ -1076,7 +1094,17 @@ class CMORizer:
         for pipeline in rule.pipelines:
             logger.info(f"Running {str(pipeline)}")
             data = pipeline.run(data, rule)
-        return data
+        # Don't ship the final dataset back to the scheduler/driver.
+        # Under parallel/dask orchestration the caller does
+        # client.gather(futures), which deserialises every rule's return
+        # value into the driver process. Even if save_dataset is the
+        # last step and "should" return None, intermediate paths can
+        # leave a Dataset in `data`; with 50+ rules that accumulates to
+        # tens of GB in the driver and OOMs the cgroup before any
+        # worker hits its memory cap. Drop the reference and return
+        # just the rule name so the gather payload is tiny.
+        del data
+        return getattr(rule, "name", "unnamed")
 
     def _post_init_create_global_attributes_on_rules(self):
         """Create global attributes on rules using factory pattern."""
