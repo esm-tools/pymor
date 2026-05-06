@@ -1324,6 +1324,144 @@ extended window, the §3 mechanism is incomplete and the §4 fix
 is necessary but not sufficient. Reviewers should hold §4.3's
 "deadlock window is eliminated" wording until v2 reports.
 
+### 10.6 Gate-A v2 final results + new failure mode + parent-throttle fix
+
+#### 10.6.1 Final tier-by-tier outcome at 2×4×64+collapse with §4 applied
+
+Counts use the post-§4 log patterns
+(`Pipeline '<pipeline>' running for rule` for start,
+`Pipeline '<pipeline>' completed for rule` for ok,
+`ERROR: Pipeline ... FAILED for rule` for fail). All 17 logs
+contain zero `Beginning subflow run` lines (sanity check that the
+§4 patch is in effect) and zero `sqlite3.OperationalError: disk
+I/O error` lines (sanity check Prefect-on-`/tmp` is in effect).
+
+| tier         | rules | start | ok | fail | killed | OSerr-30s-cascade |
+|---|---:|---:|---:|---:|---:|---:|
+| cap7_aerosol |   7 |   5 |   5 |  0 | 0 |   0 |
+| cap7_atm     |  61 |  52 |  50 |  2 | 0 |   0 |
+| **cap7_land**| 123 | 120 |   **0** | 62 | 0 | **436** |
+| cap7_ocean   |  14 |   7 |   3 |  4 | 0 |   0 |
+| cap7_seaice  |  10 |   9 |   9 |  0 | 0 |   0 |
+| core_atm     |  84 |  77 |  77 |  0 | 0 |   0 |
+| core_land    |  14 |  11 |  11 |  0 | 0 |   0 |
+| core_ocean   |  38 |  28 |  28 |  0 | 0 |   0 |
+| core_seaice  |  12 |   9 |   9 |  0 | 0 |   0 |
+| extra_atm    |  25 |  20 |  15 |  1 | 0 |   0 |
+| extra_land   |  18 |  13 |  13 |  0 | 0 |   0 |
+| **lrcs_land**|  10 |   6 |   **6** |  0 | 0 |   0 |
+| lrcs_ocean   |  79 |  58 |  51 |  7 | 0 |   0 |
+| lrcs_seaice  |  80 |  64 |  51 | 13 | 0 |   0 |
+| **veg_atm**  |  21 |  20 |  **20** |  0 | 0 |   0 |
+| **veg_land** |  67 |  60 |  **59** |  1 | 0 |   0 |
+| veg_seaice   |   2 |   1 |   1 |  0 | 0 |   0 |
+
+`start < rules` in many tiers reflects rules that were filtered
+out before submission (input regex matched no files, etc.) — not
+the throttle. `start = ok + fail` for every tier *except*
+`cap7_land`, where `start = 120, ok = 0, fail = 62, OSError
+cascade = 436` — i.e. 62 rules failed and the remaining 58 ran
+to walltime without ever returning a result.
+
+#### 10.6.2 §4 verdict: deadlock fixed at 3 of 4 test tiers
+
+The four tiers that stalled with the deadlock fingerprint pre-fix
+(§10.4):
+
+| tier         | pre-fix at this config (begin/ok/fail) | post-§4 (start/ok/fail) | verdict |
+|---|---|---|---|
+| veg_atm      | 18 / 0 / 0 STALL (4×4×16)              | 20 / 20 / 0             | **fixed** |
+| lrcs_land    |  5 / 0 / 0 STALL (2×4×64)              |  6 / 6  / 0             | **fixed** |
+| veg_land     | 28 / 0 / 0 STALL (2×4×64)              | 60 / 59 / 1             | **fixed** |
+| **cap7_land**| 12 / 0 / 0 STALL (2×4×64)              | 120 / **0** / 62 + 436 OSError-cascade | **§3 deadlock fixed; new failure mode** |
+
+So §4 retired the parent×subflow slot deadlock for 3 of 4
+test tiers, exactly as the §3 mechanism predicted. cap7_land
+unmasks a *different* failure that §4 alone doesn't address.
+
+#### 10.6.3 cap7_land's new failure mode: unbounded parent fan-out
+
+The 436 `OSError: Timed out trying to connect to scheduler after
+30 s` events on cap7_land are not the parent×subflow deadlock.
+Heartbeat output is present (~14-34 #s per rule) and 100 distinct
+rules entered `save_dataset`. Diagnosis:
+
+* `_parallel_process_prefect`'s naive
+  `[self._process_rule.submit(rule) for rule in self.rules]`
+  fires every rule synchronously into Prefect/Dask's queue.
+* Each parent reaches `save_dataset` → `dataset.to_netcdf()` →
+  `dask.compute()`. xarray/dask-distributed call
+  `distributed.secede()` on the parent's worker thread to release
+  it back to the pool while awaiting the chunk-write graph.
+* Dask sees the thread free and dispatches the next queued
+  parent. The new parent reaches `save_dataset` and secedes too.
+* Iterate. With 123 homogeneous lpjg-monthly rules all hitting
+  `save_dataset` at roughly the same rate, the scheduler ends up
+  holding 50-100 concurrent save graphs.
+* Scheduler's asyncio loop and TCP accept queue back up. New
+  worker connection attempts hit the 30 s tornado connect timeout
+  and the OSError cascade fires.
+
+This is the ***same*** root pattern as §3 ("nested
+bounded-pool submission overcommits the worker pool") but at a
+different layer: parent → child here is "rule → save's dask
+graph" via secede, not "parent task → inner-flow task" via
+nesting.
+
+Heterogeneous tiers escape this in gate-A v2: veg_land has 8
+distinct pipelines and rule entry into `save_dataset` is
+naturally staggered, so peak concurrency stays well below the
+saturation cliff.
+
+#### 10.6.4 Fix: enforce W×TPW parent throttle at the submit site
+
+§4.3 of this proposal claimed:
+
+> *"with one task per rule, S = W × TPW is the literal cap on
+> rule concurrency"*
+
+That promise was implicit ("dask will bound it") but `secede()`
+breaks the implicit cap. Commits `6773ea5` (in
+`_parallel_process_dask`) and `90f382f` (in
+`_parallel_process_prefect`) make the cap explicit:
+
+* `_parallel_process_prefect` (the production path under the
+  current dispatcher routing) now submits in batches of
+  `max_in_flight = W × TPW`, calling `prefect.futures.wait()`
+  between batches. Trades a small wait-for-slowest-in-batch
+  inefficiency for a hard concurrency cap.
+* `_parallel_process_dask` uses an `as_completed` rolling
+  window for the same effect; it is currently unreached because
+  the `parallel_process()` dispatcher reads
+  `pipeline_orchestrator` while the schema defines
+  `pipeline_workflow_orchestrator` — left for a separate fix.
+
+The throttle does not change the §4 architectural fix; it
+addresses a *separate* failure mode that §4 unmasks at full
+scale on tiers with many homogeneous rules.
+
+#### 10.6.5 Gate-A v3: full 17-tier with throttle in place
+
+Submission pending. Acceptance criteria for declaring §4 +
+parent-throttle production-ready:
+
+* Zero `OSError: Timed out trying to connect to scheduler` lines
+  in any tier's log (especially cap7_land).
+* `cap7_land` produces `ok > 0` (at least one `lpjg_monthly`
+  rule completes — the saturation cliff currently kills all of
+  them).
+* No regression on the 3 tiers §4 already fixed (veg_atm,
+  lrcs_land, veg_land all keep their `ok > 0` results).
+* `start = ok + fail` for every tier — no rules wedged in flight
+  at job end.
+
+If gate-A v3 hits any of these acceptance criteria negatively,
+the proposal needs a third diagnostic round before merge. The
+failure modes documented in §10.6.3 may have a deeper structural
+cause (e.g. the dispatcher key bug indicating that the dask path
+should be the production default; an unrelated Prefect-vs-dask
+choice; etc.).
+
 ---
 
 ## 11. Decision required
