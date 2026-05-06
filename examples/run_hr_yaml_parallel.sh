@@ -80,8 +80,22 @@ export DASK_DISTRIBUTED__WORKER__MEMORY__TERMINATE=0.90
 
 PYCMOR_SCRATCH=/scratch/a/a270092/pycmor_tmp/$$
 mkdir -p $PYCMOR_SCRATCH/prefect/storage
-export PREFECT_HOME=$PYCMOR_SCRATCH/prefect
-export PREFECT_LOCAL_STORAGE_PATH=$PYCMOR_SCRATCH/prefect/storage
+# Prefect ephemeral server's SQLite DB MUST live on node-local fast disk.
+# On Lustre /scratch, alembic migrations on aiosqlite hit
+# "sqlite3.OperationalError: disk I/O error" under concurrent SLURM
+# job ramp-up — when 17 jobs simultaneously initialise their per-job
+# Prefect DBs against the same Lustre filesystem, file-locking
+# semantics break and the server boot is non-deterministic.
+# Symptom: every gate-A log has the disk I/O error; some recover, some
+# crash at 7-8 min wall with 0 task starts. Putting PREFECT_HOME on
+# node-local /tmp eliminates this entirely.
+PREFECT_NODELOCAL=/tmp/pycmor_prefect_${SLURM_JOB_ID:-$$}
+mkdir -p $PREFECT_NODELOCAL/storage
+export PREFECT_HOME=$PREFECT_NODELOCAL
+export PREFECT_LOCAL_STORAGE_PATH=$PREFECT_NODELOCAL/storage
+trap "rm -rf $PREFECT_NODELOCAL" EXIT
+# Big HDF5 spill stays on /scratch; only Prefect's small (<10 MB) DB
+# moves to /tmp.
 export TMPDIR=$PYCMOR_SCRATCH
 export HDF5_USE_FILE_LOCKING=FALSE
 export OMP_NUM_THREADS=1

@@ -27,7 +27,12 @@ import re
 import sys
 
 SRC_DIR = pathlib.Path(__file__).resolve().parent.parent / "awi-esm3-veg-hr-variables"
-OLD_RUN_TOKEN = "HR_test_01"
+# The token to swap in the source yamls' hardcoded data paths.
+# Must match what's literally in awi-esm3-veg-hr-variables/<tier>/*.yaml today
+# (current: ``Final_CMIP7_IO_Test_01``). If the hardcoded path drifts, update
+# this string. Run ``grep -h 'data_path:' awi-esm3-veg-hr-variables/*/*.yaml |
+# awk -F/ '{print $(NF-1)}' | sort -u`` to find the current value.
+OLD_RUN_TOKEN = "Final_CMIP7_IO_Test_01"
 RUNTIME_ROOT = "/work/bb1469/a270092/runtime/awiesm3-develop"
 
 
@@ -99,8 +104,12 @@ def repoint_yaml(src: pathlib.Path, run_dir: str, year: str) -> str:
         prefix, val = m.group(1), m.group(2)
         return f"{prefix}{add_year_to_pattern(val, year)}"
 
+    # NB: variable names can contain digits (sgm22, sgm12, etc.). The
+    # earlier ``[a-z_]+`` form silently skipped year-filtering for those
+    # and left the regex-form pattern in the yaml, which pycmor's
+    # ``*_file:`` resolver then tried to open as a literal filename.
     text = re.sub(
-        r"(^\s*[a-z_]+_file:\s*)(\S+)",
+        r"(^\s*[a-z0-9_]+_file:\s*)(\S+)",
         _repl_file,
         text,
         flags=re.M,

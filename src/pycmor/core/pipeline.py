@@ -4,13 +4,12 @@ Pipeline of the data processing steps.
 
 import copy
 import os
+import time
 from datetime import timedelta
 
 import randomname
-from prefect import flow
 from prefect.cache_policies import INPUTS, NO_CACHE, TASK_SOURCE
 from prefect.tasks import Task
-from prefect_dask import DaskTaskRunner
 
 from .caching import generate_cache_key  # noqa: F401
 from .cluster import DaskContext
@@ -44,7 +43,7 @@ class Pipeline:
         # Default off; can be set per-pipeline via yaml ``collapse_steps``
         # or globally via env var ``PYCMOR_PREFECT_COLLAPSE=1``.
         if collapse_steps is None:
-            collapse_steps = os.environ.get("PYCMOR_PREFECT_COLLAPSE", "0") in ("1", "true", "True", "yes")
+            collapse_steps = os.environ.get("PYCMOR_PREFECT_COLLAPSE", "1") in ("1", "true", "True", "yes")
         self._collapse_steps = bool(collapse_steps)
         if cache_policy is None:
             self._cache_policy = TASK_SOURCE + INPUTS
@@ -175,32 +174,56 @@ class Pipeline:
         return data
 
     def _run_prefect(self, data, rule_spec):
-        logger.debug("Dynamically creating workflow with DaskTaskRunner...")
+        # Run the pipeline's prefectised steps synchronously in the calling
+        # thread. Earlier versions wrapped this in a per-rule ``@flow`` whose
+        # ``DaskTaskRunner`` shared the parent task's pool; that nested
+        # submission caused a parent×child resource-allocation deadlock at
+        # production scale. See DESIGN_PROPOSAL_subflow_deadlock.md §3-§4.
         cmor_name = rule_spec.get("cmor_name")
         rule_name = rule_spec.get("name", cmor_name)
-        if getattr(self, "_cluster", None) is None:
-            logger.warning("No cluster assigned to this pipeline. Using local Dask cluster.")
-            dask_scheduler_address = None
-        else:
-            dask_scheduler_address = self._cluster.scheduler.address
+        logger.info(f"Pipeline '{self.name}' running for rule '{rule_name}'")
+        t0 = time.monotonic()
+        try:
+            result = self._run_native(data, rule_spec)
+        except BaseException as exc:
+            elapsed = time.monotonic() - t0
+            try:
+                self.on_failure_native(
+                    rule_name=rule_name,
+                    pipeline_name=self.name,
+                    elapsed_s=elapsed,
+                    exception=exc,
+                )
+            except Exception as cb_exc:
+                logger.warning(f"on_failure_native callback raised: {cb_exc}")
+            raise
+        elapsed = time.monotonic() - t0
+        try:
+            self.on_completion_native(
+                rule_name=rule_name,
+                pipeline_name=self.name,
+                elapsed_s=elapsed,
+            )
+        except Exception as cb_exc:
+            logger.warning(f"on_completion_native callback raised: {cb_exc}")
+        return result
 
-        @flow(
-            flow_run_name=f"{self.name} - {rule_name}",
-            description=f"{rule_spec.get('description', '')}",
-            task_runner=DaskTaskRunner(address=dask_scheduler_address),
-            on_completion=[self.on_completion],
-            on_failure=[self.on_failure],
+    @staticmethod
+    @add_to_report_log
+    def on_completion_native(rule_name, pipeline_name, elapsed_s):
+        logger.success(
+            f"Pipeline '{pipeline_name}' completed for rule "
+            f"'{rule_name}' in {elapsed_s:.1f}s"
         )
-        def dynamic_flow(data, rule_spec):
-            return self._run_native(data, rule_spec)
 
-        result = dynamic_flow(data, rule_spec, return_state=True)
-        if result.is_failed():
-            exc = result.result(raise_on_failure=False)
-            if isinstance(exc, BaseException):
-                raise exc
-            raise RuntimeError(f"Pipeline '{self.name}' failed for rule '{rule_name}': {exc}")
-        return result.result()
+    @staticmethod
+    @add_to_report_log
+    def on_failure_native(rule_name, pipeline_name, elapsed_s, exception):
+        logger.error(
+            f"Pipeline '{pipeline_name}' FAILED for rule '{rule_name}' "
+            f"after {elapsed_s:.1f}s: "
+            f"{type(exception).__name__}: {exception}"
+        )
 
     @staticmethod
     @add_to_report_log
