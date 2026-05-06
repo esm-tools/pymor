@@ -945,12 +945,51 @@ class CMORizer:
         # @flow(task_runner=DaskTaskRunner(address=self._cluster.scheduler_address))
         logger.debug("Defining dynamically generated prefect workflow...")
 
+        # Bound number of rules in flight to W*TPW. The naive
+        # "submit every rule then wait()" path lets every parent fan
+        # out via ``distributed.secede()`` inside save_dataset, with
+        # the scheduler then holding 50-100 concurrent save graphs and
+        # cascading OSError("Timed out trying to connect to scheduler
+        # after 30 s") on cap7_land at ~46 min wall. See
+        # ``DESIGN_PROPOSAL_subflow_deadlock.md`` §10.5.
+        # NOTE: this is the production code path under the current
+        # config-key plumbing (``_pymor_cfg.get('pipeline_orchestrator',
+        # 'prefect')`` in ``parallel_process()`` always falls through
+        # to "prefect" because the schema actually defines
+        # ``pipeline_workflow_orchestrator``; the parallel-dask path
+        # at ``_parallel_process_dask`` has a parallel throttle for
+        # whenever the dispatcher routing is fixed).
+        def _int_or_default(key, default):
+            v = self._pymor_cfg.get(key, default)
+            if v is None or str(v) == "None":
+                return default
+            return int(v)
+        n_workers = _int_or_default("dask_n_workers", 1)
+        tpw = _int_or_default("dask_threads_per_worker", 1)
+        max_in_flight = max(1, n_workers * tpw)
+
         @flow(name="CMORizer Process")
         def dynamic_flow():
+            rules = list(self.rules)
+            n = len(rules)
+            logger.info(
+                f"Submitting rules in batches of {max_in_flight} "
+                f"(n_workers={n_workers} * tpw={tpw}); total rules={n}"
+            )
             rule_results = []
-            for rule in self.rules:
-                rule_results.append(self._process_rule.submit(rule))
-            wait(rule_results)
+            for batch_start in range(0, n, max_in_flight):
+                batch_end = min(batch_start + max_in_flight, n)
+                batch_futures = [
+                    self._process_rule.submit(rules[i])
+                    for i in range(batch_start, batch_end)
+                ]
+                wait(batch_futures)
+                rule_results.extend(batch_futures)
+                logger.info(
+                    f"Batch {batch_start // max_in_flight + 1}/"
+                    f"{(n + max_in_flight - 1) // max_in_flight} done "
+                    f"({batch_end}/{n} rules submitted)"
+                )
             return rule_results
 
         logger.debug("...done!")
