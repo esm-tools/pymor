@@ -36,18 +36,40 @@ def resolve_run_dir(arg: str) -> str:
 
 
 def add_year_to_pattern(pat: str, year: str) -> str:
-    """Apply year filter to a single pattern/file string (yaml-as-written form)."""
+    """Apply year filter to a single pattern/file string (yaml-as-written form).
+
+    Accepts both unquoted (`pattern: foo_.*\\.nc`) and double-quoted
+    (`pattern: "foo_.*\\\\.nc"`) yaml forms; the quoted form is unescaped to
+    the canonical regex before pattern matching, then re-escaped on return.
+    Without this, double-quoted second_input_pattern values silently bypass
+    the year-lock.
+    """
+    quote = ""
+    canonical = pat
+    if len(pat) >= 2 and pat[0] == pat[-1] and pat[0] in ('"', "'"):
+        quote = pat[0]
+        inner = pat[1:-1]
+        # YAML double-quote semantics: \\ -> \. Single-quoted strings are literal.
+        canonical = inner.replace("\\\\", "\\") if quote == '"' else inner
+
     # FESOM regex form: <var>\.fesom\..*\.nc  (used in `pattern:` lines)
-    if r"\.fesom\." in pat:
-        return re.sub(r"\\\.\.\*\\\.nc$", rf"\\.{year}\\.nc", pat)
+    if r"\.fesom\." in canonical:
+        out = re.sub(r"\\\.\.\*\\\.nc$", rf"\\.{year}\\.nc", canonical)
     # FESOM glob form: <var>.fesom.*.nc  (used in `*_file:` lines, literal path)
-    if ".fesom." in pat and pat.endswith(".nc"):
-        return re.sub(r"\.\*\.nc$", rf".{year}.nc", pat)
+    elif ".fesom." in canonical and canonical.endswith(".nc"):
+        out = re.sub(r"\.\*\.nc$", rf".{year}.nc", canonical)
     # OIFS convention: atm[os|_remapped]_..._<year>-<year>.nc
-    if pat.startswith("atmos_") or pat.startswith("atm_remapped_"):
-        return re.sub(r"_\.\*\\\.nc$", rf"_{year}-{year}\\.nc", pat)
+    elif canonical.startswith("atmos_") or canonical.startswith("atm_remapped_"):
+        out = re.sub(r"_\.\*\\\.nc$", rf"_{year}-{year}\\.nc", canonical)
     # LPJ-GUESS .out files contain all years inline
-    return pat
+    else:
+        out = canonical
+
+    if quote == '"':
+        return f'"{out.replace(chr(92), chr(92) * 2)}"'
+    if quote == "'":
+        return f"'{out}'"
+    return out
 
 
 def repoint_yaml(src: pathlib.Path, run_dir: str, year: str) -> str:

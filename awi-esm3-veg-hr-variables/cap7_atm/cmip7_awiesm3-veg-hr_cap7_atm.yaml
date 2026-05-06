@@ -689,7 +689,7 @@ rules:
     compound_name: landIce.snd.tavg-u-hxy-lnd.mon.GLB
     model_variable: sd
     second_input_path: *dp
-    second_input_pattern: "atm_remapped_1m_rsn_.*\\.nc"
+    second_input_pattern: atm_remapped_1m_rsn_.*\.nc
     second_variable: rsn
     pipelines:
       - snd_pipeline
