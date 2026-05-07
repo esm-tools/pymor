@@ -56,6 +56,7 @@ import re as _re
 from typing import Optional
 
 import numpy as np
+import pint
 import xarray as xr
 
 logger = logging.getLogger(__name__)
@@ -1319,6 +1320,13 @@ def compute_ice_mass_transport(data, rule):
     Rule attributes:
       - mice_file: path to m_ice file
       - mice_variable: variable name (default: 'm_ice')
+
+    FESOM writes ``uice``/``vice`` daily and ``m_ice`` monthly when the run
+    is configured with mixed-cadence ice diagnostics. xarray's coord-value
+    alignment then leaves a sparse intersection (typically 0 timestamps)
+    and downstream ``timeavg`` errors with a CoordinateValidationError.
+    Resample the velocity to the m_ice cadence before multiplying so both
+    sides agree on time.
     """
     mice_file = rule.get("mice_file")
     if mice_file is None:
@@ -1329,10 +1337,73 @@ def compute_ice_mass_transport(data, rule):
     m_ice = ds[mice_var]
     ds.close()
 
+    data_time = _find_time_dim(data)
+    mice_time = _find_time_dim(m_ice)
+    if data_time and mice_time and data.sizes.get(data_time) != m_ice.sizes.get(mice_time):
+        # Resample the higher-cadence side down to the lower-cadence one.
+        # m_ice cadence is the canonical sea-ice mass cadence in FESOM (monthly);
+        # uice/vice can be daily — average to monthly to match.
+        if data.sizes[data_time] > m_ice.sizes[mice_time]:
+            data = data.resample({data_time: "MS"}).mean()
+        else:
+            m_ice = m_ice.resample({mice_time: "MS"}).mean()
+    m_ice = _align_time_to(data, m_ice)
+
     result = data * m_ice
     result.attrs = data.attrs.copy()
     result.attrs["units"] = "kg s-1"
     result.name = data.name
+    return result
+
+
+def compute_sfdsi_from_fw_ice(data, rule):
+    """
+    Reconstruct CMIP sfdsi (Downward Sea Ice Basal Salt Flux) from the
+    sea-ice freshwater flux fw_ice and the surface salinity sss.
+
+    Under linfs (use_virt_salt=.true.) FESOM never populates real_salt_flux
+    (the assignment in ice_thermo_cpl.F90 is gated by ``.not. use_virt_salt``),
+    so the legacy `sfdsi=realsalt` recipe produces a field of zeros. The
+    physical salt flux from sea-ice freeze/melt is instead reconstructed
+    from the ice freshwater flux and the local surface salinity:
+
+        sfdsi = -rho_w · (sss/1000) · fw_ice
+
+    Sign convention:
+      - freezing  → fw_ice < 0 → sfdsi > 0 (salt rejected INTO ocean)
+      - melting   → fw_ice > 0 → sfdsi < 0 (dilution = salt LOST to ocean)
+
+    Units: ``fw_ice`` is ``m s-1`` (volume flux of freshwater per area),
+    ``sss`` is ``g kg-1`` (psu), ``rho_w`` is ``kg m-3``; result is
+    ``kg salt m-2 s-1``.
+
+    Primary input (``data``): ``fw_ice``.
+    Rule attributes:
+      - sss_file: glob pattern for FESOM sss file(s) (required)
+      - sss_variable: variable name in those files (default: 'sss')
+      - reference_density: rho_w (default 1025.0 kg/m³)
+    """
+    import glob as _glob
+
+    sss_file = rule.get("sss_file")
+    if sss_file is None:
+        raise ValueError("Rule must specify 'sss_file' for compute_sfdsi_from_fw_ice")
+    rho_w = float(rule.get("reference_density", 1025.0))
+
+    paths = sorted(_glob.glob(sss_file))
+    if not paths:
+        raise FileNotFoundError(f"No files matched sss_file pattern: {sss_file}")
+    sss_ds = xr.open_mfdataset(paths, combine="by_coords")
+    sss = sss_ds[rule.get("sss_variable", "sss")]
+    sss = _align_time_to(data, sss)
+
+    result = -rho_w * (sss / 1000.0) * data
+    result.attrs = {
+        "units": "kg m-2 s-1",
+        "standard_name": "downward_sea_ice_basal_salt_flux",
+        "long_name": "Downward Sea Ice Basal Salt Flux",
+    }
+    result.name = rule.model_variable
     return result
 
 
@@ -1901,6 +1972,33 @@ def vertical_integrate(
             f"{vertical_dim}: sum " + data.attrs.get("cell_methods", "").replace(f"{vertical_dim}: mean", "").strip()
         )
 
+        # Update units: multiply input units by thickness units (default m).
+        # Without this, downstream ``handle_unit_conversion`` sees the unchanged
+        # input units (e.g. "W m-2") and fails dimensional checks against the
+        # CMIP target (e.g. "W m-1") with a DimensionalityError.
+        #
+        # Pint cannot parse CF/UDUNITS-style "W m-2" directly (treats "-2" as
+        # subtraction); normalise to "W*m**-2" first via _udunits_to_pint.
+        input_units = data.attrs.get("units")
+        if input_units:
+            try:
+                ureg = pint.UnitRegistry()
+                thickness_units = (
+                    thickness.attrs.get("units")
+                    if hasattr(thickness, "attrs")
+                    else None
+                ) or "m"
+                new_units = (
+                    ureg.parse_expression(_udunits_to_pint(input_units))
+                    * ureg.parse_expression(_udunits_to_pint(thickness_units))
+                )
+                integrated.attrs["units"] = f"{new_units.units:~}"
+            except Exception as exc:
+                logger.warning(
+                    f"vertical_integrate: could not derive output units from "
+                    f"{input_units!r} * thickness; leaving units attr unset ({exc})"
+                )
+
         # Apply custom attributes from rule if provided
         for key, value in integration_attrs.items():
             integrated.attrs[key] = value
@@ -2001,6 +2099,51 @@ def compute_volcello_time(data, rule):
 # ============================================================
 
 
+_TIME_DIM_ALIASES = ("time", "time_counter", "time_centered", "valid_time", "t")
+
+
+def _find_time_dim(da):
+    """Return the first conventional time-dim name present on ``da`` (or None)."""
+    return next((n for n in _TIME_DIM_ALIASES if n in da.dims), None)
+
+
+def _udunits_to_pint(u):
+    """Translate CF/UDUNITS-style unit strings to pint-friendly form.
+
+    Pint 0.24 parses ``W m-2`` as ``W * m - 2`` (binary subtraction),
+    raising DimensionalityError on the integer literal. Convert each
+    ``<letter><signed-int>`` token to ``<letter>**<signed-int>`` and turn
+    spaces into multiplication so pint sees ``W*m**-2``.
+    """
+    return _re.sub(r"([a-zA-Z])(-?\d+)", r"\1**\2", u).replace(" ", "*")
+
+
+def _align_time_to(primary, secondary):
+    """Force ``secondary``'s time coord to match ``primary``'s.
+
+    OIFS XIOS streams label hourly fields by ``online_operation``: instantaneous
+    (``_pt_*``) at the top of the hour, hourly-mean (``_sfc_*``) at the mid-hour
+    point. Same 8760 samples, different labels — xarray's coord-value-based
+    broadcast then sees an empty intersection and downstream steps error
+    (``__resample_dim__ must not be empty``). Drop secondary's time coord and
+    rebind to primary's so broadcasting matches by index when the cardinalities
+    agree.
+
+    No-ops (returns unchanged) if either side lacks a recognisable time dim or
+    if cardinalities differ — the latter is a recipe-level cadence mismatch
+    that needs an explicit resample step.
+    """
+    p = _find_time_dim(primary)
+    s = _find_time_dim(secondary)
+    if p is None or s is None:
+        return secondary
+    if primary.sizes.get(p) != secondary.sizes.get(s):
+        return secondary
+    if s != p:
+        secondary = secondary.rename({s: p})
+    return secondary.assign_coords({p: primary[p].values})
+
+
 def _load_secondary_mf(rule, path_key, pattern_key, variable_key):
     """Load a secondary input variable from a glob pattern of files.
 
@@ -2030,7 +2173,11 @@ def _load_secondary_mf(rule, path_key, pattern_key, variable_key):
         raise FileNotFoundError(f"No files matching regex {pattern!r} in {path}")
     year_start = rule.get("year_start")
     year_end = rule.get("year_end")
-    if year_start is not None and year_end is not None:
+    # Rules with centennial input4MIPs forcing files can opt out via
+    # ``skip_input_year_filter: true``. Same gate as gather_inputs.py's
+    # primary path (R2 in PLAN_cli_override_regressions.md).
+    skip_filter = rule.get("skip_input_year_filter", False)
+    if year_start is not None and year_end is not None and not skip_filter:
         from pycmor.core.gather_inputs import filter_files_by_year_range
 
         files = filter_files_by_year_range(files, year_start, year_end)
@@ -2216,6 +2363,7 @@ def compute_huss(data, rule):
       - second_variable: variable name in pressure files
     """
     sp = _load_secondary_mf(rule, "second_input_path", "second_input_pattern", "second_variable")
+    sp = _align_time_to(data, sp)
 
     # Dewpoint in Celsius
     td_C = data - 273.15
@@ -3183,20 +3331,38 @@ def regrid_oifs_to_fesom(data, rule):
             _os.makedirs(cache_dir, exist_ok=True)
             _joblib.dump(inds, cache_file)
 
-    time_dim = "time" if "time" in data.dims else None
-    if time_dim is None:
-        out = data.values[inds]
-        result = xr.DataArray(out, dims=[node_dim], attrs=data.attrs)
-    else:
-        # Per-timestep gather; data shape is (T, N_src) -> (T, N_fesom)
-        out = data.values[..., inds]
-        result = xr.DataArray(
-            out,
-            dims=[time_dim, node_dim],
-            coords={time_dim: data[time_dim]},
-            attrs=data.attrs,
-        )
+    # OIFS-via-XIOS files use ``time_counter`` (and sometimes ``time_centered``)
+    # rather than ``time``; accept any of the conventional names so callers
+    # don't have to declare ``time_dimname:`` for every regrid rule.
+    time_dim = next(
+        (n for n in ("time", "time_counter", "time_centered", "valid_time", "t")
+         if n in data.dims),
+        None,
+    )
+    # Identify the source spatial dimension (the one we're gathering along).
+    # OIFS XIOS uses ``cell``; older flatten-only paths might have ``ncells``.
+    source_dim = next(
+        (n for n in data.dims if n not in (time_dim,) and data.sizes[n] == src_lat.shape[0]),
+        None,
+    )
+    if source_dim is None:
+        # Fallback: use the trailing dim, the same axis the legacy
+        # ``data.values[..., inds]`` indexed.
+        source_dim = data.dims[-1]
+    # Lazy gather via xarray-style fancy indexing — returns a dask-backed
+    # DataArray when ``data`` is dask-backed (typical for load_mfdataset). The
+    # earlier ``data.values[..., inds]`` materialised the full (T, N_fesom)
+    # output up-front (~110 GB for hourly TCo319 → DARS 3.1M nodes), reliably
+    # OOM-ing 16 GB workers. Streaming via isel keeps memory at one chunk's
+    # worth.
+    indexer = xr.DataArray(inds, dims=[node_dim])
+    result = data.isel({source_dim: indexer})
+    if time_dim is not None and time_dim in result.dims:
+        result = result.transpose(time_dim, node_dim)
     result.name = data.name
+    # ``isel`` preserves attrs, but be explicit in case of edge cases.
+    if not result.attrs:
+        result.attrs = dict(data.attrs)
     return result
 
 
@@ -3270,9 +3436,15 @@ def regrid_regular_to_fesom(data, rule):
         )
         return interp(query_pts).astype(np.float32)
 
-    # Apply interpolation over time
-    time_dim = "time"
-    if time_dim not in data.dims:
+    # Apply interpolation over time. Accept conventional time-dim aliases (XIOS
+    # ``time_counter`` etc.) so the step doesn't silently broadcast against the
+    # source grid when the rule omits ``time_dimname:``.
+    time_dim = next(
+        (n for n in ("time", "time_counter", "time_centered", "valid_time", "t")
+         if n in data.dims),
+        None,
+    )
+    if time_dim is None:
         result_np = _interp_timestep(data.values)
         result = xr.DataArray(result_np, dims=[node_dim], attrs=data.attrs)
     else:
@@ -3653,6 +3825,13 @@ def compute_hfbasin(data, rule):
     if grid_file is None:
         raise ValueError("compute_hfbasin requires 'grid_file'")
     vt = data["vtemp"] if isinstance(data, xr.Dataset) and "vtemp" in data else data
+    # Force canonical dim order (time, nz, elem). FESOM 2.7 writes vtemp as
+    # (time, elem, nz); transposing here keeps the per-timestep math below
+    # (vt_t * weight_1d) shape-aligned regardless of the on-disk order.
+    nz_dim = next((n for n in ("nz", "nz1", "lev", "depth") if n in vt.dims), None)
+    elem_dim = next((n for n in ("elem", "ncells", "elem2D") if n in vt.dims), None)
+    if nz_dim and elem_dim and "time" in vt.dims:
+        vt = vt.transpose("time", nz_dim, elem_dim)
     ntime = vt.shape[0]
     nz1 = vt.shape[1]
 
@@ -3700,6 +3879,12 @@ def compute_sltbasin(data, rule):
     if grid_file is None:
         raise ValueError("compute_sltbasin requires 'grid_file'")
     vs = data["vsalt"] if isinstance(data, xr.Dataset) and "vsalt" in data else data
+    # Same canonical-order transpose as compute_hfbasin — FESOM writes
+    # (time, elem, nz); the math below assumes (time, nz, elem).
+    nz_dim = next((n for n in ("nz", "nz1", "lev", "depth") if n in vs.dims), None)
+    elem_dim = next((n for n in ("elem", "ncells", "elem2D") if n in vs.dims), None)
+    if nz_dim and elem_dim and "time" in vs.dims:
+        vs = vs.transpose("time", nz_dim, elem_dim)
     ntime = vs.shape[0]
     nz1 = vs.shape[1]
 

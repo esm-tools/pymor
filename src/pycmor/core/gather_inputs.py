@@ -395,10 +395,14 @@ def load_mfdataset(data, rule_spec):
         for f in file_collection.files:
             all_files.append(f)
     all_files = _resolve_symlinks(all_files)
-    # Filter by year range if specified in rule or inherit
+    # Filter by year range if specified in rule or inherit. Rules with
+    # centennial input4MIPs forcing files (e.g. ``..._1750-2022.nc`` whose
+    # range doesn't overlap the simulation year) can opt out via
+    # ``skip_input_year_filter: true`` on the rule.
     year_start = rule_spec.get("year_start", None)
     year_end = rule_spec.get("year_end", None)
-    if year_start is not None and year_end is not None:
+    skip_filter = rule_spec.get("skip_input_year_filter", False)
+    if year_start is not None and year_end is not None and not skip_filter:
         all_files = _filter_files_by_year_range(all_files, int(year_start), int(year_end))
         logger.info(f"Year filter: {year_start}–{year_end}, {len(all_files)} files after filtering")
 
