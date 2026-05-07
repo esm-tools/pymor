@@ -328,18 +328,8 @@ def compute_siflcondtop(data, rule):
     """
     k_ice = float(rule.get("k_ice", 2.1656))
 
-    sss_file = rule.get("sss_file")
-    hice_file = rule.get("hice_file")
-    if sss_file is None or hice_file is None:
-        raise ValueError("Rule must specify 'sss_file' and 'hice_file'")
-
-    ds_sss = xr.open_dataset(sss_file)
-    sss = ds_sss[rule.get("sss_variable", "sss")]
-    ds_sss.close()
-
-    ds_hice = xr.open_dataset(hice_file)
-    h_ice = ds_hice[rule.get("hice_variable", "h_ice")]
-    ds_hice.close()
+    sss = _load_secondary_mf(rule, "sss_path", "sss_pattern", "sss_variable")
+    h_ice = _load_secondary_mf(rule, "hice_path", "hice_pattern", "hice_variable")
 
     # Align secondary data time coordinates with primary data.
     # If same length: just overwrite the coordinate to preserve DatetimeIndex type.
@@ -399,18 +389,8 @@ def compute_sihc(data, rule):
     c_ice = float(rule.get("c_ice", 2090.0))
     L_f = float(rule.get("L_f", 334000.0))
 
-    ist_file = rule.get("ist_file")
-    sss_file = rule.get("sss_file")
-    if ist_file is None or sss_file is None:
-        raise ValueError("Rule must specify 'ist_file' and 'sss_file'")
-
-    ds_ist = xr.open_dataset(ist_file)
-    ist = ds_ist[rule.get("ist_variable", "ist")]
-    ds_ist.close()
-
-    ds_sss = xr.open_dataset(sss_file)
-    sss = ds_sss[rule.get("sss_variable", "sss")]
-    ds_sss.close()
+    ist = _load_secondary_mf(rule, "ist_path", "ist_pattern", "ist_variable")
+    sss = _load_secondary_mf(rule, "sss_path", "sss_pattern", "sss_variable")
 
     # Freezing point at ice base
     t_base = -0.054 * sss + 273.15
@@ -583,14 +563,7 @@ def compute_sifb(data, rule):
     rho_snow = float(rule.get("rho_snow", 330.0))
     rho_water = float(rule.get("rho_water", 1025.0))
 
-    snow_file = rule.get("snow_file")
-    if snow_file is None:
-        raise ValueError("Rule must specify 'snow_file' for compute_sifb")
-
-    ds = xr.open_dataset(snow_file)
-    snow_var = rule.get("snow_variable", "h_snow")
-    h_snow = ds[snow_var]
-    ds.close()
+    h_snow = _load_secondary_mf(rule, "snow_path", "snow_pattern", "snow_variable")
 
     result = data * (1.0 - rho_ice / rho_water) - h_snow * rho_snow / rho_water
     result.attrs = {
@@ -726,18 +699,8 @@ def compute_simpeffconc(data, rule):
       - hpnd_file: path to pond depth file
       - hpnd_variable: variable name (default: 'hpnd')
     """
-    ipnd_file = rule.get("ipnd_file")
-    hpnd_file = rule.get("hpnd_file")
-    if ipnd_file is None or hpnd_file is None:
-        raise ValueError("Rule must specify 'ipnd_file' and 'hpnd_file'")
-
-    ds_ipnd = xr.open_dataset(ipnd_file)
-    ipnd = ds_ipnd[rule.get("ipnd_variable", "ipnd")]
-    ds_ipnd.close()
-
-    ds_hpnd = xr.open_dataset(hpnd_file)
-    hpnd = ds_hpnd[rule.get("hpnd_variable", "hpnd")]
-    ds_hpnd.close()
+    ipnd = _load_secondary_mf(rule, "ipnd_path", "ipnd_pattern", "ipnd_variable")
+    hpnd = _load_secondary_mf(rule, "hpnd_path", "hpnd_pattern", "hpnd_variable")
 
     # Lid fraction: ipnd/hpnd, clamped to [0, 1]
     # Where hpnd is 0, there's no pond so effective fraction is 0
@@ -1281,25 +1244,16 @@ def compute_sispeed(data, rule):
     sispeed = sqrt(uice² + vice²)
 
     Primary input (data) is one velocity component.
-    The other component is loaded from rule.second_input_file.
+    The other component is loaded via the standard path/pattern triplet.
 
     Rule attributes:
-      - second_input_file: path to the other velocity component file
-      - second_variable: variable name in that file (default: auto-detect)
+      - second_input_path: directory containing the other component files
+      - second_input_pattern: regex matching the filenames
+      - second_variable: variable name (default: auto-detect)
     """
-    second_file = rule.get("second_input_file")
-    if second_file is None:
-        raise ValueError("Rule must specify 'second_input_file' for compute_sispeed")
-
-    ds2 = xr.open_dataset(second_file)
-    second_var = rule.get("second_variable")
-    if second_var and second_var in ds2:
-        v2 = ds2[second_var]
-    else:
-        # Auto-detect: take first non-coordinate variable
-        data_vars = [v for v in ds2.data_vars if v not in ds2.coords]
-        v2 = ds2[data_vars[0]]
-    ds2.close()
+    v2 = _load_secondary_mf(
+        rule, "second_input_path", "second_input_pattern", "second_variable"
+    )
 
     result = np.sqrt(data**2 + v2**2)
     result.attrs = {
@@ -1328,26 +1282,18 @@ def compute_ice_mass_transport(data, rule):
     Resample the velocity to the m_ice cadence before multiplying so both
     sides agree on time.
     """
-    mice_file = rule.get("mice_file")
-    if mice_file is None:
-        raise ValueError("Rule must specify 'mice_file' for compute_ice_mass_transport")
+    m_ice = _load_secondary_mf(rule, "mice_path", "mice_pattern", "mice_variable")
 
-    ds = xr.open_dataset(mice_file)
-    mice_var = rule.get("mice_variable", "m_ice")
-    m_ice = ds[mice_var]
-    ds.close()
-
+    # Coarsen whichever side is finer to monthly. m_ice is the canonical
+    # FESOM mass cadence (monthly); uice/vice can be daily under high-rate
+    # ice diagnostics — average them to monthly so the multiplication
+    # broadcasts cleanly.
     data_time = _find_time_dim(data)
     mice_time = _find_time_dim(m_ice)
     if data_time and mice_time and data.sizes.get(data_time) != m_ice.sizes.get(mice_time):
-        # Resample the higher-cadence side down to the lower-cadence one.
-        # m_ice cadence is the canonical sea-ice mass cadence in FESOM (monthly);
-        # uice/vice can be daily — average to monthly to match.
         if data.sizes[data_time] > m_ice.sizes[mice_time]:
             data = data.resample({data_time: "MS"}).mean()
-        else:
-            m_ice = m_ice.resample({mice_time: "MS"}).mean()
-    m_ice = _align_time_to(data, m_ice)
+    m_ice = _resample_to_match(data, m_ice)
 
     result = data * m_ice
     result.attrs = data.attrs.copy()
@@ -1383,19 +1329,14 @@ def compute_sfdsi_from_fw_ice(data, rule):
       - sss_variable: variable name in those files (default: 'sss')
       - reference_density: rho_w (default 1025.0 kg/m³)
     """
-    import glob as _glob
-
-    sss_file = rule.get("sss_file")
-    if sss_file is None:
-        raise ValueError("Rule must specify 'sss_file' for compute_sfdsi_from_fw_ice")
     rho_w = float(rule.get("reference_density", 1025.0))
-
-    paths = sorted(_glob.glob(sss_file))
-    if not paths:
-        raise FileNotFoundError(f"No files matched sss_file pattern: {sss_file}")
-    sss_ds = xr.open_mfdataset(paths, combine="by_coords")
-    sss = sss_ds[rule.get("sss_variable", "sss")]
-    sss = _align_time_to(data, sss)
+    sss = _load_secondary_mf(rule, "sss_path", "sss_pattern", "sss_variable")
+    # FESOM writes sss daily but fw_ice monthly; coarsen sss to monthly so
+    # the multiplication broadcasts cleanly. _align_time_to alone leaves the
+    # cadence mismatch (12 vs 365) and xarray then aligns on coord-value
+    # intersection (7-of-12 mid-month overlaps), which downstream timeavg
+    # rejects as a 12-vs-7 CoordinateValidationError.
+    sss = _resample_to_match(data, sss)
 
     result = -rho_w * (sss / 1000.0) * data
     result.attrs = {
@@ -1418,14 +1359,7 @@ def compute_sistressave(data, rule):
       - sgm22_file: path to sgm22 file
       - sgm22_variable: variable name (default: 'sgm22')
     """
-    sgm22_file = rule.get("sgm22_file")
-    if sgm22_file is None:
-        raise ValueError("Rule must specify 'sgm22_file' for compute_sistressave")
-
-    ds = xr.open_dataset(sgm22_file)
-    sgm22_var = rule.get("sgm22_variable", "sgm22")
-    sgm22 = ds[sgm22_var]
-    ds.close()
+    sgm22 = _load_secondary_mf(rule, "sgm22_path", "sgm22_pattern", "sgm22_variable")
 
     result = (data + sgm22) / 2.0
     result.attrs = {
@@ -1448,18 +1382,8 @@ def compute_sistressmax(data, rule):
       - sgm22_file: path to sgm22 file
       - sgm12_file: path to sgm12 file
     """
-    sgm22_file = rule.get("sgm22_file")
-    sgm12_file = rule.get("sgm12_file")
-    if sgm22_file is None or sgm12_file is None:
-        raise ValueError("Rule must specify 'sgm22_file' and 'sgm12_file'")
-
-    ds22 = xr.open_dataset(sgm22_file)
-    sgm22 = ds22[rule.get("sgm22_variable", "sgm22")]
-    ds22.close()
-
-    ds12 = xr.open_dataset(sgm12_file)
-    sgm12 = ds12[rule.get("sgm12_variable", "sgm12")]
-    ds12.close()
+    sgm22 = _load_secondary_mf(rule, "sgm22_path", "sgm22_pattern", "sgm22_variable")
+    sgm12 = _load_secondary_mf(rule, "sgm12_path", "sgm12_pattern", "sgm12_variable")
 
     result = np.sqrt(((data - sgm22) / 2.0) ** 2 + sgm12**2)
     result.attrs = {
@@ -1778,15 +1702,14 @@ def compute_zostoga(data, rule):
         raise ValueError(f"Cannot identify dims. Available: {list(data.dims)}")
 
     # Load salinity if available for full steric computation
-    salt_file = rule.get("salt_file")
-    if salt_file:
-        salt_ds = xr.open_dataset(salt_file)
-        salt_var = rule.get("salt_variable", "salt")
-        salt = salt_ds[salt_var]
+    if rule.get("salt_path") and rule.get("salt_pattern"):
+        salt = _load_secondary_mf(rule, "salt_path", "salt_pattern", "salt_variable")
     else:
         # Assume constant salinity of 35 psu for thermosteric-only
         salt = xr.full_like(data, 35.0)
-        logger.warning("No salt_file specified, using constant S=35 for thermosteric computation")
+        logger.warning(
+            "No salt_path/salt_pattern specified, using constant S=35 for thermosteric computation"
+        )
 
     # Build thickness and area arrays
     nz = data.sizes[vertical_dim]
@@ -2142,6 +2065,34 @@ def _align_time_to(primary, secondary):
     if s != p:
         secondary = secondary.rename({s: p})
     return secondary.assign_coords({p: primary[p].values})
+
+
+def _resample_to_match(primary, secondary):
+    """Down-sample ``secondary`` to ``primary``'s time cadence, then align.
+
+    Used by compute steps that combine FESOM streams of different cadences
+    (e.g. monthly fw_ice × daily sss for sfdsi, or daily uice × monthly m_ice
+    for sidmasstran). When ``primary`` is monthly (12) and ``secondary`` is
+    daily/hourly (365/8760), averages secondary down to monthly. After the
+    cadence is matched, runs ``_align_time_to`` so the resulting coord
+    values match primary exactly (avoiding xarray's intersection-on-coord
+    alignment that otherwise leaves a sparse 7-of-12 timestamp result).
+
+    No-op if cardinalities already match — ``_align_time_to`` will then
+    just rebind labels. If primary is finer than secondary, returns
+    secondary unchanged (caller must opt into upsampling explicitly).
+    """
+    p = _find_time_dim(primary)
+    s = _find_time_dim(secondary)
+    if p is None or s is None:
+        return secondary
+    np_, ns = primary.sizes.get(p), secondary.sizes.get(s)
+    if np_ == ns:
+        return _align_time_to(primary, secondary)
+    if np_ < ns:
+        secondary = secondary.resample({s: "MS"}).mean()
+        return _align_time_to(primary, secondary)
+    return secondary
 
 
 def _load_secondary_mf(rule, path_key, pattern_key, variable_key):
@@ -3464,28 +3415,19 @@ def mask_where_no_seaice(data, rule):
     """
     Mask data to NaN wherever there is no sea ice (a_ice == 0).
 
-    Loads FESOM sea ice concentration from rule.aice_file and sets data values
-    to NaN at all FESOM nodes where a_ice is zero, matching by time coordinate.
+    Loads FESOM sea ice concentration via the standard path/pattern
+    triplet and sets data values to NaN at all FESOM nodes where a_ice
+    is zero, matching by time coordinate.
 
     Rule attributes:
-      - aice_file: path (or glob pattern) to FESOM a_ice file(s), e.g.
-          /path/to/outdata/fesom/a_ice.fesom.*.nc  (required)
+      - aice_path: directory containing a_ice files
+      - aice_pattern: regex matching FESOM a_ice filenames
+        (e.g. ``a_ice\\.fesom\\..*\\.nc``)
+      - aice_variable: variable name (default: 'a_ice')
       - fesom_node_dim: name of node dimension (default: 'nod2')
     """
-    import glob as _glob
-
-    aice_file = rule.get("aice_file")
-    if aice_file is None:
-        raise ValueError("Rule must specify 'aice_file' for mask_where_no_seaice")
-
     node_dim = rule.get("fesom_node_dim", "nod2")
-
-    # Support glob patterns
-    paths = sorted(_glob.glob(aice_file))
-    if not paths:
-        raise FileNotFoundError(f"No files matched aice_file pattern: {aice_file}")
-
-    a_ice = xr.open_mfdataset(paths, combine="by_coords")["a_ice"]
+    a_ice = _load_secondary_mf(rule, "aice_path", "aice_pattern", "aice_variable")
 
     # Align time coordinates: match data times to a_ice times
     # Both should be on monthly cadence; use sel with tolerance

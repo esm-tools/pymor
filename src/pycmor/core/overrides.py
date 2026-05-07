@@ -16,13 +16,6 @@ class OverrideError(ValueError):
     """Raised when CLI overrides are inconsistent or under-specified."""
 
 
-# Matches the literal-glob FESOM filename form used in `*_file:` rule
-# attributes — e.g. ``.../a_ice.fesom.*.nc``. Audit confirms no OIFS / LPJ
-# `*_file:` values use literal globs; future components extending this list
-# are responsible for updating the regex.
-_FESOM_FILE_RE = re.compile(r"\.fesom\.\*\.nc$")
-
-
 @dataclasses.dataclass
 class CliOverrides:
     data_path: Optional[str] = None
@@ -67,32 +60,6 @@ def apply_overrides(cfg: dict, ov: CliOverrides) -> dict:
         if ov.year_end is not None:
             rule["year_end"] = ov.year_end
 
-    # Expand literal `*` in `*_file:` values when both year flags are set.
-    # _expand_year_in_file_keys mutates the dict it receives — safe because
-    # we operate on the per-rule and inherit shallow copies created above;
-    # the caller's input dict is unaffected.
-    if ov.year_start is not None and ov.year_end is not None:
-        if ov.year_start == ov.year_end:
-            for rule in rules:
-                _expand_year_in_file_keys(rule, ov.year_start)
-            _expand_year_in_file_keys(inherit, ov.year_start)
-        else:
-            for rule in rules + [inherit]:
-                for k, v in rule.items():
-                    if k.endswith("_file") and isinstance(v, str) and "*" in v:
-                        new_key_pattern = k.replace("_file", "_pattern")
-                        new_key_path = k.replace("_file", "_path")
-                        raise OverrideError(
-                            f"--year-start != --year-end cannot expand literal "
-                            f"'*' in {k}={v!r}. Migrate this entry from "
-                            f"`{k}: /path/foo.fesom.*.nc` (literal-path form, "
-                            "consumed by xr.open_dataset) to "
-                            f"`{new_key_pattern}: foo\\.fesom\\..*\\.nc` plus "
-                            f"matching `{new_key_path}: /path` (regex form, "
-                            "consumed by _load_secondary_mf which year-filters "
-                            "via filter_files_by_year_range)."
-                        )
-
     cfg["inherit"] = inherit
     cfg["rules"] = rules
 
@@ -116,17 +83,6 @@ def apply_overrides(cfg: dict, ov: CliOverrides) -> dict:
             cfg = _subst_anchored(cfg, pattern, new_norm)
 
     return cfg
-
-
-def _expand_year_in_file_keys(rule_or_inherit: dict, year: int) -> None:
-    """In-place: expand ``*`` to ``year`` in FESOM ``*_file:`` literal globs.
-
-    Matches keys ending in ``_file`` whose value ends in ``.fesom.*.nc``.
-    Caller is responsible for passing a shallow copy of the dict.
-    """
-    for k, v in list(rule_or_inherit.items()):
-        if isinstance(v, str) and k.endswith("_file") and _FESOM_FILE_RE.search(v):
-            rule_or_inherit[k] = _FESOM_FILE_RE.sub(f".fesom.{year}.nc", v)
 
 
 def _subst_anchored(obj: Any, pattern: "re.Pattern", new: str) -> Any:

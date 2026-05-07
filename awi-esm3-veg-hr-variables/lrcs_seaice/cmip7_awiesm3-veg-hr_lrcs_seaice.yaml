@@ -78,6 +78,23 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # CMIP sfdsi (Downward Sea Ice Basal Salt Flux) reconstructed from
+  # fw_ice + sss under linfs (where realsalt is unreachable).
+  - name: sfdsi_from_fw_ice_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sfdsi_from_fw_ice
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   # Ice mass transport: velocity × m_ice
   - name: ice_mass_transport_pipeline
     steps:
@@ -474,7 +491,8 @@ rules:
         pattern: uice\.fesom\..*\.nc
     compound_name: seaIce.sispeed.tavg-u-hxy-si.mon.GLB
     model_variable: uice
-    second_input_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/vice.fesom.*.nc
+    second_input_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    second_input_pattern: vice\.fesom\..*\.nc
     second_variable: vice
     pipelines:
       - sispeed_pipeline
@@ -485,7 +503,8 @@ rules:
         pattern: uice\.fesom\..*\.nc
     compound_name: seaIce.sidmasstranx.tavg-u-hxy-u.mon.GLB
     model_variable: uice
-    mice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/m_ice.fesom.*.nc
+    mice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    mice_pattern: m_ice\.fesom\..*\.nc
     pipelines:
       - ice_mass_transport_pipeline
 
@@ -495,7 +514,8 @@ rules:
         pattern: vice\.fesom\..*\.nc
     compound_name: seaIce.sidmasstrany.tavg-u-hxy-u.mon.GLB
     model_variable: vice
-    mice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/m_ice.fesom.*.nc
+    mice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    mice_pattern: m_ice\.fesom\..*\.nc
     pipelines:
       - ice_mass_transport_pipeline
 
@@ -507,7 +527,8 @@ rules:
         pattern: sgm11\.fesom\..*\.nc
     compound_name: seaIce.sistressave.tpt-u-hxy-si.mon.GLB
     model_variable: sgm11
-    sgm22_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/sgm22\.fesom\..*\.nc
+    sgm22_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    sgm22_pattern: sgm22\.fesom\..*\.nc
     pipelines:
       - sistressave_pipeline
 
@@ -517,8 +538,10 @@ rules:
         pattern: sgm11\.fesom\..*\.nc
     compound_name: seaIce.sistressmax.tpt-u-hxy-si.mon.GLB
     model_variable: sgm11
-    sgm22_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/sgm22\.fesom\..*\.nc
-    sgm12_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/sgm12\.fesom\..*\.nc
+    sgm22_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    sgm22_pattern: sgm22\.fesom\..*\.nc
+    sgm12_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    sgm12_pattern: sgm12\.fesom\..*\.nc
     pipelines:
       - sistressmax_pipeline
 
@@ -526,31 +549,38 @@ rules:
   # SImon — cross-realm (ocean seaIce) freshwater/salt fluxes
   # ============================================================
 
-  # Downward sea ice basal salt flux (using realsalt, not virtual)
+  # Downward sea ice basal salt flux. Under linfs (use_virt_salt=.true.)
+  # FESOM never populates real_salt_flux (ice_thermo_cpl.F90 branch is gated
+  # off), so the legacy realsalt-based recipe produced zeros. Reconstruct
+  # the physical salt flux from the ice freshwater flux fw_ice and surface
+  # salinity sss:  sfdsi = -rho_w · (sss/1000) · fw_ice.
   - name: sfdsi
     inputs:
       - path: *dp
-        pattern: realsalt\.fesom\..*\.nc
+        pattern: fw_ice\.fesom\..*\.nc
     compound_name: ocean.sfdsi.tavg-u-hxy-sea.mon.GLB
-    model_variable: realsalt
-    # realsalt is in [m/s*psu]; conversion to [kg m-2 s-1]:
-    # NOTE: verify units from FESOM source before production use
-    scale_factor: 1.0
-    scaled_units: "kg m-2 s-1"
+    model_variable: fw_ice
+    sss_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    sss_pattern: sss\.fesom\..*\.nc
+    sss_variable: sss
+    reference_density: 1025.0
     pipelines:
-      - scale_pipeline
+      - sfdsi_from_fw_ice_pipeline
 
-  # Same field in SImon table (realsalt is only non-zero where sea ice exists — no explicit masking needed)
+  # Same physical quantity in the SImon table (fw_ice is only non-zero
+  # where sea ice exists — no explicit masking needed).
   - name: sfdsi_seaice
     inputs:
       - path: *dp
-        pattern: realsalt\.fesom\..*\.nc
+        pattern: fw_ice\.fesom\..*\.nc
     compound_name: seaIce.sfdsi.tavg-u-hxy-si.mon.GLB
-    model_variable: realsalt
-    scale_factor: 1.0
-    scaled_units: "kg m-2 s-1"
+    model_variable: fw_ice
+    sss_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    sss_pattern: sss\.fesom\..*\.nc
+    sss_variable: sss
+    reference_density: 1025.0
     pipelines:
-      - scale_pipeline
+      - sfdsi_from_fw_ice_pipeline
 
   # Virtual salt flux into sea water from ice thermodynamics
   - name: vsfsit
@@ -588,8 +618,10 @@ rules:
         pattern: ist\.fesom\..*\.nc
     compound_name: seaIce.siflcondtop.tavg-u-hxy-si.mon.GLB
     model_variable: ist
-    sss_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/sss.fesom.*.nc
-    hice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/h_ice.fesom.*.nc
+    sss_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    sss_pattern: sss\.fesom\..*\.nc
+    hice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    hice_pattern: h_ice\.fesom\..*\.nc
     k_ice: 2.1656
     pipelines:
       - siflcondtop_pipeline
@@ -601,8 +633,10 @@ rules:
         pattern: h_ice\.fesom\..*\.nc
     compound_name: seaIce.sihc.tavg-u-hxy-sea.mon.GLB
     model_variable: h_ice
-    ist_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/ist.fesom.*.nc
-    sss_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/sss.fesom.*.nc
+    ist_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    ist_pattern: ist\.fesom\..*\.nc
+    sss_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    sss_pattern: sss\.fesom\..*\.nc
     rho_ice: 910.0
     c_ice: 2090.0
     L_f: 334000.0
@@ -638,7 +672,8 @@ rules:
         pattern: h_ice\.fesom\..*\.nc
     compound_name: seaIce.sifb.tavg-u-hxy-si.mon.GLB
     model_variable: h_ice
-    snow_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/h_snow.fesom.*.nc
+    snow_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    snow_pattern: h_snow\.fesom\..*\.nc
     snow_variable: h_snow
     rho_ice: 910.0
     rho_snow: 330.0
@@ -725,8 +760,10 @@ rules:
         pattern: apnd\.fesom\..*\.nc
     compound_name: seaIce.simpeffconc.tavg-u-hxy-si.mon.GLB
     model_variable: apnd
-    ipnd_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/ipnd.fesom.*.nc
-    hpnd_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/hpnd.fesom.*.nc
+    ipnd_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    ipnd_pattern: ipnd\.fesom\..*\.nc
+    hpnd_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    hpnd_pattern: hpnd\.fesom\..*\.nc
     pipelines:
       - simpeffconc_pipeline
 
@@ -856,7 +893,8 @@ rules:
     compound_name: seaIce.sbl.tavg-u-hxy-si.mon.GLB
     model_variable: sbl
     time_dimname: time_counter
-    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/a_ice.fesom.*.nc
+    aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    aice_pattern: a_ice\.fesom\..*\.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -868,7 +906,9 @@ rules:
         pattern: atmos_1h_sfc_rsds_.*\.nc
     compound_name: seaIce.rsds.tavg-u-hxy-si.mon.GLB
     model_variable: rsds
-    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/a_ice.fesom.*.nc
+    time_dimname: time_counter
+    aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    aice_pattern: a_ice\.fesom\..*\.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -878,7 +918,9 @@ rules:
         pattern: atmos_1h_sfc_rsds_.*\.nc
     compound_name: seaIce.rsds.tavg-u-hxy-si.day.GLB
     model_variable: rsds
-    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/a_ice.fesom.*.nc
+    time_dimname: time_counter
+    aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    aice_pattern: a_ice\.fesom\..*\.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -890,7 +932,9 @@ rules:
         pattern: atmos_1h_sfc_rsus_.*\.nc
     compound_name: seaIce.rsus.tavg-u-hxy-si.mon.GLB
     model_variable: rsus
-    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/a_ice.fesom.*.nc
+    time_dimname: time_counter
+    aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    aice_pattern: a_ice\.fesom\..*\.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -900,7 +944,9 @@ rules:
         pattern: atmos_1h_sfc_rsus_.*\.nc
     compound_name: seaIce.rsus.tavg-u-hxy-si.day.GLB
     model_variable: rsus
-    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/a_ice.fesom.*.nc
+    time_dimname: time_counter
+    aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    aice_pattern: a_ice\.fesom\..*\.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -912,7 +958,9 @@ rules:
         pattern: atmos_1h_sfc_rlds_.*\.nc
     compound_name: seaIce.rlds.tavg-u-hxy-si.mon.GLB
     model_variable: rlds
-    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/a_ice.fesom.*.nc
+    time_dimname: time_counter
+    aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    aice_pattern: a_ice\.fesom\..*\.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -924,7 +972,9 @@ rules:
         pattern: atmos_1h_sfc_rlus_.*\.nc
     compound_name: seaIce.rlus.tavg-u-hxy-si.mon.GLB
     model_variable: rlus
-    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/a_ice.fesom.*.nc
+    time_dimname: time_counter
+    aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    aice_pattern: a_ice\.fesom\..*\.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -938,7 +988,8 @@ rules:
     compound_name: seaIce.sifllattop.tavg-u-hxy-si.mon.GLB
     model_variable: slhf
     time_dimname: time_counter
-    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/a_ice.fesom.*.nc
+    aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    aice_pattern: a_ice\.fesom\..*\.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -952,7 +1003,8 @@ rules:
     compound_name: seaIce.siflsenstop.tavg-u-hxy-si.mon.GLB
     model_variable: sshf
     time_dimname: time_counter
-    aice_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/a_ice.fesom.*.nc
+    aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    aice_pattern: a_ice\.fesom\..*\.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -991,7 +1043,8 @@ rules:
         pattern: uice\.fesom\..*\.nc
     compound_name: seaIce.sispeed.tavg-u-hxy-si.day.GLB
     model_variable: uice
-    second_input_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/vice.fesom.*.nc
+    second_input_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    second_input_pattern: vice\.fesom\..*\.nc
     second_variable: vice
     pipelines:
       - sispeed_pipeline

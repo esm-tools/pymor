@@ -483,7 +483,8 @@ rules:
         pattern: temp\.fesom\..*\.nc
     compound_name: ocean.zostoga.tavg-u-hm-sea.mon.GLB
     model_variable: temp
-    salt_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom/salt.fesom.*.nc
+    salt_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
+    salt_pattern: salt\.fesom\..*\.nc
     salt_variable: salt
     reference_density: 1025.0
     pipelines:
