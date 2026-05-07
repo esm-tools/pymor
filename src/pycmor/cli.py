@@ -164,18 +164,86 @@ def cli(verbose, quiet, logfile, profile_mem):
 @cli.command()
 @click_loguru.init_logger()
 @click.argument("config_file", type=click.Path(exists=True))
-def process(config_file):
+@click.option(
+    "--data-path",
+    default=None,
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+    help=(
+        "New model run root (e.g. /scratch/.../Run_99). Anchored "
+        "prefix-substitution rewrites every path string in the cfg "
+        "that starts with the old run root."
+    ),
+)
+@click.option(
+    "--old-data-path",
+    default=None,
+    help=(
+        "Old run-root prefix to replace. Auto-derived from inherit.data_path "
+        "by stripping the trailing /outdata/<component>; pass explicitly when "
+        "the yaml has no inherit.data_path."
+    ),
+)
+@click.option("--year-start", default=None, type=int, help="Override start year on every rule.")
+@click.option("--year-end", default=None, type=int, help="Override end year on every rule.")
+@click.option(
+    "--mesh-path",
+    default=None,
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+    help="Override FESOM mesh directory.",
+)
+@click.option(
+    "--output-directory",
+    default=None,
+    # NOT exists=True — pycmor creates the directory.
+    type=click.Path(file_okay=False, dir_okay=True),
+    help="Override CMORized-output destination directory.",
+)
+@click.option(
+    "--memory",
+    default=None,
+    help=(
+        "Override SLURM per-job memory request (e.g. '512GB'). "
+        "When omitted, the yaml's jobqueue.slurm.memory is left as-is."
+    ),
+)
+def process(
+    config_file,
+    data_path,
+    old_data_path,
+    year_start,
+    year_end,
+    mesh_path,
+    output_directory,
+    memory,
+):
     # NOTE(PG): The ``init_logger`` decorator above removes *ALL* previously configured loggers,
     #           so we need to re-create the report logger here. Paul does not like this at all.
     add_report_logger()
     from .core.banner import show_banner
     from .core.env_check import run_env_check
+    from .core.overrides import CliOverrides, OverrideError, apply_overrides
 
     show_banner()
     run_env_check()
     logger.info(f"Processing {config_file}")
     with open(config_file, "r") as f:
         cfg = yaml.safe_load(f)
+    try:
+        cfg = apply_overrides(
+            cfg,
+            CliOverrides(
+                data_path=data_path,
+                old_data_path=old_data_path,
+                year_start=year_start,
+                year_end=year_end,
+                mesh_path=mesh_path,
+                output_directory=output_directory,
+                memory=memory,
+            ),
+        )
+    except OverrideError as e:
+        raise click.UsageError(str(e))
+    logger.debug(f"Effective config after CLI overrides:\n{yaml.safe_dump(cfg)}")
     cmorizer = CMORizer.from_dict(cfg)
     client = Client(cmorizer._cluster)  # noqa: F841
     cmorizer.process()

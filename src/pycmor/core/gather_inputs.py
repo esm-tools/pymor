@@ -316,6 +316,25 @@ def _filter_files_by_year_range(files, year_start, year_end):
     return sorted(filtered, key=lambda f: f.name)
 
 
+def filter_files_by_year_range(files, year_start, year_end):
+    """Public year-range filter. Accepts paths or strings.
+
+    Wraps :func:`_filter_files_by_year_range` for use from step functions
+    that resolve secondary input lists (e.g. ``second_input_pattern``,
+    ``hnode_pattern``, ``salt_pattern``). Returns the same element type as
+    the input list.
+    """
+    import pathlib as _pl
+
+    files = list(files)
+    return_str = bool(files) and isinstance(files[0], str)
+    paths = [_pl.Path(f) for f in files]
+    filtered = _filter_files_by_year_range(paths, int(year_start), int(year_end))
+    if return_str:
+        return [str(p) for p in filtered]
+    return filtered
+
+
 def load_mfdataset(data, rule_spec):
     """
     Load a dataset from a list of files using xarray.

@@ -2028,6 +2028,17 @@ def _load_secondary_mf(rule, path_key, pattern_key, variable_key):
     files = sorted(_os.path.join(path, f) for f in _os.listdir(path) if regex.fullmatch(f))
     if not files:
         raise FileNotFoundError(f"No files matching regex {pattern!r} in {path}")
+    year_start = rule.get("year_start")
+    year_end = rule.get("year_end")
+    if year_start is not None and year_end is not None:
+        from pycmor.core.gather_inputs import filter_files_by_year_range
+
+        files = filter_files_by_year_range(files, year_start, year_end)
+        if not files:
+            raise FileNotFoundError(
+                f"No files matching {pattern!r} in {path} fall within "
+                f"year range {year_start}–{year_end}"
+            )
     ds = xr.open_mfdataset(files, use_cftime=True)
     time_dimname = rule.get("time_dimname")
     if time_dimname and time_dimname in ds.dims and "time" not in ds.dims:
