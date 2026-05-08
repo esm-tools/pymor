@@ -978,30 +978,40 @@ rules:
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
-  # Net latent heat flux over sea ice: OpenIFS total slhf regridded to FESOM nodes.
-  # Note: OpenIFS 'slhf' is total latent heat flux over all surfaces; no ice-tile-specific
-  # diagnostic is available. Units: verify (IFS slhf is accumulated J/m², check XIOS output units).
+  # Net latent heat flux over sea ice: OpenIFS hfls regridded to FESOM nodes.
+  # Note: OpenIFS hfls is total latent heat flux over all surfaces; no
+  # ice-tile-specific diagnostic available. Source file `atmos_1h_sfc_hfls_*.nc`
+  # is the CMIP7 atmos output, native reduced-Gaussian grid, already in W m-2
+  # with CMIP sign convention (file_def applies `-slhf/3600`). Hourly cadence
+  # is timeavg'd to monthly downstream — same path as the rsds/rsus_seaice
+  # family, currently F4-blocked (see DESIGN_PROPOSAL_recipe_failures_post_cli.md
+  # §3.4); ships once F4 is closed.
+  # The previous `atmos_mon_land_slhf_*.nc` pattern doesn't exist in OIFS
+  # output — only `atmos_1h_sfc_*` and `atm_remapped_1m_*` variants of
+  # slhf/sshf are produced; atm_remapped_* isn't CMIP7 output (default-on
+  # diagnostic stream that may not always be enabled), so we use atmos_*.
   - name: sifllattop
     inputs:
       - path: *odp
-        pattern: atmos_mon_land_slhf_.*\.nc
+        pattern: atmos_1h_sfc_hfls_.*\.nc
     compound_name: seaIce.sifllattop.tavg-u-hxy-si.mon.GLB
-    model_variable: slhf
+    model_variable: hfls
     time_dimname: time_counter
     aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
     aice_pattern: a_ice\.fesom\..*\.nc
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
-  # Net sensible heat flux over sea ice: OpenIFS total sshf regridded to FESOM nodes.
-  # Note: OpenIFS 'sshf' is total sensible heat flux over all surfaces; no ice-tile-specific
-  # diagnostic is available. Units: verify (IFS sshf is accumulated J/m², check XIOS output units).
+  # Net sensible heat flux over sea ice: OpenIFS hfss regridded to FESOM nodes.
+  # Same pattern as sifllattop above — atmos_1h_sfc_hfss_*.nc is the CMIP7
+  # atmos output (file_def applies `-sshf/3600`); F4-blocked until that's
+  # closed.
   - name: siflsenstop
     inputs:
       - path: *odp
-        pattern: atmos_mon_land_sshf_.*\.nc
+        pattern: atmos_1h_sfc_hfss_.*\.nc
     compound_name: seaIce.siflsenstop.tavg-u-hxy-si.mon.GLB
-    model_variable: sshf
+    model_variable: hfss
     time_dimname: time_counter
     aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
     aice_pattern: a_ice\.fesom\..*\.nc
