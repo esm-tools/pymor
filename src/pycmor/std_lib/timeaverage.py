@@ -285,6 +285,29 @@ def timeavg(da: xr.DataArray, rule):
     >>> print(f"First timestamp: {result_adjusted.time.values[0]}")  # doctest: +ELLIPSIS
     First timestamp: 2023-01-1...
     """
+    # F5 instrumentation (DESIGN_PROPOSAL_recipe_failures_post_cli.md §3.5):
+    # the sbl_seaice 12-vs-7 CoordinateValidationError persists across runs.
+    # Standalone repro outside the pipeline gives 12 groups; the 7 enters
+    # somewhere in the step chain. Log the time-coord size at timeavg entry
+    # so we can localize whether shrinkage happens before or inside this
+    # function. Drop once F5 is closed.
+    try:
+        cmor_var = getattr(rule, "cmor_variable", "?")
+        if "time" in getattr(da, "coords", {}):
+            t = da["time"]
+            t_unique = t.to_index().is_unique
+            t_size = t.size
+            t_first = t.values[0] if t_size else None
+            t_last = t.values[-1] if t_size else None
+            logger.info(
+                f"timeavg [{cmor_var}] entry: da.time.size={t_size} "
+                f"is_unique={t_unique} first={t_first} last={t_last}"
+            )
+        else:
+            logger.info(f"timeavg [{cmor_var}] entry: no 'time' coord (frequency={getattr(rule.data_request_variable, 'frequency', '?')})")
+    except Exception as _exc:
+        logger.warning(f"timeavg instrumentation failed: {_exc}")
+
     drv = rule.data_request_variable
     if drv.frequency == "fx" or getattr(drv, 'table_header', None) is None or getattr(drv.table_header, 'approx_interval', None) is None:
         logger.info(f"Variable with frequency={drv.frequency!r} has no approx_interval — skipping time averaging")

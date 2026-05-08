@@ -136,6 +136,7 @@ pipelines:
   - name: lpjg_monthly_lut_scaled_pipeline
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly_lut
+      - pycmor.std_lib.generic.get_variable
       - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global

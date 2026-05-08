@@ -882,12 +882,10 @@ def select_year(data, rule):
     record (e.g. model year 1587 but forcing 1750-2022), use
     ``broadcast_forcing_year_to_monthly`` instead.
     """
-    year = rule.get("year") if hasattr(rule, "get") else None
-    if year is None:
-        year = getattr(rule, "year_start", None)
+    year = _resolve_year(rule)
     if year is None:
         return data
-    year_str = str(int(year))
+    year_str = str(year)
     for name in ("time", "time_counter", "Time", "TIME", "t"):
         if name in getattr(data, "coords", {}) or name in getattr(data, "dims", ()):
             return data.sel({name: year_str})
@@ -914,7 +912,7 @@ def broadcast_forcing_year_to_monthly(data, rule):
       - ``forcing_year``: int / str / 4-digit; year to read from the file
         (e.g. 1850 for CMIP piControl reference).
     """
-    year = rule.get("year") if hasattr(rule, "get") else getattr(rule, "year", None)
+    year = _resolve_year(rule)
     forcing_year = (
         rule.get("forcing_year")
         if hasattr(rule, "get")
@@ -923,7 +921,8 @@ def broadcast_forcing_year_to_monthly(data, rule):
     if year is None or forcing_year is None:
         raise ValueError(
             "broadcast_forcing_year_to_monthly requires both `year` (model "
-            "run year) and `forcing_year` (year to read from forcing file)"
+            "run year, or year_start==year_end via CLI) and `forcing_year` "
+            "(year to read from forcing file)"
         )
     year_i = int(year)
     forcing_year_i = int(forcing_year)
@@ -2095,6 +2094,32 @@ def _resample_to_match(primary, secondary):
     return secondary
 
 
+def _resolve_year(rule):
+    """Return the cmorize year as int, or None if unresolvable.
+
+    Preference order:
+      1. ``rule.year`` (legacy / explicit attribute, set by the old
+         repoint_hr_year.py flow or by manual yaml override).
+      2. ``rule.year_start`` when ``year_start == year_end`` (CLI
+         single-year case post commit 8046000).
+      3. None (multi-year chunked dispatch — caller handles by
+         iterating per chunk year).
+
+    Single source of truth so the two consumers (``select_year``,
+    ``broadcast_forcing_year_to_monthly``) cannot drift apart on the
+    fallback semantics.
+    """
+    if not hasattr(rule, "get"):
+        return None
+    y = rule.get("year")
+    if y is not None:
+        return int(y)
+    ys, ye = rule.get("year_start"), rule.get("year_end")
+    if ys is not None and ys == ye:
+        return int(ys)
+    return None
+
+
 def _load_secondary_mf(rule, path_key, pattern_key, variable_key):
     """Load a secondary input variable from a glob pattern of files.
 
@@ -2149,7 +2174,24 @@ def _load_secondary_mf(rule, path_key, pattern_key, variable_key):
     if var_name and var_name in ds:
         result = ds[var_name]
     else:
-        data_vars = [v for v in ds.data_vars if v not in ds.coords]
+        # Filter out bounds/auxiliary variables so the fallback picks the
+        # actual scientific field. FESOM files list ``time_bounds`` before
+        # the main variable in the netCDF; without this filter the auto-pick
+        # returns time_bounds (shape (time, axis_nbounds)) and downstream
+        # arithmetic blows up with object-dtype broadcast errors.
+        _BOUNDS_SUFFIXES = ("_bounds", "_bnds", "_bounds_lat", "_bounds_lon")
+        data_vars = [
+            v for v in ds.data_vars
+            if v not in ds.coords
+            and not any(str(v).endswith(s) for s in _BOUNDS_SUFFIXES)
+            and "axis_nbounds" not in ds[v].dims
+            and "nvertex" not in ds[v].dims
+        ]
+        if not data_vars:
+            raise ValueError(
+                f"No primary data variable found in {files[0]} after filtering "
+                f"bounds/auxiliary; specify '{variable_key}' on the rule."
+            )
         result = ds[data_vars[0]]
     return result
 
@@ -3314,6 +3356,18 @@ def regrid_oifs_to_fesom(data, rule):
     # ``isel`` preserves attrs, but be explicit in case of edge cases.
     if not result.attrs:
         result.attrs = dict(data.attrs)
+    # Drop OIFS auxiliary time coords. XIOS files carry ``time_centered`` /
+    # ``time_instant`` (plus their *_bounds twins) alongside the renamed
+    # ``time`` (== old time_counter). Both reference dim ``time`` but with
+    # different label values (HH:30 vs HH:00). Downstream xarray alignment
+    # walks all coords sharing the dim and trips on the apparent duplicate
+    # index. The legacy materialise-via-.values path implicitly dropped
+    # them; the lazy-isel path preserves them, so we drop explicitly.
+    for aux in ("time_centered", "time_instant",
+                "time_centered_bounds", "time_instant_bounds",
+                "time_counter_bounds", "time_bounds"):
+        if aux in result.coords or aux in getattr(result, "variables", {}):
+            result = result.drop_vars(aux, errors="ignore")
     return result
 
 
@@ -3434,6 +3488,30 @@ def mask_where_no_seaice(data, rule):
     time_dim = "time"
     if time_dim in data.dims and time_dim in a_ice.dims:
         a_ice = a_ice.sel({time_dim: data[time_dim]}, method="nearest")
+
+    # F4 instrumentation (DESIGN_PROPOSAL_recipe_failures_post_cli.md §3.4):
+    # the duplicate-pandas-index error from data.where(mask) below has an
+    # under-evidenced root cause hypothesis (OIFS aux time coords promoted
+    # to indexes). Log indexes + uniqueness so the next run definitively
+    # confirms or rejects. Drop these prints once F4 is closed.
+    rule_name = rule.get("name", "?") if hasattr(rule, "get") else "?"
+    try:
+        data_t_unique = data[time_dim].to_index().is_unique if time_dim in data.coords else "no-coord"
+        a_ice_t_unique = a_ice[time_dim].to_index().is_unique if time_dim in a_ice.coords else "no-coord"
+        # Use logger.warning so it shows up in the user-facing log even with
+        # the stdlib logging default WARNING level (custom_steps.py uses
+        # stdlib `logging`, not loguru — INFO would be filtered).
+        logger.warning(
+            f"F4-INSTRUMENT mask_where_no_seaice [{rule_name}]: "
+            f"data.indexes={list(data.indexes)} "
+            f"data.coords={list(data.coords)} "
+            f"data.{time_dim}.size={data.sizes.get(time_dim, '?')} "
+            f"data.{time_dim}.is_unique={data_t_unique} "
+            f"a_ice.{time_dim}.size={a_ice.sizes.get(time_dim, '?')} "
+            f"a_ice.{time_dim}.is_unique={a_ice_t_unique}"
+        )
+    except Exception as _exc:
+        logger.warning(f"F4-INSTRUMENT mask_where_no_seaice [{rule_name}]: instrumentation failed: {_exc}")
 
     # Mask: set to NaN where a_ice == 0 (no sea ice)
     mask = a_ice > 0  # True where sea ice present

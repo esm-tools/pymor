@@ -341,6 +341,7 @@ inherit:
   grid_label: gn
   mesh_path: &mp /work/ab0246/a270092/input/fesom2/dars2
   grid_file: /work/ab0246/a270092/input/fesom2/dars2/mesh.nc
+  basin_mask_file: /work/ab0246/a270092/input/fesom2/dars2/basin_mask.nc
   grid: "FESOM 2.6 unstructured grid DARS (3146761 surface nodes)"
   nominal_resolution: "10 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
@@ -494,37 +495,45 @@ rules:
     pipelines:
       - surface_2d_pipeline
 
+  # DEACTIVATED 2026-05-07 — vertical_integrate produces W/m (depth-integrated
+  # heat flux per unit along-transect length); CMIP hfx/hfy require W (full
+  # along-transect integral), which the current scale_and_integrate_pipeline
+  # does not produce. Reinstate by adding compute_hfx_horizontal_integral;
+  # see DESIGN_PROPOSAL_recipe_failures_post_cli.md §3.3 for full analysis
+  # (drop vs. add-step vs. reassign-CMIP-target tradeoffs).
+  #
   # hfx_int_day — daily vertically integrated ocean heat X transport
   # Same approach as monthly hfxint in cap7_ocean: utemp × rho_0*cp then integrate over depth.
   # Requires: ldiag_trflx=.true. and utemp at daily frequency in namelist.io
   # (single stream shared with monthly hfx/hfxint rules; pycmor timeavgs daily → monthly).
   # WARNING: full 3D daily utemp on DARS (3.1M nodes × 47 levels) is very large.
-  - name: hfx_int_day
-    inputs:
-      - path: *dp
-        pattern: utemp\.fesom\..*\.nc
-    compound_name: ocean.hfx.tavg-u-hxy-sea.day.GLB
-    model_variable: utemp
-    scale_factor: 4095900.0
-    scaled_units: "W m-2"
-    lazy_write: true
-    pipelines:
-      - scale_and_integrate_pipeline
+  # - name: hfx_int_day
+  #   inputs:
+  #     - path: *dp
+  #       pattern: utemp\.fesom\..*\.nc
+  #   compound_name: ocean.hfx.tavg-u-hxy-sea.day.GLB
+  #   model_variable: utemp
+  #   scale_factor: 4095900.0
+  #   scaled_units: "W m-2"
+  #   lazy_write: true
+  #   pipelines:
+  #     - scale_and_integrate_pipeline
 
   # hfy_int_day — daily vertically integrated ocean heat Y transport
   # Same approach as monthly hfyint: vtemp × rho_0*cp then integrate over depth.
   # Requires: ldiag_trflx=.true. and vtemp at daily frequency in namelist.io.
-  - name: hfy_int_day
-    inputs:
-      - path: *dp
-        pattern: vtemp\.fesom\..*\.nc
-    compound_name: ocean.hfy.tavg-u-hxy-sea.day.GLB
-    model_variable: vtemp
-    scale_factor: 4095900.0
-    scaled_units: "W m-2"
-    lazy_write: true
-    pipelines:
-      - scale_and_integrate_pipeline
+  # DEACTIVATED 2026-05-07 with hfx_int_day (same CMIP-target-unit conflict).
+  # - name: hfy_int_day
+  #   inputs:
+  #     - path: *dp
+  #       pattern: vtemp\.fesom\..*\.nc
+  #   compound_name: ocean.hfy.tavg-u-hxy-sea.day.GLB
+  #   model_variable: vtemp
+  #   scale_factor: 4095900.0
+  #   scaled_units: "W m-2"
+  #   lazy_write: true
+  #   pipelines:
+  #     - scale_and_integrate_pipeline
 
   # ============================================================
   # EASY: Squaring steps (tossq, sossq, zossq, mlotstsq)
@@ -937,25 +946,28 @@ rules:
   # msftmmpa — MOC due to parameterized mesoscale advection, depth-space.
   # Uses bolus_w (vertical bolus velocity at nodes) — reuses the calc_zmoc
   # flow with bolus_w in place of w. Requires fer_gm=.true.
-  - name: msftmmpa_depth
-    inputs:
-      - path: *dp
-        pattern: bolus_w\.fesom\..*\.nc
-    compound_name: ocean.msftmmpa.tavg-ol-hyb-sea.mon.GLB
-    model_variable: msftmmpa
-    pipelines:
-      - msftmmpa_depth_pipeline
+  # DEACTIVATED: AWI-CM3 HR does not run with fer_gm enabled; bolus_w is
+  # never produced. Re-enable when/if a GM-on HR config exists.
+  # - name: msftmmpa_depth
+  #   inputs:
+  #     - path: *dp
+  #       pattern: bolus_w\.fesom\..*\.nc
+  #   compound_name: ocean.msftmmpa.tavg-ol-hyb-sea.mon.GLB
+  #   model_variable: msftmmpa
+  #   pipelines:
+  #     - msftmmpa_depth_pipeline
 
   # msftmmpa — MOC due to parameterized mesoscale advection, density-space.
   # Uses std_dens_DIVbolus from FESOM's online density-class binning.
-  - name: msftmmpa_density
-    inputs:
-      - path: *dp
-        pattern: std_dens_DIVbolus\.fesom\..*\.nc
-    compound_name: ocean.msftmmpa.tavg-rho-hyb-sea.mon.GLB
-    model_variable: msftmmpa
-    pipelines:
-      - msftmmpa_density_pipeline
+  # DEACTIVATED: same reason as msftmmpa_depth — fer_gm off in HR config.
+  # - name: msftmmpa_density
+  #   inputs:
+  #     - path: *dp
+  #       pattern: std_dens_DIVbolus\.fesom\..*\.nc
+  #   compound_name: ocean.msftmmpa.tavg-rho-hyb-sea.mon.GLB
+  #   model_variable: msftmmpa
+  #   pipelines:
+  #     - msftmmpa_density_pipeline
 
   # ============================================================
   # HARD: 3D salt transport (sfx, sfy)

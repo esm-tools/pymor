@@ -106,6 +106,7 @@ rules:
     model_variable: cfc11
     scale_factor: 1.0e-12
     scaled_units: "mol mol-1"
+    skip_input_year_filter: true
     pipelines:
       - ghg_scalar_pipeline
 
@@ -119,6 +120,7 @@ rules:
     model_variable: cfc12
     scale_factor: 1.0e-12
     scaled_units: "mol mol-1"
+    skip_input_year_filter: true
     pipelines:
       - ghg_scalar_pipeline
 
@@ -134,6 +136,7 @@ rules:
     model_variable: ch4
     scale_factor: 1.0e-9
     scaled_units: "mol mol-1"
+    skip_input_year_filter: true
     pipelines:
       - ghg_scalar_pipeline
 
@@ -149,6 +152,7 @@ rules:
     model_variable: n2o
     scale_factor: 1.0e-9
     scaled_units: "mol mol-1"
+    skip_input_year_filter: true
     pipelines:
       - ghg_scalar_pipeline
 
