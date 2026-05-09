@@ -3483,11 +3483,35 @@ def mask_where_no_seaice(data, rule):
     node_dim = rule.get("fesom_node_dim", "nod2")
     a_ice = _load_secondary_mf(rule, "aice_path", "aice_pattern", "aice_variable")
 
-    # Align time coordinates: match data times to a_ice times
-    # Both should be on monthly cadence; use sel with tolerance
+    # Align time coordinates: broadcast a_ice onto data's time grid via
+    # nearest-neighbour. Use `reindex` rather than `sel`: `sel(..., method=
+    # 'nearest')` keeps the *source*'s time values on the result, so
+    # querying 8760 hourly timestamps against 365 daily a_ice rows produces
+    # 8760 rows with the original 365 daily timestamps repeated 24x — i.e.
+    # a_ice.time becomes non-unique, and the subsequent `data.where(mask)`
+    # internal align fails with "(pandas) index has duplicate values".
+    # Same mechanism collapses 12 monthly data + 12 sel'd-daily a_ice down
+    # to 7 in the inner-join when the timestamps don't bit-match (sbl_seaice).
+    # `reindex` rewrites the time coord to the requested values, so the
+    # post-alignment a_ice.time is identical to data.time and `where` is a
+    # no-op on the time axis. (DESIGN_PROPOSAL_recipe_failures_post_cli.md
+    # §3.4 / §3.5: F4 + F5)
     time_dim = "time"
     if time_dim in data.dims and time_dim in a_ice.dims:
-        a_ice = a_ice.sel({time_dim: data[time_dim]}, method="nearest")
+        a_ice = a_ice.reindex({time_dim: data[time_dim]}, method="nearest")
+        # Match a_ice's time chunks to data's so the subsequent `where()` is
+        # element-wise per chunk and stays dask-lazy. Without this, reindex
+        # onto an 8760-hour grid produces a single big chunk for a_ice; when
+        # `where` then broadcasts data (chunked) against a_ice (one chunk),
+        # dask materializes an 8760 x N_nodes intermediate per worker — at
+        # HR (3.15M nodes) that's ~100 GB across 9 concurrent F4 rules,
+        # which spills, IO-contends on scratch, and live-locks all 4
+        # workers. Chunk-matched `where` keeps peak ~chunk-sized.
+        if hasattr(data, "chunks") and data.chunks is not None and time_dim in data.dims:
+            time_idx = data.dims.index(time_dim)
+            time_chunks = data.chunks[time_idx]
+            if time_chunks:
+                a_ice = a_ice.chunk({time_dim: time_chunks})
 
     # F4 instrumentation (DESIGN_PROPOSAL_recipe_failures_post_cli.md §3.4):
     # the duplicate-pandas-index error from data.where(mask) below has an
