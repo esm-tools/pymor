@@ -298,6 +298,28 @@ def classify(actual_min, actual_mean, actual_max, bounds):
                     upd("FAIL"); notes.append(f"mean {actual_mean:.3g} off by {ratio:.2g}x vs expected ~{en:.3g}")
                 elif abs(ratio) > 5 or abs(ratio) < 0.2:
                     upd("WARN"); notes.append(f"mean {actual_mean:.3g} off by {ratio:.2g}x vs expected ~{en:.3g}")
+    # Scale-too-small check: the observed range can be entirely inside the
+    # expected envelope yet 100x-1000x smaller than expected. That happens
+    # for balanced quantities like sea-ice mass transport (expected_mean=0,
+    # bounds ±1e8 kg/s) where a sign / unit bug shrinks the field to ±1.
+    # The previous mean-check misses this because the mean is also ~0.
+    if (em is not None and ex is not None
+            and math.isfinite(actual_min) and math.isfinite(actual_max)):
+        observed_spread = max(abs(actual_max), abs(actual_min))
+        expected_spread = max(abs(em), abs(ex))
+        if expected_spread > 0 and observed_spread > 0:
+            srat = observed_spread / expected_spread
+            if srat <= 0.001:
+                upd("FAIL"); notes.append(
+                    f"observed range [{actual_min:.3g}, {actual_max:.3g}] is "
+                    f"{srat:.2g}x the expected envelope — variable is "
+                    "essentially constant or wrongly scaled"
+                )
+            elif srat <= 0.05:
+                upd("WARN"); notes.append(
+                    f"observed range [{actual_min:.3g}, {actual_max:.3g}] is "
+                    f"{srat:.2g}x the expected envelope — possibly too small"
+                )
     return sev, notes
 
 
