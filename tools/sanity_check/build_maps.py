@@ -106,11 +106,28 @@ def _infer_label(records: Sequence[Dict[str, Any]]) -> str:
 
 
 def _pick_representative(recs: Sequence[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    """Pick one record per variable: prefer monthly, then daily, then 1hr."""
+    """Pick one record per variable.
 
-    def _key(rec: Dict[str, Any]) -> Tuple[int, str]:
+    Prefer files that look like full 2D fields (CMIP branding `hxy-*` or
+    `hxyg-*`) over horizontal-mean / zonal / basin scalars (`hm-*`, `hyb-*`,
+    `hxx-*`). Then prefer monthly > daily > sub-daily, then alphabetical.
+    """
+
+    def _spatial_rank(fname: str) -> int:
+        n = fname.lower()
+        # Prefer full xy fields
+        if "-hxy-" in n or "-hxyg-" in n:
+            return 0
+        if "-hxz-" in n:
+            return 1
+        # Demote 1D / scalar / basin / global-mean brandings
+        if "-hm-" in n or "-hyb-" in n or "-hxx-" in n or "-hyy-" in n:
+            return 9
+        return 5
+
+    def _key(rec: Dict[str, Any]) -> Tuple[int, int, str]:
         fname = Path(str(rec.get("file", ""))).name
-        return (_freq_rank(fname), fname)
+        return (_spatial_rank(fname), _freq_rank(fname), fname)
 
     valid = [r for r in recs if r.get("file")]
     if not valid:
@@ -219,17 +236,40 @@ def _find_latlon_coords(ds, da):
     return lat, lon
 
 
-def _reduce_to_2d(da):
+def _reduce_to_2d(da, parent=None):
     """Reduce a DataArray to a (lat, lon) or 1D (ncells,) field.
 
     Strategy: time-mean across any time-like dim, then index-0 for any other
     non-spatial dim until we land on at most 2 dims (the spatial ones).
     Returns (reduced DataArray, list of notes).
+
+    Spatial dims are identified by which dim the `lat`/`lon` coordinates use,
+    plus a fallback list of common substrings (FESOM `nod2`, IFS `cell`, etc.).
     """
 
     notes: List[str] = []
 
-    spatial_hints = ("lat", "latitude", "lon", "longitude", "ncells", "nod2", "elem")
+    # Discover spatial dims via the coordinates that carry lat/lon. This is the
+    # robust signal — the dim could be named anything (cell, nod2, ncells, ...).
+    spatial_dims = set()
+    for coord_name in ("lat", "latitude", "lon", "longitude"):
+        if coord_name in da.coords:
+            spatial_dims.update(da.coords[coord_name].dims)
+    if parent is not None:
+        for coord_name in ("lat", "latitude", "lon", "longitude"):
+            if coord_name in parent.coords:
+                spatial_dims.update(parent.coords[coord_name].dims)
+
+    # Fallback substring hints in case the coords don't reveal it
+    fallback_hints = (
+        "lat", "latitude", "lon", "longitude",
+        "cell", "ncells", "nod2", "node", "elem", "point", "face", "vertex",
+    )
+
+    def is_spatial(dim_name: str) -> bool:
+        if dim_name in spatial_dims:
+            return True
+        return any(h in dim_name.lower() for h in fallback_hints)
 
     # 1) time-mean
     time_dims = [d for d in da.dims if d.lower() in ("time", "t")]
@@ -241,14 +281,9 @@ def _reduce_to_2d(da):
 
     # 2) collapse all non-spatial dims by isel(0)
     while True:
-        non_spatial = [
-            d
-            for d in da.dims
-            if not any(h in d.lower() for h in spatial_hints)
-        ]
+        non_spatial = [d for d in da.dims if not is_spatial(d)]
         if not non_spatial:
             break
-        # safety: if more than 2 dims and none look spatial, just keep first two.
         d0 = non_spatial[0]
         try:
             da = da.isel({d0: 0})
@@ -256,7 +291,6 @@ def _reduce_to_2d(da):
         except Exception:
             break
         if da.ndim <= 2:
-            # might still have a leftover non-spatial dim; loop continues.
             pass
         if len(non_spatial) == 1:
             break
@@ -456,7 +490,7 @@ def _process_one(args_tuple: Tuple[str, str, Dict[str, Any], str]) -> Tuple[str,
             return var, "no-data-vars", fname
         da = ds[primary]
         units = str(rec.get("units_in_file") or da.attrs.get("units") or "")
-        reduced, notes = _reduce_to_2d(da)
+        reduced, notes = _reduce_to_2d(da, parent=ds)
         lon, lat, values_2d, mode = _make_pcolormesh_inputs(reduced, ds)
         _render_map(out_path, var, units, notes, lon, lat, values_2d, mode)
         ds.close()
