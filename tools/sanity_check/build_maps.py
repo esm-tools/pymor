@@ -236,21 +236,22 @@ def _find_latlon_coords(ds, da):
     return lat, lon
 
 
-def _reduce_to_2d(da, parent=None):
-    """Reduce a DataArray to a (lat, lon) or 1D (ncells,) field.
+def _reduce_to_panels(da, parent=None):
+    """Reduce to time-min / time-mean / time-max 2D fields.
 
-    Strategy: time-mean across any time-like dim, then index-0 for any other
-    non-spatial dim until we land on at most 2 dims (the spatial ones).
-    Returns (reduced DataArray, list of notes).
-
-    Spatial dims are identified by which dim the `lat`/`lon` coordinates use,
-    plus a fallback list of common substrings (FESOM `nod2`, IFS `cell`, etc.).
+    Returns (panels, notes) where panels is a dict
+    {"min": DataArray, "mean": DataArray, "max": DataArray}, each with at most
+    2 dims (the spatial ones). Returns ({"mean": DataArray}, notes) if no time
+    dim is present.
     """
 
     notes: List[str] = []
+    panels: Dict[str, Any] = {}
 
     # Discover spatial dims via the coordinates that carry lat/lon. This is the
     # robust signal — the dim could be named anything (cell, nod2, ncells, ...).
+    # We ONLY trust the coords; substring fallback was unsafe because some pycmor
+    # files mis-name the model-level dim "longitude" (size 137 in IFS L137).
     spatial_dims = set()
     for coord_name in ("lat", "latitude", "lon", "longitude"):
         if coord_name in da.coords:
@@ -260,28 +261,27 @@ def _reduce_to_2d(da, parent=None):
             if coord_name in parent.coords:
                 spatial_dims.update(parent.coords[coord_name].dims)
 
-    # Fallback substring hints in case the coords don't reveal it
+    # Fallback substring hints, used ONLY when lat/lon coords don't reveal a
+    # spatial dim at all. Restricted to unambiguous unstructured-grid hints so
+    # we never accidentally classify a level-style dim as spatial.
     fallback_hints = (
-        "lat", "latitude", "lon", "longitude",
-        "cell", "ncells", "nod2", "node", "elem", "point", "face", "vertex",
+        "ncells", "nod2", "node", "ncell", "ncol",
     )
 
     def is_spatial(dim_name: str) -> bool:
         if dim_name in spatial_dims:
             return True
+        if spatial_dims:
+            # We already have a definitive answer from the coords; don't
+            # second-guess it with substring matches.
+            return False
         return any(h in dim_name.lower() for h in fallback_hints)
 
-    # 1) time-mean
+    # 1) collapse non-time, non-spatial dims first (level/tile/basin) by isel(0)
     time_dims = [d for d in da.dims if d.lower() in ("time", "t")]
-    for tdim in time_dims:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            da = da.mean(dim=tdim, keep_attrs=True)
-        notes.append(f"mean({tdim})")
-
-    # 2) collapse all non-spatial dims by isel(0)
     while True:
-        non_spatial = [d for d in da.dims if not is_spatial(d)]
+        non_spatial = [d for d in da.dims
+                       if not is_spatial(d) and d not in time_dims]
         if not non_spatial:
             break
         d0 = non_spatial[0]
@@ -290,22 +290,36 @@ def _reduce_to_2d(da, parent=None):
             notes.append(f"{d0}=0")
         except Exception:
             break
-        if da.ndim <= 2:
-            pass
         if len(non_spatial) == 1:
             break
+
+    # 2) Compute time-min/mean/max along the time dim. If multiple time dims,
+    # collapse them all (rare).
+    if time_dims:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            panels["min"] = da.min(dim=time_dims, keep_attrs=True)
+            panels["mean"] = da.mean(dim=time_dims, keep_attrs=True)
+            panels["max"] = da.max(dim=time_dims, keep_attrs=True)
+        notes.append(f"min/mean/max({','.join(time_dims)})")
+        # representative for ndim safety check below
+        da = panels["mean"]
+    else:
+        panels["mean"] = da
 
     # 3) if still > 2 dims (e.g. weird coord situation), reduce the leading
     # dims by index 0 until ndim <= 2.
     while da.ndim > 2:
         d0 = da.dims[0]
         try:
-            da = da.isel({d0: 0})
+            for k in list(panels):
+                panels[k] = panels[k].isel({d0: 0})
+            da = panels.get("mean", da)
             notes.append(f"{d0}=0")
         except Exception:
             break
 
-    return da, notes
+    return panels, notes
 
 
 def _bin_unstructured(values, lat1d, lon1d):
@@ -411,44 +425,76 @@ def _make_pcolormesh_inputs(da, ds):
     raise ValueError(f"unsupported reduced ndim={da.ndim}")
 
 
+def _norm_for(vmin, vmax):
+    """Pick a (cmap, norm) pair that fills the colorbar with the actual data range."""
+    if not (np.isfinite(vmin) and np.isfinite(vmax)) or vmin == vmax:
+        return "viridis", plt.Normalize(vmin=vmin or 0.0, vmax=vmax or 1.0)
+    if vmin >= 0.0 or vmax <= 0.0:
+        return "viridis", plt.Normalize(vmin=vmin, vmax=vmax)
+    ratio = abs(vmin) / max(abs(vmax), 1e-30)
+    if 0.2 <= ratio <= 5.0:
+        absmax = max(abs(vmin), abs(vmax))
+        return "RdBu_r", plt.Normalize(vmin=-absmax, vmax=absmax)
+    try:
+        from matplotlib.colors import TwoSlopeNorm
+        return "RdBu_r", TwoSlopeNorm(vcenter=0.0, vmin=vmin, vmax=vmax)
+    except Exception:
+        return "RdBu_r", plt.Normalize(vmin=vmin, vmax=vmax)
+
+
 def _render_map(out_path: Path, var: str, units: str, notes: Sequence[str],
-                lon, lat, values_2d, mode: str) -> None:
+                panel_data: Dict[str, Tuple[Any, Any, Any, str]]) -> None:
+    """Render a horizontal 3-panel figure: time-min / time-mean / time-max.
+
+    panel_data maps "min"/"mean"/"max" to (lon, lat, values_2d, mode) tuples.
+    If only the "mean" key is present (no time dim) draws a single panel.
+    """
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    finite = np.isfinite(values_2d)
-    if not finite.any():
+    keys = [k for k in ("min", "mean", "max") if k in panel_data]
+    if not keys:
+        _placeholder_png(out_path, f"{var}: no panels to draw")
+        return
+
+    # If every panel is all-NaN, write the standard placeholder
+    if all(not np.isfinite(panel_data[k][2]).any() for k in keys):
         _placeholder_png(out_path, f"{var}: all-NaN field")
         return
 
-    vmin = float(np.nanmin(values_2d))
-    vmax = float(np.nanmax(values_2d))
-    if vmin < 0.0 < vmax:
-        cmap = "RdBu_r"
-        absmax = max(abs(vmin), abs(vmax))
-        norm = plt.Normalize(vmin=-absmax, vmax=absmax)
-    else:
-        cmap = "viridis"
-        norm = plt.Normalize(vmin=vmin, vmax=vmax)
+    n = len(keys)
+    fig_w = 4.5 * n if n > 1 else 5.0
+    fig = plt.figure(figsize=(fig_w, 2.6), dpi=100)
+    for i, k in enumerate(keys):
+        lon, lat, values_2d, _mode = panel_data[k]
+        if not np.isfinite(values_2d).any():
+            ax = fig.add_subplot(1, n, i + 1)
+            ax.set_facecolor("#f4f4f4")
+            ax.text(0.5, 0.5, f"all-NaN", ha="center", va="center",
+                    transform=ax.transAxes, fontsize=8, color="#888")
+            ax.set_title(f"time-{k}", fontsize=8)
+            ax.set_xticks([]); ax.set_yticks([])
+            continue
+        vmin = float(np.nanmin(values_2d))
+        vmax = float(np.nanmax(values_2d))
+        cmap, norm = _norm_for(vmin, vmax)
+        ax = fig.add_subplot(1, n, i + 1)
+        ax.set_facecolor("#f4f4f4")
+        mesh = ax.pcolormesh(lon, lat, values_2d, cmap=cmap, norm=norm,
+                             shading="auto")
+        ax.set_xlabel("lon", fontsize=7)
+        if i == 0:
+            ax.set_ylabel("lat", fontsize=7)
+        ax.tick_params(labelsize=6)
+        ax.set_title(f"time-{k}\nmin={vmin:.3g} max={vmax:.3g}", fontsize=7)
+        cb = fig.colorbar(mesh, ax=ax, fraction=0.04, pad=0.02)
+        cb.ax.tick_params(labelsize=6)
+        if units and i == n - 1:
+            cb.set_label(units, fontsize=7)
 
-    fig = plt.figure(figsize=(5.0, 2.4), dpi=100)
-    ax = fig.add_subplot(111)
-    ax.set_facecolor("#f4f4f4")
-
-    mesh = ax.pcolormesh(lon, lat, values_2d, cmap=cmap, norm=norm, shading="auto")
-
-    ax.set_xlabel("lon", fontsize=8)
-    ax.set_ylabel("lat", fontsize=8)
-    ax.tick_params(labelsize=7)
-    title = f"{var}  (time-mean, {units or '?'})"
+    sup = f"{var}  ({units or '?'})"
     if notes:
-        title += f"\n[{', '.join(notes)}]"
-    ax.set_title(title, fontsize=8)
-
-    cb = fig.colorbar(mesh, ax=ax, fraction=0.04, pad=0.02)
-    cb.ax.tick_params(labelsize=7)
-    if units:
-        cb.set_label(units, fontsize=7)
-
+        sup += f"  [{', '.join(notes)}]"
+    fig.suptitle(sup, fontsize=8, y=1.02)
     fig.tight_layout()
     fig.savefig(out_path, dpi=100, bbox_inches="tight")
     plt.close(fig)
@@ -490,9 +536,14 @@ def _process_one(args_tuple: Tuple[str, str, Dict[str, Any], str]) -> Tuple[str,
             return var, "no-data-vars", fname
         da = ds[primary]
         units = str(rec.get("units_in_file") or da.attrs.get("units") or "")
-        reduced, notes = _reduce_to_2d(da, parent=ds)
-        lon, lat, values_2d, mode = _make_pcolormesh_inputs(reduced, ds)
-        _render_map(out_path, var, units, notes, lon, lat, values_2d, mode)
+        panels, notes = _reduce_to_panels(da, parent=ds)
+        # Build pcolormesh inputs for each panel separately. The grid (lon,
+        # lat, mode) is the same across all three; just the values differ.
+        panel_data: Dict[str, Tuple[Any, Any, Any, str]] = {}
+        for k, panel_da in panels.items():
+            lon, lat, values_2d, mode = _make_pcolormesh_inputs(panel_da, ds)
+            panel_data[k] = (lon, lat, values_2d, mode)
+        _render_map(out_path, var, units, notes, panel_data)
         ds.close()
         return var, "ok", fname
     except Exception as exc:
