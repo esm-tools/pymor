@@ -4677,3 +4677,55 @@ def load_lpjguess_monthly_pool(data, rule):
         ds[model_variable].attrs["units"] = source_units
 
     return ds
+
+
+def clip_negative_to_zero(data, rule):
+    """Clip values < 0 to 0 (used for melt-only diagnostics).
+
+    Combined with a sign-flipping `scale_factor`, this turns FESOM's net
+    snow thickness change `thdgrsnw` (>0 accumulation, <0 melt) into the
+    CMIP `snm` snow-melt rate convention (>0 = melting, 0 elsewhere).
+
+    Has no rule attributes.
+    """
+    import xarray as xr  # noqa: WPS433
+
+    if isinstance(data, xr.Dataset):
+        out = data.copy()
+        for v in out.data_vars:
+            if out[v].dtype.kind in ("f", "i"):
+                attrs = out[v].attrs
+                out[v] = out[v].where(out[v] >= 0, 0)
+                out[v].attrs = attrs
+        return out
+    attrs = data.attrs.copy()
+    out = data.where(data >= 0, 0)
+    out.attrs = attrs
+    return out
+
+
+def nan_to_zero(data, rule):
+    """Replace NaN / fill-value sentinels with 0, leave finite values alone.
+
+    Used for variables like `vsfcorr` (Virtual Salt Flux Correction) which
+    CMIP7 documents as "set to zero in models which receive a real water
+    flux" — AWI-CM is such a model, and FESOM emits all-fill output
+    instead of zeros. Wherever the source is finite (e.g. if SSS restoring
+    is later turned on), real values are preserved.
+
+    Has no rule attributes.
+    """
+    import xarray as xr  # noqa: WPS433
+
+    if isinstance(data, xr.Dataset):
+        out = data.copy()
+        for v in out.data_vars:
+            if out[v].dtype.kind == "f":
+                attrs = out[v].attrs
+                out[v] = out[v].fillna(0)
+                out[v].attrs = attrs
+        return out
+    attrs = data.attrs.copy()
+    out = data.fillna(0)
+    out.attrs = attrs
+    return out

@@ -62,6 +62,25 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # Like scale_pipeline but with a clip-to-0 step after the sign-flipping
+  # scale, so only one branch (e.g. snow melt) survives. Used by snm.
+  - name: snm_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
+      - script://$PYCMOR_HOME/examples/custom_steps.py:clip_negative_to_zero
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   # Sea ice speed: sqrt(uice² + vice²)
   - name: sispeed_pipeline
     steps:
@@ -431,15 +450,21 @@ rules:
   # --- Snow melt rate: thdgrsn [m/s] × rho_snow → kg m-2 s-1 ---
 
   - name: snm
+    # FESOM `thdgrsnw` is the NET thermodynamic snow thickness change:
+    #   > 0 → snow accumulates (snowfall > melt+sublimation)
+    #   < 0 → snow melts faster than it accumulates
+    # CMIP `snm` is the snow MELT rate, positive when melting and 0
+    # otherwise. So we flip the sign (-330 = -ρ_snow) and clip the
+    # accumulation branch to 0 in the snm_pipeline.
     inputs:
       - path: *dp
         pattern: thdgrsnw\.fesom\..*\.nc
     compound_name: seaIce.snm.tavg-u-hxy-si.mon.GLB
     model_variable: thdgrsnw
-    scale_factor: 330.0
+    scale_factor: -330.0
     scaled_units: "kg m-2 s-1"
     pipelines:
-      - scale_pipeline
+      - snm_pipeline
 
   # --- Freshwater flux from sea ice: fw_ice [m/s] × rho_water → kg m-2 s-1 ---
 
@@ -771,12 +796,16 @@ rules:
   # SImon — hemisphere-integrated scalars (ldiag_cmor=.true.)
   # ============================================================
 
+  # FESOM ldiag_cmor scalars come out in `1e12 m2` (mathematically identical
+  # to CMIP `1e6 km2`). Without this declaration pycmor's pint pass parses
+  # the FESOM units literally and ends up multiplying values by 1e12.
   - name: siarea_north
     inputs:
       - path: *dp
         pattern: siarean\.fesom\..*\.nc
     compound_name: seaIce.siarea.tavg-u-hm-u.mon.NH
     model_variable: siarean
+    model_unit: "1e12 m2"
 
   - name: siarea_south
     inputs:
@@ -784,6 +813,7 @@ rules:
         pattern: siareas\.fesom\..*\.nc
     compound_name: seaIce.siarea.tavg-u-hm-u.mon.SH
     model_variable: siareas
+    model_unit: "1e12 m2"
 
   # Daily siarea: ldiag_cmor scalars are monthly-only; compute from gridded a_ice
   # integrate_over_hemisphere returns sum(a_ice * cell_area) in m2 — pint converts to "1e6 km2".
@@ -815,6 +845,7 @@ rules:
         pattern: siextentn\.fesom\..*\.nc
     compound_name: seaIce.siextent.tavg-u-hm-u.mon.NH
     model_variable: siextentn
+    model_unit: "1e12 m2"
 
   - name: siextent_south
     inputs:
@@ -822,6 +853,7 @@ rules:
         pattern: siextents\.fesom\..*\.nc
     compound_name: seaIce.siextent.tavg-u-hm-u.mon.SH
     model_variable: siextents
+    model_unit: "1e12 m2"
 
   # Daily siextent: ldiag_cmor scalars are monthly-only; compute from gridded a_ice with 15% threshold
   # integrate_over_hemisphere returns sum(1{a_ice>0.15} * cell_area) in m2 — pint converts to "1e6 km2".

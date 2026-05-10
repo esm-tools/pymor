@@ -225,6 +225,25 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # Like surface_2d_pipeline but replaces NaN with 0 only where the source
+  # field is masked (e.g. FESOM emits all-fill `relaxsalt` when SSS
+  # restoring is off). Real values pass through unchanged, so this stays
+  # a useful sanity check if restoring is enabled later.
+  - name: nan_to_zero_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script://$PYCMOR_HOME/examples/custom_steps.py:nan_to_zero
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   # Scale by constant then vertically integrate (hfx_int_day, hfy_int_day)
   - name: scale_and_integrate_pipeline
     steps:
@@ -452,6 +471,13 @@ rules:
     # May need masking by (1 - siconc) if CMIP requires ice-free fraction only.
 
   # vsfcorr — virtual salt flux correction (relaxsalt)
+  #
+  # CMIP7 documents this variable as: "It is set to zero in models which
+  # receive a real water flux." AWI-CM is such a model (`surf_relax_s = 0`
+  # in namelist.tra), so FESOM doesn't actually write data to the
+  # relaxsalt stream — the source file is all _FillValue. We replace
+  # NaN with 0 to comply with the CMIP convention. If SSS restoring is
+  # ever enabled (`surf_relax_s != 0`), real values pass through.
   - name: vsfcorr
     inputs:
       - path: *dp
@@ -459,6 +485,8 @@ rules:
     compound_name: ocean.vsfcorr.tavg-u-hxy-sea.mon.GLB
     model_variable: relaxsalt
     model_unit: "kg m-2 s-1"
+    pipelines:
+      - nan_to_zero_pipeline
 
   # ============================================================
   # Daily fields
