@@ -39,9 +39,9 @@ nav.top a.active {
   text-decoration: underline;
 }
 main {
-  max-width: 960px;
+  max-width: 1500px;
   margin: 0 auto;
-  padding: 18px 16px 80px;
+  padding: 18px 24px 80px;
 }
 h1 { font-size: 22px; margin: 14px 0 6px; }
 h2 { font-size: 18px; margin: 28px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
@@ -118,7 +118,7 @@ p.description {
 }
 img.varmap {
   display: block;
-  max-width: 520px;
+  max-width: 1400px;
   width: 100%;
   height: auto;
   margin: 8px 0;
