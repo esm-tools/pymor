@@ -727,6 +727,15 @@ h3 { font-size: 15px; margin: 0; }
   font-size: 12px;
 }
 .var-card svg { margin: 8px 0; display: block; }
+img.varmap {
+  display: block;
+  max-width: 520px;
+  width: 100%;
+  height: auto;
+  margin: 8px 0;
+  border: 1px solid #ddd;
+  background: #fafafa;
+}
 table.numbers {
   border-collapse: collapse;
   margin: 8px 0;
@@ -840,28 +849,12 @@ def _page_shell(title: str, label: str, active: str, body: str) -> str:
     )
 
 
-def render_var_card(entry: VarEntry) -> str:
+def render_var_card(entry: VarEntry, out_dir: Optional[Path] = None) -> str:
     status = entry.worst_status
     status_cls = status.lower()
 
-    # PASS / NOBOUNDS get a compact one-row card.
-    if status in ("PASS", "NOBOUNDS"):
-        units = entry.units_table or entry.units_in_file or ""
-        return (
-            f'<div class="var-card compact {status_cls}" id="var-{html.escape(entry.var)}">'
-            '<div class="header">'
-            f'<span class="name">{html.escape(entry.var)}</span>'
-            f"{_pill(status)}"
-            f'<span class="meta">realm={html.escape(entry.realm or "?")} '
-            f"&middot; units={html.escape(units or '?')} &middot; "
-            f"obs min/mean/max = {fmt_num(entry.obs_min)} / "
-            f"{fmt_num(entry.obs_mean)} / {fmt_num(entry.obs_max)}"
-            "</span>"
-            "</div>"
-            "</div>"
-        )
-
-    # Full card
+    # Every card gets the full layout — including PASS — so each variable
+    # has a map plot regardless of status.
     sev_tag = ""
     if entry.worst_severity:
         sev_tag = f'<span class="sev-tag">{html.escape(entry.worst_severity)}</span>'
@@ -888,6 +881,15 @@ def render_var_card(entry: VarEntry) -> str:
     svg = build_svg(entry)
     if svg:
         parts.append(svg)
+
+    # Optional time-mean map image, if present alongside the report.
+    if out_dir is not None:
+        map_path = out_dir / "assets" / "maps" / f"{entry.var}.png"
+        if map_path.exists():
+            parts.append(
+                f'<img class="varmap" src="assets/maps/{html.escape(entry.var)}.png" '
+                f'alt="time-mean map of {html.escape(entry.var)}" loading="lazy"/>'
+            )
 
     # Numbers table
     parts.append(
@@ -941,7 +943,8 @@ def sort_key(entry: VarEntry) -> Tuple[int, int, str]:
 
 def render_domain_page(domain: str,
                        entries: Sequence[VarEntry],
-                       label: str) -> str:
+                       label: str,
+                       out_dir: Optional[Path] = None) -> str:
     title = f"{label} — {DOMAIN_LABELS[domain]}"
     sorted_entries = sorted(entries, key=sort_key)
 
@@ -960,16 +963,16 @@ def render_domain_page(domain: str,
 
     if fails:
         body.append("<h2>FAIL</h2>")
-        body.extend(render_var_card(e) for e in fails)
+        body.extend(render_var_card(e, out_dir) for e in fails)
     if warns:
         body.append("<h2>WARN</h2>")
-        body.extend(render_var_card(e) for e in warns)
+        body.extend(render_var_card(e, out_dir) for e in warns)
     if passes:
         body.append("<h2>PASS</h2>")
-        body.extend(render_var_card(e) for e in passes)
+        body.extend(render_var_card(e, out_dir) for e in passes)
     if others:
         body.append("<h2>Other (ERROR / NOBOUNDS)</h2>")
-        body.extend(render_var_card(e) for e in others)
+        body.extend(render_var_card(e, out_dir) for e in others)
 
     if not sorted_entries:
         body.append("<p>No variables in this domain.</p>")
@@ -1142,7 +1145,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     # Per-domain
     for dom in ("atm", "oce", "ice", "veg"):
-        page = render_domain_page(dom, by_dom[dom], label)
+        page = render_domain_page(dom, by_dom[dom], label, out_dir)
         (out_dir / f"{dom}.html").write_text(page, encoding="utf-8")
 
     print(f"wrote {out_dir}/index.html and {len(by_dom)} domain pages")

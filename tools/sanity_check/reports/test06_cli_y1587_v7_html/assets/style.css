@@ -99,6 +99,15 @@ h3 { font-size: 15px; margin: 0; }
   font-size: 12px;
 }
 .var-card svg { margin: 8px 0; display: block; }
+img.varmap {
+  display: block;
+  max-width: 520px;
+  width: 100%;
+  height: auto;
+  margin: 8px 0;
+  border: 1px solid #ddd;
+  background: #fafafa;
+}
 table.numbers {
   border-collapse: collapse;
   margin: 8px 0;
