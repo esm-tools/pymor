@@ -425,6 +425,81 @@ def _make_pcolormesh_inputs(da, ds):
     raise ValueError(f"unsupported reduced ndim={da.ndim}")
 
 
+def _has_spatial(da, parent=None) -> bool:
+    """True if the DataArray's lat/lon coords reveal a spatial dim it shares."""
+    spatial_dims = set()
+    for src in (da, parent):
+        if src is None:
+            continue
+        for cn in ("lat", "latitude", "lon", "longitude"):
+            if cn in getattr(src, "coords", {}):
+                spatial_dims.update(src.coords[cn].dims)
+    if not spatial_dims:
+        # FESOM nod2 or similar where the file uses a known unstructured-grid
+        # name without a coord. Fall back to substring detection on da.dims.
+        for dn in da.dims:
+            n = dn.lower()
+            if any(h in n for h in ("ncells", "nod2", "node", "ncell", "ncol",
+                                     "cell")):
+                return True
+        return False
+    return any(d in da.dims for d in spatial_dims)
+
+
+def _render_timeseries(out_path: Path, var: str, units: str, da, ds) -> None:
+    """Plot a 1D time series for variables with only a time dim.
+
+    Used for hemispheric/global scalars (siarea, siextent, sivol, masso, ...)
+    where a map is meaningless.
+    """
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    # Reduce any non-time dim by isel(0) until only the time-like dim remains.
+    while da.ndim > 1:
+        non_time = [d for d in da.dims if d.lower() not in ("time", "t")]
+        if not non_time:
+            break
+        d0 = non_time[0]
+        try:
+            da = da.isel({d0: 0})
+        except Exception:
+            break
+
+    values = np.asarray(da.values, dtype=float).ravel()
+    if values.size == 0 or not np.isfinite(values).any():
+        _placeholder_png(out_path, f"{var}: empty or all-NaN time series")
+        return
+
+    # x axis: prefer the time coord if present, else integer index. Don't try
+    # to decode cftime — just show numeric values from the file's time coord.
+    x = None
+    tcoord_name = None
+    for cn in ("time", "time_centered", "t"):
+        if cn in da.coords:
+            tcoord_name = cn
+            x = np.asarray(da.coords[cn].values, dtype=float).ravel()
+            break
+    if x is None or x.size != values.size:
+        x = np.arange(values.size, dtype=float)
+        tcoord_name = "step"
+
+    fig = plt.figure(figsize=(6.0, 2.4), dpi=100)
+    ax = fig.add_subplot(111)
+    ax.plot(x, values, color="#1a6", linewidth=1.4)
+    ax.scatter(x, values, color="#1a6", s=10)
+    ax.set_xlabel(tcoord_name, fontsize=8)
+    ax.set_ylabel(units or "", fontsize=8)
+    ax.tick_params(labelsize=7)
+    ax.grid(True, linewidth=0.4, alpha=0.4)
+    vmin, vmax = float(np.nanmin(values)), float(np.nanmax(values))
+    vmean = float(np.nanmean(values))
+    title = (f"{var}  (time series, {units or '?'})\n"
+             f"min={vmin:.3g}  mean={vmean:.3g}  max={vmax:.3g}")
+    ax.set_title(title, fontsize=8)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=100, bbox_inches="tight")
+    plt.close(fig)
+
+
 def _norm_for(vmin, vmax):
     """Pick a (cmap, norm) pair that fills the colorbar with the actual data range."""
     if not (np.isfinite(vmin) and np.isfinite(vmax)) or vmin == vmax:
@@ -536,6 +611,12 @@ def _process_one(args_tuple: Tuple[str, str, Dict[str, Any], str]) -> Tuple[str,
             return var, "no-data-vars", fname
         da = ds[primary]
         units = str(rec.get("units_in_file") or da.attrs.get("units") or "")
+        # Hemispheric/global scalars (siarea, siextent, sivol, masso, ...)
+        # have no spatial dim; plot a time series instead of a map.
+        if not _has_spatial(da, parent=ds):
+            _render_timeseries(out_path, var, units, da, ds)
+            ds.close()
+            return var, "ok-timeseries", fname
         panels, notes = _reduce_to_panels(da, parent=ds)
         # Build pcolormesh inputs for each panel separately. The grid (lon,
         # lat, mode) is the same across all three; just the values differ.
