@@ -55,6 +55,7 @@ SEVERITY_ORDER = [
     "UNIT_MISMATCH",
     "SIGN_FLIP",
     "PICONTROL_NONZERO",
+    "PHYS_NEG_VALUES",
     "BOUNDS_OR_PEAK",
     "BOUNDS_TIGHT_MINOR",
 ]
@@ -64,7 +65,18 @@ SEVERITY_RANK = {s: i for i, s in enumerate(SEVERITY_ORDER)}
 STATUS_RANK = {"FAIL": 0, "ERROR": 1, "WARN": 2, "NOBOUNDS": 3, "PASS": 4}
 
 
-def severity_of(var: str, notes: Sequence[str]) -> str:
+# Keywords in the bounds-table rationale that mark a variable as one whose
+# 0 bound is there because of piControl/anthropogenic forcing, NOT because of
+# physics. Used to disambiguate "below expected_min 0" violations.
+_PICONTROL_RATIONALE_HINTS = (
+    "picontrol", "anthropogenic", "luh2", "luc",
+    "harvest", "harvested", "fertilis", "fertiliz",
+    "no synthetic", "no anthropogenic", "no harvest", "no luc",
+    "no land-use", "no land use",
+)
+
+
+def severity_of(var: str, notes: Sequence[str], rationale: str = "") -> str:
     if var in SIGN_BUGS:
         return "PHYS_IMPOSSIBLE"
     text = "; ".join(notes).lower()
@@ -80,13 +92,22 @@ def severity_of(var: str, notes: Sequence[str]) -> str:
                 return "UNIT_MISMATCH"
         except Exception:
             pass
-    # PICONTROL_NONZERO: variable expected to be exactly 0 (LUC/anthropogenic
-    # in piControl) but model emits non-zero. Match a hard zero bound only,
-    # NOT a small numeric one — "above expected_max 0.0003" should NOT
-    # trigger; "above expected_max 0;" or "above expected_max 0$" should.
-    if (re.search(r"above expected_max 0(?:\s|;|,|$)", text)
-            or re.search(r"below expected_min 0(?:\s|;|,|$)", text)):
-        return "PICONTROL_NONZERO"
+    # Hard zero bound violation. Two distinct causes:
+    #   * piControl / anthropogenic forcing: variable should be ~0 because the
+    #     model isn't run with that forcing on. The bounds-table rationale will
+    #     mention piControl, LUH2, anthropogenic, harvest, fertiliser, etc.
+    #   * physical lower bound: variable cannot be negative on physical
+    #     grounds (precipitation, evaporation, snow melt, etc.). Negative
+    #     values are likely numerical noise or a sign bug, NOT forcing leakage.
+    # Match a hard zero bound only — "above expected_max 0.0003" does NOT
+    # trigger; "above expected_max 0;" or "above expected_max 0$" does.
+    has_zero_bound = (re.search(r"above expected_max 0(?:\s|;|,|$)", text)
+                      or re.search(r"below expected_min 0(?:\s|;|,|$)", text))
+    if has_zero_bound:
+        rat = rationale.lower()
+        if any(kw in rat for kw in _PICONTROL_RATIONALE_HINTS):
+            return "PICONTROL_NONZERO"
+        return "PHYS_NEG_VALUES"
     if "slightly" in text:
         return "BOUNDS_TIGHT_MINOR"
     return "BOUNDS_OR_PEAK"
@@ -420,7 +441,8 @@ def collapse(records: Sequence[Dict[str, Any]],
         ent.domain = domain_of(ent.realm, ent.directory) or ""
 
         if ent.worst_status == "FAIL":
-            ent.worst_severity = severity_of(var, ent.worst_notes)
+            ent.worst_severity = severity_of(var, ent.worst_notes,
+                                             rationale=ent.source)
         else:
             ent.worst_severity = None
 
@@ -676,6 +698,19 @@ def diagnosis_text(entry: VarEntry) -> str:
             f"max={fmt_num(ax)}. Either the LUC forcing dataset isn't "
             "being honoured, or this is documented internal model "
             "behaviour — investigate, don't fix in pycmor."
+        )
+    if sev == "PHYS_NEG_VALUES":
+        # Hard zero bound on a physical quantity that cannot be negative
+        # (precipitation, evaporation, snow melt, etc.) — but the file has
+        # negative values somewhere. Mean and max are usually fine.
+        return (
+            f"Negative values found (min={fmt_num(am)}) despite a physical "
+            f"lower bound of 0 — {entry.var} cannot physically be negative. "
+            f"Mean={fmt_num(ae)} and max={fmt_num(ax)} are within range; "
+            "the violation is at the lower end and likely numerical noise "
+            "(e.g. flux scheme overshoot, regridding artefact) rather than "
+            "a forcing issue. Check whether to clip to 0 in the rule, or "
+            "whether the source field has a known sign-error."
         )
     if sev == "BOUNDS_OR_PEAK":
         return (
