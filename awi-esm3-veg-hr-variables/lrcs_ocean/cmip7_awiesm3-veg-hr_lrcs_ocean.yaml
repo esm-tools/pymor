@@ -148,12 +148,18 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # Vertical integration (phcint, scint, opottempmint, somint)
+  # Vertical integration + post-multiply by a physical-constant prefactor.
+  # vertical_integrate emits the bare ∫(field*dz); scale_by_constant then
+  # applies the rho_0-family factor declared on each rule (scale_factor),
+  # overriding the units string to the CMIP target (scaled_units). Used by
+  # phcint (J m-2 via rho_0*c_p), scint (kg m-2 via rho_0*1e-3),
+  # opottempmint (degC kg m-2 via rho_0), and somint (g m-2 via rho_0).
   - name: ocean_vertical_integration_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
       - script://$PYCMOR_HOME/examples/custom_steps.py:vertical_integrate
+      - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
       - pycmor.std_lib.add_vertical_bounds
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.units.handle_unit_conversion
@@ -660,11 +666,11 @@ rules:
       - scale_pipeline
 
   # phcint — integrated ocean heat content from potential temperature
-  # integral of rho_0 * cp * temp over depth
-  # Using vertical_integration_pipeline with scale: rho_0*cp = 1025*3992 ≈ 4.09e6
-  # NOTE: The vertical_integrate step integrates data*dz; we need rho_0*cp*temp*dz.
-  # We use scale_pipeline first to get rho_0*cp*temp, then integrate.
-  # For now, use the integration pipeline and set scale in integration_attrs.
+  # Depth-integrated ocean heat content (J m-2) = rho_0 * c_p * integral(T*dz).
+  # vertical_integrate produces T(K) * H(m); scale_by_constant then multiplies
+  # by rho_0 * c_p = 1027 * 3990 = 4.097e+6 J K-1 m-3 to land in J m-2. The
+  # integration_attrs.units is "K m" because that's what vertical_integrate
+  # actually emits before the scale; scaled_units overrides to "J m-2".
   - name: phcint
     inputs:
       - path: *dp
@@ -672,16 +678,19 @@ rules:
     compound_name: ocean.phcint.tavg-op4-hxy-sea.mon.GLB
     model_variable: temp
     lazy_write: true
+    scale_factor: 4097273.0      # rho_0 * c_p = 1027 kg m-3 * 3990 J kg-1 K-1
+    scaled_units: "J m-2"
     integration_attrs:
       long_name: "Depth integrated ocean heat content from potential temperature"
       standard_name: "integral_wrt_depth_of_product_of_sea_water_density_and_potential_temperature"
-      units: "J m-2"
+      units: "K m"             # vertical_integrate output; scale_by_constant overrides to scaled_units
     pipelines:
       - ocean_vertical_integration_pipeline
-    # NOTE: needs post-multiply by rho_0*cp — may need a combined pipeline
 
-  # scint — depth-integrated practical salinity as salt mass content
-  # Similar to absscint (already in core_ocean)
+  # scint = depth-integrated salt mass content (kg m-2).
+  # vertical_integrate emits ∫(salt[psu] * dz) numerically ≈ 34.5 * column_depth.
+  # FESOM salt units are "1e-3" (psu = g/kg), so the dimensionless factor needed
+  # to convert psu·m to kg/m² is rho_0 * 1e-3 = 1.027 kg m-3.
   - name: scint
     inputs:
       - path: *dp
@@ -689,15 +698,17 @@ rules:
     compound_name: ocean.scint.tavg-op4-hxy-sea.mon.GLB
     model_variable: salt
     lazy_write: true
+    scale_factor: 1.027          # rho_0 * 1e-3 (1027 kg m-3 * psu->mass-fraction)
+    scaled_units: "kg m-2"
     integration_attrs:
       long_name: "Integral wrt depth of seawater practical salinity expressed as salt mass content"
       standard_name: "integral_wrt_depth_of_sea_water_practical_salinity_expressed_as_salt_mass_content"
-      units: "kg m-2"
+      units: "1e-3 m"            # raw integrate of (psu * dz); scale brings to kg m-2
     pipelines:
       - ocean_vertical_integration_pipeline
 
-  # opottempmint — depth integral of rho_0 × potential temperature (Oyr)
-  # integral(rho_0 * temp * dz) — uses vertical integration with rho_0 scaling
+  # opottempmint = depth integral of rho_0 * potential temperature (degC kg m-2).
+  # vertical_integrate emits ∫(T[degC] * dz); multiply by rho_0 to get degC*kg*m-2.
   - name: opottempmint
     inputs:
       - path: *dp
@@ -705,16 +716,19 @@ rules:
     compound_name: ocean.opottempmint.tavg-u-hxy-sea.yr.GLB
     model_variable: temp
     lazy_write: true
+    scale_factor: 1027.0         # rho_0, kg m-3
+    scaled_units: "degC kg m-2"
     integration_attrs:
       long_name: "Depth integral of product of sea water density and potential temperature"
       standard_name: "integral_wrt_depth_of_product_of_sea_water_density_and_potential_temperature"
-      units: "degC kg m-2"
+      units: "degC m"            # raw integrate; scale brings to degC kg m-2
     pipelines:
       - ocean_vertical_integration_pipeline
-    # NOTE: needs post-multiply by rho_0 — may need combined pipeline
 
-  # somint — depth integral of rho_0 × salinity (Oyr)
-  # integral(rho_0 * salt * dz)
+  # somint = depth integral of rho_0 * salinity (g m-2).
+  # vertical_integrate emits ∫(salt[psu] * dz). With psu == 1e-3 (g/kg) and target
+  # in g/m², factor = rho_0 = 1027 kg/m³ (the 1e-3 prefix on psu cancels the
+  # 1000 needed to convert kg-of-salt to g-of-salt — net: just rho_0).
   - name: somint
     inputs:
       - path: *dp
@@ -722,13 +736,14 @@ rules:
     compound_name: ocean.somint.tavg-u-hxy-sea.yr.GLB
     model_variable: salt
     lazy_write: true
+    scale_factor: 1027.0         # rho_0; the 1e-3 prefix on psu cancels the 1000 g/kg
+    scaled_units: "g m-2"
     integration_attrs:
       long_name: "Integral wrt depth of product of sea water density and salinity"
       standard_name: "integral_wrt_depth_of_product_of_sea_water_density_and_salinity"
-      units: "g m-2"
+      units: "1e-3 m"            # raw integrate; scale brings to g m-2
     pipelines:
       - ocean_vertical_integration_pipeline
-    # NOTE: needs post-multiply by rho_0*1000 — may need combined pipeline
 
   # volcello (fx) — static ocean grid-cell volume
   # cell_area × layer_thickness from mesh

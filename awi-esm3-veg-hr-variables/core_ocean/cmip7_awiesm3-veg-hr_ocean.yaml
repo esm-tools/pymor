@@ -31,11 +31,18 @@ jobqueue:
     walltime: '00:30:00'
 
 pipelines:
+  # Vertical integration + post-multiply by a physical-constant prefactor.
+  # vertical_integrate emits the bare ∫(field*dz); scale_by_constant then
+  # applies the rho_0-family factor declared on each rule (scale_factor),
+  # overriding the units string to the CMIP target (scaled_units). Used by
+  # absscint (kg m-2 via rho_0*1e-3); kept symmetric with the lrcs_ocean
+  # tier's matching pipeline (phcint, scint, opottempmint, somint).
   - name: ocean_vertical_integration_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
       - script://$PYCMOR_HOME/examples/custom_steps.py:vertical_integrate
+      - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
       - pycmor.std_lib.add_vertical_bounds
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.units.handle_unit_conversion
@@ -305,6 +312,9 @@ rules:
   # Depth-integrated variables — ocean_vertical_integration_pipeline
   # ============================================================
 
+  # absscint = depth-integrated salt mass content (kg m-2), absolute salinity.
+  # vertical_integrate emits ∫(salt[psu] * dz); FESOM salt units are "1e-3"
+  # (psu = g/kg) so the factor needed to convert psu·m to kg/m² is rho_0 * 1e-3.
   - name: absscint
     inputs:
       - path: *dp
@@ -312,10 +322,12 @@ rules:
     compound_name: ocean.absscint.tavg-op4-hxy-sea.mon.GLB
     model_variable: salt
     lazy_write: true
+    scale_factor: 1.027          # rho_0 * 1e-3 (1027 kg m-3 * psu->mass-fraction)
+    scaled_units: "kg m-2"
     integration_attrs:
       long_name: "Integral wrt depth of seawater absolute salinity expressed as salt mass content"
       standard_name: "integral_wrt_depth_of_sea_water_absolute_salinity_expressed_as_salt_mass_content"
-      units: "kg m-2"
+      units: "1e-3 m"            # raw integrate of (psu * dz); scale brings to kg m-2
     pipelines:
       - ocean_vertical_integration_pipeline
 
