@@ -308,6 +308,27 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # Same as above but negates the field at the end. IFS surface heat fluxes
+  # (hfls, hfss) are CMIP positive=up; the CMIP sea-ice variants
+  # (sifllattop, siflsenstop) are positive=down. Apply a final
+  # scale_by_constant(-1) step to flip the sign.
+  - name: regrid_atm_to_fesom_seaice_mask_negate_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script://$PYCMOR_HOME/examples/custom_steps.py:regrid_oifs_to_fesom
+      - script://$PYCMOR_HOME/examples/custom_steps.py:mask_where_no_seaice
+      - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   # Generic hemisphere integral (snow mass, ice area, etc.)
   - name: hemisphere_integral_pipeline
     steps:
@@ -927,6 +948,7 @@ rules:
     time_dimname: time_counter
     aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
     aice_pattern: a_ice\.fesom\..*\.nc
+    lazy_write: true
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -941,6 +963,7 @@ rules:
     time_dimname: time_counter
     aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
     aice_pattern: a_ice\.fesom\..*\.nc
+    lazy_write: true
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -953,6 +976,7 @@ rules:
     time_dimname: time_counter
     aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
     aice_pattern: a_ice\.fesom\..*\.nc
+    lazy_write: true
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -967,6 +991,7 @@ rules:
     time_dimname: time_counter
     aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
     aice_pattern: a_ice\.fesom\..*\.nc
+    lazy_write: true
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -979,6 +1004,7 @@ rules:
     time_dimname: time_counter
     aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
     aice_pattern: a_ice\.fesom\..*\.nc
+    lazy_write: true
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -993,6 +1019,7 @@ rules:
     time_dimname: time_counter
     aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
     aice_pattern: a_ice\.fesom\..*\.nc
+    lazy_write: true
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -1007,6 +1034,7 @@ rules:
     time_dimname: time_counter
     aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
     aice_pattern: a_ice\.fesom\..*\.nc
+    lazy_write: true
     pipelines:
       - regrid_atm_to_fesom_seaice_mask_pipeline
 
@@ -1023,32 +1051,43 @@ rules:
   # slhf/sshf are produced; atm_remapped_* isn't CMIP7 output (default-on
   # diagnostic stream that may not always be enabled), so we use atmos_*.
   - name: sifllattop
+    # IFS hfls is CMIP positive=up (surface_upward_latent_heat_flux). CMIP
+    # sifllattop is positive=down (surface_downward_latent_heat_flux over
+    # sea ice). Use the *_negate_pipeline so scale_by_constant(-1) flips
+    # the sign.
     inputs:
       - path: *odp
         pattern: atmos_1h_sfc_hfls_.*\.nc
     compound_name: seaIce.sifllattop.tavg-u-hxy-si.mon.GLB
     model_variable: hfls
+    scale_factor: -1.0
     time_dimname: time_counter
     aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
     aice_pattern: a_ice\.fesom\..*\.nc
+    lazy_write: true
     pipelines:
-      - regrid_atm_to_fesom_seaice_mask_pipeline
+      - regrid_atm_to_fesom_seaice_mask_negate_pipeline
 
   # Net sensible heat flux over sea ice: OpenIFS hfss regridded to FESOM nodes.
   # Same pattern as sifllattop above — atmos_1h_sfc_hfss_*.nc is the CMIP7
   # atmos output (file_def applies `-sshf/3600`); F4-blocked until that's
   # closed.
   - name: siflsenstop
+    # IFS hfss is CMIP positive=up (surface_upward_sensible_heat_flux). CMIP
+    # siflsenstop is positive=down (surface_downward_sensible_heat_flux over
+    # sea ice). Use the *_negate_pipeline.
     inputs:
       - path: *odp
         pattern: atmos_1h_sfc_hfss_.*\.nc
     compound_name: seaIce.siflsenstop.tavg-u-hxy-si.mon.GLB
     model_variable: hfss
+    scale_factor: -1.0
     time_dimname: time_counter
     aice_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
     aice_pattern: a_ice\.fesom\..*\.nc
+    lazy_write: true
     pipelines:
-      - regrid_atm_to_fesom_seaice_mask_pipeline
+      - regrid_atm_to_fesom_seaice_mask_negate_pipeline
 
   # Sea ice concentration on atmosphere grid: ci [1] → siconca [%]
   - name: siconca

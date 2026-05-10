@@ -264,8 +264,8 @@ output files, so they can be used as an independent sanity check.
 | sieqthick | seaIce | m | 0 | 0.3 (ice zone ~1.5) | 8 | PIOMAS climatology |
 | siextent | seaIce | 1e6 km2 | 6 (Sep) | 12 | 16 (Mar) | NSIDC NH |
 | sifb | seaIce | m | 0 | 0.2 | 1.5 | ICESat freeboard |
-| siflcondbot | seaIce | W m-2 | -50 | ~5 | 100 | Maykut conductive flux |
-| siflcondtop | seaIce | W m-2 | -50 | ~5 | 100 | Maykut conductive flux |
+| siflcondbot | seaIce | W m-2 | -100 | ~-10 | 50 | Maykut/Perovich conductive flux; CMIP6 model archive — annual mean NH/SH typically -5 to -20 W m-2 (winter heat loss upward dominates over summer downward); positive=down convention |
+| siflcondtop | seaIce | W m-2 | -100 | ~-10 | 50 | Maykut/Perovich conductive flux; CMIP6 model archive — annual mean NH/SH typically -5 to -20 W m-2 (winter heat loss upward dominates over summer downward); positive=down convention |
 | siflfwbot | seaIce | kg m-2 s-1 | -1e-4 | ~0 | 1e-4 | CMIP6 ice FW flux |
 | siflfwdrain | seaIce | kg m-2 s-1 | 0 | ~1e-6 | 1e-4 | Melt pond drainage |
 | sifllattop | seaIce | W m-2 | -100 | ~-10 | 50 | Latent heat flux over sea ice (downward positive); ERA5 polar climatology |

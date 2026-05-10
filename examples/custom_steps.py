@@ -353,12 +353,24 @@ def compute_siflcondtop(data, rule):
     # Avoid division by zero where ice is absent
     h_safe = xr.where(h_ice > 0.01, h_ice, np.nan)
 
-    result = k_ice * (t_base - data) / h_safe
+    # Sign convention: CMIP `siflcondtop` is the "surface DOWNWARD heat flux
+    # in sea ice" (positive = atmosphere -> ice). FESOM's internal "C" term
+    # in budget() (ice_thermo_oce.F90:749) uses the opposite sign — it's the
+    # heat ARRIVING AT the ice surface FROM BELOW. So we negate here:
+    #   q_CMIP_down = -k * (T_base - T_surface)/h = k * (T_surface - T_base)/h
+    # In winter T_surface << T_base -> result NEGATIVE (heat going up out of
+    # the ice, away from the atmosphere); in summer melt T_surface ~ T_base
+    # -> result near 0 or slightly positive.
+    result = k_ice * (data - t_base) / h_safe
     result.attrs = {
         "units": "W m-2",
-        "standard_name": "sea_ice_surface_net_downward_conductive_heat_flux",
+        "standard_name": "surface_downward_heat_flux_in_sea_ice",
         "long_name": "Net Conductive Heat Flux in Sea Ice at the Surface",
-        "processing_note": f"k_ice={k_ice}, T_base=freezing_point(SSS), T_surface=ist",
+        "positive": "down",
+        "processing_note": (
+            f"k_ice={k_ice} W/m/K, T_base=freezing_point(SSS), T_surface=ist;"
+            " sign convention: positive downward (atm -> ice)"
+        ),
     }
     result.name = rule.model_variable
     return result
