@@ -142,8 +142,12 @@ def severity_of(var: str, notes: Sequence[str], rationale: str = "") -> str:
 
 ATM_REALMS = {"atmos", "atmoschem", "aerosol"}
 OCE_REALMS = {"ocean"}
-ICE_REALMS = {"seaice", "landice"}
-VEG_REALMS = {"land"}
+ICE_REALMS = {"seaice"}
+# CMIP `landIce` formally includes ice sheets, but in this run it's the
+# realm of common snow-on-land variables (snw, snd, snm, tsn, sbl, ...) and
+# permafrost (mrfso). All of those are land-model outputs, not ice-sheet
+# model outputs, so we put them on the land page where they make sense.
+VEG_REALMS = {"land", "landice"}
 
 
 def domain_of(realm: Optional[str], directory: Optional[str]) -> Optional[str]:
@@ -176,8 +180,8 @@ def domain_of(realm: Optional[str], directory: Optional[str]) -> Optional[str]:
 DOMAIN_LABELS = {
     "atm": "Atmosphere",
     "oce": "Ocean",
-    "ice": "Sea Ice & Land Ice",
-    "veg": "Land & Vegetation",
+    "ice": "Sea Ice",
+    "veg": "Land, Vegetation & Snow",
 }
 
 
@@ -976,8 +980,8 @@ def _nav(active: str, label: str) -> str:
         ("index", "Summary"),
         ("atm", "Atmosphere"),
         ("oce", "Ocean"),
-        ("ice", "Ice"),
-        ("veg", "Land/Veg"),
+        ("ice", "Sea Ice"),
+        ("veg", "Land/Snow/Veg"),
     ]
     out = ['<nav class="top">']
     out.append(f'<strong>{html.escape(label)}</strong> &middot; ')
