@@ -50,9 +50,9 @@ output files, so they can be used as an independent sanity check.
 | cProduct | land | kg m-2 | 0 | ~0 | ~0 | piControl has no land-use products; ~0 |
 | cProductLut | land | kg m-2 | 0 | ~0 | ~0 | piControl LUC products ~0 |
 | cRoot | land | kg m-2 | 0 | ~1 | ~10 | Root C; Jackson 1997 |
-| cropFrac | land | % | 0 | ~5 | ~100 | 1850 cropland ~5% global land; LUH2 |
-| cropFracC3 | land | % | 0 | ~0 | ~0 | piControl 1850: minimal crops; LUH2 |
-| cropFracC4 | land | % | 0 | ~0 | ~0 | piControl 1850 |
+| cropFrac | land | % | 0 | ~5 | 100 | 1850 cropland ~5% global land; LUH2 |
+| cropFracC3 | land | % | 0 | ~4 | 100 | LUH2 1850: most cropland is C3 (wheat/oats/rice/barley); ~80% of cropFrac globally |
+| cropFracC4 | land | % | 0 | ~1 | 100 | LUH2 1850: minor C4 share (maize/sorghum/millet) ~20% of cropFrac globally |
 | cSoil | land | kg m-2 | 0 | ~15 | ~100 | Soil C HWSD; peatlands high |
 | cSoilLut | land | kg m-2 | 0 | ~15 | ~100 | Per-tile soil C |
 | cSoilPools | land | kg m-2 | 0 | ~5 | ~50 | Per-pool C (active/slow/passive); sum equals cSoil ~15; CMIP6 partition |
@@ -195,9 +195,9 @@ output files, so they can be used as an independent sanity check.
 | osaltdiff | ocean | kg m-2 s-1 | -1e-4 | ~0 | 1e-4 | Diffusive salt tendency; convective regions and overflow plumes ~1e-4 (Griffies 2015 OMIP) |
 | osaltrmadvect | ocean | kg m-2 s-1 | -1e-4 | ~0 | 1e-4 | Advective salt tendency |
 | osalttend | ocean | kg m-2 s-1 | -1e-4 | ~0 | 1e-4 | Total salt tendency ~0 in piControl |
-| pastureFrac | land | % | 0 | ~3 | ~50 | LUH2 1850 pasture mostly low |
-| pastureFracC3 | land | % | 0 | ~0 (piControl) | ~30 | LUH2 v2h 1850 rangeland fraction reaches ~30% in semi-arid grid cells (Hurtt 2020); global mean small |
-| pastureFracC4 | land | % | 0 | ~0 (piControl) | ~30 | LUH2 v2h 1850 rangeland fraction reaches ~30% in semi-arid grid cells (Hurtt 2020); global mean small |
+| pastureFrac | land | % | 0 | ~3 | 100 | LUH2 1850 pasture ~3% global land, locally up to ~100% rangeland |
+| pastureFracC3 | land | % | 0 | ~2 | 100 | LUH2 1850 C3 pasture in temperate (most of pastureFrac); ~60% of global pasture |
+| pastureFracC4 | land | % | 0 | ~1 | 100 | LUH2 1850 C4 pasture in tropical savanna; ~40% of global pasture |
 | pbo | ocean | Pa | 0 | ~4e7 | ~1.1e8 | rho*g*H; 4000m ocean |
 | pfull | atmos | Pa | ~1 | ~5e4 | ~101325 | Model level pressures |
 | phcint | ocean | J m-2 | 0 | ~1e10 | ~5e10 | Ocean heat content rho*cp*T*H |

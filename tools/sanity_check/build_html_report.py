@@ -66,13 +66,18 @@ STATUS_RANK = {"FAIL": 0, "ERROR": 1, "WARN": 2, "NOBOUNDS": 3, "PASS": 4}
 
 
 # Keywords in the bounds-table rationale that mark a variable as one whose
-# 0 bound is there because of piControl/anthropogenic forcing, NOT because of
-# physics. Used to disambiguate "below expected_min 0" violations.
+# 0 bound is there because the ANTHROPOGENIC forcing is absent in piControl
+# (not because of natural physical/climate balance). Bare "piControl" was
+# removed — it matched balanced natural quantities (nbp, rtmt, fco2nat,
+# opottemptend) which are near-zero for *energy/mass balance* reasons, not
+# for forcing-absence reasons.
 _PICONTROL_RATIONALE_HINTS = (
-    "picontrol", "anthropogenic", "luh2", "luc",
+    "anthropogenic", "luh2", "luc",
     "harvest", "harvested", "fertilis", "fertiliz",
-    "no synthetic", "no anthropogenic", "no harvest", "no luc",
+    "no synthetic", "no harvest", "no luc",
     "no land-use", "no land use",
+    "no deforestation", "no lu transitions", "no lu products",
+    "no land-use products",
 )
 
 
