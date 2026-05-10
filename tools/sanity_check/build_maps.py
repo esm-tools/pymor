@@ -285,9 +285,25 @@ def _reduce_to_panels(da, parent=None):
         if not non_spatial:
             break
         d0 = non_spatial[0]
+        # Try isel(0); if the slice is all-NaN (e.g. surface level of
+        # ocean vertical diffusivity, which is defined only at interior
+        # interfaces) walk through the dim until we find a slice with at
+        # least some finite values. Cap the search at ~12 attempts.
         try:
-            da = da.isel({d0: 0})
-            notes.append(f"{d0}=0")
+            n = int(da.sizes[d0])
+            chosen = 0
+            tried_levels = list(range(min(n, 12)))
+            for idx in tried_levels:
+                slab = da.isel({d0: idx})
+                vals = slab.values
+                if np.isfinite(vals).any():
+                    chosen = idx
+                    break
+            else:
+                # No finite slice in the first 12 — fall back to 0
+                chosen = 0
+            da = da.isel({d0: chosen})
+            notes.append(f"{d0}={chosen}")
         except Exception:
             break
         if len(non_spatial) == 1:
