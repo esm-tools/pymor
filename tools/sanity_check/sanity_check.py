@@ -281,14 +281,23 @@ def classify(actual_min, actual_mean, actual_max, bounds):
     if en is not None and math.isfinite(actual_mean):
         if en == 0.0:
             scale = max(abs(ex or 1.0), abs(em or 1.0), 1e-30)
-            if abs(actual_mean) > 0.1 * scale:
-                upd("WARN"); notes.append(f"mean {actual_mean:.3g} far from expected_mean ~0")
+            ratio = abs(actual_mean) / scale
+            if ratio > 0.1:
+                # 10–100% of the expected envelope is suspicious; >100% is wrong
+                lvl = "FAIL" if ratio > 1.0 else "WARN"
+                upd(lvl); notes.append(f"mean {actual_mean:.3g} far from expected_mean ~0")
         else:
             ratio = actual_mean / en
             if ratio < 0 and abs(en) > 1e-12:
-                upd("WARN"); notes.append(f"mean {actual_mean:.3g} wrong sign vs expected ~{en:.3g}")
-            elif abs(ratio) > 5 or (abs(ratio) > 0 and abs(ratio) < 0.2):
-                upd("WARN"); notes.append(f"mean {actual_mean:.3g} off by {ratio:.2g}x vs expected ~{en:.3g}")
+                upd("FAIL"); notes.append(f"mean {actual_mean:.3g} wrong sign vs expected ~{en:.3g}")
+            elif abs(ratio) > 0:
+                # Magnitude check: how many orders of magnitude off?
+                if abs(ratio) >= 100 or abs(ratio) <= 0.01:
+                    # Two or more orders of magnitude — almost certainly a
+                    # unit / scale bug, not a tuning issue.
+                    upd("FAIL"); notes.append(f"mean {actual_mean:.3g} off by {ratio:.2g}x vs expected ~{en:.3g}")
+                elif abs(ratio) > 5 or abs(ratio) < 0.2:
+                    upd("WARN"); notes.append(f"mean {actual_mean:.3g} off by {ratio:.2g}x vs expected ~{en:.3g}")
     return sev, notes
 
 

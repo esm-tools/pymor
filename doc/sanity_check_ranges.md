@@ -299,11 +299,11 @@ output files, so they can be used as an independent sanity check.
 | snm | landIce | kg m-2 s-1 | 0 | 1e-6 | 1e-3 | Seasonal melt rate |
 | snmsl | atmos | kg m-2 s-1 | 0 | 1e-6 | 1e-3 | Snowpack runoff |
 | snw | landIce | kg m-2 | 0 | 20 | 3000 | ERA5 SWE, glaciers large |
-| so | ocean | 1E-03 | 30 | 34.7 | 40 | WOA salinity |
-| sob | ocean | 1E-03 | 30 | 34.7 | 38 | WOA bottom salinity |
+| so | ocean | 1E-03 | 0 | 34.7 | 42 | WOA salinity; min 0 covers Baltic / Black Sea / Hudson Bay surface freshwater; max ~42 Red Sea / Persian Gulf / Med deep |
+| sob | ocean | 1E-03 | 5 | 34.7 | 42 | WOA bottom salinity; lower min for shallow brackish shelves (Baltic ~7 at bottom); Red Sea / Med deep ~40-42 |
 | somint | ocean | g m-2 | 1e5 | 1.4e8 | 2e8 | rho*S*H for H~4000m |
-| sos | ocean | 1E-03 | 20 | 34.7 | 40 | WOA surface salinity |
-| sossq | ocean | 1E-06 | 400 | 1205 | 1600 | sos squared |
+| sos | ocean | 1E-03 | 0 | 34.7 | 42 | WOA surface salinity; Baltic ~3-7 PSU, Black Sea ~17-18, large estuaries near 0; max ~42 Persian Gulf |
+| sossq | ocean | 1E-06 | 0 | 1205 | 1764 | sos squared (max=42^2) |
 | srfrad | land | W m-2 | -100 | 60 | 250 | CERES land net radiation |
 | sweLut | land | m | 0 | ~0.02 | ~3 | Per-tile snow water equivalent; lwe thickness; ERA5/GlobSnow |
 | ta | atmos | K | 180 | 255 | 310 | ERA5 free-atm mean ~255K |
