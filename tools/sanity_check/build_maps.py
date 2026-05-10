@@ -422,7 +422,9 @@ def _make_pcolormesh_inputs(da, ds):
         # 2D but no lat/lon? bail out
         raise ValueError("2D data but lat/lon coords are missing or unusable")
 
-    # Case B: data 1D (unstructured)
+    # Case B: data 1D (unstructured) — return raw point cloud for scatter.
+    # 1deg binning bleeds coastal values inland, so prefer native scatter
+    # which honours the mesh footprint exactly.
     if da.ndim == 1:
         if lat is None or lon is None:
             raise ValueError("1D data but no lat/lon coords")
@@ -431,12 +433,12 @@ def _make_pcolormesh_inputs(da, ds):
                 f"1D data of size {da.size} but lat/lon have sizes "
                 f"{lat.size}/{lon.size}"
             )
-        lon_e, lat_e, gridded = _bin_unstructured(
-            np.asarray(da.values, dtype=float),
-            np.asarray(lat.values, dtype=float),
+        return (
             np.asarray(lon.values, dtype=float),
+            np.asarray(lat.values, dtype=float),
+            np.asarray(da.values, dtype=float),
+            "scatter",
         )
-        return lon_e, lat_e, gridded, "binned"
 
     raise ValueError(f"unsupported reduced ndim={da.ndim}")
 
@@ -556,7 +558,7 @@ def _render_map(out_path: Path, var: str, units: str, notes: Sequence[str],
     fig_w = 4.5 * n if n > 1 else 5.0
     fig = plt.figure(figsize=(fig_w, 2.6), dpi=100)
     for i, k in enumerate(keys):
-        lon, lat, values_2d, _mode = panel_data[k]
+        lon, lat, values_2d, mode = panel_data[k]
         if not np.isfinite(values_2d).any():
             ax = fig.add_subplot(1, n, i + 1)
             ax.set_facecolor("#f4f4f4")
@@ -570,8 +572,29 @@ def _render_map(out_path: Path, var: str, units: str, notes: Sequence[str],
         cmap, norm = _norm_for(vmin, vmax)
         ax = fig.add_subplot(1, n, i + 1)
         ax.set_facecolor("#f4f4f4")
-        mesh = ax.pcolormesh(lon, lat, values_2d, cmap=cmap, norm=norm,
-                             shading="auto")
+        if mode == "scatter":
+            # FESOM-style point cloud: native node lat/lon, no binning.
+            # Drop non-finite points before plotting so masked nodes
+            # leave their pixel transparent.
+            finite = np.isfinite(values_2d)
+            xv = np.asarray(lon)[finite]
+            yv = np.asarray(lat)[finite]
+            cv = np.asarray(values_2d)[finite]
+            # Wrap longitudes to -180..180 so both 0..360 and -180..180
+            # source conventions plot on the same axis range.
+            xv = np.where(xv > 180.0, xv - 360.0, xv)
+            xv = np.where(xv < -180.0, xv + 360.0, xv)
+            # Marker size scales with how many nodes there are; for HR
+            # FESOM (~6e6 nodes) s=0.5 just covers the mesh footprint.
+            s = max(0.2, min(2.0, 6.0e6 / max(cv.size, 1)))
+            mesh = ax.scatter(xv, yv, c=cv, cmap=cmap, norm=norm,
+                              s=s, marker=",", linewidths=0,
+                              rasterized=True)
+            ax.set_xlim(-180, 180)
+            ax.set_ylim(-90, 90)
+        else:
+            mesh = ax.pcolormesh(lon, lat, values_2d, cmap=cmap, norm=norm,
+                                 shading="auto")
         ax.set_xlabel("lon", fontsize=7)
         if i == 0:
             ax.set_ylabel("lat", fontsize=7)
