@@ -99,6 +99,23 @@ h3 { font-size: 15px; margin: 0; }
   font-size: 12px;
 }
 .var-card svg { margin: 8px 0; display: block; }
+p.longname {
+  margin: 6px 0 2px 0;
+  font-size: 1.05em;
+  color: #222;
+}
+p.stdname {
+  margin: 0 0 4px 0;
+  font-size: 0.85em;
+  color: #555;
+}
+p.description {
+  margin: 0 0 10px 0;
+  font-size: 0.9em;
+  color: #333;
+  max-width: 800px;
+  line-height: 1.4;
+}
 img.varmap {
   display: block;
   max-width: 520px;

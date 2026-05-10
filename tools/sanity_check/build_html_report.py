@@ -80,7 +80,12 @@ def severity_of(var: str, notes: Sequence[str]) -> str:
                 return "UNIT_MISMATCH"
         except Exception:
             pass
-    if "above expected_max 0" in text or "below expected_min 0" in text:
+    # PICONTROL_NONZERO: variable expected to be exactly 0 (LUC/anthropogenic
+    # in piControl) but model emits non-zero. Match a hard zero bound only,
+    # NOT a small numeric one — "above expected_max 0.0003" should NOT
+    # trigger; "above expected_max 0;" or "above expected_max 0$" should.
+    if (re.search(r"above expected_max 0(?:\s|;|,|$)", text)
+            or re.search(r"below expected_min 0(?:\s|;|,|$)", text)):
         return "PICONTROL_NONZERO"
     if "slightly" in text:
         return "BOUNDS_TIGHT_MINOR"
@@ -155,6 +160,72 @@ def parse_jsonl(path: Path) -> List[Dict[str, Any]]:
                 continue
             records.append(rec)
     return records
+
+
+def parse_metadata_json(path: Path) -> Dict[str, Dict[str, str]]:
+    """Return {out_name: {'long_name','comment','standard_name'}} from CMIP7 metadata JSON.
+
+    The JSON has a top-level "Compound Name" mapping where each value is a
+    record describing one (variable, frequency, branding) tuple. Multiple
+    records exist per variable; they share long_name/comment, so the first
+    one wins.
+    """
+    metadata_by_var: Dict[str, Dict[str, str]] = {}
+    if not path.exists():
+        return metadata_by_var
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            raw = json.load(f)
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"warn: could not read metadata JSON {path}: {exc}",
+              file=sys.stderr)
+        return metadata_by_var
+
+    compound = raw.get("Compound Name") or {}
+    if not isinstance(compound, dict):
+        return metadata_by_var
+
+    # Several records may share the same out_name (one per branding/freq).
+    # Score them so the most generic global record wins:
+    #   * branding ending in "-u" (universal/all-tiles)         > tile-specific
+    #   * tavg-* (time-mean)                                    > tmax/tmin/tpt
+    #   * region GLB                                            > 30S-90S etc
+    def _score(compound_key: str) -> int:
+        parts = str(compound_key).split(".")
+        branding = parts[2] if len(parts) >= 3 else ""
+        region = parts[4] if len(parts) >= 5 else ""
+        s = 0
+        if branding.endswith("-u"):
+            s += 1000
+        if branding.startswith("tavg-"):
+            s += 500
+        if region.upper() == "GLB":
+            s += 200
+        return s
+
+    best_for: Dict[str, Tuple[int, str, Dict[str, Any]]] = {}
+    for compound_key, rec in compound.items():
+        if not isinstance(rec, dict):
+            continue
+        var = rec.get("out_name")
+        if not var:
+            parts = str(compound_key).split(".")
+            if len(parts) >= 2:
+                var = parts[1]
+        if not var:
+            continue
+        score = _score(compound_key)
+        prev = best_for.get(var)
+        if prev is None or score > prev[0]:
+            best_for[var] = (score, compound_key, rec)
+
+    for var, (_score_v, _key, rec) in best_for.items():
+        metadata_by_var[var] = {
+            "long_name": str(rec.get("long_name", "") or ""),
+            "comment": str(rec.get("comment", "") or ""),
+            "standard_name": str(rec.get("standard_name", "") or ""),
+        }
+    return metadata_by_var
 
 
 def parse_bounds_table(path: Path) -> Dict[str, Dict[str, Any]]:
@@ -727,6 +798,23 @@ h3 { font-size: 15px; margin: 0; }
   font-size: 12px;
 }
 .var-card svg { margin: 8px 0; display: block; }
+p.longname {
+  margin: 6px 0 2px 0;
+  font-size: 1.05em;
+  color: #222;
+}
+p.stdname {
+  margin: 0 0 4px 0;
+  font-size: 0.85em;
+  color: #555;
+}
+p.description {
+  margin: 0 0 10px 0;
+  font-size: 0.9em;
+  color: #333;
+  max-width: 800px;
+  line-height: 1.4;
+}
 img.varmap {
   display: block;
   max-width: 520px;
@@ -849,7 +937,9 @@ def _page_shell(title: str, label: str, active: str, body: str) -> str:
     )
 
 
-def render_var_card(entry: VarEntry, out_dir: Optional[Path] = None) -> str:
+def render_var_card(entry: VarEntry,
+                    out_dir: Optional[Path] = None,
+                    metadata_by_var: Optional[Dict[str, Dict[str, str]]] = None) -> str:
     status = entry.worst_status
     status_cls = status.lower()
 
@@ -877,6 +967,24 @@ def render_var_card(entry: VarEntry, out_dir: Optional[Path] = None) -> str:
         "</span>"
     )
     parts.append("</div>")
+
+    # CMIP7 long_name / standard_name / description block.
+    meta = (metadata_by_var or {}).get(entry.var, {})
+    long_name = (meta.get("long_name") or "").strip()
+    description = (meta.get("comment") or "").strip()
+    standard_name = (meta.get("standard_name") or "").strip()
+    if long_name:
+        parts.append(
+            f'<p class="longname"><strong>{html.escape(long_name)}</strong></p>'
+        )
+    if standard_name:
+        parts.append(
+            f'<p class="stdname">CF: <em>{html.escape(standard_name)}</em></p>'
+        )
+    if description:
+        parts.append(
+            f'<p class="description">{html.escape(description)}</p>'
+        )
 
     svg = build_svg(entry)
     if svg:
@@ -944,7 +1052,8 @@ def sort_key(entry: VarEntry) -> Tuple[int, int, str]:
 def render_domain_page(domain: str,
                        entries: Sequence[VarEntry],
                        label: str,
-                       out_dir: Optional[Path] = None) -> str:
+                       out_dir: Optional[Path] = None,
+                       metadata_by_var: Optional[Dict[str, Dict[str, str]]] = None) -> str:
     title = f"{label} — {DOMAIN_LABELS[domain]}"
     sorted_entries = sorted(entries, key=sort_key)
 
@@ -963,16 +1072,16 @@ def render_domain_page(domain: str,
 
     if fails:
         body.append("<h2>FAIL</h2>")
-        body.extend(render_var_card(e, out_dir) for e in fails)
+        body.extend(render_var_card(e, out_dir, metadata_by_var) for e in fails)
     if warns:
         body.append("<h2>WARN</h2>")
-        body.extend(render_var_card(e, out_dir) for e in warns)
+        body.extend(render_var_card(e, out_dir, metadata_by_var) for e in warns)
     if passes:
         body.append("<h2>PASS</h2>")
-        body.extend(render_var_card(e, out_dir) for e in passes)
+        body.extend(render_var_card(e, out_dir, metadata_by_var) for e in passes)
     if others:
         body.append("<h2>Other (ERROR / NOBOUNDS)</h2>")
-        body.extend(render_var_card(e, out_dir) for e in others)
+        body.extend(render_var_card(e, out_dir, metadata_by_var) for e in others)
 
     if not sorted_entries:
         body.append("<p>No variables in this domain.</p>")
@@ -1103,10 +1212,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                    help="Output directory (default: tools/sanity_check/reports/<label>_html)")
     p.add_argument("--label", default=None,
                    help="Experiment label (default: infer from JSONL paths)")
+    p.add_argument("--metadata",
+                   default="/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json",
+                   help="CMIP7 metadata JSON for long names + descriptions")
     args = p.parse_args(argv)
 
     jsonl_path = Path(args.jsonl)
     table_path = Path(args.table)
+    metadata_path = Path(args.metadata)
 
     if not jsonl_path.exists():
         print(f"error: jsonl not found: {jsonl_path}", file=sys.stderr)
@@ -1114,6 +1227,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     records = parse_jsonl(jsonl_path)
     bounds_meta = parse_bounds_table(table_path)
+    metadata_by_var = parse_metadata_json(metadata_path)
     label = args.label or infer_label(records)
 
     if args.out_dir:
@@ -1145,7 +1259,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     # Per-domain
     for dom in ("atm", "oce", "ice", "veg"):
-        page = render_domain_page(dom, by_dom[dom], label, out_dir)
+        page = render_domain_page(dom, by_dom[dom], label, out_dir,
+                                  metadata_by_var)
         (out_dir / f"{dom}.html").write_text(page, encoding="utf-8")
 
     print(f"wrote {out_dir}/index.html and {len(by_dom)} domain pages")
