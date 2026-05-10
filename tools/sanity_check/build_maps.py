@@ -278,7 +278,27 @@ def _reduce_to_panels(da, parent=None):
         return any(h in dim_name.lower() for h in fallback_hints)
 
     # 1) collapse non-time, non-spatial dims first (level/tile/basin) by isel(0)
-    time_dims = [d for d in da.dims if d.lower() in ("time", "t")]
+    # pycmor uses several time-dim names depending on the CMIP branding
+    # (time, time1 for instantaneous tpt-, time2 for monthly, time3 for daily).
+    # Also accept any coord whose standard_name says "time" or which is a
+    # known time-like dim in the parent dataset.
+    def _is_time_dim(d: str) -> bool:
+        dl = d.lower()
+        if dl in ("time", "t"):
+            return True
+        if dl.startswith("time") and dl[4:].isdigit():
+            return True
+        # Check standard_name via the parent dataset's coord, if present
+        if parent is not None and d in parent.coords:
+            sn = parent.coords[d].attrs.get("standard_name", "").lower()
+            if sn == "time":
+                return True
+            ax = parent.coords[d].attrs.get("axis", "").upper()
+            if ax == "T":
+                return True
+        return False
+
+    time_dims = [d for d in da.dims if _is_time_dim(d)]
     while True:
         non_spatial = [d for d in da.dims
                        if not is_spatial(d) and d not in time_dims]

@@ -54,6 +54,7 @@ SEVERITY_ORDER = [
     "PHYS_IMPOSSIBLE",
     "UNIT_MISMATCH",
     "SIGN_FLIP",
+    "EXTREME_OUTLIER",
     "PICONTROL_NONZERO",
     "PHYS_NEG_VALUES",
     "BOUNDS_OR_PEAK",
@@ -113,6 +114,23 @@ def severity_of(var: str, notes: Sequence[str], rationale: str = "") -> str:
         if any(kw in rat for kw in _PICONTROL_RATIONALE_HINTS):
             return "PICONTROL_NONZERO"
         return "PHYS_NEG_VALUES"
+    # If the overshoot is enormous (>=20x the bound magnitude), it's not an
+    # HR-vs-LR bound issue any more — likely a numerical spike, sentinel leak,
+    # or unit error. Parse the largest overshoot factor visible in the notes.
+    biggest = 0.0
+    for m in re.finditer(r"(?:max|min) ([\-\d.eE+]+) (?:above|below) expected_(?:max|min) ([\-\d.eE+]+)", text):
+        try:
+            actual = float(m.group(1))
+            bound  = float(m.group(2))
+            if bound == 0:
+                continue
+            ratio = abs(actual / bound)
+            if ratio > biggest:
+                biggest = ratio
+        except Exception:
+            continue
+    if biggest >= 20:
+        return "EXTREME_OUTLIER"
     if "slightly" in text:
         return "BOUNDS_TIGHT_MINOR"
     return "BOUNDS_OR_PEAK"
@@ -716,6 +734,16 @@ def diagnosis_text(entry: VarEntry) -> str:
             "(e.g. flux scheme overshoot, regridding artefact) rather than "
             "a forcing issue. Check whether to clip to 0 in the rule, or "
             "whether the source field has a known sign-error."
+        )
+    if sev == "EXTREME_OUTLIER":
+        return (
+            f"Extreme outlier: observed range "
+            f"(min={fmt_num(am)}, max={fmt_num(ax)}) overshoots the literature "
+            "bound by >20x. This is far beyond any HR-vs-LR resolution effect; "
+            "likely a numerical instability, sentinel-value leak, double "
+            "unit conversion, or accumulated drift. The bound is probably "
+            "correct — investigate the rule's compute step rather than "
+            "loosen it."
         )
     if sev == "BOUNDS_OR_PEAK":
         return (

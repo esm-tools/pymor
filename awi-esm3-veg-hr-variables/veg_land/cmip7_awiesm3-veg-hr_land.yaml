@@ -286,12 +286,15 @@ rules:
       - temporal_diff_pipeline
 
   - name: dsn_day
+    # `sd` is snow depth in m of liquid water equivalent. The temporal_diff
+    # step already hard-codes `* 1000.0` for the m → kg m-2 conversion
+    # (water density). An additional scale_factor of 1000 was double-counting
+    # the conversion and producing extremes of ±1.5e5 kg m-2 day-1.
     inputs:
       - path: *dp
         pattern: atmos_day_land_sd_.*\.nc
     compound_name: land.dsn.tavg-u-hxy-lnd.day.GLB
     model_variable: sd
-    scale_factor: 1000.0
     pipelines:
       - temporal_diff_pipeline
 
