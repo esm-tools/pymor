@@ -260,6 +260,15 @@ def classify(actual_min, actual_mean, actual_max, bounds):
             sev = level
     if not math.isfinite(actual_min) or not math.isfinite(actual_max):
         return "FAIL", ["non-finite min/max"]
+    # Wide-envelope: expected min and max span >2 orders of magnitude (e.g.
+    # grid-cell area for 2-120 km edges). For these the natural value scales
+    # with resolution, so a single expected_mean and the "shrunk-field" spread
+    # check produce false positives. Suppress those two checks; the min/max
+    # envelope alone is the meaningful sanity check.
+    em_abs = abs(em) if em is not None else 0.0
+    ex_abs = abs(ex) if ex is not None else 0.0
+    wide_envelope = (em_abs > 0 and ex_abs > 0
+                     and max(em_abs, ex_abs) / min(em_abs, ex_abs) > 100)
     if em is not None:
         scale = max(abs(em), abs(ex or 0), 1e-30)
         slack = 0.2 * scale
@@ -278,7 +287,7 @@ def classify(actual_min, actual_mean, actual_max, bounds):
                 upd("FAIL"); notes.append(f"max {actual_max:.3g} above expected_max {ex:.3g}")
             else:
                 upd("WARN"); notes.append(f"max {actual_max:.3g} slightly above expected_max {ex:.3g}")
-    if en is not None and math.isfinite(actual_mean):
+    if en is not None and math.isfinite(actual_mean) and not wide_envelope:
         if en == 0.0:
             scale = max(abs(ex or 1.0), abs(em or 1.0), 1e-30)
             ratio = abs(actual_mean) / scale
@@ -305,7 +314,7 @@ def classify(actual_min, actual_mean, actual_max, bounds):
     # the field to ±1. The mean-check misses this because the mean is also
     # ~0. Compare observed magnitude (max of |min|, |max|) to the expected
     # envelope magnitude.
-    if (em is not None and ex is not None
+    if (em is not None and ex is not None and not wide_envelope
             and math.isfinite(actual_min) and math.isfinite(actual_max)):
         observed_spread = max(abs(actual_max), abs(actual_min))
         expected_spread = max(abs(em), abs(ex))

@@ -19,7 +19,7 @@ output files, so they can be used as an independent sanity check.
 | Variable | Realm | Units | Expected Min | Expected Mean | Expected Max | Source/Rationale |
 |---|---|---|---|---|---|---|
 | absscint | ocean | kg m-2 | 0 | ~1.4e5 | ~1.6e5 | rho*S*H ≈ 1025*35e-3*4000m; Locarnini 2018 (WOA18) |
-| areacella | atmos | m2 | ~1e8 | ~5e10 | ~6e10 | Typical 1deg grid cell area; Earth surface 5.1e14 m2 / Ngrid |
+| areacella | atmos | m2 | ~4e6 | ~1e10 | ~1.5e10 | Cell edge 2-120 km (HR to LR); 5.1e14 m2 / Ngrid |
 | areacello | ocean | m2 | ~1e7 | ~4e10 | ~6e10 | Ocean grid cell; FESOM unstructured varies with resolution |
 | areacellr | land | m2 | ~1e7 | ~5e10 | ~6e10 | River grid cell, order 1deg |
 | baresoilFrac | land | % | 0 | ~10 | 100 | Sahara/Antarctica ~100%; global land ~10-15% bare (CMIP6 LUH2) |
@@ -328,7 +328,7 @@ output files, so they can be used as an independent sanity check.
 | tsl | land | K | 220 | ~285 | 325 | Soil temperature per layer; ERA5/CMIP6 Land |
 | tslsi | land | K | 220 | 285 | 330 | Land/sea-ice skin temp |
 | tsn | landIce | K | 220 | 260 | 273.15 | Snow temperature ≤ 0°C |
-| ua | atmos | m s-1 | -80 | ~15 (jet) / ~0 global | 100 | ERA5 zonal wind |
+| ua | atmos | m s-1 | -80 | ~0 | 100 | ERA5 zonal wind, global mean |
 | uas | atmos | m s-1 | -30 | ~0 | 30 | ERA5 10m wind |
 | umo | ocean | kg s-1 | -1e12 | 0 | 1e12 | Cell-scale mass transport |
 | uo | ocean | m s-1 | -2 | ~0 | 2 | WOCE/Argo currents |
