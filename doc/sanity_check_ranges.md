@@ -65,8 +65,8 @@ output files, so they can be used as an independent sanity check.
 | deptho | ocean | m | 0 | ~3700 | ~11000 | Mean ocean depth; Mariana trench max |
 | dgw | land | kg m-2 | -50 | ~0 | 50 | Annual groundwater change ~0 in steady state |
 | difmxylo | ocean | m2 s-1 | 0 | ~1000 | ~1e4 | Laplacian horizontal viscosity typical |
-| difvho | ocean | m2 s-1 | ~1e-6 | ~1e-4 | ~1e-2 | Vertical diffusivity; Munk/Ledwell |
-| difvso | ocean | m2 s-1 | ~1e-6 | ~1e-4 | ~1e-2 | Vertical salt diffusivity |
+| difvho | ocean | m2 s-1 | ~1e-7 | ~1e-3 | ~10 | CMIP convention: includes convective Kv from KPP/TKE/EVD schemes. Interior background is Munk-Ledwell (median ~1e-5, Whalen 2012; Waterhouse 2014 JPO), but convective columns in winter high latitudes hit the scheme cap (FESOM CVMix 1-10 m2/s; NEMO `rn_avevd` 100 m2/s default). Global volumetric mean is dominated by the convective tail (~1e-4 to ~1e-3 m2/s typical). |
+| difvso | ocean | m2 s-1 | ~1e-7 | ~1e-3 | ~10 | Same Kv as difvho in FESOM CVMix (one diffusivity for heat + salt); same convective-tail behaviour |
 | dslw | land | kg m-2 | -100 | ~0 | 100 | Soil moisture change; steady state ~0 |
 | dsn | land | kg m-2 | -2000 | ~0 | 2000 | SWE change; HR maritime mountain cells reach 1500-2000 (Mortimer 2020 GlobSnow v3); ~0 mean in steady state |
 | dsw | land | kg m-2 | -500 | ~0 | 500 | Surface water storage change; Pantanal/Amazon flood pulse ±300-500 (Tapley 2019 GRACE); ~0 mean steady state |
