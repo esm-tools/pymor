@@ -421,6 +421,167 @@ def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
     return ds_or_da.to_netcdf(*args, **kwargs)
 
 
+def _is_tmpfs(path):
+    """True iff ``path`` is mounted as tmpfs. Reads ``/proc/mounts``;
+    Linux-only (fine for HPC and CI; returns False on macOS/Windows)."""
+    try:
+        with open("/proc/mounts") as fh:
+            mounts = [line.split() for line in fh]
+    except OSError:
+        return False
+    # Walk up the path until we find the longest matching mount point.
+    target = os.path.abspath(path)
+    best_fstype = None
+    best_len = -1
+    for parts in mounts:
+        if len(parts) < 3:
+            continue
+        mountpoint, fstype = parts[1], parts[2]
+        if (target == mountpoint or target.startswith(mountpoint.rstrip("/") + "/")) and len(mountpoint) > best_len:
+            best_fstype = fstype
+            best_len = len(mountpoint)
+    return best_fstype == "tmpfs"
+
+
+# Module-level cache for the auto-detect path of _tmpfs_staging_available.
+# Cleared in tests via _reset_tmpfs_cache(). Production: filled once at first
+# call; filesystem identity doesn't change within a run.
+_TMPFS_STAGING_CACHE = {}
+
+
+def _reset_tmpfs_cache():
+    """Clear the auto-detect cache. Test helper; never call in production."""
+    _TMPFS_STAGING_CACHE.clear()
+
+
+def _tmpfs_staging_available(rule=None):
+    """Return True iff three-stage atomic-write staging via tmpfs is safe.
+
+    Resolution order (first match wins):
+
+    1. Env ``PYCMOR_TMPFS_STAGING=off`` → False (force off).
+    2. Env ``PYCMOR_TMPFS_STAGING=on``  → True (skip auto-detect; still
+       respects per-rule opt-out).
+    3. Per-rule ``netcdf_tmpfs_staging: false`` → False (rule opt-out).
+    4. Env ``PYCMOR_TMPFS_STAGING=auto`` (default) → auto-detect:
+       ``/tmp`` is tmpfs AND has at least ``PYCMOR_TMPFS_MIN_FREE_GB``
+       (default 4 GB) free.
+
+    Auto-detect result is cached at module level (first call wins, the
+    filesystem identity / mount won't change during a run).
+
+    Rule opt-out is checked on every call (each rule may differ).
+    """
+    mode = os.environ.get("PYCMOR_TMPFS_STAGING", "auto").lower()
+    if mode == "off":
+        return False
+    if mode == "on":
+        return _rule_allows_tmpfs_staging(rule)
+    # mode == "auto"
+    if "auto_ok" not in _TMPFS_STAGING_CACHE:
+        tmpdir = os.environ.get("PYCMOR_TMPFS_DIR", "/tmp")
+        try:
+            st = os.statvfs(tmpdir)
+            free_gb = (st.f_bavail * st.f_frsize) / 1e9
+        except OSError:
+            _TMPFS_STAGING_CACHE["auto_ok"] = False
+            logger.warning(
+                f"tmpfs staging disabled: cannot statvfs({tmpdir!r}); "
+                f"falling back to direct writes."
+            )
+            return False
+        is_tmpfs_mount = _is_tmpfs(tmpdir)
+        try:
+            min_free_gb = float(os.environ.get("PYCMOR_TMPFS_MIN_FREE_GB", "4"))
+        except (TypeError, ValueError):
+            min_free_gb = 4.0
+        ok = is_tmpfs_mount and free_gb >= min_free_gb
+        if not ok:
+            logger.warning(
+                f"tmpfs staging disabled: {tmpdir!r} tmpfs={is_tmpfs_mount} "
+                f"free={free_gb:.1f}GB (need tmpfs and ≥{min_free_gb}GB); "
+                f"falling back to direct writes."
+            )
+        else:
+            logger.info(
+                f"tmpfs staging enabled: {tmpdir!r} tmpfs ({free_gb:.1f}GB free)."
+            )
+        _TMPFS_STAGING_CACHE["auto_ok"] = ok
+    if not _TMPFS_STAGING_CACHE["auto_ok"]:
+        return False
+    return _rule_allows_tmpfs_staging(rule)
+
+
+def _rule_allows_tmpfs_staging(rule):
+    """Return False iff the rule explicitly sets ``netcdf_tmpfs_staging: false``."""
+    if rule is None:
+        return True
+    try:
+        val = rule.get("netcdf_tmpfs_staging") if hasattr(rule, "get") else getattr(rule, "netcdf_tmpfs_staging", None)
+    except Exception:
+        val = None
+    if val is None:
+        return True
+    if isinstance(val, str):
+        return val.lower() not in ("false", "off", "no", "0")
+    return bool(val)
+
+
+def _atomic_to_netcdf(ds_or_da, final_path, *args, rule=None, scheduler="synchronous", **kwargs):
+    """Three-stage atomic write:
+
+    1. Write the netCDF to node-local tmpfs (``/tmp``). Fast; no
+       Lustre POSIX write-lock contention during the slow incremental
+       HDF5 write.
+    2. Copy from tmpfs to the target Lustre directory as
+       ``<final_path>.tmp``. Single linear write; brief, predictable
+       lock holds.
+    3. ``os.rename(<final_path>.tmp, <final_path>)`` — atomic same-FS
+       rename, metadata-only. The final path never has partial content
+       visible to readers.
+
+    Falls back to a direct ``_safe_to_netcdf(final_path)`` write if
+    tmpfs staging is unavailable (see ``_tmpfs_staging_available``).
+
+    Round-2 design — see ``PLAN_save_dataset_reliability.md`` and
+    ``REVIEW_save_dataset_reliability_round1.md`` for the why and the
+    correctness argument for the three-stage path (round 1's
+    ``shutil.move`` was not atomic across filesystems).
+    """
+    import shutil
+    import tempfile
+
+    if not _tmpfs_staging_available(rule):
+        return _safe_to_netcdf(ds_or_da, final_path, *args, scheduler=scheduler, **kwargs)
+
+    tmpdir = os.environ.get("PYCMOR_TMPFS_DIR", "/tmp")
+    fd, tmp_path = tempfile.mkstemp(
+        dir=tmpdir, prefix=os.path.basename(final_path) + ".", suffix=".tmp"
+    )
+    os.close(fd)
+    stage_path = final_path + ".tmp"
+    try:
+        # Stage 1: tmpfs write (fast, no Lustre lock contention)
+        result = _safe_to_netcdf(ds_or_da, tmp_path, *args, scheduler=scheduler, **kwargs)
+        # Stage 2: bounded copy to target FS at .tmp suffix (visible during copy,
+        # but not at final_path)
+        shutil.copy2(tmp_path, stage_path)
+        os.unlink(tmp_path)
+        # Stage 3: same-FS atomic rename
+        os.rename(stage_path, final_path)
+        return result
+    except Exception:
+        # Best-effort cleanup of both staging locations
+        for p in (tmp_path, stage_path):
+            try:
+                os.unlink(p)
+            except FileNotFoundError:
+                pass
+            except OSError as cleanup_exc:
+                logger.warning(f"cleanup of {p!r} failed: {cleanup_exc!r}")
+        raise
+
+
 def _get_write_scheduler(rule):
     """Return the dask scheduler to use around xr.save_mfdataset.
 
@@ -1085,13 +1246,14 @@ def _save_dataset_impl(da: xr.DataArray, rule):
             ds_temp = da
         ds_temp = _ensure_lat_lon_bounds_and_external_vars(ds_temp, rule)
         chunk_encoding = _calculate_netcdf_chunks(ds_temp, rule)
-        return _safe_to_netcdf(
+        return _atomic_to_netcdf(
             ds_temp,
             filepath,
             mode="w",
             format="NETCDF4",
             encoding=chunk_encoding if chunk_encoding else None,
             scheduler=_get_write_scheduler(rule),
+            rule=rule,
         )
     time_label = get_time_label(da)
     # Update unlimited_dims to use actual time dimension name (may be time1, time2, etc.)
@@ -1113,13 +1275,14 @@ def _save_dataset_impl(da: xr.DataArray, rule):
         final_encoding = {time_label: time_encoding}
         if chunk_encoding:
             final_encoding.update(chunk_encoding)
-        return _safe_to_netcdf(
+        return _atomic_to_netcdf(
             ds_temp,
             filepath,
             mode="w",
             format="NETCDF4",
             encoding=final_encoding,
             scheduler=_get_write_scheduler(rule),
+            rule=rule,
             **extra_kwargs,
         )
     if isinstance(da, xr.DataArray):
@@ -1221,13 +1384,14 @@ def _save_dataset_impl(da: xr.DataArray, rule):
         ds_temp = _ensure_lat_lon_bounds_and_external_vars(ds_temp, rule)
         da = ds_temp
         chunk_encoding = _calculate_netcdf_chunks(ds_temp, rule)
-        _safe_to_netcdf(
+        _atomic_to_netcdf(
             da,
             filepath,
             mode="w",
             format="NETCDF4",
             encoding=chunk_encoding if chunk_encoding else None,
             scheduler=_get_write_scheduler(rule),
+            rule=rule,
             **extra_kwargs,
         )
         return da
