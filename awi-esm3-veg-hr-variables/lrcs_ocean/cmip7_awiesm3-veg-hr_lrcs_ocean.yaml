@@ -806,6 +806,11 @@ rules:
     compound_name: ocean.thetao.tavg-ol-hxy-sea.dec.GLB
     model_variable: temp
     lazy_write: true
+    # Depth-resolved 3D output (~1 GB compressed); 8 concurrent staged
+    # writes would consume too much of /tmp's 63 GB budget when this
+    # rule runs alongside hfx_3D / hfy_3D / so_dec. See
+    # PLAN_save_dataset_reliability.md §5.
+    netcdf_tmpfs_staging: false
     # TODO: needs 10-year input pattern and decadal timeavg
 
   - name: so_dec
@@ -815,6 +820,8 @@ rules:
     compound_name: ocean.so.tavg-ol-hxy-sea.dec.GLB
     model_variable: salt
     lazy_write: true
+    # Depth-resolved 3D output; see thetao_dec for rationale.
+    netcdf_tmpfs_staging: false
 
   - name: tauuo_dec
     inputs:

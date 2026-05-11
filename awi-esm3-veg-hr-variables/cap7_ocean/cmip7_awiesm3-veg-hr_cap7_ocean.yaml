@@ -228,6 +228,11 @@ rules:
     hnode_pattern: hnode\.fesom\..*\.nc
     hnode_variable: hnode
     lazy_write: true
+    # Depth-resolved 3D output (~8 GB compressed); 8 concurrent workers
+    # writing to tmpfs would exhaust the 63 GB /tmp budget. Opt this rule
+    # out of staging — accept direct-to-Lustre write with E's timeout +
+    # retry as the safety net. See PLAN_save_dataset_reliability.md §5.
+    netcdf_tmpfs_staging: false
     pipelines:
       - heat_transport_pipeline
 
@@ -258,6 +263,8 @@ rules:
     hnode_pattern: hnode\.fesom\..*\.nc
     hnode_variable: hnode
     lazy_write: true
+    # Depth-resolved 3D output (~8 GB compressed); see hfx for rationale.
+    netcdf_tmpfs_staging: false
     pipelines:
       - heat_transport_pipeline
 

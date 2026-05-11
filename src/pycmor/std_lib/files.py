@@ -61,6 +61,18 @@ from .global_attributes import _collect_external_cell_measures
 import dask
 
 
+class SaveTimeout(Exception):
+    """Raised by :class:`_Heartbeat` when the watched path stops growing
+    for longer than the configured timeout. Caught by ``save_dataset``'s
+    retry loop (Option E of PLAN_save_dataset_reliability.md).
+
+    Under our failure mode (worker blocked in a POSIX write syscall on
+    Lustre), the originally-stuck worker may continue to leak its slot
+    until SLURM kills the job — but the retry runs on a different worker
+    and can succeed. See PLAN §E for the realistic semantics.
+    """
+
+
 class _Heartbeat:
     """Context manager that emits periodic ``logger.info`` "still running"
     lines while a long-running block executes. Used by ``save_dataset``
@@ -73,24 +85,52 @@ class _Heartbeat:
     is a daemon and exits cleanly when the with-block ends; if the
     block raises, the thread still terminates because of the
     ``threading.Event`` wait.
+
+    Optional file-size watchdog (Option E of
+    PLAN_save_dataset_reliability.md): if ``watch_path`` is given,
+    poll its size; if it does not grow for ``timeout_minutes``
+    (default ``PYCMOR_SAVE_TIMEOUT_MIN`` env, fallback 15 min),
+    flag a timeout — ``__exit__`` raises :class:`SaveTimeout`.
+
+    A timeout-detected via this watchdog *does not* unblock the worker
+    that's stuck in a POSIX write syscall — Python-level ``cancel()``
+    cannot interrupt a kernel-level blocking call. The retry runs on a
+    different dask worker; the original may leak its slot until SLURM
+    kills the job. See PLAN_save_dataset_reliability.md §E for the
+    realistic semantics this design chooses.
     """
 
-    def __init__(self, label, interval=None):
+    def __init__(self, label, interval=None, watch_path=None, timeout_minutes=None):
         if interval is None:
             try:
                 interval = float(os.environ.get("PYCMOR_HEARTBEAT_INTERVAL_S", "60"))
             except (TypeError, ValueError):
                 interval = 60.0
+        if timeout_minutes is None:
+            try:
+                timeout_minutes = float(os.environ.get("PYCMOR_SAVE_TIMEOUT_MIN", "15"))
+            except (TypeError, ValueError):
+                timeout_minutes = 15.0
         self.label = label
         self.interval = interval
+        self.watch_path = watch_path
+        self.timeout_s = float(timeout_minutes) * 60.0
         self._stop = threading.Event()
         self._t0 = None
         self._th = None
+        self._timed_out = False
+        self._last_size = -1
+        self._last_progress_ts = None
+
+    @property
+    def timed_out(self):
+        return self._timed_out
 
     def __enter__(self):
         if self.interval <= 0:
             return self
         self._t0 = time.monotonic()
+        self._last_progress_ts = time.monotonic()
 
         def _tick():
             n = 0
@@ -101,6 +141,36 @@ class _Heartbeat:
                     f"  ⟳ {self.label} still running "
                     f"(t={elapsed:.0f}s, heartbeat #{n})"
                 )
+                # Watchdog: poll watch_path size and detect stalls.
+                # watch_path may be a str (single file) or a callable that
+                # returns the current "bytes written so far" — useful for
+                # the multi-file save_dataset case where the file path isn't
+                # known upfront.
+                if self.watch_path and self.timeout_s > 0:
+                    try:
+                        if callable(self.watch_path):
+                            size = int(self.watch_path() or 0)
+                        else:
+                            size = os.path.getsize(self.watch_path)
+                    except OSError:
+                        size = 0
+                    except Exception:
+                        size = 0
+                    if size > self._last_size:
+                        self._last_size = size
+                        self._last_progress_ts = time.monotonic()
+                    elif time.monotonic() - self._last_progress_ts > self.timeout_s:
+                        logger.error(
+                            f"  ✗ {self.label}: no I/O progress for "
+                            f"{self.timeout_s / 60:.0f} min on "
+                            f"{self.watch_path!r}; flagging SaveTimeout. "
+                            f"Worker may be stuck in a Lustre write syscall "
+                            f"and leak its slot until SLURM kills the job — "
+                            f"retry will run on a different worker."
+                        )
+                        self._timed_out = True
+                        self._stop.set()
+                        return
 
         self._th = threading.Thread(
             target=_tick, name=f"hb-{self.label}", daemon=True
@@ -110,10 +180,16 @@ class _Heartbeat:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._stop.set()
-        if self._th is not None and self._t0 is not None:
+        if self._th is not None:
+            self._th.join(timeout=2)
+        if self._t0 is not None:
             elapsed = time.monotonic() - self._t0
             status = "ok" if exc_type is None else f"failed ({exc_type.__name__})"
             logger.info(f"  ✓ {self.label} done in {elapsed:.0f}s [{status}]")
+        # If watchdog flagged a timeout AND the wrapped block didn't already
+        # raise something else, propagate as SaveTimeout to the retry loop.
+        if self._timed_out and exc_type is None:
+            raise SaveTimeout(self.label)
         return False
 
 
@@ -1206,8 +1282,58 @@ def save_dataset(da: xr.DataArray, rule):
     otherwise tasks will progress very slow.
     """
     cmor_var = getattr(rule, "cmor_variable", None) or getattr(rule, "name", "?")
-    with _Heartbeat(f"save_dataset[{cmor_var}]"):
-        return _save_dataset_impl(da, rule)
+    try:
+        max_retries = int(os.environ.get("PYCMOR_SAVE_MAX_RETRIES", "2"))
+    except (TypeError, ValueError):
+        max_retries = 2
+
+    # Watchdog: track growth of the rule's output directory total .nc[+.tmp]
+    # bytes. Works for both single-file and multi-file (split-by-timespan)
+    # save paths. Resolved at call time so retries see fresh state.
+    out_dir = getattr(rule, "output_directory", None)
+
+    def _outdir_size():
+        if not out_dir or not os.path.isdir(out_dir):
+            return 0
+        total = 0
+        try:
+            for name in os.listdir(out_dir):
+                # Count both finalized .nc and in-progress .nc.tmp.
+                if name.endswith(".nc") or name.endswith(".nc.tmp") or ".tmp" in name:
+                    try:
+                        total += os.path.getsize(os.path.join(out_dir, name))
+                    except OSError:
+                        pass
+        except OSError:
+            return 0
+        return total
+
+    last_exc = None
+    for attempt in range(max_retries + 1):
+        try:
+            with _Heartbeat(
+                f"save_dataset[{cmor_var}]",
+                watch_path=_outdir_size if out_dir else None,
+            ):
+                return _save_dataset_impl(da, rule)
+        except SaveTimeout as exc:
+            last_exc = exc
+            if attempt < max_retries:
+                logger.warning(
+                    f"save_dataset[{cmor_var}] timed out "
+                    f"(attempt {attempt + 1}/{max_retries + 1}); "
+                    f"retrying on a fresh worker. The originally-stuck worker "
+                    f"may continue to leak its slot until the SLURM job ends."
+                )
+            else:
+                logger.error(
+                    f"save_dataset[{cmor_var}] timed out after "
+                    f"{max_retries + 1} attempts; giving up."
+                )
+                raise
+    # Should not reach here; the loop either returns or raises.
+    if last_exc is not None:
+        raise last_exc
 
 
 def _save_dataset_impl(da: xr.DataArray, rule):

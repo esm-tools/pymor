@@ -47,18 +47,27 @@ N_WORKERS=${N_WORKERS:-4}
 TPW=${TPW:-4}
 MEM_PER_WORKER=${MEM_PER_WORKER:-16GB}
 CGROUP_GB=${CGROUP_GB:-256}
+# pycmor.std_lib.files atomic-write staging uses /tmp (tmpfs) — RAM-backed
+# on Levante compute, sized 63 GB. Reserve enough headroom so concurrent
+# staged writes can't OOM the node. 1 GB per worker is conservative
+# (matches the typical _day-cadence output size); raise for tiers with
+# multi-GB files (set PYCMOR_TMPFS_BUDGET_GB before submit).
+TMPFS_BUDGET_GB=${PYCMOR_TMPFS_BUDGET_GB:-$(( N_WORKERS * 1 ))}
 
-# Pre-submit budget check (same as run_hr_yaml_parallel.sh).
+# Pre-submit budget check (same as run_hr_yaml_parallel.sh) — now also
+# accounts for tmpfs RAM that staged writes can consume.
 mem_gb=${MEM_PER_WORKER%GB}
 mem_gb=${mem_gb%gb}
-total_gb=$(( N_WORKERS * mem_gb ))
+worker_gb=$(( N_WORKERS * mem_gb ))
+total_gb=$(( worker_gb + TMPFS_BUDGET_GB ))
 budget_gb=$(( CGROUP_GB * 75 / 100 ))
 if [ "$total_gb" -gt "$budget_gb" ]; then
-  echo "ABORT: N_WORKERS * MEM_PER_WORKER = ${total_gb} GB exceeds budget ${budget_gb} GB"
-  echo "       (75% of CGROUP_GB=${CGROUP_GB}). Lower N_WORKERS or MEM_PER_WORKER."
+  echo "ABORT: N_W*MEM_PER_W + tmpfs = ${worker_gb}+${TMPFS_BUDGET_GB} = ${total_gb} GB exceeds budget ${budget_gb} GB"
+  echo "       (75% of CGROUP_GB=${CGROUP_GB}). Lower N_WORKERS or MEM_PER_WORKER,"
+  echo "       or lower PYCMOR_TMPFS_BUDGET_GB if you've disabled staging."
   exit 2
 fi
-echo "=== budget: ${total_gb} GB dask commit / ${budget_gb} GB allowed (${CGROUP_GB} GB cgroup) ==="
+echo "=== budget: ${worker_gb} GB dask + ${TMPFS_BUDGET_GB} GB tmpfs / ${budget_gb} GB allowed (${CGROUP_GB} GB cgroup) ==="
 
 # Dask spill thresholds (fractions of MEM_PER_WORKER).
 export DASK_DISTRIBUTED__WORKER__MEMORY__TARGET=0.50
