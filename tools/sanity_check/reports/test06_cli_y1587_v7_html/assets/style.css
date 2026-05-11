@@ -165,6 +165,38 @@ details.files summary {
   color: #134;
 }
 details.files ul { margin: 4px 0 4px 18px; padding: 0; }
+.worstfile {
+  font-size: 12px;
+  color: #666;
+  margin: 4px 0 8px;
+}
+table.files-table {
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 12px;
+  width: 100%;
+}
+table.files-table th, table.files-table td {
+  border-top: 1px solid var(--border);
+  padding: 4px 8px;
+  vertical-align: top;
+}
+table.files-table th {
+  background: var(--bg2);
+  text-align: left;
+}
+table.files-table td:nth-child(3),
+table.files-table td:nth-child(4),
+table.files-table td:nth-child(5) {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  text-align: right;
+  white-space: nowrap;
+}
+table.files-table .diagnosis {
+  font-size: 11px;
+  margin: 4px 0 0 0;
+  padding: 4px 6px;
+}
 table.summary {
   border-collapse: collapse;
   width: 100%;

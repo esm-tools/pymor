@@ -47,7 +47,26 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 # Severity classifier (mirrors build_issues_md.py / sanity_summary.py)
 # ---------------------------------------------------------------------------
 
+# Variables that physically cannot be negative (mass per area, cell
+# thickness). The classifier marks them PHYS_IMPOSSIBLE only when the
+# OBSERVED min is actually negative — not based on name alone, so cli7's
+# masscello bug shows up as PHYS_IMPOSSIBLE but cli9's positive values
+# fall through to the regular bounds check.
 SIGN_BUGS = {"masscello", "thkcello"}
+
+
+def _is_phys_impossible(var: str, notes: Sequence[str]) -> bool:
+    """True iff `var` is in SIGN_BUGS AND the current observed min is < 0."""
+    if var not in SIGN_BUGS:
+        return False
+    text = "; ".join(notes).lower()
+    m = re.search(r"min ([\-\d.eE+]+) below expected_min", text)
+    if not m:
+        return False
+    try:
+        return float(m.group(1)) < 0
+    except Exception:
+        return False
 
 SEVERITY_ORDER = [
     "DATA_INTEGRITY",
@@ -83,7 +102,7 @@ _PICONTROL_RATIONALE_HINTS = (
 
 
 def severity_of(var: str, notes: Sequence[str], rationale: str = "") -> str:
-    if var in SIGN_BUGS:
+    if _is_phys_impossible(var, notes):
         return "PHYS_IMPOSSIBLE"
     text = "; ".join(notes).lower()
     if "non-finite" in text:
@@ -395,6 +414,10 @@ class VarEntry:
     obs_max: float = float("nan")
     units_in_file: str = ""
     directory: str = ""
+    # Filename whose stats drove the worst-status (so a card whose stats
+    # come from a broken hxy-si variant doesn't look like the whole var is
+    # broken if the global variant is fine).
+    worst_file: str = ""
 
     @property
     def severity_rank(self) -> int:
@@ -442,6 +465,8 @@ def collapse(records: Sequence[Dict[str, Any]],
             ent.obs_mean = to_float(rec.get("mean"))
             ent.obs_max = to_float(rec.get("max"))
             ent.n_total = int(rec.get("n_total") or 0)
+            from pathlib import Path as _Path
+            ent.worst_file = _Path(str(rec.get("file") or "")).name
         elif rank == cur_rank and not ent.worst_notes:
             ent.worst_notes = list(rec.get("notes") or [])
             if not is_finite(ent.obs_mean):
@@ -936,6 +961,38 @@ details.files summary {
   color: #134;
 }
 details.files ul { margin: 4px 0 4px 18px; padding: 0; }
+.worstfile {
+  font-size: 12px;
+  color: #666;
+  margin: 4px 0 8px;
+}
+table.files-table {
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 12px;
+  width: 100%;
+}
+table.files-table th, table.files-table td {
+  border-top: 1px solid var(--border);
+  padding: 4px 8px;
+  vertical-align: top;
+}
+table.files-table th {
+  background: var(--bg2);
+  text-align: left;
+}
+table.files-table td:nth-child(3),
+table.files-table td:nth-child(4),
+table.files-table td:nth-child(5) {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  text-align: right;
+  white-space: nowrap;
+}
+table.files-table .diagnosis {
+  font-size: 11px;
+  margin: 4px 0 0 0;
+  padding: 4px 6px;
+}
 table.summary {
   border-collapse: collapse;
   width: 100%;
@@ -1085,24 +1142,85 @@ def render_var_card(entry: VarEntry,
         "</tbody></table>"
     )
 
+    # Note the file whose stats drove the worst-status row above. The map
+    # below comes from a DIFFERENT (representative) file picked by
+    # build_maps.py, which is confusing without this hint.
+    if entry.worst_file and len(entry.files) > 1:
+        parts.append(
+            '<p class="worstfile">Observed numbers above are from '
+            f'<code>{html.escape(entry.worst_file)}</code>. '
+            "Per-file detail and diagnosis below.</p>"
+        )
+
     if entry.source:
         parts.append(
             f'<div class="source"><strong>Source / rationale:</strong> '
             f"{html.escape(entry.source)}</div>"
         )
 
-    diag = diagnosis_text(entry)
-    if diag:
-        parts.append(f'<div class="diagnosis">{html.escape(diag)}</div>')
-
     if entry.files:
-        basenames = sorted({os.path.basename(f.get("file", "")) for f in entry.files})
-        items = "".join(f"<li>{html.escape(b)}</li>" for b in basenames if b)
+        # Per-file diagnosis: each file gets its own row with status pill,
+        # severity tag (for FAIL/ERROR), numbers, and a short diagnosis
+        # snippet. This is the actionable view — readers can see exactly
+        # which file is broken and which are fine.
+        rows = []
+        for r in sorted(entry.files, key=lambda r: os.path.basename(r.get("file", ""))):
+            base = os.path.basename(r.get("file", ""))
+            st = r.get("status", "?")
+            notes = list(r.get("notes") or [])
+            sev = ""
+            diag = ""
+            if st == "FAIL":
+                sev = severity_of(entry.var, notes, entry.source)
+                # Build a per-file diagnosis using the same templates, but
+                # with this file's stats.
+                file_entry = VarEntry(
+                    var=entry.var,
+                    realm=entry.realm,
+                    expected_min=entry.expected_min,
+                    expected_mean=entry.expected_mean,
+                    expected_max=entry.expected_max,
+                    source=entry.source,
+                    worst_status=st,
+                    worst_severity=sev,
+                    worst_notes=notes,
+                    n_total=int(r.get("n_total") or 0),
+                    obs_min=to_float(r.get("min")),
+                    obs_mean=to_float(r.get("mean")),
+                    obs_max=to_float(r.get("max")),
+                    units_in_file=str(r.get("units_in_file") or ""),
+                    units_table=entry.units_table,
+                    directory=str(r.get("dir") or ""),
+                )
+                diag = diagnosis_text(file_entry)
+            elif st == "WARN":
+                diag = "; ".join(notes) if notes else "Within tolerance."
+            elif st == "ERROR":
+                diag = "; ".join(notes) if notes else "Read failed."
+            elif st == "NOBOUNDS":
+                diag = "No entry in the sanity-check table for this variable."
+            # PASS: no diagnosis
+            pill = _pill(st)
+            sev_tag = (f' <span class="sev-tag">{html.escape(sev)}</span>'
+                       if sev else "")
+            mn = fmt_num(r.get("min"))
+            me = fmt_num(r.get("mean"))
+            mx = fmt_num(r.get("max"))
+            diag_html = (f'<div class="diagnosis">{html.escape(diag)}</div>'
+                         if diag else "")
+            rows.append(
+                f"<tr><td>{pill}{sev_tag}</td>"
+                f"<td><code>{html.escape(base)}</code>{diag_html}</td>"
+                f"<td>{mn}</td><td>{me}</td><td>{mx}</td></tr>"
+            )
+        # Make per-file table visible (not behind <details>) so the
+        # information is immediately available.
         parts.append(
-            "<details class=\"files\">"
-            f"<summary>Affected files ({len(basenames)})</summary>"
-            f"<ul>{items}</ul>"
-            "</details>"
+            "<table class=\"files-table\">"
+            "<thead><tr><th>Status</th>"
+            f"<th>File ({len(rows)})</th>"
+            "<th>min</th><th>mean</th><th>max</th></tr></thead>"
+            f"<tbody>{''.join(rows)}</tbody></table>"
         )
 
     parts.append("</div>")

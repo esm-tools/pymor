@@ -331,11 +331,17 @@ pipelines:
 
   # Generic hemisphere integral (snow mass, ice area, etc.)
   - name: hemisphere_integral_pipeline
+    # integrate_over_hemisphere produces a value in m^2 (sum of a_ice *
+    # cell_area). Without handle_unit_conversion afterwards the value
+    # stays in raw m^2 (~1e13) and gets labelled with CMIP `1e6 km2`,
+    # producing FAIL on the daily siarea/siextent ldiag_cmor-style
+    # scalars even though the monthly scalar rules are fine.
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
       - script://$PYCMOR_HOME/examples/custom_steps.py:integrate_over_hemisphere
       - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
