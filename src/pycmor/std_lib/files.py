@@ -192,12 +192,30 @@ class _Heartbeat:
             self._th.join(timeout=2)
         if self._t0 is not None:
             elapsed = time.monotonic() - self._t0
-            status = "ok" if exc_type is None else f"failed ({exc_type.__name__})"
-            logger.info(f"  ✓ {self.label} done in {elapsed:.0f}s [{status}]")
-        # If watchdog flagged a timeout AND the wrapped block didn't already
-        # raise something else, propagate as SaveTimeout to the retry loop.
-        if self._timed_out and exc_type is None:
-            raise SaveTimeout(self.label)
+            if self._timed_out:
+                # Watcher fired during execution, but the body returned
+                # anyway — meaning the save eventually completed (or raised
+                # its own exception). Either way, the data is in its final
+                # state; raising SaveTimeout here would cause a *successful*
+                # save to be re-attempted by the retry loop, double-writing
+                # large files. Just note the late completion.
+                status = "ok (after watchdog fired)" if exc_type is None else f"failed ({exc_type.__name__})"
+                logger.info(f"  ✓ {self.label} done in {elapsed:.0f}s [{status}]")
+            else:
+                status = "ok" if exc_type is None else f"failed ({exc_type.__name__})"
+                logger.info(f"  ✓ {self.label} done in {elapsed:.0f}s [{status}]")
+        # NOTE on retry mechanism (PLAN §E): we used to raise SaveTimeout
+        # from here when _timed_out and exc_type is None, but that path is
+        # only ever taken AFTER the body completes (Python contract: __exit__
+        # runs after the with-block body returns or raises). Under the
+        # syscall-stuck failure mode the body never returns, so __exit__
+        # never runs — raising from here was never going to help. And
+        # under the slow-but-successful case the body returned with the
+        # data saved, so raising would actively *break* a working write.
+        # The retry loop in save_dataset still catches SaveTimeout if it
+        # is raised explicitly by inner code (e.g., a future enhancement
+        # using signal.alarm to interrupt the syscall), or any other
+        # transient exception from _save_dataset_impl.
         return False
 
 

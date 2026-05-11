@@ -55,20 +55,26 @@ def test_heartbeat_no_watch_path_never_times_out():
         time.sleep(0.3)  # 6× the timeout — would fire if watch_path were set
 
 
-def test_heartbeat_times_out_when_file_doesnt_grow(tmp_path):
-    """A watch_path that exists but never grows must trigger SaveTimeout
-    on context-exit after timeout_minutes."""
+def test_heartbeat_times_out_sets_flag_but_does_not_raise(tmp_path):
+    """The watcher detects a stall and sets ``timed_out``, but does NOT
+    raise from ``__exit__`` — raising would kill rules that complete
+    slowly-but-successfully (the body returns with data saved before
+    the watchdog can be checked). The flag is purely diagnostic.
+
+    See PLAN_save_dataset_reliability.md §E and the inline note in
+    ``_Heartbeat.__exit__`` for why."""
     stalled = tmp_path / "stalled.nc"
     stalled.write_bytes(b"\x89HDF\x00\x00\x00\x00")  # tiny stub, never grows
 
-    with pytest.raises(SaveTimeout):
-        with _Heartbeat(
-            "stall_test",
-            interval=0.05,           # poll every 50 ms
-            watch_path=str(stalled),
-            timeout_minutes=0.002,   # 0.12 s — well within test runtime
-        ):
-            time.sleep(0.4)
+    with _Heartbeat(
+        "stall_test",
+        interval=0.05,           # poll every 50 ms
+        watch_path=str(stalled),
+        timeout_minutes=0.002,   # 0.12 s — well within test runtime
+    ) as hb:
+        time.sleep(0.4)
+    # Watcher fired, flag set, but exiting the with-block did NOT raise.
+    assert hb.timed_out is True
 
 
 def test_heartbeat_no_timeout_when_file_grows(tmp_path):
@@ -104,15 +110,15 @@ def test_heartbeat_watch_path_can_be_callable(tmp_path):
     def _size_fn():
         return size_holder["n"]
 
-    # No growth: should time out.
-    with pytest.raises(SaveTimeout):
-        with _Heartbeat(
-            "callable_stall",
-            interval=0.05,
-            watch_path=_size_fn,
-            timeout_minutes=0.002,
-        ):
-            time.sleep(0.4)
+    # No growth: watcher sets timed_out flag (no raise).
+    with _Heartbeat(
+        "callable_stall",
+        interval=0.05,
+        watch_path=_size_fn,
+        timeout_minutes=0.002,
+    ) as hb:
+        time.sleep(0.4)
+    assert hb.timed_out is True
 
     # Growth: should NOT time out.
     def _grow():
@@ -133,9 +139,10 @@ def test_heartbeat_watch_path_can_be_callable(tmp_path):
     th.join(timeout=1)
 
 
-def test_heartbeat_propagates_inner_exception_over_timeout(tmp_path):
-    """If the inner block raises a non-SaveTimeout exception, that
-    exception takes priority — even if a timeout was also flagged."""
+def test_heartbeat_propagates_inner_exception(tmp_path):
+    """If the inner block raises an exception, that exception propagates
+    out of the with-block. The watchdog's timed_out flag is informational
+    only and doesn't affect propagation."""
     stalled = tmp_path / "boom.nc"
     stalled.write_bytes(b"\x89HDF")
 
