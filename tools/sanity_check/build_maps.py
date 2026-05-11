@@ -639,11 +639,16 @@ def _render_map(out_path: Path, var: str, units: str, notes: Sequence[str],
 # ---------------------------------------------------------------------------
 
 
+def _png_name_for(file_path: str) -> str:
+    """One PNG per .nc file: use the .nc filename stem."""
+    return Path(file_path).stem + ".png"
+
+
 def _process_one(args_tuple: Tuple[str, str, Dict[str, Any], str]) -> Tuple[str, str, str]:
-    """Render one variable. Returns (var, status, fname)."""
+    """Render one .nc file's map. Returns (var, status, fname)."""
 
     var, file_path, rec, out_dir = args_tuple
-    out_path = Path(out_dir) / "assets" / "maps" / f"{var}.png"
+    out_path = Path(out_dir) / "assets" / "maps" / _png_name_for(file_path)
     fname = Path(file_path).name
 
     # Resume: skip if PNG already exists (and is non-empty).
@@ -701,22 +706,22 @@ def _process_one(args_tuple: Tuple[str, str, Dict[str, Any], str]) -> Tuple[str,
 
 
 def _build_jobs(records: Sequence[Dict[str, Any]], out_dir: Path) -> List[Tuple[str, str, Dict[str, Any], str]]:
-    by_var: Dict[str, List[Dict[str, Any]]] = {}
+    """One job per .nc file (was: one per variable / representative file).
+
+    The output PNG is named after the .nc filename stem, so each
+    frequency/level/region variant gets its own map.
+    """
+    jobs: List[Tuple[str, str, Dict[str, Any], str]] = []
+    seen_paths: set = set()
     for rec in records:
         var = rec.get("var")
-        if not var:
+        file_path = str(rec.get("file") or "")
+        if not var or not file_path or file_path in seen_paths:
             continue
-        by_var.setdefault(str(var), []).append(rec)
-
-    jobs: List[Tuple[str, str, Dict[str, Any], str]] = []
-    for var, recs in sorted(by_var.items()):
-        rep = _pick_representative(recs)
-        if not rep:
-            continue
-        file_path = str(rep.get("file") or "")
-        if not file_path:
-            continue
-        jobs.append((var, file_path, rep, str(out_dir)))
+        seen_paths.add(file_path)
+        jobs.append((str(var), file_path, rec, str(out_dir)))
+    # Stable order: by output PNG name
+    jobs.sort(key=lambda j: _png_name_for(j[1]))
     return jobs
 
 

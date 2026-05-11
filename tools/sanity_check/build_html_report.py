@@ -1165,14 +1165,24 @@ def render_file_card(ent: VarEntry,
     if svg:
         parts.append(svg)
 
-    # Map (shared across files of the same var — limitation of build_maps.py)
-    if out_dir is not None:
-        map_path = out_dir / "assets" / "maps" / f"{ent.var}.png"
+    # Per-file map: PNG name = .nc filename stem
+    if out_dir is not None and fname:
+        png_name = re.sub(r"\.nc$", ".png", fname)
+        map_path = out_dir / "assets" / "maps" / png_name
         if map_path.exists():
             parts.append(
-                f'<img class="varmap" src="assets/maps/{html.escape(ent.var)}.png" '
-                f'alt="time-mean map of {html.escape(ent.var)}" loading="lazy"/>'
+                f'<img class="varmap" src="assets/maps/{html.escape(png_name)}" '
+                f'alt="time-mean map of {html.escape(fname)}" loading="lazy"/>'
             )
+        else:
+            # Fallback to legacy per-variable PNG if the per-file one
+            # hasn't been generated yet
+            legacy = out_dir / "assets" / "maps" / f"{ent.var}.png"
+            if legacy.exists():
+                parts.append(
+                    f'<img class="varmap" src="assets/maps/{html.escape(ent.var)}.png" '
+                    f'alt="time-mean map of {html.escape(ent.var)} (shared, not specific to this file)" loading="lazy"/>'
+                )
 
     # Numbers table for this file
     parts.append(
