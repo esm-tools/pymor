@@ -966,6 +966,16 @@ details.files ul { margin: 4px 0 4px 18px; padding: 0; }
   color: #666;
   margin: 4px 0 8px;
 }
+p.filename {
+  font-size: 12px;
+  color: #666;
+  margin: 0 0 4px;
+}
+p.filename code {
+  background: var(--bg2);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
 table.files-table {
   border-collapse: collapse;
   margin-top: 10px;
@@ -1064,6 +1074,132 @@ def _page_shell(title: str, label: str, active: str, body: str) -> str:
         + "</main>"
         "</body></html>\n"
     )
+
+
+def render_file_card(ent: VarEntry,
+                     rec: Dict[str, Any],
+                     out_dir: Optional[Path] = None,
+                     metadata_by_var: Optional[Dict[str, Dict[str, str]]] = None) -> str:
+    """Render one card for a single .nc file.
+
+    Variable-level metadata (long_name, description, expected bounds,
+    source/rationale) comes from `ent`; per-file numbers and diagnosis
+    come from `rec`. Each file gets its own status pill, severity,
+    diagnosis paragraph.
+    """
+    fname = os.path.basename(str(rec.get("file") or ""))
+    status = str(rec.get("status") or "PASS").upper()
+    status_cls = status.lower()
+    sev = _file_card_severity(ent.var, rec, ent.source)
+    sev_tag = (f'<span class="sev-tag">{html.escape(sev)}</span>'
+               if sev else "")
+
+    units_table = ent.units_table or "?"
+    units_file = str(rec.get("units_in_file") or ent.units_in_file or "?")
+    realm = ent.realm or "?"
+
+    obs_min = to_float(rec.get("min"))
+    obs_mean = to_float(rec.get("mean"))
+    obs_max = to_float(rec.get("max"))
+
+    # Per-file VarEntry-like snapshot for build_svg / diagnosis_text.
+    file_entry = VarEntry(
+        var=ent.var,
+        realm=ent.realm,
+        expected_min=ent.expected_min,
+        expected_mean=ent.expected_mean,
+        expected_max=ent.expected_max,
+        source=ent.source,
+        worst_status=status,
+        worst_severity=sev,
+        worst_notes=list(rec.get("notes") or []),
+        n_total=int(rec.get("n_total") or 0),
+        obs_min=obs_min,
+        obs_mean=obs_mean,
+        obs_max=obs_max,
+        units_in_file=units_file,
+        units_table=ent.units_table,
+        directory=str(rec.get("dir") or ""),
+    )
+
+    # Unique anchor per file: var + branding from the filename (without
+    # the .nc and the date/ensemble suffix).
+    anchor = re.sub(r"\.nc$", "", fname)
+    anchor = re.sub(r"[^A-Za-z0-9_-]+", "-", anchor)
+
+    parts: List[str] = []
+    parts.append(f'<div class="var-card {status_cls}" id="file-{anchor}">')
+    parts.append('<div class="header">')
+    parts.append(f'<span class="name">{html.escape(ent.var)}</span>')
+    parts.append(_pill(status))
+    parts.append(sev_tag)
+    parts.append(
+        f'<span class="meta">realm={html.escape(realm)} '
+        f"&middot; units(file)={html.escape(units_file)} "
+        f"&middot; units(table)={html.escape(units_table)}"
+        "</span>"
+    )
+    parts.append("</div>")
+    # Filename right below the header for unambiguous identification
+    parts.append(f'<p class="filename"><code>{html.escape(fname)}</code></p>')
+
+    # CMIP long_name / standard_name / description (var-level)
+    if metadata_by_var:
+        meta = metadata_by_var.get(ent.var) or {}
+        ln = meta.get("long_name", "")
+        sn = meta.get("standard_name", "")
+        cm = meta.get("comment", "")
+        if ln:
+            parts.append(
+                f'<p class="longname"><strong>{html.escape(ln)}</strong></p>'
+            )
+        if sn:
+            parts.append(
+                f'<p class="stdname">CF: <em>{html.escape(sn)}</em></p>'
+            )
+        if cm:
+            parts.append(f'<p class="description">{html.escape(cm)}</p>')
+
+    # SVG range plot using THIS file's numbers
+    svg = build_svg(file_entry)
+    if svg:
+        parts.append(svg)
+
+    # Map (shared across files of the same var — limitation of build_maps.py)
+    if out_dir is not None:
+        map_path = out_dir / "assets" / "maps" / f"{ent.var}.png"
+        if map_path.exists():
+            parts.append(
+                f'<img class="varmap" src="assets/maps/{html.escape(ent.var)}.png" '
+                f'alt="time-mean map of {html.escape(ent.var)}" loading="lazy"/>'
+            )
+
+    # Numbers table for this file
+    parts.append(
+        '<table class="numbers">'
+        "<thead><tr><th>Quantity</th><th>Expected</th><th>Observed</th></tr></thead>"
+        "<tbody>"
+        f'<tr><td class="label">min</td><td>{fmt_num(ent.expected_min)}</td>'
+        f"<td>{fmt_num(obs_min)}</td></tr>"
+        f'<tr><td class="label">mean</td><td>{fmt_num(ent.expected_mean)}</td>'
+        f"<td>{fmt_num(obs_mean)}</td></tr>"
+        f'<tr><td class="label">max</td><td>{fmt_num(ent.expected_max)}</td>'
+        f"<td>{fmt_num(obs_max)}</td></tr>"
+        "</tbody></table>"
+    )
+
+    if ent.source:
+        parts.append(
+            f'<div class="source"><strong>Source / rationale:</strong> '
+            f"{html.escape(ent.source)}</div>"
+        )
+
+    diag = diagnosis_text(file_entry)
+    if diag:
+        parts.append(f'<div class="diagnosis">{html.escape(diag)}</div>')
+
+    parts.append("</div>")
+    return "".join(parts)
 
 
 def render_var_card(entry: VarEntry,
@@ -1239,42 +1375,85 @@ def sort_key(entry: VarEntry) -> Tuple[int, int, str]:
     return (3, 0, entry.var.lower())
 
 
+def _file_card_severity(var: str, rec: Dict[str, Any], rationale: str) -> Optional[str]:
+    if str(rec.get("status") or "").upper() != "FAIL":
+        return None
+    notes = list(rec.get("notes") or [])
+    return severity_of(var, notes, rationale=rationale)
+
+
+def _file_card_sort_key(item: Tuple[VarEntry, Dict[str, Any]]) -> Tuple[int, int, str, str]:
+    ent, rec = item
+    st = str(rec.get("status") or "PASS").upper()
+    s_rank = STATUS_RANK.get(st, 99)
+    sev_rank = len(SEVERITY_ORDER) + 1
+    if st == "FAIL":
+        sev = _file_card_severity(ent.var, rec, ent.source)
+        if sev:
+            sev_rank = SEVERITY_RANK.get(sev, len(SEVERITY_ORDER))
+    return (s_rank, sev_rank, ent.var, os.path.basename(rec.get("file","")))
+
+
 def render_domain_page(domain: str,
                        entries: Sequence[VarEntry],
                        label: str,
                        out_dir: Optional[Path] = None,
                        metadata_by_var: Optional[Dict[str, Dict[str, str]]] = None) -> str:
-    title = f"{label} — {DOMAIN_LABELS[domain]}"
-    sorted_entries = sorted(entries, key=sort_key)
+    """Render one card PER FILE (not per variable).
 
-    fails = [e for e in sorted_entries if e.worst_status == "FAIL"]
-    warns = [e for e in sorted_entries if e.worst_status == "WARN"]
-    passes = [e for e in sorted_entries if e.worst_status == "PASS"]
-    others = [e for e in sorted_entries if e.worst_status in ("ERROR", "NOBOUNDS")]
+    Each .nc file produces its own card with its own status, severity,
+    numbers, and diagnosis. Files of the same variable share the
+    variable-level metadata (long_name, description, expected bounds,
+    source/rationale) and the same map plot.
+    """
+    title = f"{label} — {DOMAIN_LABELS[domain]}"
+
+    # Flatten to (var_entry, file_record) pairs — one per .nc file.
+    pairs: List[Tuple[VarEntry, Dict[str, Any]]] = []
+    for ent in entries:
+        for rec in ent.files:
+            pairs.append((ent, rec))
+
+    pairs.sort(key=_file_card_sort_key)
+
+    def by_status(st: str) -> List[Tuple[VarEntry, Dict[str, Any]]]:
+        return [(e, r) for (e, r) in pairs
+                if str(r.get("status") or "PASS").upper() == st]
+
+    fails = by_status("FAIL")
+    warns = by_status("WARN")
+    passes = by_status("PASS")
+    others = [p for p in pairs
+              if str(p[1].get("status") or "PASS").upper() in ("ERROR","NOBOUNDS")]
 
     body: List[str] = []
     body.append(f"<h1>{html.escape(title)}</h1>")
     body.append(
-        f'<p class="subtle">{len(sorted_entries)} variable(s): '
+        f'<p class="subtle">{len(pairs)} file(s) across '
+        f"{len(entries)} variables: "
         f"{len(fails)} FAIL, {len(warns)} WARN, {len(passes)} PASS, "
         f"{len(others)} other.</p>"
     )
 
+    def render_pairs(pp):
+        return [render_file_card(e, r, out_dir, metadata_by_var)
+                for (e, r) in pp]
+
     if fails:
         body.append("<h2>FAIL</h2>")
-        body.extend(render_var_card(e, out_dir, metadata_by_var) for e in fails)
+        body.extend(render_pairs(fails))
     if warns:
         body.append("<h2>WARN</h2>")
-        body.extend(render_var_card(e, out_dir, metadata_by_var) for e in warns)
+        body.extend(render_pairs(warns))
     if passes:
         body.append("<h2>PASS</h2>")
-        body.extend(render_var_card(e, out_dir, metadata_by_var) for e in passes)
+        body.extend(render_pairs(passes))
     if others:
         body.append("<h2>Other (ERROR / NOBOUNDS)</h2>")
-        body.extend(render_var_card(e, out_dir, metadata_by_var) for e in others)
+        body.extend(render_pairs(others))
 
-    if not sorted_entries:
-        body.append("<p>No variables in this domain.</p>")
+    if not pairs:
+        body.append("<p>No files in this domain.</p>")
 
     return _page_shell(title, label, domain, "".join(body))
 
@@ -1310,9 +1489,10 @@ def render_index(all_entries: Sequence[VarEntry], label: str) -> str:
     body: List[str] = []
     body.append(f"<h1>{html.escape(title)}</h1>")
     body.append(
-        f'<p class="subtle">{total_vars} unique variables across '
-        f'{total_files} files. Variable status is the worst of the '
-        "files contributing to it; per-file detail is on each card.</p>"
+        f'<p class="subtle">{total_files} files (across {total_vars} '
+        f"unique variables). Each frequency / level / region variant "
+        "is assessed independently — see the domain pages for per-file "
+        "cards. The variable counts below use the worst-of-files status.</p>"
     )
 
     # Totals — show vars and files side by side
@@ -1369,24 +1549,34 @@ def render_index(all_entries: Sequence[VarEntry], label: str) -> str:
         )
     body.append("</tbody></table>")
 
-    # Critical issues callout
+    # Critical issues callout — now per-FILE, not per-variable.
     critical_sevs = {"DATA_INTEGRITY", "PHYS_IMPOSSIBLE",
                      "UNIT_MISMATCH", "SIGN_FLIP"}
-    critical = [
-        e for e in all_entries
-        if e.worst_status == "FAIL" and e.worst_severity in critical_sevs
-    ]
-    critical.sort(key=sort_key)
+    critical: List[Tuple[VarEntry, Dict[str, Any], str]] = []
+    for e in all_entries:
+        for r in e.files:
+            if str(r.get("status") or "").upper() != "FAIL":
+                continue
+            sev = severity_of(e.var, list(r.get("notes") or []), e.source)
+            if sev in critical_sevs:
+                critical.append((e, r, sev))
+    # Sort by severity, then var, then filename
+    critical.sort(key=lambda x: (SEVERITY_RANK.get(x[2], 99),
+                                  x[0].var,
+                                  os.path.basename(str(x[1].get("file","")))))
     if critical:
         body.append('<div class="callout">')
         body.append(f"<h2>Critical issues ({len(critical)})</h2>")
         body.append("<ul>")
-        for e in critical:
+        for e, r, sev in critical:
             dom = e.domain or "?"
-            href = f"{dom}.html#var-{e.var}"
+            fname = os.path.basename(str(r.get("file") or ""))
+            anchor = re.sub(r"\.nc$", "", fname)
+            anchor = re.sub(r"[^A-Za-z0-9_-]+", "-", anchor)
+            href = f"{dom}.html#file-{anchor}"
             body.append(
-                f'<li><a href="{html.escape(href)}"><code>{html.escape(e.var)}</code></a> '
-                f'<span class="sev-tag">{html.escape(e.worst_severity or "")}</span> '
+                f'<li><a href="{html.escape(href)}"><code>{html.escape(fname)}</code></a> '
+                f'<span class="sev-tag">{html.escape(sev)}</span> '
                 f'<span class="subtle">({html.escape(DOMAIN_LABELS.get(dom, dom))})</span></li>'
             )
         body.append("</ul></div>")

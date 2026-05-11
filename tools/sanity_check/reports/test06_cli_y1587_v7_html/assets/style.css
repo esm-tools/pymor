@@ -170,6 +170,16 @@ details.files ul { margin: 4px 0 4px 18px; padding: 0; }
   color: #666;
   margin: 4px 0 8px;
 }
+p.filename {
+  font-size: 12px;
+  color: #666;
+  margin: 0 0 4px;
+}
+p.filename code {
+  background: var(--bg2);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
 table.files-table {
   border-collapse: collapse;
   margin-top: 10px;
