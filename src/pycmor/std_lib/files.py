@@ -160,13 +160,21 @@ class _Heartbeat:
                         self._last_size = size
                         self._last_progress_ts = time.monotonic()
                     elif time.monotonic() - self._last_progress_ts > self.timeout_s:
-                        logger.error(
-                            f"  ✗ {self.label}: no I/O progress for "
-                            f"{self.timeout_s / 60:.0f} min on "
-                            f"{self.watch_path!r}; flagging SaveTimeout. "
-                            f"Worker may be stuck in a Lustre write syscall "
-                            f"and leak its slot until SLURM kills the job — "
-                            f"retry will run on a different worker."
+                        logger.warning(
+                            f"  ⚠ {self.label}: no I/O progress detected for "
+                            f"{self.timeout_s / 60:.0f} min on the rule's "
+                            f"output directory. Stopping further heartbeats. "
+                            f"No action taken — the worker is NOT killed and "
+                            f"the rule is NOT aborted; if the body eventually "
+                            f"completes the result is preserved. (A retry "
+                            f"would only trigger if the body itself returned "
+                            f"after this point; under the typical "
+                            f"syscall-stuck scenario the body cannot return "
+                            f"until SLURM walltime expires.) "
+                            f"This message often appears for genuinely-slow "
+                            f"compute-heavy rules where the dask graph runs "
+                            f"longer than the watchdog timeout before the "
+                            f"first byte is written."
                         )
                         self._timed_out = True
                         self._stop.set()
