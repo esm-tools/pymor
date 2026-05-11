@@ -41,10 +41,12 @@ output files, so they can be used as an independent sanity check.
 | cLitterLut | land | kg m-2 | 0 | ~2 | ~15 | Per-tile litter; LUH2 |
 | cLitterSubSurf | land | kg m-2 | 0 | ~1 | ~8 | Belowground litter subset |
 | cLitterSurf | land | kg m-2 | 0 | ~1 | ~8 | Aboveground litter subset |
-| clivi | atmos | kg m-2 | 0 | ~0.02 | ~1 | Ice water path; CloudSat/CERES |
+| clivi | atmos | kg m-2 | 0 | ~0.02 | ~1 | Ice water path; CloudSat/CERES (mon-cadence default) |
+| clivi_day | atmos | kg m-2 | 0 | ~0.02 | ~10 | Deep-convective anvil IWP (Tian 2018 JGR Atmos) |
 | clt | atmos | % | 0 | ~66 | 100 | ISCCP global mean cloud cover ~66% |
 | clw | atmos | kg kg-1 | 0 | ~1e-5 | ~2e-3 | Cloud liquid mixing ratio; ERA5 |
-| clwvi | atmos | kg m-2 | 0 | ~0.1 | ~2 | Condensed water path; CERES/CloudSat |
+| clwvi | atmos | kg m-2 | 0 | ~0.1 | ~2 | Condensed water path; CERES/CloudSat (mon-cadence default) |
+| clwvi_day | atmos | kg m-2 | 0 | ~0.1 | ~5 | RSS microwave LWP climatology (daily extreme) |
 | cnc | land | % | 0 | ~70 | 100 | Canopy covered area fraction; LUH2/MODIS vegetated cover, ~70% of land |
 | cOther | land | kg m-2 | 0 | ~0.2 | ~3 | Reproductive/other tissues small fraction |
 | cProduct | land | kg m-2 | 0 | ~0 | ~0 | piControl has no land-use products; ~0 |
@@ -75,8 +77,10 @@ output files, so they can be used as an independent sanity check.
 | emibboa | aerosol | kg m-2 s-1 | 0 | ~1e-12 | ~1e-8 | 1850 BB OA; van Marle 2017 (BB4CMIP) |
 | emibbso2 | aerosol | kg m-2 s-1 | 0 | ~1e-13 | ~1e-9 | 1850 BB SO2; van Marle 2017 (BB4CMIP) |
 | emibbvoc | aerosol | kg m-2 s-1 | 0 | ~1e-12 | ~1e-8 | 1850 BB NMVOC; van Marle 2017 (BB4CMIP) |
-| esn | land | kg m-2 s-1 | 0 | ~1e-6 | ~5e-5 | Snow sublimation; polar climatology |
-| evspsbl | atmos | kg m-2 s-1 | 0 | ~3.2e-5 | ~2e-4 | Global mean E ~2.8 mm/day; GPCP/ERA5 |
+| esn | land | kg m-2 s-1 | 0 | ~1e-6 | ~5e-5 | Snow sublimation; polar climatology (mon default) |
+| esn_day | land | kg m-2 s-1 | -1e-5 | ~1e-6 | ~2e-4 | Daily extreme — dry-cold high-wind sublimation |
+| evspsbl | atmos | kg m-2 s-1 | 0 | ~3.2e-5 | ~2e-4 | Global mean E ~2.8 mm/day; GPCP/ERA5 (mon default) |
+| evspsbl_day | atmos | kg m-2 s-1 | -1e-4 | ~3.2e-5 | ~6e-4 | Daily extreme; allow small negative (dew/condensation) |
 | evspsblpot | land | kg m-2 s-1 | 0 | ~5e-5 | ~3e-4 | PET highest subtropics |
 | evspsblsoi | land | kg m-2 s-1 | 0 | ~1e-5 | ~1e-4 | Soil evap component |
 | evspsblveg | land | kg m-2 s-1 | 0 | ~1e-5 | ~1.5e-4 | Canopy evap/transpiration |
@@ -128,15 +132,24 @@ output files, so they can be used as an independent sanity check.
 | grassFracC4 | land | % | 0 | ~5 | 100 | C4 natural grass fraction; tropical/subtropical; LUH2/CMIP6 |
 | hfbasin | ocean | W | -2e15 | ~0 | 2e15 | Northward heat transport per basin; peak ~1.3 PW Atlantic; Trenberth 2001 |
 | hfds | ocean | W m-2 | -300 | ~2 | 300 | Net heat into ocean; ~2 W/m2 piControl drift |
-| hfdsl | land | W m-2 | -300 | ~0 | 300 | Ground heat flux; subtropical desert monthly extremes ±200 (Wang & Bras 1999; Baldocchi 2018 FLUXNET2015); ~0 annual mean |
-| hfls | atmos | W m-2 | 0 | ~80 | 250 | LH flux; CERES/ERA5 |
-| hfss | atmos | W m-2 | -150 | ~20 | 300 | SH flux; cold-air outbreaks over Kuroshio/Gulf Stream and warm-season deserts (Hersbach 2020 ERA5; CERES-EBAF) |
+| hfdsl | land | W m-2 | -300 | ~0 | 300 | Ground heat flux; subtropical desert mon extremes ±200 (mon default) |
+| hfdsl_3hr | land | W m-2 | -1200 | ~0 | 1200 | 3-hourly net surface flux extremes |
+| hfls | atmos | W m-2 | 0 | ~80 | 250 | LH flux; CERES/ERA5 (mon default) |
+| hfls_day | atmos | W m-2 | -250 | ~80 | 700 | Daily LH extreme — tropical convection / cyclones |
+| hfls_3hr | atmos | W m-2 | -500 | ~80 | 1100 | 3-hourly LH extreme |
+| hfls_1hr | atmos | W m-2 | -500 | ~80 | 1500 | Hourly LH extreme; ERA5 TC peaks ~1500 (Hersbach 2020) |
+| hfss | atmos | W m-2 | -150 | ~20 | 300 | SH flux; cold-air outbreaks (mon default) |
+| hfss_day | atmos | W m-2 | -500 | ~20 | 500 | Daily SH extreme |
+| hfss_3hr | atmos | W m-2 | -2500 | ~20 | 700 | 3-hourly SH extreme — extreme cold-air outbreaks |
+| hfss_1hr | atmos | W m-2 | -3000 | ~20 | 900 | Hourly SH extreme — Sahara/Arabia summer noon |
 | hfx | ocean | W | -2e15 | ~0 | 2e15 | Zonal heat transport; Trenberth |
 | hfy | ocean | W | -2e15 | ~0 | 2e15 | Meridional heat transport peak ~2 PW |
 | hur | atmos | % | 0 | ~60 | 100 | RH profile; ERA5 |
 | hurs | atmos | % | 10 | ~75 | 100 | Near-surface RH; ERA5 |
 | hus | atmos | 1 | ~1e-6 | ~3e-3 | ~0.025 | Specific humidity; tropics saturated ~25 g/kg |
-| huss | atmos | 1 | ~0.00001 | ~0.008 | ~0.025 | ERA5 near-surface q, polar dry to tropical moist |
+| huss | atmos | 1 | ~0.00001 | ~0.008 | ~0.025 | ERA5 near-surface q, polar dry to tropical moist (mon default) |
+| huss_3hr | atmos | 1 | ~0.00001 | ~0.008 | ~0.028 | 3-hourly extreme tropical moist |
+| huss_1hr | atmos | 1 | ~0.00001 | ~0.008 | ~0.030 | Hourly tropical peak (~30 g/kg) |
 | irrLut | land | kg m-2 s-1 | 0 | ~0 (piControl) | ~1e-5 | No anthropogenic irrigation in 1850 piControl |
 | lai | land | 1 | 0 | ~1.2 | ~7 | MODIS LAI climatology, tropical forests peak |
 | laiLut | land | 1 | 0 | ~1.2 | ~7 | MODIS per-tile LAI |
@@ -147,9 +160,12 @@ output files, so they can be used as an independent sanity check.
 | mlotst | ocean | m | ~10 | ~60 | ~2000 | de Boyer Montegut climatology; deep Labrador/Weddell |
 | mlotstsq | ocean | m2 | 100 | ~1e4 | ~4e6 | Square of mlotst |
 | mrfso | landIce | kg m-2 | 0 | ~200 | ~5000 | Frozen soil water, permafrost regions |
-| mrro | land | kg m-2 s-1 | 0 | ~1e-5 (30 mm/yr land avg) | ~2e-4 | GRDC/CMIP6 land runoff |
+| mrro | land | kg m-2 s-1 | 0 | ~1e-5 (30 mm/yr land avg) | ~2e-4 | GRDC/CMIP6 land runoff (mon default) |
+| mrro_day | land | kg m-2 s-1 | 0 | ~1e-5 | ~3e-3 | Daily extreme — saturated land + heavy rain |
+| mrro_3hr | land | kg m-2 s-1 | 0 | ~1e-5 | ~1e-2 | 3-hourly runoff burst |
 | mrrob | land | kg m-2 s-1 | 0 | ~1e-5 | ~1e-4 | Subsurface runoff, wettest tropics |
-| mrros | land | kg m-2 s-1 | 0 | ~5e-6 | ~1e-4 | Surface runoff fraction of total |
+| mrros | land | kg m-2 s-1 | 0 | ~5e-6 | ~1e-4 | Surface runoff fraction of total (mon default) |
+| mrros_3hr | land | kg m-2 s-1 | 0 | ~5e-6 | ~1e-2 | 3-hourly surface runoff burst |
 | mrsll | land | kg m-2 | 0 | ~30 | ~300 | Per-layer liquid soil water; thicker layers larger; CMIP6 Land |
 | mrso | land | kg m-2 | 0 | ~500 | ~2000 | Total soil moisture column |
 | mrsofc | land | kg m-2 | 0 | ~300 | ~1500 | Soil field capacity, typical 300mm |
@@ -201,10 +217,17 @@ output files, so they can be used as an independent sanity check.
 | pbo | ocean | Pa | 0 | ~4e7 | ~1.1e8 | rho*g*H; 4000m ocean |
 | pfull | atmos | Pa | ~1 | ~5e4 | ~101325 | Model level pressures |
 | phcint | ocean | J m-2 | 0 | ~1e10 | ~5e10 | Ocean heat content rho*cp*T*H |
-| pr | atmos | kg m-2 s-1 | 0 | ~3e-5 (~2.7 mm/day) | ~3e-4 | GPCP global mean precip |
-| prc | atmos | kg m-2 s-1 | 0 | ~1.5e-5 | ~2e-4 | Convective fraction ~50% |
+| pr | atmos | kg m-2 s-1 | 0 | ~3e-5 (~2.7 mm/day) | ~3e-4 | GPCP global mean precip (mon-cadence default) |
+| pr_day | atmos | kg m-2 s-1 | 0 | ~3e-5 | ~1e-2 | Daily extreme — tropical convergence zones |
+| pr_3hr | atmos | kg m-2 s-1 | 0 | ~3e-5 | ~2e-2 | 3-hourly extreme — convective storm cores |
+| pr_1hr | atmos | kg m-2 s-1 | 0 | ~3e-5 | ~3e-2 | Hourly extreme — single-cell convective burst |
+| prc | atmos | kg m-2 s-1 | 0 | ~1.5e-5 | ~2e-4 | Convective fraction ~50% (mon default) |
+| prc_day | atmos | kg m-2 s-1 | 0 | ~1.5e-5 | ~3e-3 | Daily convective extreme |
 | prra | seaIce | kg m-2 s-1 | 0 | ~1e-6 | ~1e-4 | Rain over sea ice rare |
-| prsn | atmos | kg m-2 s-1 | 0 | ~5e-6 | ~1e-4 | Snowfall ~15% of precip |
+| prsn | atmos | kg m-2 s-1 | 0 | ~5e-6 | ~1e-4 | Snowfall ~15% of precip (mon default) |
+| prsn_day | atmos | kg m-2 s-1 | 0 | ~5e-6 | ~2e-3 | Daily extreme snowstorm (SWE rate) |
+| prsn_6hr | atmos | kg m-2 s-1 | 0 | ~5e-6 | ~3e-3 | 6-hourly extreme snowstorm |
+| prsn_3hr | atmos | kg m-2 s-1 | 0 | ~5e-6 | ~5e-3 | 3-hourly extreme — lake effect / orographic |
 | prveg | land | kg m-2 s-1 | 0 | ~1e-5 | ~3e-4 | Canopy-intercepted precip |
 | prw | atmos | kg m-2 | 0.5 | ~25 | ~70 | ERA5 TCWV climatology |
 | ps | atmos | Pa | 50000 | ~98500 | 105000 | Surface pressure range incl. Tibet |
@@ -224,20 +247,29 @@ output files, so they can be used as an independent sanity check.
 | rlds | atmos | W m-2 | 100 | ~345 | 450 | CERES-EBAF surface LW down |
 | rldscs | atmos | W m-2 | 80 | ~315 | 430 | Clear-sky LW down |
 | rls | atmos | W m-2 | -200 | ~-55 | 50 | Net LW surface (down-up) |
-| rlus | atmos | W m-2 | 150 | ~398 | 520 | sigma*T^4, CERES |
+| rlus | atmos | W m-2 | 150 | ~398 | 520 | sigma*T^4, CERES (mon default) |
+| rlus_1hr | atmos | W m-2 | 150 | ~398 | 750 | Hourly extreme — desert skin σT⁴ at 340 K |
+| rlus_3hr | atmos | W m-2 | 150 | ~398 | 700 | 3-hourly extreme |
 | rluscs | atmos | W m-2 | 150 | ~398 | 520 | Same as rlus (clear-sky same surface T) |
 | rlut | atmos | W m-2 | 120 | ~239 | 320 | CERES OLR |
 | rlutcs | atmos | W m-2 | 150 | ~266 | 330 | Clear-sky OLR |
 | rootd | land | m | 0 | ~2 | ~10 | Schenk & Jackson root depths |
 | rsdoabsorb | ocean | W m-2 | 0 | varies by layer | ~300 | SW penetration, surface layer |
-| rsds | atmos | W m-2 | 0 | ~185 | 400 | CERES surface SW down annual |
+| rsds | atmos | W m-2 | 0 | ~185 | 400 | CERES surface SW down annual (mon default) |
+| rsds_day | atmos | W m-2 | 0 | ~185 | 500 | Daily extreme — clear-sky high-latitude summer |
+| rsds_3hr | atmos | W m-2 | 0 | ~185 | 1200 | 3-hourly extreme — clear-sky tropical noon |
+| rsds_1hr | atmos | W m-2 | 0 | ~185 | 1400 | Hourly extreme — TOA ~1361, surface clear-sky tropical noon |
 | rsdscs | atmos | W m-2 | 0 | ~245 | 450 | Clear-sky surface SW down |
 | rsdt | atmos | W m-2 | 0 | ~340 | ~550 | TOA incident SW, S0/4 |
 | rss | atmos | W m-2 | 0 | ~160 | 350 | Net SW surface |
-| rsus | atmos | W m-2 | 0 | ~24 | 300 | Surface upward SW (albedo*rsds) |
+| rsus | atmos | W m-2 | 0 | ~24 | 300 | Surface upward SW (albedo*rsds) (mon default) |
+| rsus_day | atmos | W m-2 | 0 | ~24 | 450 | Daily extreme — high-albedo snow/ice noon |
+| rsus_3hr | atmos | W m-2 | 0 | ~24 | 1100 | 3-hourly extreme |
+| rsus_1hr | atmos | W m-2 | 0 | ~24 | 1300 | Hourly extreme — bright surface × tropical-noon rsds |
 | rsuscs | atmos | W m-2 | 0 | ~30 | 350 | Clear-sky upwelling SW surface |
 | rsut | atmos | W m-2 | 0 | ~100 | 400 | CERES TOA reflected SW |
-| rsutcs | atmos | W m-2 | 0 | ~53 | 300 | Clear-sky TOA reflected |
+| rsutcs | atmos | W m-2 | 0 | ~53 | 300 | Clear-sky TOA reflected (mon default) |
+| rsutcs_day | atmos | W m-2 | 0 | ~53 | 400 | Daily extreme — bright deserts / ice |
 | rtmt | atmos | W m-2 | -200 | ~0 (piControl balanced) | 200 | Net TOA ~0 in piControl |
 | sbl | landIce | kg m-2 s-1 | -1e-4 | ~1e-7 | 1e-4 | Snow/ice sublimation; Antarctic Plateau katabatic events reach ~1e-4 (Lenaerts 2012 RACMO; Box & Steffen 2001) |
 | scint | ocean | kg m-2 | 0 | ~1.4e5 | ~1.5e5 | S*rho*H, ~35 PSU*1025*4000m |
@@ -328,13 +360,22 @@ output files, so they can be used as an independent sanity check.
 | tsl | land | K | 220 | ~285 | 325 | Soil temperature per layer; ERA5/CMIP6 Land |
 | tslsi | land | K | 220 | 285 | 330 | Land/sea-ice skin temp |
 | tsn | landIce | K | 220 | 260 | 273.15 | Snow temperature ≤ 0°C |
-| ua | atmos | m s-1 | -80 | ~0 | 100 | ERA5 zonal wind, global mean |
-| uas | atmos | m s-1 | -30 | ~0 | 30 | ERA5 10m wind |
+| ua | atmos | m s-1 | -80 | ~0 | 100 | ERA5 zonal wind (mon default; jet-stream-aware) |
+| ua_day | atmos | m s-1 | -100 | ~0 | 120 | Daily extreme — 500 hPa subtropical jet |
+| uas | atmos | m s-1 | -30 | ~0 | 30 | ERA5 10m wind (mon default) |
+| uas_day | atmos | m s-1 | -50 | ~0 | 50 | Daily extreme — ERA5 storm/TC 10m |
+| uas_3hr | atmos | m s-1 | -65 | ~0 | 65 | 3-hourly extreme |
+| uas_1hr | atmos | m s-1 | -75 | ~0 | 75 | Hourly extreme — Cat-5 TC (Saffir-Simpson) |
 | umo | ocean | kg s-1 | -1e12 | 0 | 1e12 | Cell-scale mass transport |
 | uo | ocean | m s-1 | -2 | ~0 | 2 | WOCE/Argo currents |
 | uos | ocean | m s-1 | -2 | ~0 | 2.5 | OSCAR surface currents |
-| va | atmos | m s-1 | -60 | ~0 | 60 | ERA5 meridional wind |
-| vas | atmos | m s-1 | -30 | ~0 | 30 | ERA5 10m wind |
+| va | atmos | m s-1 | -60 | ~0 | 60 | ERA5 meridional wind (mon default) |
+| va_day | atmos | m s-1 | -80 | ~0 | 80 | Daily extreme — 500 hPa peak |
+| va_6hr | atmos | m s-1 | -90 | ~0 | 90 | 6-hourly extreme — jet-core / wave |
+| vas | atmos | m s-1 | -30 | ~0 | 30 | ERA5 10m wind (mon default) |
+| vas_day | atmos | m s-1 | -50 | ~0 | 50 | Daily extreme — ERA5 storm/TC 10m |
+| vas_3hr | atmos | m s-1 | -65 | ~0 | 65 | 3-hourly extreme |
+| vas_1hr | atmos | m s-1 | -75 | ~0 | 75 | Hourly extreme — Cat-5 TC (Saffir-Simpson) |
 | vegFrac | land | % | 0 | 70 | 100 | LUH2 vegetated fraction |
 | vegHeight | land | m | 0 | ~5 | ~50 | Canopy height per PFT; trees 5-30m, shrubs 0.5-3m, grass <1m; Simard 2011 |
 | vmo | ocean | kg s-1 | -1e12 | 0 | 1e12 | Cell-scale mass transport |

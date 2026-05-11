@@ -247,6 +247,43 @@ def fname_var(name):
     return name.split("_", 1)[0]
 
 
+# CMIP table-id-like cadence tokens that may appear in cmorized filenames
+# between the branding suffix and the area/grid fields, e.g.
+# ``pr_tavg-u-hxy-u_1hr_glb_gn_...nc``  →  cadence ``1hr``.
+_CADENCE_TOKENS = frozenset(
+    ("1hr", "3hr", "6hr", "day", "mon", "yr", "dec",
+     "monC", "monPt", "decC", "yrPt", "fx")
+)
+
+
+def fname_cadence(name):
+    """Pull the CMIP cadence/table-id token from a cmorized filename.
+
+    Returns the token (e.g. ``"1hr"``) or ``None`` if no recognised cadence
+    token is present. Robust to optional extra tokens before/after.
+    """
+    parts = Path(name).stem.split("_")
+    for p in parts[1:]:
+        if p in _CADENCE_TOKENS:
+            return p
+    return None
+
+
+def lookup_bounds(var, cadence, bounds_table):
+    """Most-specific bounds lookup: ``var_cadence`` first, fallback to ``var``.
+
+    Lets the sanity_check_ranges table carry per-cadence overrides where the
+    physical range scales with the averaging interval (e.g. precipitation
+    extremes), while leaving variables without cadence-dependent extremes on
+    a single row keyed by plain variable name.
+    """
+    if cadence is not None:
+        b = bounds_table.get(f"{var}_{cadence}")
+        if b is not None:
+            return b
+    return bounds_table.get(var)
+
+
 # ---------- classification ----------
 
 def classify(actual_min, actual_mean, actual_max, bounds):
@@ -344,8 +381,9 @@ def worker_main(filepath, table_path):
     bounds_table = parse_table(Path(table_path))
     p = Path(filepath)
     var_name = fname_var(p.name)
-    bounds = bounds_table.get(var_name)
-    record = {"file": str(p), "var": var_name}
+    cadence = fname_cadence(p.name)
+    bounds = lookup_bounds(var_name, cadence, bounds_table)
+    record = {"file": str(p), "var": var_name, "cadence": cadence}
     try:
         nc = netCDF4.Dataset(str(p), "r")
     except Exception as e:
