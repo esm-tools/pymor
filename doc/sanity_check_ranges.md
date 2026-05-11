@@ -297,8 +297,8 @@ output files, so they can be used as an independent sanity check.
 | siextent | seaIce | 1e6 km2 | 6 (Sep) | 12 | 16 (Mar) | NSIDC NH |
 | sifb | seaIce | m | 0 | 0.2 | 1.5 | ICESat freeboard |
 | siflcondbot | seaIce | W m-2 | -100 | ~-10 | 50 | Maykut/Perovich conductive flux; CMIP6 model archive — annual mean NH/SH typically -5 to -20 W m-2 (winter heat loss upward dominates over summer downward); positive=down convention |
-| siflcondtop | seaIce | W m-2 | -100 | ~-10 | 50 | Maykut/Perovich conductive flux; CMIP6 model archive — annual mean NH/SH typically -5 to -20 W m-2 (winter heat loss upward dominates over summer downward); positive=down convention |
-| siflfwbot | seaIce | kg m-2 s-1 | -1e-4 | ~0 | 1e-4 | CMIP6 ice FW flux |
+| siflcondtop | seaIce | W m-2 | -1000 | ~-20 | 200 | Maykut/Perovich conductive flux; positive=down. Annual NH/SH mean -5 to -20 W/m2 (winter loss upward dominates). HR captures sub-cm ice cells in extreme cold: q = k*dT/h with k~2 W/m/K, dT~30 K, h~1 cm gives -6 kW/m2 -- thin-ice tail can hit -1 kW/m2 at 32 km; <0.01% of cells will WARN beyond this |
+| siflfwbot | seaIce | kg m-2 s-1 | -5e-3 | ~0 | 5e-3 | CMIP6 ice FW flux; annual mean ~0 (mass balance). HR per-cell extremes: marginal ice zone melt of ~30 cm ice/day gives ~4e-3 kg/m2/s; freeze-up at thin pack gives similar magnitude with opposite sign |
 | siflfwdrain | seaIce | kg m-2 s-1 | 0 | ~1e-6 | 1e-4 | Melt pond drainage |
 | sifllattop | seaIce | W m-2 | -100 | ~-10 | 50 | Latent heat flux over sea ice (downward positive); ERA5 polar climatology |
 | siflsenstop | seaIce | W m-2 | -100 | ~-10 | 100 | Sensible heat flux over sea ice (downward positive); ERA5 polar climatology |
