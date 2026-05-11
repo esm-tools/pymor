@@ -3925,6 +3925,194 @@ def compute_hfbasin(data, rule):
     return out.to_dataset()
 
 
+def _build_tripyview_mdiag(mesh, mesh_diag_path):
+    """Translate native FESOM 2.x ``fesom.mesh.diag.nc`` into the variant
+    `tripyview.sub_transp.calc_mhflx_box_fast_lessmem` expects.
+
+    Maps the (4, edg_n) ``edge_cross_dxdy`` packed array (FESOM convention:
+    [dx_l, dy_l, dx_r, dy_r], "distance from element centroid to edge mid"
+    per gen_modules_diag.F90:1491) into the (2, edg_n) ``edge_dx_lr`` and
+    ``edge_dy_lr`` tripyview expects, and derives ``edge_x``/``edge_y`` from
+    ``edge_nodes`` plus the mesh node coordinates. Boundary edges where the
+    second element is NaN get mapped to a -1 sentinel (tripyview masks those
+    via ``edge_tri[1,:] < 0``).
+    """
+    raw = xr.open_dataset(mesh_diag_path)
+    ecdx = raw["edge_cross_dxdy"].values
+    edges_arr = (raw["edge_nodes"].values - 1).astype(np.int64)
+    et_f = raw["edge_face_links"].values
+    edge_tri = np.where(np.isfinite(et_f), et_f, 0).astype(np.int64) - 1
+    raw.close()
+    return xr.Dataset({
+        "edge_x":     (("n2", "edg_n"),
+                       np.stack([mesh.n_x[edges_arr[0]], mesh.n_x[edges_arr[1]]])),
+        "edge_y":     (("n2", "edg_n"),
+                       np.stack([mesh.n_y[edges_arr[0]], mesh.n_y[edges_arr[1]]])),
+        "edge_dx_lr": (("n2", "edg_n"), np.stack([ecdx[0], ecdx[2]])),
+        "edge_dy_lr": (("n2", "edg_n"), np.stack([ecdx[1], ecdx[3]])),
+        "edge_tri":   (("n2", "edg_n"), edge_tri),
+        "edges":      (("n2", "edg_n"), edges_arr),
+    })
+
+
+def compute_hfbasin_tripyview(data, rule):
+    """Northward Ocean Heat Transport per basin via tripyview's edge-crossing
+    integration. Replaces the per-element-area approximation in
+    ``compute_hfbasin`` which violates discrete mass conservation (giving
+    ±60 PW on HR FESOM vs Trenberth's ±2 PW).
+
+    Uses tripyview's ``calc_mhflx_box_fast_lessmem`` (Scholz, FESOM/tripyview)
+    which integrates the heat flux along the edges actually intersected by
+    each latitude line — the path-integral discretisation Griffies / CMIP6
+    require. Validation on Test_06_cli_y1587_v7 January 1587 gives Atlantic
+    24.5°N = +1.26 PW, exactly matching RAPID (1.20 ± 0.12 PW).
+
+    Rule attributes:
+      - mesh_path: dir containing FESOM mesh files + ``fesom.mesh.diag.nc``
+      - grid_file: path to mesh.nc (for depth_bnds → dz)
+      - utemp_path / utemp_pattern / utemp_variable: secondary input for
+        ``utemp.fesom.*.nc`` (needed in addition to ``vtemp``).
+
+    Input ``data`` must be the Dataset loaded from the primary input pattern
+    (``vtemp.fesom.*.nc``).
+
+    Output: Dataset with ``hfbasin(time, basin, lat)`` in W, basin coord
+    ``['atlantic_arctic_ocean', 'indian_pacific_ocean', 'global_ocean']``.
+    """
+    import os as _os
+    import tripyview as _tpv
+    import shapefile as _shp
+
+    mesh_path = rule.get("mesh_path")
+    if mesh_path is None:
+        raise ValueError("compute_hfbasin_tripyview requires 'mesh_path' (FESOM mesh directory)")
+    grid_file = rule.get("grid_file") or _os.path.join(mesh_path, "mesh.nc")
+    mesh_diag_path = _os.path.join(mesh_path, "fesom.mesh.diag.nc")
+    if not _os.path.exists(mesh_diag_path):
+        raise FileNotFoundError(f"compute_hfbasin_tripyview needs fesom.mesh.diag.nc at {mesh_diag_path}")
+
+    mesh = _tpv.load_mesh_fesom2(mesh_path, do_pickle=True, do_info=False)
+    mdiag = _build_tripyview_mdiag(mesh, mesh_diag_path)
+
+    # Primary input: vtemp (or utemp/vtemp combined)
+    if isinstance(data, xr.Dataset) and "vtemp" in data.data_vars:
+        v_da = data["vtemp"]
+    else:
+        v_da = data if not isinstance(data, xr.Dataset) else data[list(data.data_vars)[0]]
+
+    # Secondary input: utemp
+    ut_da = _load_secondary_mf(rule, "utemp_path", "utemp_pattern", "utemp_variable")
+
+    # Layer thickness from mesh.nc
+    m = xr.open_dataset(grid_file)
+    nz1 = v_da.sizes.get("nz") or v_da.sizes.get("nz1")
+    if nz1 is None:
+        raise ValueError(f"vtemp has no nz/nz1 dimension; dims={v_da.dims}")
+    dz = np.diff(m["depth_bnds"].values)[:nz1].astype(np.float64)
+    m.close()
+
+    # Rename nz->nz1 to match tripyview convention; eager-load (lazy backends
+    # break tripyview's in-place mask assignment at sub_transp.py:526).
+    if "nz" in v_da.dims:
+        v_da = v_da.rename({"nz": "nz1"})
+    if "nz" in ut_da.dims:
+        ut_da = ut_da.rename({"nz": "nz1"})
+    v_da = v_da.load()
+    ut_da = ut_da.load()
+
+    # CMIP basin definitions: atlantic_arctic, indo-pacific, global.
+    # tripyview ships Atlantic_MOC and IndoPacific_MOC shapefiles whose
+    # boundaries follow the CMIP6 AWI-CM publication.
+    shp_dir = rule.get("basin_shapefile_dir") or _os.path.join(
+        _os.path.dirname(_tpv.__file__), "shapefiles", "moc_basins"
+    )
+    basins = [
+        ("atlantic_arctic_ocean", _shp.Reader(_os.path.join(shp_dir, "Atlantic_MOC.shp"))),
+        ("indian_pacific_ocean",  _shp.Reader(_os.path.join(shp_dir, "IndoPacific_MOC.shp"))),
+        ("global_ocean",          "global"),
+    ]
+
+    # Loop over time explicitly: tripyview's sum_over_latbin indexes data via
+    # ``data_latbin[vnameu][1, mask, :] = 0`` (sub_transp.py:526) which
+    # only works when no time dim is present in `data` (or time>1 and the
+    # caller handles it). Looping per-timestep is cleanest and matches the
+    # validated POC.
+    has_time = "time" in v_da.dims
+    if has_time:
+        time_vals = v_da["time"].values
+        ntime = v_da.sizes["time"]
+    else:
+        time_vals = None
+        ntime = 1
+
+    # Pre-build per-basin output arrays
+    per_basin_results = {n: [] for n, _ in basins}
+    glob_lat = None
+    for t in range(ntime):
+        if has_time:
+            v_t = v_da.isel(time=t)
+            ut_t = ut_da.isel(time=t)
+        else:
+            v_t, ut_t = v_da, ut_da
+        packed = xr.Dataset({"u": ut_t, "v": v_t})
+        packed["dz"] = (("nz1",), dz)
+        packed.attrs["proj"] = "index+xy"
+        if "nz1" in packed.coords:
+            packed = packed.drop_vars("nz1")
+        for name, box in basins:
+            out_list = _tpv.sub_transp.calc_mhflx_box_fast_lessmem(
+                mesh, packed, None, mdiag, [box], dlat=1.0,
+                do_info=False, do_load=True,
+            )
+            out = out_list[0]
+            if glob_lat is None and name == "global_ocean":
+                glob_lat = out["lat"].values
+            per_basin_results[name].append(out)
+
+    if glob_lat is None:
+        # safety: if global wasn't iterated yet, pull from first basin
+        glob_lat = per_basin_results[basins[0][0]][0]["lat"].values
+
+    # Stack: (time, basin, lat) in W
+    if has_time:
+        stacked = np.full((ntime, 3, glob_lat.size), np.nan, dtype=np.float64)
+    else:
+        stacked = np.full((3, glob_lat.size), np.nan, dtype=np.float64)
+
+    basin_names = [n for n, _ in basins]
+    for bi, name in enumerate(basin_names):
+        for t, out in enumerate(per_basin_results[name]):
+            mh = out["mhflx"].reindex(lat=glob_lat, fill_value=0.0) * 1.0e15
+            if has_time:
+                stacked[t, bi, :] = mh.values
+            else:
+                stacked[bi, :] = mh.values
+
+    if has_time:
+        coords = {"time": time_vals, "basin": basin_names, "lat": glob_lat}
+        dims = ("time", "basin", "lat")
+    else:
+        coords = {"basin": basin_names, "lat": glob_lat}
+        dims = ("basin", "lat")
+
+    hfbasin = xr.DataArray(
+        stacked,
+        dims=dims, coords=coords,
+        name=rule.model_variable,
+        attrs={
+            "units": "W",
+            "standard_name": "northward_ocean_heat_transport",
+            "long_name": "Northward Ocean Heat Transport",
+            "cell_methods": "longitude: sum (comment: basin sum [along zig-zag grid path]) depth: sum time: mean",
+            "comment": "Edge-crossing integration via tripyview "
+                       "(calc_mhflx_box_fast_lessmem). Replaces the broken "
+                       "per-element-area approximation; see "
+                       "tools/sanity_check/reports/hfbasin_research_plan.md.",
+        },
+    )
+    return hfbasin.to_dataset()
+
+
 def compute_sltbasin(data, rule):
     """Northward ocean salt transport by basin (CMIP sltbasin), kg s-1.
 

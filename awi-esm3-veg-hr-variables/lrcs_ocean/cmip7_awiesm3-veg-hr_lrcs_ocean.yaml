@@ -40,11 +40,14 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # Basin-integrated heat transport
+  # Basin-integrated heat transport. Uses tripyview's edge-crossing
+  # integration (mass-conservative); the previous compute_hfbasin used a
+  # per-element-area approximation that produced ±60 PW (~30x too big).
+  # See tools/sanity_check/reports/hfbasin_research_plan.md.
   - name: hfbasin_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
-      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_hfbasin
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_hfbasin_tripyview
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -1103,6 +1106,11 @@ rules:
         pattern: vtemp\.fesom\..*\.nc
     compound_name: ocean.hfbasin.tavg-u-hyb-sea.mon.GLB
     model_variable: hfbasin
+    # compute_hfbasin_tripyview loads utemp as a secondary input alongside
+    # the primary vtemp; both are needed for the edge-crossing integral.
+    utemp_path: *dp
+    utemp_pattern: utemp\.fesom\..*\.nc
+    utemp_variable: utemp
     pipelines:
       - hfbasin_pipeline
 
