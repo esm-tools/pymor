@@ -668,22 +668,32 @@ def integrate_over_hemisphere(data, rule):
     if horizontal_dim is None:
         raise ValueError(f"Cannot identify horizontal dim. Available: {list(data.dims)}")
 
-    # Select hemisphere nodes by index — avoids broadcasting a full mask
+    # Build a per-node weight = hemisphere_mask * cell_area, as a single
+    # 1D numpy array. Then ``(data * weight).sum(dim=horizontal_dim)`` is
+    # a pure element-wise multiply + reduction — dask-friendly, no fancy
+    # indexing, no eager load.
+    #
+    # Earlier code used ``data.isel({horizontal_dim: hemi_idx})`` with a
+    # 1.5M-element fancy index. On dask-backed daily a_ice that produces a
+    # task graph with O(time_chunks × hemi_idx) tasks, taking minutes to
+    # schedule and causing the deterministic save_dataset hang on the
+    # daily NH rules (siarea_*_nh, sisnmass_*_nh, ...). The masking
+    # approach below preserves the same math but builds a graph with
+    # one task per time chunk.
+    lat_vals = lat.values
     if hemisphere.upper() == "N":
-        hemi_idx = np.where(lat.values >= 0)[0]
+        mask = (lat_vals >= 0).astype(np.float64)
     else:
-        hemi_idx = np.where(lat.values < 0)[0]
+        mask = (lat_vals < 0).astype(np.float64)
+    weight = mask * cell_area.values  # m² where in hemi, 0 elsewhere
 
-    # Subset data and area to hemisphere only (halves memory)
-    data_hemi = data.isel({horizontal_dim: hemi_idx})
-    area_hemi = cell_area.values[hemi_idx]
-
-    # For extent: binarise to 1 where data > threshold (e.g. a_ice > 0.15)
+    # For extent: binarise data to 1 where data > threshold (e.g. a_ice > 0.15)
+    # BEFORE the multiplication. Stays dask-friendly.
     if extent_threshold is not None:
-        data_hemi = (data_hemi > float(extent_threshold)).astype(float)
+        data = (data > float(extent_threshold)).astype(np.float64)
 
-    # Integrate: sum(data * cell_area) over hemisphere nodes
-    result = (data_hemi * area_hemi).sum(dim=horizontal_dim)
+    weight_da = xr.DataArray(weight, dims=[horizontal_dim])
+    result = (data * weight_da).sum(dim=horizontal_dim)
     result.attrs = data.attrs.copy()
     result.name = data.name
     return result
