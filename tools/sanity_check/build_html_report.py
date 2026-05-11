@@ -1282,16 +1282,24 @@ def render_domain_page(domain: str,
 def render_index(all_entries: Sequence[VarEntry], label: str) -> str:
     title = f"{label} — Sanity Check Summary"
 
-    # Aggregate counts
-    counts: Dict[str, int] = defaultdict(int)
+    # Per-variable aggregate (worst-of)
+    var_counts: Dict[str, int] = defaultdict(int)
     for e in all_entries:
-        counts[e.worst_status] += 1
-    total = sum(counts.values())
+        var_counts[e.worst_status] += 1
+    total_vars = sum(var_counts.values())
 
-    def pct(n: int) -> str:
-        if total == 0:
+    # Per-file aggregate (each .nc file counts once, by its own status)
+    file_counts: Dict[str, int] = defaultdict(int)
+    for e in all_entries:
+        for r in e.files:
+            s = str(r.get("status") or "PASS").upper()
+            file_counts[s] += 1
+    total_files = sum(file_counts.values())
+
+    def pct(n: int, t: int) -> str:
+        if t == 0:
             return "—"
-        return f"{(100.0 * n / total):.1f}%"
+        return f"{(100.0 * n / t):.1f}%"
 
     # Per-realm breakdown
     by_dom: Dict[str, List[VarEntry]] = defaultdict(list)
@@ -1302,37 +1310,61 @@ def render_index(all_entries: Sequence[VarEntry], label: str) -> str:
     body: List[str] = []
     body.append(f"<h1>{html.escape(title)}</h1>")
     body.append(
-        f'<p class="subtle">{total} unique variables across all realms.</p>'
+        f'<p class="subtle">{total_vars} unique variables across '
+        f'{total_files} files. Variable status is the worst of the '
+        "files contributing to it; per-file detail is on each card.</p>"
     )
 
-    # Totals table
+    # Totals — show vars and files side by side
     body.append('<table class="summary"><thead><tr>'
-                "<th>Status</th><th>Count</th><th>Percent</th>"
+                "<th>Status</th>"
+                "<th>Variables</th><th>%</th>"
+                "<th>Files</th><th>%</th>"
                 "</tr></thead><tbody>")
     for status in ("FAIL", "WARN", "PASS", "ERROR", "NOBOUNDS"):
-        n = counts.get(status, 0)
+        nv = var_counts.get(status, 0)
+        nf = file_counts.get(status, 0)
         body.append(
-            f"<tr><td>{_pill(status)}</td><td>{n}</td><td>{pct(n)}</td></tr>"
+            f"<tr><td>{_pill(status)}</td>"
+            f"<td>{nv}</td><td>{pct(nv, total_vars)}</td>"
+            f"<td>{nf}</td><td>{pct(nf, total_files)}</td></tr>"
         )
     body.append("</tbody></table>")
 
-    # Per-realm
+    # Per-realm — split var-level and file-level too
     body.append("<h2>By realm</h2>")
     body.append('<table class="summary"><thead><tr>'
-                "<th>Domain</th><th>Total</th><th>FAIL</th><th>WARN</th>"
-                "<th>PASS</th><th>Other</th><th>Link</th>"
+                "<th rowspan=\"2\">Domain</th>"
+                "<th colspan=\"4\">Variables (worst-of)</th>"
+                "<th colspan=\"4\">Files</th>"
+                "<th rowspan=\"2\">Link</th>"
+                "</tr><tr>"
+                "<th>FAIL</th><th>WARN</th><th>PASS</th><th>Other</th>"
+                "<th>FAIL</th><th>WARN</th><th>PASS</th><th>Other</th>"
                 "</tr></thead><tbody>")
     for dom in ("atm", "oce", "ice", "veg"):
         ents = by_dom.get(dom, [])
-        d_fail = sum(1 for e in ents if e.worst_status == "FAIL")
-        d_warn = sum(1 for e in ents if e.worst_status == "WARN")
-        d_pass = sum(1 for e in ents if e.worst_status == "PASS")
-        d_other = sum(1 for e in ents
-                      if e.worst_status in ("ERROR", "NOBOUNDS"))
+        # variable counts (worst-of)
+        d_var = defaultdict(int)
+        for e in ents:
+            d_var[e.worst_status] += 1
+        d_var_other = d_var.get("ERROR", 0) + d_var.get("NOBOUNDS", 0)
+        # file counts
+        d_file = defaultdict(int)
+        for e in ents:
+            for r in e.files:
+                d_file[str(r.get("status") or "PASS").upper()] += 1
+        d_file_other = d_file.get("ERROR", 0) + d_file.get("NOBOUNDS", 0)
         body.append(
             f"<tr><td>{html.escape(DOMAIN_LABELS[dom])}</td>"
-            f"<td>{len(ents)}</td><td>{d_fail}</td><td>{d_warn}</td>"
-            f"<td>{d_pass}</td><td>{d_other}</td>"
+            f"<td>{d_var.get('FAIL',0)}</td>"
+            f"<td>{d_var.get('WARN',0)}</td>"
+            f"<td>{d_var.get('PASS',0)}</td>"
+            f"<td>{d_var_other}</td>"
+            f"<td>{d_file.get('FAIL',0)}</td>"
+            f"<td>{d_file.get('WARN',0)}</td>"
+            f"<td>{d_file.get('PASS',0)}</td>"
+            f"<td>{d_file_other}</td>"
             f'<td><a href="{dom}.html">{dom}.html</a></td></tr>'
         )
     body.append("</tbody></table>")
