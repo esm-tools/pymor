@@ -87,9 +87,9 @@ output files, so they can be used as an independent sanity check.
 | fco2nat | atmos | kg m-2 s-1 | -3e-7 | ~0 | ~3e-7 | Natural land+ocean CO2 flux; piControl globally balanced (Friedlingstein 2022 GCB); HR upwelling/forest cells reach ±3e-7 (Hoffman 2014 C4MIP) |
 | fDeforestToAtmos | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl: no deforestation |
 | fDeforestToProduct | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl: no deforestation |
-| fFire | land | kg m-2 s-1 | 0 | ~5e-11 | ~5e-8 | Natural fire dominant in piControl; active savanna pixels 1-5 kg C m-2 yr-1 (van der Werf 2017 GFED4s; Andela 2019) |
-| fFireAll | land | kg m-2 s-1 | 0 | ~5e-11 | ~5e-8 | GFED4s ~2 PgC/yr global (van der Werf 2017); active fire pixels reach 5e-8 |
-| fFireNat | land | kg m-2 s-1 | 0 | ~5e-11 | ~5e-8 | GFED4s natural-only (Randerson 2017) |
+| fFire | land | kg m-2 s-1 | 0 | ~5e-10 | ~3e-6 | piControl: PI fire higher than PD (Hamilton 2018, SIMFIRE-BLAZE PI 2-5x CMIP6 PI). Global 1.5-6 PgC/yr -> land-mean ~3e-10 to 1.3e-9. Per-pixel monthly peak: GFED5 grid-cell peaks ~1-3 kg C/m2/month at 0.25 deg; DGVMs (LPJ-GUESS BLAZE) typically overshoot 2-3x; TCo319 smaller cells concentrate further -> ceiling ~3e-6 kg/m2/s (~7.9 kg C/m2/month) |
+| fFireAll | land | kg m-2 s-1 | 0 | ~5e-10 | ~3e-6 | Same as fFire (incl. fLuc, zero in piControl). FireMIP PD 1.7-3.0 PgC/yr (Li 2019 ACP); GFED5 3.4 PgC/yr; PI plausibly elevated. Per-pixel monthly peak ceiling tracks fFire |
+| fFireNat | land | kg m-2 s-1 | 0 | ~5e-10 | ~3e-6 | Natural-only fire; in piControl ~equals fFire. SIMFIRE-BLAZE PI range; per-pixel monthly peak ceiling tracks fFire |
 | fHarvestToAtmos | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl: negligible harvest |
 | fHarvestToProduct | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl negligible harvest; LUH2 1850 |
 | fLitterFire | land | kg m-2 s-1 | 0 | ~2e-11 | ~2e-9 | Litter burning component |
