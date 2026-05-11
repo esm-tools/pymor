@@ -351,6 +351,31 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # Hemisphere-integral pipeline that ALSO applies a constant scaling
+  # after integration. Used by sisnmass (m_snow [m] × cell_area [m²] ×
+  # rho_snow [kg/m³] = kg). The unit chain is:
+  #   m_snow [m]
+  #   -> integrate_over_hemisphere -> values are m³ (volume of snow column)
+  #   -> scale_by_constant(rho_snow=330) -> values are kg (mass)
+  #      and sets scaled_units (e.g. "kg") on the array.
+  #   -> handle_unit_conversion -> kg -> kg (no-op or relabel)
+  - name: hemisphere_integral_scale_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script://$PYCMOR_HOME/examples/custom_steps.py:integrate_over_hemisphere
+      - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
 inherit:
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd
@@ -758,6 +783,14 @@ rules:
       - constant_field_pipeline
 
   # Snow mass on sea ice — Northern Hemisphere
+  #
+  # FESOM `m_snow` is snow depth (m) per node. integrate_over_hemisphere
+  # multiplies by cell_area → values become snow VOLUME (m³, mislabeled
+  # as "m" by the helper's attrs.copy). Multiplying by rho_snow gives
+  # snow MASS (kg). The handle_unit_conversion step that the pipeline
+  # added in commit e0e93ee now correctly refuses m → kg (different
+  # dimensions); the fix is to apply rho_snow inside the pipeline before
+  # the unit conversion via the new hemisphere_integral_scale_pipeline.
   - name: sisnmass_north
     inputs:
       - path: *dp
@@ -765,8 +798,10 @@ rules:
     compound_name: seaIce.sisnmass.tavg-u-hm-u.mon.NH
     model_variable: m_snow
     hemisphere: "N"
+    scale_factor: 330.0       # rho_snow, kg/m³ (matches FESOM default)
+    scaled_units: "kg"
     pipelines:
-      - hemisphere_integral_pipeline
+      - hemisphere_integral_scale_pipeline
 
   - name: sisnmass_south
     inputs:
@@ -775,8 +810,10 @@ rules:
     compound_name: seaIce.sisnmass.tavg-u-hm-u.mon.SH
     model_variable: m_snow
     hemisphere: "S"
+    scale_factor: 330.0
+    scaled_units: "kg"
     pipelines:
-      - hemisphere_integral_pipeline
+      - hemisphere_integral_scale_pipeline
 
   # ============================================================
   # SImon — melt ponds (use_meltponds=.true.)
@@ -1151,6 +1188,8 @@ rules:
     compound_name: seaIce.ts.tavg-u-hxy-si.day.GLB
     model_variable: ist
 
+  # Same rho_snow scaling as sisnmass_north / sisnmass_south above —
+  # see those rules for rationale.
   - name: sisnmass_north_day
     inputs:
       - path: *dp
@@ -1158,8 +1197,10 @@ rules:
     compound_name: seaIce.sisnmass.tavg-u-hm-u.day.NH
     model_variable: m_snow
     hemisphere: "N"
+    scale_factor: 330.0
+    scaled_units: "kg"
     pipelines:
-      - hemisphere_integral_pipeline
+      - hemisphere_integral_scale_pipeline
 
   - name: sisnmass_south_day
     inputs:
@@ -1168,6 +1209,8 @@ rules:
     compound_name: seaIce.sisnmass.tavg-u-hm-u.day.SH
     model_variable: m_snow
     hemisphere: "S"
+    scale_factor: 330.0
+    scaled_units: "kg"
     pipelines:
-      - hemisphere_integral_pipeline
+      - hemisphere_integral_scale_pipeline
 
