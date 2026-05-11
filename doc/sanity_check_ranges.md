@@ -36,11 +36,11 @@ output files, so they can be used as an independent sanity check.
 | cLand | land | kg m-2 | 0 | ~25 | ~80 | Total land C ~2000 PgC / land area; IPCC AR6 carbon cycle |
 | cLeaf | land | kg m-2 | 0 | ~0.3 | ~2 | Leaf C; tropical forest LAI; TRENDY |
 | cli | atmos | kg kg-1 | 0 | ~1e-6 | ~1e-3 | Cloud ice mixing ratio; ERA5/CMIP |
-| cLitter | land | kg m-2 | 0 | ~2 | ~15 | Litter pool; IPCC AR6 |
-| cLitterCwd | land | kg m-2 | 0 | ~1 | ~10 | CWD stocks; Pan et al. 2011 |
-| cLitterLut | land | kg m-2 | 0 | ~2 | ~15 | Per-tile litter; LUH2 |
-| cLitterSubSurf | land | kg m-2 | 0 | ~1 | ~8 | Belowground litter subset |
-| cLitterSurf | land | kg m-2 | 0 | ~1 | ~8 | Aboveground litter subset |
+| cLitter | land | kg m-2 | 0 | ~2 | ~80 | Total litter (surface + sub-surface + CWD). 32 km cells in W. Siberia / Hudson Bay / Indonesia peatlands approach Lavoie 2021 organic-horizon mean (22-66 kg C/m2); add CWD fraction -> ~80 ceiling |
+| cLitterCwd | land | kg m-2 | 0 | ~1 | ~15 | CWD; tropical old-growth plot stocks 4-10 kg C/m2 (Pfeifer 2015); Pan 2011 global ~1.8 |
+| cLitterLut | land | kg m-2 | 0 | ~2 | ~80 | Per-tile litter; tracks cLitter |
+| cLitterSubSurf | land | kg m-2 | 0 | ~1 | ~30 | Belowground litter; fine-root + buried duff in cold/saturated cells |
+| cLitterSurf | land | kg m-2 | 0 | ~1 | ~70 | Aboveground/surface litter. 32 km peatland-dominant cells (Hudson Bay Lowlands, W. Siberia) approach Lavoie 2021 organic-horizon range (22-66 kg C/m2) |
 | clivi | atmos | kg m-2 | 0 | ~0.02 | ~1 | Ice water path; CloudSat/CERES (mon-cadence default) |
 | clivi_day | atmos | kg m-2 | 0 | ~0.02 | ~10 | Deep-convective anvil IWP (Tian 2018 JGR Atmos) |
 | clt | atmos | % | 0 | ~66 | 100 | ISCCP global mean cloud cover ~66% |
@@ -51,16 +51,16 @@ output files, so they can be used as an independent sanity check.
 | cOther | land | kg m-2 | 0 | ~0.2 | ~3 | Reproductive/other tissues small fraction |
 | cProduct | land | kg m-2 | 0 | ~0 | ~0 | piControl has no land-use products; ~0 |
 | cProductLut | land | kg m-2 | 0 | ~0 | ~0 | piControl LUC products ~0 |
-| cRoot | land | kg m-2 | 0 | ~1 | ~10 | Root C; Jackson 1997 |
+| cRoot | land | kg m-2 | 0 | ~1 | ~15 | Root C; Jackson 1997 global root distributions; tropical 32 km cells approach 10-15 |
 | cropFrac | land | % | 0 | ~5 | 100 | 1850 cropland ~5% global land; LUH2 |
 | cropFracC3 | land | % | 0 | ~4 | 100 | LUH2 1850: most cropland is C3 (wheat/oats/rice/barley); ~80% of cropFrac globally |
 | cropFracC4 | land | % | 0 | ~1 | 100 | LUH2 1850: minor C4 share (maize/sorghum/millet) ~20% of cropFrac globally |
-| cSoil | land | kg m-2 | 0 | ~15 | ~100 | Soil C HWSD; peatlands high |
-| cSoilLut | land | kg m-2 | 0 | ~15 | ~100 | Per-tile soil C |
-| cSoilPools | land | kg m-2 | 0 | ~5 | ~50 | Per-pool C (active/slow/passive); sum equals cSoil ~15; CMIP6 partition |
+| cSoil | land | kg m-2 | 0 | ~15 | ~200 | Soil C; HWSD mineral soils 5-20; Lavoie 2021 peat columns 62-172; Hugelius 2014 permafrost circumpolar peaks |
+| cSoilLut | land | kg m-2 | 0 | ~15 | ~200 | Per-tile soil C; tracks cSoil |
+| cSoilPools | land | kg m-2 | 0 | ~5 | ~100 | Per-pool C (active/slow/passive); sum equals cSoil; passive pool dominates in deep peat |
 | cStem | land | kg m-2 | 0 | ~3 | ~25 | Stem C; tropical forests |
-| cVeg | land | kg m-2 | 0 | ~5 | ~35 | Vegetation C; IPCC AR6 ~450 PgC |
-| cVegLut | land | kg m-2 | 0 | ~5 | ~35 | Per-tile vegetation C |
+| cVeg | land | kg m-2 | 0 | ~5 | ~30 | Vegetation C (AGB+roots). Saatchi 2011 pan-tropical AGB max ~25 kg DM/m2 ≈ 11 kg C/m2 at plot scale; 32 km cells smooth to ~20-25. DGVMs commonly overshoot in tropics (WARN expected) |
+| cVegLut | land | kg m-2 | 0 | ~5 | ~30 | Per-tile vegetation C; tracks cVeg |
 | dcw | land | kg m-2 | -5 | ~0 | 5 | Change in interception; near zero annual mean |
 | deptho | ocean | m | 0 | ~3700 | ~11000 | Mean ocean depth; Mariana trench max |
 | dgw | land | kg m-2 | -50 | ~0 | 50 | Annual groundwater change ~0 in steady state |
