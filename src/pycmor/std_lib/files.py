@@ -490,37 +490,74 @@ def _is_dask_backed(ds):
 
 
 def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
-    """Wrapper around ``to_netcdf`` that works around the
+    """Wrapper around ``to_netcdf`` that:
+
+    1. (Fix #3 of PLAN_save_dataset_reliability / FORENSIC_lrcs_seaice)
+       Dispatches the **lazy compute** to the LocalCluster workers via
+       ``Client.compute(..., sync=True)`` so the heavy regrid/mask/
+       arithmetic happens on workers, not in the driver process.
+       After compute, the result is an eager numpy-backed Dataset
+       which is written via the regular ``to_netcdf`` path — no dask
+       graph, no HLG pickle bug.
+
+       Without this, every concurrent rule's full lazy graph (plus its
+       intermediate buffers) accumulates in driver RSS when
+       ``netcdf_write_scheduler: synchronous`` is set (cli16: 87 GiB
+       driver RSS at 4 concurrent OIFS-regrid rules → cascade failure).
+
+    2. Falls back to the legacy synchronous path
+       (``to_netcdf(compute=False)`` → ``delayed.compute()`` under
+       ``scheduler="synchronous"``) when no Client is active.
+
+    3. For eager input (numpy-backed): direct ``to_netcdf`` — no
+       dask graph is built, no serialization happens.
+
+    Historical context for the synchronous workaround:
     ``TypeError: Could not serialize object of type _HLGExprSequence``
-    failure (root cause: ``cannot pickle '_thread.lock' object``) seen
-    when a Prefect+DaskTaskRunner-backed distributed.Client is active
-    and xarray dispatches the array-store dask graph through it.
+    /  ``cannot pickle '_thread.lock' object`` — the netCDF4 store's
+    writer-lock isn't picklable, so dispatching the array-store dask
+    graph through a Client failed. The new ``compute-then-write``
+    pattern dodges that bug entirely because the writer is never in
+    the graph that gets shipped to workers; only the compute is.
 
-    When the input is dask-backed: call ``to_netcdf(compute=False)`` to
-    get a Delayed without dispatching to the Client, then ``compute()``
-    it under ``dask.config.set(scheduler=...)`` so the graph runs
-    in-process (no inter-worker pickling).
-
-    When the input is eager (numpy-backed): just call ``to_netcdf``.
-    No dask graph is built, no serialization happens.
-
-    Alternative considered: ``lock=False`` at open time (xarray docs;
-    pydata/xarray#3961, #8442) avoids putting the lock in the graph
-    in the first place. We did not adopt that here because
-    (a) it requires a thread-safe HDF5 build (we have one on Levante),
-    (b) it shifts thread-safety responsibility to the caller, and
-    (c) the present approach works without changing input-loading code.
-    Worth revisiting in a future round if save-side perf becomes a
-    bottleneck.
-
-    See: dask/distributed#780, pydata/xarray#4406, dask/dask#10238.
+    See: dask/distributed#780, pydata/xarray#4406, dask/dask#10238,
+    FORENSIC_lrcs_seaice_failure.md §"Fix #3", PLAN_save_dataset_reliability.md.
     """
-    if _is_dask_backed(ds_or_da):
-        delayed = ds_or_da.to_netcdf(*args, compute=False, **kwargs)
-        with dask.config.set(scheduler=scheduler):
-            delayed.compute()
-        return None
-    return ds_or_da.to_netcdf(*args, **kwargs)
+    if not _is_dask_backed(ds_or_da):
+        # Eager input: no dask graph, no serialization. Just write.
+        return ds_or_da.to_netcdf(*args, **kwargs)
+
+    # Try the Fix #3 path: gather data via workers, then write eagerly.
+    use_worker_compute = os.environ.get("PYCMOR_WORKER_COMPUTE", "auto").lower()
+    if use_worker_compute != "off":
+        try:
+            from dask.distributed import get_client
+            client = get_client()
+        except (ImportError, ValueError):
+            client = None
+        if client is not None:
+            try:
+                eager = client.compute(ds_or_da, sync=True)
+                # Eager Dataset/DataArray now backed by numpy -- the
+                # regular to_netcdf path doesn't build a dask graph.
+                eager.to_netcdf(*args, **kwargs)
+                return None
+            except Exception as exc:
+                logger.warning(
+                    f"_safe_to_netcdf: Client.compute path failed "
+                    f"({type(exc).__name__}: {exc}); falling back to "
+                    f"synchronous scheduler. Set PYCMOR_WORKER_COMPUTE=off "
+                    f"to skip this path entirely."
+                )
+
+    # Legacy / fallback: build the lazy write graph and execute it
+    # in-process via the synchronous scheduler. Driver-bytes-through
+    # behaviour, but doesn't OOM the worker pool and survives the
+    # HLG pickle bug.
+    delayed = ds_or_da.to_netcdf(*args, compute=False, **kwargs)
+    with dask.config.set(scheduler=scheduler):
+        delayed.compute()
+    return None
 
 
 def _is_tmpfs(path):
@@ -1170,17 +1207,49 @@ def _save_dataset_with_native_timespan(
     # synchronous scheduler — that runs in-process and avoids serialization.
     _write_sched = _get_write_scheduler(rule)
     enc = chunk_encoding if chunk_encoding else None
-    if is_dask:
-        delayed = xr.save_mfdataset(
-            datasets, paths, encoding=enc, compute=False, **extra_kwargs
-        )
-        with dask.config.set(scheduler=_write_sched):
-            delayed.compute()
-    else:
-        xr.save_mfdataset(
-            datasets, paths, encoding=enc, **extra_kwargs
-        )
+    _save_mfdataset_worker_or_sync(datasets, paths, enc, extra_kwargs,
+                                   is_dask, _write_sched)
     return da
+
+
+def _save_mfdataset_worker_or_sync(datasets, paths, enc, extra_kwargs,
+                                   is_dask, scheduler):
+    """Multi-file save with the same worker-side compute path as
+    ``_safe_to_netcdf`` (Fix #3): compute the lazy datasets on the
+    LocalCluster workers via ``Client.compute``, then write the eager
+    results via ``xr.save_mfdataset``. Falls back to the legacy
+    ``compute=False`` + synchronous-scheduler path when no Client is
+    active or the worker path fails."""
+    if not is_dask:
+        xr.save_mfdataset(datasets, paths, encoding=enc, **extra_kwargs)
+        return
+
+    use_worker_compute = os.environ.get("PYCMOR_WORKER_COMPUTE", "auto").lower()
+    if use_worker_compute != "off":
+        try:
+            from dask.distributed import get_client
+            client = get_client()
+        except (ImportError, ValueError):
+            client = None
+        if client is not None:
+            try:
+                # Compute each lazy dataset on workers; gather eagerly.
+                eager_datasets = list(client.compute(datasets, sync=True))
+                xr.save_mfdataset(eager_datasets, paths, encoding=enc,
+                                  **extra_kwargs)
+                return
+            except Exception as exc:
+                logger.warning(
+                    f"_save_mfdataset: Client.compute path failed "
+                    f"({type(exc).__name__}: {exc}); falling back to "
+                    f"synchronous scheduler."
+                )
+
+    delayed = xr.save_mfdataset(
+        datasets, paths, encoding=enc, compute=False, **extra_kwargs
+    )
+    with dask.config.set(scheduler=scheduler):
+        delayed.compute()
 
 
 def _calculate_netcdf_chunks(ds: xr.Dataset, rule) -> dict:
@@ -1631,18 +1700,9 @@ def _save_dataset_impl(da: xr.DataArray, rule):
                             _ds[time_label].attrs.pop("units", None)
                             _ds[time_label].encoding["units"] = _units
             # See the parallel-mode HLG-pickling note above the other
-            # save_mfdataset call site. Same workaround applies here.
-            if is_dask:
-                _write_sched = _get_write_scheduler(rule)
-                delayed = xr.save_mfdataset(
-                    datasets, paths, encoding=final_encoding,
-                    compute=False, **extra_kwargs
-                )
-                with dask.config.set(scheduler=_write_sched):
-                    delayed.compute()
-            else:
-                xr.save_mfdataset(
-                    datasets, paths, encoding=final_encoding,
-                    **extra_kwargs,
-                )
+            # save_mfdataset call site. Same Fix #3 worker-compute path
+            # applied via the shared helper.
+            _write_sched = _get_write_scheduler(rule)
+            _save_mfdataset_worker_or_sync(datasets, paths, final_encoding,
+                                           extra_kwargs, is_dask, _write_sched)
             return da
