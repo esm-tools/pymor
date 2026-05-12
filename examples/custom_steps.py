@@ -4123,6 +4123,168 @@ def compute_hfbasin_tripyview(data, rule):
     return hfbasin.to_dataset()
 
 
+def compute_sltbasin_tripyview(data, rule):
+    """Northward Ocean Salt Transport per basin via tripyview's edge-crossing
+    integration. Sibling of ``compute_hfbasin_tripyview``; replaces
+    ``compute_sltbasin`` which used the same per-element-area approximation
+    that gave ±60 PW on hfbasin (here it gave ±45 GgN/s on sltbasin).
+
+    FESOM emits ``usalt``/``vsalt`` = v·S (m/s × psu), analogous to
+    ``utemp``/``vtemp`` = v·T (m/s × degC) — same edge-crossing physics,
+    different scalar field. We reuse tripyview's
+    ``calc_mhflx_box_fast_lessmem`` with usalt/vsalt as the u/v inputs,
+    then post-process to land in CMIP ``kg s-1``:
+
+      tripyview output (using salt as if it were heat):
+        Q_PW = rho0 * cp * 1e-15 * (-1) * ∫∫ vsalt·dz·dx
+
+      we want CMIP sltbasin:
+        Q_kg_s = rho0 * 1e-3 * ∫∫ vsalt·dz·dx        (psu → mass fraction)
+
+      ratio: Q_kg_s / Q_PW = -1e-3 / (cp * 1e-15) = -1e+12 / 3850
+                            ≈ -2.5974e+8 kg/s per PW
+
+    Rule attributes:
+      - mesh_path: dir containing FESOM mesh + ``fesom.mesh.diag.nc``
+      - grid_file: path to mesh.nc (for depth_bnds)
+      - usalt_path / usalt_pattern / usalt_variable: secondary input
+
+    Primary input ``data`` is the Dataset from the ``vsalt.fesom.*.nc``
+    pattern.
+
+    Output: Dataset with ``sltbasin(time, basin, lat)`` in kg s-1, basin
+    coord ``['atlantic_arctic_ocean', 'indian_pacific_ocean', 'global_ocean']``.
+
+    See PLAN/research at tools/sanity_check/reports/hfbasin_research_plan.md
+    for the underlying tripyview/Griffies path-integral discretisation.
+    """
+    import os as _os
+    import tripyview as _tpv
+    import shapefile as _shp
+
+    mesh_path = rule.get("mesh_path")
+    if mesh_path is None:
+        raise ValueError("compute_sltbasin_tripyview requires 'mesh_path'")
+    grid_file = rule.get("grid_file") or _os.path.join(mesh_path, "mesh.nc")
+    mesh_diag_path = _os.path.join(mesh_path, "fesom.mesh.diag.nc")
+    if not _os.path.exists(mesh_diag_path):
+        raise FileNotFoundError(
+            f"compute_sltbasin_tripyview needs fesom.mesh.diag.nc at {mesh_diag_path}"
+        )
+
+    mesh = _tpv.load_mesh_fesom2(mesh_path, do_pickle=True, do_info=False)
+    mdiag = _build_tripyview_mdiag(mesh, mesh_diag_path)
+
+    # Primary input: vsalt
+    if isinstance(data, xr.Dataset) and "vsalt" in data.data_vars:
+        v_da = data["vsalt"]
+    else:
+        v_da = data if not isinstance(data, xr.Dataset) else data[list(data.data_vars)[0]]
+
+    # Secondary input: usalt
+    ut_da = _load_secondary_mf(rule, "usalt_path", "usalt_pattern", "usalt_variable")
+
+    m = xr.open_dataset(grid_file)
+    nz1 = v_da.sizes.get("nz") or v_da.sizes.get("nz1")
+    if nz1 is None:
+        raise ValueError(f"vsalt has no nz/nz1 dimension; dims={v_da.dims}")
+    dz = np.diff(m["depth_bnds"].values)[:nz1].astype(np.float64)
+    m.close()
+
+    if "nz" in v_da.dims:
+        v_da = v_da.rename({"nz": "nz1"})
+    if "nz" in ut_da.dims:
+        ut_da = ut_da.rename({"nz": "nz1"})
+    v_da = v_da.load()
+    ut_da = ut_da.load()
+
+    shp_dir = rule.get("basin_shapefile_dir") or _os.path.join(
+        _os.path.dirname(_tpv.__file__), "shapefiles", "moc_basins"
+    )
+    basins = [
+        ("atlantic_arctic_ocean", _shp.Reader(_os.path.join(shp_dir, "Atlantic_MOC.shp"))),
+        ("indian_pacific_ocean",  _shp.Reader(_os.path.join(shp_dir, "IndoPacific_MOC.shp"))),
+        ("global_ocean",          "global"),
+    ]
+
+    has_time = "time" in v_da.dims
+    if has_time:
+        time_vals = v_da["time"].values
+        ntime = v_da.sizes["time"]
+    else:
+        time_vals = None
+        ntime = 1
+
+    per_basin_results = {n: [] for n, _ in basins}
+    glob_lat = None
+    for t in range(ntime):
+        if has_time:
+            v_t = v_da.isel(time=t)
+            ut_t = ut_da.isel(time=t)
+        else:
+            v_t, ut_t = v_da, ut_da
+        packed = xr.Dataset({"u": ut_t, "v": v_t})
+        packed["dz"] = (("nz1",), dz)
+        packed.attrs["proj"] = "index+xy"
+        if "nz1" in packed.coords:
+            packed = packed.drop_vars("nz1")
+        for name, box in basins:
+            out_list = _tpv.sub_transp.calc_mhflx_box_fast_lessmem(
+                mesh, packed, None, mdiag, [box], dlat=1.0,
+                do_info=False, do_load=True,
+            )
+            out = out_list[0]
+            if glob_lat is None and name == "global_ocean":
+                glob_lat = out["lat"].values
+            per_basin_results[name].append(out)
+
+    if glob_lat is None:
+        glob_lat = per_basin_results[basins[0][0]][0]["lat"].values
+
+    # Post-process: tripyview returned PW-as-if-heat. Convert to kg/s salt.
+    # See docstring for the derivation: factor = -1e+12 / cp = -2.5974e+8.
+    _CP = 3850.0
+    factor = -1e+12 / _CP
+
+    if has_time:
+        stacked = np.full((ntime, 3, glob_lat.size), np.nan, dtype=np.float64)
+    else:
+        stacked = np.full((3, glob_lat.size), np.nan, dtype=np.float64)
+
+    basin_names = [n for n, _ in basins]
+    for bi, name in enumerate(basin_names):
+        for t, out in enumerate(per_basin_results[name]):
+            mh = out["mhflx"].reindex(lat=glob_lat, fill_value=0.0) * factor
+            if has_time:
+                stacked[t, bi, :] = mh.values
+            else:
+                stacked[bi, :] = mh.values
+
+    if has_time:
+        coords = {"time": time_vals, "basin": basin_names, "lat": glob_lat}
+        dims = ("time", "basin", "lat")
+    else:
+        coords = {"basin": basin_names, "lat": glob_lat}
+        dims = ("basin", "lat")
+
+    sltbasin = xr.DataArray(
+        stacked,
+        dims=dims, coords=coords,
+        name=rule.model_variable,
+        attrs={
+            "units": "kg s-1",
+            "standard_name": "northward_ocean_salt_transport",
+            "long_name": "Northward Ocean Salt Transport",
+            "cell_methods": "longitude: sum (comment: basin sum [along zig-zag grid path]) depth: sum time: mean",
+            "comment": "Edge-crossing integration via tripyview "
+                       "(calc_mhflx_box_fast_lessmem with vsalt/usalt). "
+                       "Replaces the broken per-element-area approximation; "
+                       "see tools/sanity_check/reports/hfbasin_research_plan.md.",
+        },
+    )
+    return sltbasin.to_dataset()
+
+
 def compute_sltbasin(data, rule):
     """Northward ocean salt transport by basin (CMIP sltbasin), kg s-1.
 

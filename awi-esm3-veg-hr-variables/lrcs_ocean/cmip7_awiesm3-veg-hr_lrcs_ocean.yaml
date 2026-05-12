@@ -55,11 +55,13 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
-  # Basin-integrated salt transport
+  # Basin-integrated salt transport — same edge-crossing fix as hfbasin
+  # (see hfbasin_pipeline). The previous compute_sltbasin used the
+  # per-element-area approximation that produced ±45 GgN/s (~45x too big).
   - name: sltbasin_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
-      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sltbasin
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sltbasin_tripyview
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -1127,5 +1129,10 @@ rules:
         pattern: vsalt\.fesom\..*\.nc
     compound_name: ocean.sltbasin.tavg-u-hyb-sea.mon.GLB
     model_variable: sltbasin
+    # compute_sltbasin_tripyview loads usalt as a secondary input alongside
+    # the primary vsalt; both are needed for the edge-crossing integral.
+    usalt_path: *dp
+    usalt_pattern: usalt\.fesom\..*\.nc
+    usalt_variable: usalt
     pipelines:
       - sltbasin_pipeline
