@@ -142,8 +142,8 @@ output files, so they can be used as an independent sanity check.
 | hfss_day | atmos | W m-2 | -500 | ~20 | 500 | Daily SH extreme |
 | hfss_3hr | atmos | W m-2 | -2500 | ~20 | 700 | 3-hourly SH extreme — extreme cold-air outbreaks |
 | hfss_1hr | atmos | W m-2 | -3000 | ~20 | 900 | Hourly SH extreme — Sahara/Arabia summer noon |
-| hfx | ocean | W | -2e15 | ~0 | 2e15 | Zonal heat transport; Trenberth |
-| hfy | ocean | W | -2e15 | ~0 | 2e15 | Meridional heat transport peak ~2 PW |
+| hfx | ocean | W | -5e14 | ~0 | 5e14 | Per-CELL zonal heat transport (not basin-integrated like hfbasin); HR FESOM WBC cells reach ±0.5 PW; the ±2 PW Trenberth-scale bound is the basin-integrated benchmark, not appropriate per-cell |
+| hfy | ocean | W | -5e14 | ~0 | 5e14 | Per-CELL meridional heat transport; see hfx |
 | hur | atmos | % | 0 | ~60 | 100 | RH profile; ERA5 |
 | hurs | atmos | % | 10 | ~75 | 100 | Near-surface RH; ERA5 |
 | hus | atmos | 1 | ~1e-6 | ~3e-3 | ~0.025 | Specific humidity; tropics saturated ~25 g/kg |
