@@ -2142,8 +2142,83 @@ def _resolve_year(rule):
     return None
 
 
+import functools as _functools
+
+
+@_functools.lru_cache(maxsize=16)
+def _load_secondary_mf_cached(path, pattern, variable_name, year_start, year_end,
+                              skip_filter, time_dimname):
+    """Inner cache for ``_load_secondary_mf``. Keyed on the resolved
+    lookup tuple (not on the rule object, which isn't hashable). The
+    returned DataArray must not be mutated by callers — wrap it with
+    ``.copy(deep=False)`` before handing to downstream steps.
+
+    LRU eviction is automatic at ``maxsize`` entries; evicted entries
+    drop their DataArray reference and Python GC closes the underlying
+    file when the last reference goes away. The expected working-set
+    size per cmor flow is well under 16 (a tier typically has 1-3
+    distinct secondary inputs shared across many rules).
+
+    Thread safety: CPython's ``lru_cache`` uses RLock; concurrent
+    cache-miss callers for the same key serialise — only one
+    ``open_mfdataset`` call per key.
+
+    See ``FORENSIC_lrcs_seaice_failure.md`` §"Fix #2" for the
+    motivation (a_ice was being loaded 7× per cli16 batch).
+    """
+    regex = _re.compile(pattern)
+    files = sorted(_os.path.join(path, f) for f in _os.listdir(path) if regex.fullmatch(f))
+    if not files:
+        raise FileNotFoundError(f"No files matching regex {pattern!r} in {path}")
+    if year_start is not None and year_end is not None and not skip_filter:
+        from pycmor.core.gather_inputs import filter_files_by_year_range
+
+        files = filter_files_by_year_range(files, year_start, year_end)
+        if not files:
+            raise FileNotFoundError(
+                f"No files matching {pattern!r} in {path} fall within "
+                f"year range {year_start}–{year_end}"
+            )
+    ds = xr.open_mfdataset(files, use_cftime=True)
+    if time_dimname and time_dimname in ds.dims and "time" not in ds.dims:
+        ds = ds.rename({time_dimname: "time"})
+    for _drop_var in ["time_counter", "time_centered", "time_counter_bounds", "time_centered_bounds"]:
+        if _drop_var in ds.coords and _drop_var != "time":
+            ds = ds.drop_vars(_drop_var, errors="ignore")
+    if variable_name and variable_name in ds:
+        result = ds[variable_name]
+    else:
+        _BOUNDS_SUFFIXES = ("_bounds", "_bnds", "_bounds_lat", "_bounds_lon")
+        data_vars = [
+            v for v in ds.data_vars
+            if v not in ds.coords
+            and not any(str(v).endswith(s) for s in _BOUNDS_SUFFIXES)
+            and "axis_nbounds" not in ds[v].dims
+            and "nvertex" not in ds[v].dims
+        ]
+        if not data_vars:
+            raise ValueError(
+                f"No data variables found in files matching {pattern!r} in {path}"
+            )
+        result = ds[data_vars[0]]
+    return result
+
+
+def _load_secondary_mf_clear_cache():
+    """Drop all cached secondary inputs. Call between cmor flows to
+    release file handles. Within a single flow the cache is
+    intentionally kept across rule batches."""
+    _load_secondary_mf_cached.cache_clear()
+
+
 def _load_secondary_mf(rule, path_key, pattern_key, variable_key):
     """Load a secondary input variable from a glob pattern of files.
+
+    Cached at module level keyed on the resolved (path, pattern,
+    variable, year-range, skip-filter, time-dim-name) tuple — repeat
+    calls within a flow that need the same data return without
+    reopening the files. Returns a shallow ``.copy()`` so downstream
+    rename/select operations don't mutate the cached array.
 
     Parameters
     ----------
@@ -2164,16 +2239,37 @@ def _load_secondary_mf(rule, path_key, pattern_key, variable_key):
     pattern = rule.get(pattern_key)
     if path is None or pattern is None:
         raise ValueError(f"Rule must specify '{path_key}' and '{pattern_key}'")
-    # Patterns are regex (consistent with pycmor's gather_inputs), matched against filenames in `path`.
+    var_name = rule.get(variable_key)
+    year_start = rule.get("year_start")
+    year_end = rule.get("year_end")
+    skip_filter = bool(rule.get("skip_input_year_filter", False))
+    time_dimname = rule.get("time_dimname")
+    da = _load_secondary_mf_cached(
+        path, pattern, var_name,
+        year_start, year_end, skip_filter, time_dimname,
+    )
+    # Shallow copy so callers can rename / drop / slice without
+    # mutating the cache entry. dask graph stays shared with the
+    # cached entry — no data copy.
+    return da.copy(deep=False)
+
+
+# Legacy path retained below for any callers still using the un-cached
+# semantics; switching them to the new path will be a follow-up cleanup.
+def _load_secondary_mf_uncached(rule, path_key, pattern_key, variable_key):
+    """Pre-cache implementation of ``_load_secondary_mf``. Kept for
+    reference / migration; new code should call ``_load_secondary_mf``.
+    """
+    path = rule.get(path_key)
+    pattern = rule.get(pattern_key)
+    if path is None or pattern is None:
+        raise ValueError(f"Rule must specify '{path_key}' and '{pattern_key}'")
     regex = _re.compile(pattern)
     files = sorted(_os.path.join(path, f) for f in _os.listdir(path) if regex.fullmatch(f))
     if not files:
         raise FileNotFoundError(f"No files matching regex {pattern!r} in {path}")
     year_start = rule.get("year_start")
     year_end = rule.get("year_end")
-    # Rules with centennial input4MIPs forcing files can opt out via
-    # ``skip_input_year_filter: true``. Same gate as gather_inputs.py's
-    # primary path (R2 in PLAN_cli_override_regressions.md).
     skip_filter = rule.get("skip_input_year_filter", False)
     if year_start is not None and year_end is not None and not skip_filter:
         from pycmor.core.gather_inputs import filter_files_by_year_range

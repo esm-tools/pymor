@@ -46,6 +46,39 @@ DIMENSIONLESS_MAPPING_TABLE = files("pycmor.data").joinpath("dimensionless_mappi
 dimensionless fractional values (e.g. 0.001 --> g/kg)"""
 
 
+def _resolve_throttle_caps(pymor_cfg):
+    """Resolve per-throttle-group submission caps from env + yaml.
+
+    Resolution order:
+    1. ``PYCMOR_THROTTLE_CAPS=group1:N1,group2:N2`` env var
+    2. ``throttle_caps`` key in the user yaml ``pymor_cfg`` (a dict)
+    3. defaults to an empty dict — any encountered group falls back
+       to the hardcoded default in the batch maker (cap=2).
+
+    Returns ``{group_name: cap_int}``.
+    """
+    caps = {}
+    if pymor_cfg:
+        yaml_caps = pymor_cfg.get("throttle_caps") if hasattr(pymor_cfg, "get") else None
+        if isinstance(yaml_caps, dict):
+            for k, v in yaml_caps.items():
+                try:
+                    caps[str(k)] = int(v)
+                except (TypeError, ValueError):
+                    continue
+    env_val = os.environ.get("PYCMOR_THROTTLE_CAPS", "")
+    for entry in env_val.split(","):
+        entry = entry.strip()
+        if ":" not in entry:
+            continue
+        k, _, v = entry.partition(":")
+        try:
+            caps[k.strip()] = int(v.strip())
+        except (TypeError, ValueError):
+            continue
+    return caps
+
+
 class CMORizer:
     _SUPPORTED_CMOR_VERSIONS = ("CMIP6", "CMIP7")
     """tuple : Supported CMOR versions."""
@@ -968,27 +1001,86 @@ class CMORizer:
         tpw = _int_or_default("dask_threads_per_worker", 1)
         max_in_flight = max(1, n_workers * tpw)
 
+        # Per-throttle-group concurrency caps. A pipeline-level
+        # ``throttle_group: <name>`` declaration (see ``Pipeline.__init__``)
+        # joins this group; the group's cap limits how many of its rules
+        # can be in the same submission batch.
+        #
+        # Resolution: PYCMOR_THROTTLE_CAPS env var > inherit yaml
+        # ``throttle_caps`` > default cap of 2 for any encountered group.
+        #
+        # Motivation: lrcs_seaice's 7-rule OIFS-regrid family ran 4 at
+        # once on the driver process, hitting 87 GiB RSS and cascading
+        # rule failures. See FORENSIC_lrcs_seaice_failure.md.
+        throttle_caps = _resolve_throttle_caps(self._pymor_cfg)
+        logger.info(
+            f"Throttle caps (per-group rule submission limit): {throttle_caps or 'none'}"
+        )
+
+        def _rule_throttle_group(rule):
+            for pl in getattr(rule, "pipelines", None) or []:
+                grp = getattr(pl, "throttle_group", None)
+                if grp:
+                    return grp
+            return None
+
+        def _make_batches(rules):
+            """Yield batches of up to ``max_in_flight`` rules each, with
+            no batch containing more than ``throttle_caps[group]`` rules
+            from the same throttle group (default cap 2 for any
+            encountered group)."""
+            default_cap = 2
+            pending = list(rules)
+            while pending:
+                batch = []
+                group_count = {}
+                remaining = []
+                for rule in pending:
+                    if len(batch) >= max_in_flight:
+                        remaining.append(rule)
+                        continue
+                    grp = _rule_throttle_group(rule)
+                    if grp is not None:
+                        cap = throttle_caps.get(grp, default_cap)
+                        if group_count.get(grp, 0) >= cap:
+                            remaining.append(rule)
+                            continue
+                        group_count[grp] = group_count.get(grp, 0) + 1
+                    batch.append(rule)
+                if not batch:
+                    # Should not happen with sensible caps (cap > 0 and
+                    # at least one rule with no/un-saturated group), but
+                    # guard against infinite loop.
+                    raise RuntimeError(
+                        f"Cannot make progress: {len(pending)} rules deferred "
+                        f"indefinitely. Check throttle caps {throttle_caps} "
+                        f"vs max_in_flight={max_in_flight}."
+                    )
+                yield batch
+                pending = remaining
+
         @flow(name="CMORizer Process")
         def dynamic_flow():
             rules = list(self.rules)
             n = len(rules)
             logger.info(
-                f"Submitting rules in batches of {max_in_flight} "
+                f"Submitting rules in batches of up to {max_in_flight} "
                 f"(n_workers={n_workers} * tpw={tpw}); total rules={n}"
             )
             rule_results = []
-            for batch_start in range(0, n, max_in_flight):
-                batch_end = min(batch_start + max_in_flight, n)
-                batch_futures = [
-                    self._process_rule.submit(rules[i])
-                    for i in range(batch_start, batch_end)
-                ]
+            batches = list(_make_batches(rules))
+            for batch_i, batch in enumerate(batches):
+                batch_futures = [self._process_rule.submit(r) for r in batch]
                 wait(batch_futures)
                 rule_results.extend(batch_futures)
+                # Per-batch group counts for visibility under throttling.
+                group_summary = {}
+                for r in batch:
+                    g = _rule_throttle_group(r) or "_unthrottled"
+                    group_summary[g] = group_summary.get(g, 0) + 1
                 logger.info(
-                    f"Batch {batch_start // max_in_flight + 1}/"
-                    f"{(n + max_in_flight - 1) // max_in_flight} done "
-                    f"({batch_end}/{n} rules submitted)"
+                    f"Batch {batch_i + 1}/{len(batches)} done "
+                    f"({len(batch)} rules; groups={group_summary})"
                 )
             return rule_results
 

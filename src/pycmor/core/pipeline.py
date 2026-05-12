@@ -27,6 +27,7 @@ class Pipeline:
         dask_cluster=None,
         cache_expiration=None,
         collapse_steps=None,
+        throttle_group=None,
     ):
         self._steps = args
         self.name = name or randomname.get_name()
@@ -36,6 +37,18 @@ class Pipeline:
         if workflow_backend is None:
             workflow_backend = "prefect"
         self._workflow_backend = workflow_backend
+        # Throttle group: pipelines sharing the same key compete for a
+        # bounded slot count in ``cmorizer._parallel_process_prefect``.
+        # Used to cap driver-process concurrency for memory-heavy rule
+        # families (lrcs_seaice's OIFS-regrid family explodes driver RSS
+        # past 80 GiB when 4 run concurrently — see
+        # FORENSIC_lrcs_seaice_failure.md §"Why ONLY lrcs_seaice"). Default
+        # None means unthrottled; caps live in
+        # ``PYCMOR_THROTTLE_CAPS=group:N,...`` env or rule yaml inherit
+        # ``throttle_caps:`` map. Default per-group cap (when not
+        # configured) is 2 — small enough to prevent driver pileup, big
+        # enough to keep some throughput.
+        self.throttle_group = throttle_group
         # Round-2 perf knob: if set, collapse all pipeline steps into a
         # single Prefect task. Trades per-step task caching for ~13×
         # less Prefect orchestration overhead per rule (Prefect 3.x:
@@ -266,6 +279,7 @@ class Pipeline:
                 cache_expiration=data.get("cache_expiration"),
                 workflow_backend=data.get("workflow_backend"),
                 collapse_steps=data.get("collapse_steps"),
+                throttle_group=data.get("throttle_group"),
             )
         if "steps" in data:
             return cls.from_callable_strings(
@@ -274,6 +288,7 @@ class Pipeline:
                 cache_expiration=data.get("cache_expiration"),
                 workflow_backend=data.get("workflow_backend"),
                 collapse_steps=data.get("collapse_steps"),
+                throttle_group=data.get("throttle_group"),
             )
         raise ValueError("Pipeline data must have 'uses' or 'steps' key")
 

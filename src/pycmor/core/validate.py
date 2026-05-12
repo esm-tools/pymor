@@ -296,6 +296,7 @@ PIPELINES_SCHEMA = {
                 },
                 "cache_expiration": {"required": False},
                 "collapse_steps": {"type": "boolean", "required": False},
+                "throttle_group": {"type": "string", "required": False},
             },
         },
     },
