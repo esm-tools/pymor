@@ -164,6 +164,25 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
       ;;
   esac
 
+  # Per-tier malloc allocator. Default = glibc (off).
+  # lrcs_seaice opts into jemalloc via LD_PRELOAD — cli34 lrcs_seaice_2
+  # and _3 hit signal-6 SIGABRT at MaxVMSize=557 GiB / RSS=232 GiB on
+  # a 512 GiB cgroup. That's the classic glibc malloc arena-fragmentation
+  # footprint (lots of mmap-backed VM space, less actual RSS) — abort()
+  # fires when malloc's internal bookkeeping can't satisfy an alloc
+  # despite cgroup headroom. malloc_trim alone (ea564dd) wasn't enough.
+  # jemalloc bounds fragmentation by design. /lib64/libjemalloc.so.2
+  # ships on Levante. Per-tier opt-in because allocator swaps can
+  # regress unrelated workloads.
+  case "$short_tier" in
+    lrcs_seaice)
+      tier_jemalloc=on
+      ;;
+    *)
+      tier_jemalloc=off
+      ;;
+  esac
+
   # Per-tier Fix #3 (PYCMOR_WORKER_COMPUTE) selection. Default OFF.
   # Heavy 3D pressure-level atmos pipelines (zg/va/hus/ta/wap monthly)
   # have *small* output (~380 MB) despite reading 280 GB of hourly input.
@@ -187,12 +206,12 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
         -J "$jobname" \
         --time="$tier_walltime" \
         $MEM_FLAG \
-        --export=ALL,CGROUP_GB=$tier_cgroup,SHARD_FIX3=$FIX3,N_WORKERS=$tier_workers \
+        --export=ALL,CGROUP_GB=$tier_cgroup,SHARD_FIX3=$FIX3,N_WORKERS=$tier_workers,SHARD_JEMALLOC=$tier_jemalloc \
         "$HERE/run_hr_shard.sh" \
         "$shards_dir" "$RUN_ABS" "$YEAR" "${short_tier}/cmorized" 2>&1) \
     || { echo "sbatch failed for $short_tier"; continue; }
-  submitted+=("$jid:$short_tier[$num_shards shards, $MEM_FLAG, fix3=$FIX3, t=$tier_walltime, n_w=$tier_workers]")
-  echo "  submitted $jobname  jid=$jid  shards=$num_shards  $MEM_FLAG  fix3=$FIX3  t=$tier_walltime  n_w=$tier_workers"
+  submitted+=("$jid:$short_tier[$num_shards shards, $MEM_FLAG, fix3=$FIX3, t=$tier_walltime, n_w=$tier_workers, jem=$tier_jemalloc]")
+  echo "  submitted $jobname  jid=$jid  shards=$num_shards  $MEM_FLAG  fix3=$FIX3  t=$tier_walltime  n_w=$tier_workers  jem=$tier_jemalloc"
 done
 
 echo

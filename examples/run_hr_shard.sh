@@ -148,6 +148,19 @@ else
   export PYCMOR_WORKER_COMPUTE=off
 fi
 
+# Per-tier malloc allocator override. Default = glibc (unset).
+# SHARD_JEMALLOC=on switches to jemalloc, which bounds heap fragmentation
+# by design — addresses the cli34 lrcs_seaice signal-6 SIGABRT pattern
+# where MaxVMSize hit 557 GiB (vs RSS 232 GiB) on a 512 GiB cgroup,
+# i.e. glibc malloc arenas fragmented enough that internal state
+# corrupted and abort() fired despite the cgroup having headroom.
+# malloc_trim alone wasn't enough (cli34 _2 + _3 still failed).
+# Selected per-tier by submit_hr_year_shards.sh — only lrcs_seaice.
+if [ "${SHARD_JEMALLOC:-off}" = "on" ]; then
+  export LD_PRELOAD=/lib64/libjemalloc.so.2
+  echo "=== LD_PRELOAD=$LD_PRELOAD (jemalloc) ==="
+fi
+
 OUTROOT=${OUTROOT:-/scratch/a/a270092/pycmor_hr_shard_out}
 OUTDIR="$OUTROOT/$OUTSUB"
 mkdir -p "$OUTDIR"
