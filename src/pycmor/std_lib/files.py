@@ -572,6 +572,34 @@ def _graph_metrics(ds_or_da):
     return n_keys, n_layers, approx_bytes, n_chunks
 
 
+_LIBC_TRIM = None
+
+
+def _trim_malloc_arenas():
+    """Force glibc to release unused arena pages back to the OS.
+    Called between rules in a shard to prevent the fragmentation pattern
+    that killed cli19/cli30 lrcs_seaice: after ~15 rules each materializing
+    ~14 GiB numpy arrays, glibc's heap fragments and a subsequent 4 MiB
+    allocation fails despite ~300 GiB of free cgroup memory.
+
+    No-op on non-Linux. Logs failures at debug level only — this is
+    best-effort cleanup, not load-bearing.
+    """
+    global _LIBC_TRIM
+    try:
+        if _LIBC_TRIM is None:
+            import ctypes
+            libc = ctypes.CDLL("libc.so.6", use_errno=True)
+            _LIBC_TRIM = libc.malloc_trim
+            _LIBC_TRIM.argtypes = [ctypes.c_size_t]
+            _LIBC_TRIM.restype = ctypes.c_int
+        import gc
+        gc.collect()
+        _LIBC_TRIM(0)
+    except Exception as exc:
+        logger.debug(f"_trim_malloc_arenas: {type(exc).__name__}: {exc}")
+
+
 def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
     """Wrapper around ``to_netcdf`` that:
 
@@ -624,6 +652,7 @@ def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
         t0 = time.time()
         result = ds_or_da.to_netcdf(*args, **kwargs)
         logger.info(f"GRAPH_RESULT rule={rule_id} backend=eager status=ok elapsed_s={time.time()-t0:.2f}")
+        _trim_malloc_arenas()
         return result
 
     # Measure the lazy graph (cheap — O(layers), not O(keys)).
@@ -663,6 +692,8 @@ def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
                         f"status=ok elapsed_s={time.time()-t0:.2f}"
                         + (f" attempts={wc_attempt+1}" if wc_attempt > 0 else "")
                     )
+                    del eager
+                    _trim_malloc_arenas()
                     return None
                 except Exception as exc:
                     if wc_attempt < max_retries and _is_transient_compute_error(exc):
@@ -714,6 +745,7 @@ def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
                 f"elapsed_s={time.time()-t0:.2f}"
                 + (f" attempts={attempt+1}" if attempt > 0 else "")
             )
+            _trim_malloc_arenas()
             return None
         except Exception as exc:
             if attempt < max_retries and _is_transient_compute_error(exc):
@@ -1406,6 +1438,7 @@ def _save_mfdataset_worker_or_sync(datasets, paths, enc, extra_kwargs,
         t0 = time.time()
         xr.save_mfdataset(datasets, paths, encoding=enc, **extra_kwargs)
         logger.info(f"GRAPH_RESULT rule={rule_id} backend=eager status=ok elapsed_s={time.time()-t0:.2f}")
+        _trim_malloc_arenas()
         return
 
     # Sum graph metrics across all datasets — what the scheduler will see
@@ -1465,6 +1498,7 @@ def _save_mfdataset_worker_or_sync(datasets, paths, enc, extra_kwargs,
     with dask.config.set(scheduler=scheduler):
         delayed.compute()
     logger.info(f"GRAPH_RESULT rule={rule_id} backend=sync status=ok elapsed_s={time.time()-t0:.2f}")
+    _trim_malloc_arenas()
 
 
 def _calculate_netcdf_chunks(ds: xr.Dataset, rule) -> dict:
