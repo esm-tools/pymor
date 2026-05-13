@@ -134,17 +134,35 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
       ;;
   esac
 
+  # Per-tier Fix #3 (PYCMOR_WORKER_COMPUTE) selection. Default OFF.
+  # Heavy 3D pressure-level atmos pipelines (zg/va/hus/ta/wap monthly)
+  # have *small* output (~380 MB) despite reading 280 GB of hourly input.
+  # The lazy graph for the aggregation is wide (many time-chunks) but
+  # shallow — exactly the shape Fix #3 handles well with worker-side
+  # parallel reads. cli30's cap7_atm_1 took 25+ min on synchronous I/O;
+  # Fix #3 should bring that to 2-5 min (cli7 baseline).
+  # Tiers without 3D-plev-monthly rules stay OFF — they don't benefit
+  # and Fix #3 ON re-introduces big-graph OOMs for OIFS-regrid families.
+  case "$short_tier" in
+    cap7_atm|core_atm|extra_atm|veg_atm)
+      FIX3="auto"
+      ;;
+    *)
+      FIX3="off"
+      ;;
+  esac
+
   jid=$(sbatch --parsable \
         --array=1-"$num_shards" \
         -J "$jobname" \
         --time="$WALLTIME" \
         $MEM_FLAG \
-        --export=ALL,CGROUP_GB=$tier_cgroup \
+        --export=ALL,CGROUP_GB=$tier_cgroup,SHARD_FIX3=$FIX3 \
         "$HERE/run_hr_shard.sh" \
         "$shards_dir" "$RUN_ABS" "$YEAR" "${short_tier}/cmorized" 2>&1) \
     || { echo "sbatch failed for $short_tier"; continue; }
-  submitted+=("$jid:$short_tier[$num_shards shards, $MEM_FLAG]")
-  echo "  submitted $jobname  jid=$jid  shards=$num_shards  $MEM_FLAG"
+  submitted+=("$jid:$short_tier[$num_shards shards, $MEM_FLAG, fix3=$FIX3]")
+  echo "  submitted $jobname  jid=$jid  shards=$num_shards  $MEM_FLAG  fix3=$FIX3"
 done
 
 echo

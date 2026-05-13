@@ -134,11 +134,19 @@ export PYCMOR_PREFECT_COLLAPSE=${PYCMOR_PREFECT_COLLAPSE:-1}
 # but max_in_flight=16 (= n_workers × tpw) still gives 16-wide
 # across-rule parallelism. Throughput is unchanged for cheap rules;
 # heavy rules actually complete instead of hanging.
-# Hardcoded "off" — not "${VAR:-off}" — because a stale env value
-# (from a prior shell session leaking via --export=ALL) silently
-# disabled this default in cli25, leading to 13 large-graph warnings
-# and the cap7_ocean_0 timeout we'd otherwise dodged.
-export PYCMOR_WORKER_COMPUTE=off
+# Default "off" — hard-coded because a stale env value (from a prior
+# shell session leaking via --export=ALL) silently disabled this
+# default in cli25, leading to 13 large-graph warnings and the
+# cap7_ocean_0 timeout we'd otherwise dodged. The submitter
+# (submit_hr_year_shards.sh) selects per-tier via SHARD_FIX3=auto for
+# tiers that benefit from worker-compute parallelism (heavy 3D plev
+# atmos with small output) without going through the broken default
+# inheritance path. If SHARD_FIX3 is set, it takes precedence here.
+if [ -n "${SHARD_FIX3:-}" ]; then
+  export PYCMOR_WORKER_COMPUTE="$SHARD_FIX3"
+else
+  export PYCMOR_WORKER_COMPUTE=off
+fi
 
 OUTROOT=${OUTROOT:-/scratch/a/a270092/pycmor_hr_shard_out}
 OUTDIR="$OUTROOT/$OUTSUB"
