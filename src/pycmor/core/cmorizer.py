@@ -1273,7 +1273,7 @@ class CMORizer:
         return data
 
     @staticmethod
-    @task(name="Process rule")
+    @task(name="Process rule", retries=3, retry_delay_seconds=30)
     def _process_rule(rule):
         logger.info(f"Starting to process rule {rule}")
         data = None
