@@ -5,7 +5,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=128
-#SBATCH --mem=512G
+#SBATCH --mem=0
 #SBATCH --time=03:00:00
 #SBATCH --output=pycmor_hr_shard_%x_%A_%a.log
 #SBATCH --error=pycmor_hr_shard_%x_%A_%a.log
@@ -20,11 +20,13 @@
 # Why `compute`:
 #   - `shared` partition was queue-saturated at 35-array submit;
 #     compute has 2931 nodes → no wait.
-#   - `compute` is OverSubscribe=EXCLUSIVE. ``--mem=512G`` forces
-#     SLURM to schedule onto a 512+ GB node (compute has 256/512/1024 GB
-#     tiers). Bumped from 256 GB after cli25/26 lrcs_seaice + veg_land
-#     OOMs at ~235 GiB on the 256 GiB cgroup. The user preferred this
-#     over per-rule throttling so already-working tiers are unchanged.
+#   - `compute` is OverSubscribe=EXCLUSIVE. ``--mem=0`` tells SLURM
+#     "give me all memory on whichever node I land on" — that's
+#     ~256 GB on the common-tier nodes (2931 total), more on the
+#     512/1024 GB tiers. To force a 512 GB+ node for memory-pressure
+#     experiments, override via env: `MEM_SBATCH=--mem=512G` to the
+#     submitter or pass `--mem=512G` directly to sbatch. Default
+#     ``--mem=0`` keeps the full ~2931-node pool available.
 #   - The 94% CPU waste (8-9 active / 128 allocated) is the price
 #     of failure isolation per shard.
 #
@@ -84,7 +86,7 @@ TPW=${TPW:-4}
 # cap7_land_05). 4 × 48 = 192 GB workers, ~30 GB driver, headroom OK
 # on the 256 GB cgroup.
 MEM_PER_WORKER=${MEM_PER_WORKER:-48GB}
-CGROUP_GB=${CGROUP_GB:-512}
+CGROUP_GB=${CGROUP_GB:-256}
 # Smaller tmpfs budget than the per-tier runner: at N=16-20 rules per
 # process, peak concurrent staged writes is bounded by N_WORKERS.
 TMPFS_BUDGET_GB=${PYCMOR_TMPFS_BUDGET_GB:-$(( N_WORKERS * 1 ))}

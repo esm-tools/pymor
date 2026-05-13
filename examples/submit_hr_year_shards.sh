@@ -112,16 +112,39 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
   fi
 
   jobname="pycmor-hr-${short_tier}-y${YEAR}-sh"
+
+  # Per-tier memory override. Tiers with rules that genuinely need a
+  # 512+ GB cgroup get --mem=512G (smaller pool of ~282 nodes, slower
+  # to dispatch but doesn't OOM). All others default to --mem=0 (any
+  # compute node, ~2931 nodes, fast dispatch).
+  #
+  # Empirical justification — cli26 sacct MaxRSS observations:
+  #   lrcs_seaice: 235 GiB on 256 GiB cgroup (Pattern A OOM)
+  #   core_land:     2.6 GiB (Pattern B scheduler wedge — memory irrelevant)
+  #   veg_land:     12 GiB (Pattern B — memory irrelevant)
+  # Only Pattern A benefits from a bigger cgroup.
+  case "$short_tier" in
+    lrcs_seaice)
+      MEM_FLAG="--mem=512G"
+      tier_cgroup=512
+      ;;
+    *)
+      MEM_FLAG="--mem=0"
+      tier_cgroup=256
+      ;;
+  esac
+
   jid=$(sbatch --parsable \
         --array=1-"$num_shards" \
         -J "$jobname" \
         --time="$WALLTIME" \
-        --export=ALL \
+        $MEM_FLAG \
+        --export=ALL,CGROUP_GB=$tier_cgroup \
         "$HERE/run_hr_shard.sh" \
         "$shards_dir" "$RUN_ABS" "$YEAR" "${short_tier}/cmorized" 2>&1) \
     || { echo "sbatch failed for $short_tier"; continue; }
-  submitted+=("$jid:$short_tier[$num_shards shards]")
-  echo "  submitted $jobname  jid=$jid  shards=$num_shards"
+  submitted+=("$jid:$short_tier[$num_shards shards, $MEM_FLAG]")
+  echo "  submitted $jobname  jid=$jid  shards=$num_shards  $MEM_FLAG"
 done
 
 echo
