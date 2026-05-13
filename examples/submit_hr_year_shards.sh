@@ -134,6 +134,19 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
       ;;
   esac
 
+  # Per-tier walltime. lrcs_seaice synchronous-I/O path is slow: cli30
+  # lrcs_seaice_3 TIMEOUTed at 3h ~70% through its 16 rules. Give it 6h
+  # of headroom so the slow but-eventually-completing case doesn't get
+  # killed. All other tiers finish well under 3h.
+  case "$short_tier" in
+    lrcs_seaice)
+      tier_walltime="06:00:00"
+      ;;
+    *)
+      tier_walltime="$WALLTIME"
+      ;;
+  esac
+
   # Per-tier Fix #3 (PYCMOR_WORKER_COMPUTE) selection. Default OFF.
   # Heavy 3D pressure-level atmos pipelines (zg/va/hus/ta/wap monthly)
   # have *small* output (~380 MB) despite reading 280 GB of hourly input.
@@ -155,14 +168,14 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
   jid=$(sbatch --parsable \
         --array=1-"$num_shards" \
         -J "$jobname" \
-        --time="$WALLTIME" \
+        --time="$tier_walltime" \
         $MEM_FLAG \
         --export=ALL,CGROUP_GB=$tier_cgroup,SHARD_FIX3=$FIX3 \
         "$HERE/run_hr_shard.sh" \
         "$shards_dir" "$RUN_ABS" "$YEAR" "${short_tier}/cmorized" 2>&1) \
     || { echo "sbatch failed for $short_tier"; continue; }
-  submitted+=("$jid:$short_tier[$num_shards shards, $MEM_FLAG, fix3=$FIX3]")
-  echo "  submitted $jobname  jid=$jid  shards=$num_shards  $MEM_FLAG  fix3=$FIX3"
+  submitted+=("$jid:$short_tier[$num_shards shards, $MEM_FLAG, fix3=$FIX3, t=$tier_walltime]")
+  echo "  submitted $jobname  jid=$jid  shards=$num_shards  $MEM_FLAG  fix3=$FIX3  t=$tier_walltime"
 done
 
 echo
