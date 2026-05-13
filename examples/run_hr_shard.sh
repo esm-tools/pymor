@@ -5,7 +5,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=128
-#SBATCH --mem=0
+#SBATCH --mem=512G
 #SBATCH --time=03:00:00
 #SBATCH --output=pycmor_hr_shard_%x_%A_%a.log
 #SBATCH --error=pycmor_hr_shard_%x_%A_%a.log
@@ -20,9 +20,11 @@
 # Why `compute`:
 #   - `shared` partition was queue-saturated at 35-array submit;
 #     compute has 2931 nodes → no wait.
-#   - `compute` is OverSubscribe=EXCLUSIVE: we get the whole 256 GB
-#     node anyway. ``--mem=0`` tells SLURM "give me all available
-#     memory on the node" — no point being shy.
+#   - `compute` is OverSubscribe=EXCLUSIVE. ``--mem=512G`` forces
+#     SLURM to schedule onto a 512+ GB node (compute has 256/512/1024 GB
+#     tiers). Bumped from 256 GB after cli25/26 lrcs_seaice + veg_land
+#     OOMs at ~235 GiB on the 256 GiB cgroup. The user preferred this
+#     over per-rule throttling so already-working tiers are unchanged.
 #   - The 94% CPU waste (8-9 active / 128 allocated) is the price
 #     of failure isolation per shard.
 #
@@ -82,7 +84,7 @@ TPW=${TPW:-4}
 # cap7_land_05). 4 × 48 = 192 GB workers, ~30 GB driver, headroom OK
 # on the 256 GB cgroup.
 MEM_PER_WORKER=${MEM_PER_WORKER:-48GB}
-CGROUP_GB=${CGROUP_GB:-256}
+CGROUP_GB=${CGROUP_GB:-512}
 # Smaller tmpfs budget than the per-tier runner: at N=16-20 rules per
 # process, peak concurrent staged writes is bounded by N_WORKERS.
 TMPFS_BUDGET_GB=${PYCMOR_TMPFS_BUDGET_GB:-$(( N_WORKERS * 1 ))}
@@ -119,13 +121,22 @@ export TMPDIR="$PYCMOR_SCRATCH"
 export HDF5_USE_FILE_LOCKING=FALSE
 export OMP_NUM_THREADS=1
 export PYCMOR_PREFECT_COLLAPSE=${PYCMOR_PREFECT_COLLAPSE:-1}
-# Concurrency: rely on default n_workers×tpw (=16 here). cli22's
-# PYCMOR_MAX_IN_FLIGHT=2 was a misdiagnosis — cli7 (May 9) ran the full
-# 77-rule core_atm tier in 1h25 with N_WORKERS=4×16GB and no global
-# throttle. The actual failure mode in cli21/cli22 was worker OOM on
-# heavy single rules, which throttling can't fix. Per-pipeline
-# throttle_group annotations in the yamls (for sea-ice OIFS-regrid)
-# remain in effect via cmorizer.py's _make_batches logic.
+# Disable Fix #3 (client.compute on workers) by default for shard runs.
+# Fix #3 was added (3604c53) to solve cli16's 87 GiB driver-RSS pileup
+# at N=70 rules in one process. Shard isolation caps N at ~20, which
+# already prevents that pileup (~25 GiB max driver memory). Fix #3 ON
+# would still ship lazy graphs to the scheduler, which OOMs workers on
+# big-graph rules (volcello, tossq_day, hfx/hfy, 3D atmos/ocean) — cf.
+# cli23 stuck shards and cli24's 7/7 success with this set to "off".
+# Synchronous-scheduler in-process compute is single-threaded per rule
+# but max_in_flight=16 (= n_workers × tpw) still gives 16-wide
+# across-rule parallelism. Throughput is unchanged for cheap rules;
+# heavy rules actually complete instead of hanging.
+# Hardcoded "off" — not "${VAR:-off}" — because a stale env value
+# (from a prior shell session leaking via --export=ALL) silently
+# disabled this default in cli25, leading to 13 large-graph warnings
+# and the cap7_ocean_0 timeout we'd otherwise dodged.
+export PYCMOR_WORKER_COMPUTE=off
 
 OUTROOT=${OUTROOT:-/scratch/a/a270092/pycmor_hr_shard_out}
 OUTDIR="$OUTROOT/$OUTSUB"
@@ -158,7 +169,7 @@ fi
 
 echo "=== shard yaml: $shard_yaml  ->  $OUTDIR ==="
 echo "=== --data-path ${RUN_ROOT}  --year ${YEAR}  --memory ${MEMORY:-<unset>} ==="
-echo "=== config: parallel=True orchestrator=dask N_WORKERS=${N_WORKERS} TPW=${TPW} MEM_PER_WORKER=${MEM_PER_WORKER} ==="
+echo "=== config: parallel=True orchestrator=dask N_WORKERS=${N_WORKERS} TPW=${TPW} MEM_PER_WORKER=${MEM_PER_WORKER} PYCMOR_WORKER_COMPUTE=${PYCMOR_WORKER_COMPUTE} ==="
 echo "=== node $(hostname), $(nproc) cores allocated, $(free -g | awk '/^Mem:/{print $2}') GB visible ==="
 date +%s.%N
 /usr/bin/time -v pycmor process "$PYCMOR_SCRATCH/par.yaml" "${CLI_ARGS[@]}"

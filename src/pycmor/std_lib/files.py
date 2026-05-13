@@ -39,6 +39,7 @@ Table 2: Precision of time labels used in file names
 """
 
 import os
+import sys
 import threading
 import time
 from pathlib import Path
@@ -489,6 +490,58 @@ def _is_dask_backed(ds):
     return any(v.chunks is not None for v in ds.data_vars.values())
 
 
+def _graph_metrics(ds_or_da):
+    """Cheap measurement of a dask-backed Dataset/DataArray's task graph
+    for instrumentation. Returns ``(n_keys, n_layers, approx_bytes,
+    n_chunks)`` or ``None`` on any failure. Designed to be O(layers),
+    not O(keys), so it's safe to call inline on huge graphs.
+
+    Used by the GRAPH_METRIC / GRAPH_RESULT log records that the
+    ``examples/analyze_graph_metrics.py`` aggregator parses.
+    """
+    try:
+        g = ds_or_da.__dask_graph__()
+    except Exception:
+        return None
+    try:
+        n_keys = len(g)
+    except Exception:
+        n_keys = None
+    try:
+        layers = getattr(g, "layers", None)
+        n_layers = len(layers) if layers is not None else 1
+    except Exception:
+        n_layers = None
+    try:
+        if layers is not None:
+            approx_bytes = sum(sys.getsizeof(layer) for layer in layers.values())
+        else:
+            approx_bytes = sys.getsizeof(g)
+    except Exception:
+        approx_bytes = None
+    try:
+        # Total chunk count across the array(s).
+        if hasattr(ds_or_da, "chunks"):
+            chunks = ds_or_da.chunks
+            if isinstance(chunks, dict):
+                # xr.Dataset.chunks → dict[dim] = tuple of chunk sizes
+                n_chunks = 1
+                for cs in chunks.values():
+                    n_chunks *= max(1, len(cs))
+            elif chunks:
+                # DataArray.chunks → tuple of (chunk-size-tuple, ...) per dim
+                n_chunks = 1
+                for cs in chunks:
+                    n_chunks *= max(1, len(cs))
+            else:
+                n_chunks = None
+        else:
+            n_chunks = None
+    except Exception:
+        n_chunks = None
+    return n_keys, n_layers, approx_bytes, n_chunks
+
+
 def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
     """Wrapper around ``to_netcdf`` that:
 
@@ -523,9 +576,32 @@ def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
     See: dask/distributed#780, pydata/xarray#4406, dask/dask#10238,
     FORENSIC_lrcs_seaice_failure.md §"Fix #3", PLAN_save_dataset_reliability.md.
     """
+    # Identify rule for GRAPH_METRIC log records. Best effort — uses the
+    # DataArray's .name attribute, or first data_var for a Dataset.
+    try:
+        if hasattr(ds_or_da, "name") and ds_or_da.name:
+            rule_id = str(ds_or_da.name)
+        elif hasattr(ds_or_da, "data_vars"):
+            rule_id = next(iter(ds_or_da.data_vars), "?")
+        else:
+            rule_id = "?"
+    except Exception:
+        rule_id = "?"
+
     if not _is_dask_backed(ds_or_da):
         # Eager input: no dask graph, no serialization. Just write.
-        return ds_or_da.to_netcdf(*args, **kwargs)
+        logger.info(f"GRAPH_METRIC rule={rule_id} backend=eager nodes=0 layers=0 bytes=0 chunks=0")
+        t0 = time.time()
+        result = ds_or_da.to_netcdf(*args, **kwargs)
+        logger.info(f"GRAPH_RESULT rule={rule_id} backend=eager status=ok elapsed_s={time.time()-t0:.2f}")
+        return result
+
+    # Measure the lazy graph (cheap — O(layers), not O(keys)).
+    metrics = _graph_metrics(ds_or_da)
+    if metrics is not None:
+        n_keys, n_layers, approx_bytes, n_chunks = metrics
+    else:
+        n_keys = n_layers = approx_bytes = n_chunks = None
 
     # Try the Fix #3 path: gather data via workers, then write eagerly.
     use_worker_compute = os.environ.get("PYCMOR_WORKER_COMPUTE", "auto").lower()
@@ -536,13 +612,26 @@ def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
         except (ImportError, ValueError):
             client = None
         if client is not None:
+            logger.info(
+                f"GRAPH_METRIC rule={rule_id} backend=worker_compute "
+                f"nodes={n_keys} layers={n_layers} bytes={approx_bytes} chunks={n_chunks}"
+            )
+            t0 = time.time()
             try:
                 eager = client.compute(ds_or_da, sync=True)
                 # Eager Dataset/DataArray now backed by numpy -- the
                 # regular to_netcdf path doesn't build a dask graph.
                 eager.to_netcdf(*args, **kwargs)
+                logger.info(
+                    f"GRAPH_RESULT rule={rule_id} backend=worker_compute "
+                    f"status=ok elapsed_s={time.time()-t0:.2f}"
+                )
                 return None
             except Exception as exc:
+                logger.warning(
+                    f"GRAPH_RESULT rule={rule_id} backend=worker_compute "
+                    f"status=fallback elapsed_s={time.time()-t0:.2f} exc={type(exc).__name__}"
+                )
                 logger.warning(
                     f"_safe_to_netcdf: Client.compute path failed "
                     f"({type(exc).__name__}: {exc}); falling back to "
@@ -554,9 +643,15 @@ def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
     # in-process via the synchronous scheduler. Driver-bytes-through
     # behaviour, but doesn't OOM the worker pool and survives the
     # HLG pickle bug.
+    logger.info(
+        f"GRAPH_METRIC rule={rule_id} backend=sync "
+        f"nodes={n_keys} layers={n_layers} bytes={approx_bytes} chunks={n_chunks}"
+    )
+    t0 = time.time()
     delayed = ds_or_da.to_netcdf(*args, compute=False, **kwargs)
     with dask.config.set(scheduler=scheduler):
         delayed.compute()
+    logger.info(f"GRAPH_RESULT rule={rule_id} backend=sync status=ok elapsed_s={time.time()-t0:.2f}")
     return None
 
 
@@ -1220,9 +1315,32 @@ def _save_mfdataset_worker_or_sync(datasets, paths, enc, extra_kwargs,
     results via ``xr.save_mfdataset``. Falls back to the legacy
     ``compute=False`` + synchronous-scheduler path when no Client is
     active or the worker path fails."""
+    # Identify the batch for GRAPH_METRIC logging. Use the first dataset's
+    # data var name as the rule id, plus the total count of datasets.
+    try:
+        first_var = next(iter(datasets[0].data_vars), "?") if datasets else "?"
+        rule_id = f"{first_var}_mf{len(datasets)}"
+    except Exception:
+        rule_id = "?_mf"
+
     if not is_dask:
+        logger.info(f"GRAPH_METRIC rule={rule_id} backend=eager nodes=0 layers=0 bytes=0 chunks=0")
+        t0 = time.time()
         xr.save_mfdataset(datasets, paths, encoding=enc, **extra_kwargs)
+        logger.info(f"GRAPH_RESULT rule={rule_id} backend=eager status=ok elapsed_s={time.time()-t0:.2f}")
         return
+
+    # Sum graph metrics across all datasets — what the scheduler will see
+    # if we client.compute the list of them.
+    sum_keys = sum_layers = sum_bytes = sum_chunks = 0
+    for ds in datasets:
+        m = _graph_metrics(ds)
+        if m is not None:
+            k, l, b, c = m
+            sum_keys += k or 0
+            sum_layers += l or 0
+            sum_bytes += b or 0
+            sum_chunks += c or 0
 
     use_worker_compute = os.environ.get("PYCMOR_WORKER_COMPUTE", "auto").lower()
     if use_worker_compute != "off":
@@ -1232,24 +1350,43 @@ def _save_mfdataset_worker_or_sync(datasets, paths, enc, extra_kwargs,
         except (ImportError, ValueError):
             client = None
         if client is not None:
+            logger.info(
+                f"GRAPH_METRIC rule={rule_id} backend=worker_compute "
+                f"nodes={sum_keys} layers={sum_layers} bytes={sum_bytes} chunks={sum_chunks}"
+            )
+            t0 = time.time()
             try:
                 # Compute each lazy dataset on workers; gather eagerly.
                 eager_datasets = list(client.compute(datasets, sync=True))
                 xr.save_mfdataset(eager_datasets, paths, encoding=enc,
                                   **extra_kwargs)
+                logger.info(
+                    f"GRAPH_RESULT rule={rule_id} backend=worker_compute "
+                    f"status=ok elapsed_s={time.time()-t0:.2f}"
+                )
                 return
             except Exception as exc:
+                logger.warning(
+                    f"GRAPH_RESULT rule={rule_id} backend=worker_compute "
+                    f"status=fallback elapsed_s={time.time()-t0:.2f} exc={type(exc).__name__}"
+                )
                 logger.warning(
                     f"_save_mfdataset: Client.compute path failed "
                     f"({type(exc).__name__}: {exc}); falling back to "
                     f"synchronous scheduler."
                 )
 
+    logger.info(
+        f"GRAPH_METRIC rule={rule_id} backend=sync "
+        f"nodes={sum_keys} layers={sum_layers} bytes={sum_bytes} chunks={sum_chunks}"
+    )
+    t0 = time.time()
     delayed = xr.save_mfdataset(
         datasets, paths, encoding=enc, compute=False, **extra_kwargs
     )
     with dask.config.set(scheduler=scheduler):
         delayed.compute()
+    logger.info(f"GRAPH_RESULT rule={rule_id} backend=sync status=ok elapsed_s={time.time()-t0:.2f}")
 
 
 def _calculate_netcdf_chunks(ds: xr.Dataset, rule) -> dict:

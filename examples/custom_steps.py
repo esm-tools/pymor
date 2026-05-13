@@ -3470,6 +3470,16 @@ def regrid_oifs_to_fesom(data, rule):
     result = data.isel({source_dim: indexer})
     if time_dim is not None and time_dim in result.dims:
         result = result.transpose(time_dim, node_dim)
+        # Force ``chunk({time: 1})`` after the regrid so downstream steps
+        # (mask_where_no_seaice + timeavg + save_dataset) operate on
+        # ~12 MB chunks instead of the inherited ~300 MB chunks. Without
+        # this, two concurrent OIFS-regrid rules amplify chunk size
+        # through ``where(mask)`` and timeavg accumulation buffers to
+        # tens of GB per worker, OOM-ing the 256 GB cgroup. Per-timestep
+        # chunking caps peak memory and stays dask-lazy (no algorithmic
+        # change). cli26 lrcs_seaice_02 OOM motivated this.
+        if hasattr(result, "chunks") and result.chunks is not None:
+            result = result.chunk({time_dim: 1})
     result.name = data.name
     # ``isel`` preserves attrs, but be explicit in case of edge cases.
     if not result.attrs:
@@ -4117,14 +4127,18 @@ def compute_hfbasin_tripyview(data, rule):
     dz = np.diff(m["depth_bnds"].values)[:nz1].astype(np.float64)
     m.close()
 
-    # Rename nz->nz1 to match tripyview convention; eager-load (lazy backends
-    # break tripyview's in-place mask assignment at sub_transp.py:526).
+    # Rename nz->nz1 to match tripyview convention. Tripyview's
+    # sub_transp.py:526 does ``data_latbin[vnameu][1, mask, :] = 0`` —
+    # in-place numpy assignment which breaks on lazy dask arrays. So
+    # the data passed to ``calc_mhflx_box_fast_lessmem`` must be eager.
+    # We used to ``.load()`` the full vtemp+utemp here (24 GB for HR
+    # monthly), which left the worker oscillating at the 75% pause
+    # threshold for the whole loop. Per-timestep ``.load()`` inside
+    # the loop caps peak input memory at ~2 GB instead.
     if "nz" in v_da.dims:
         v_da = v_da.rename({"nz": "nz1"})
     if "nz" in ut_da.dims:
         ut_da = ut_da.rename({"nz": "nz1"})
-    v_da = v_da.load()
-    ut_da = ut_da.load()
 
     # CMIP basin definitions: atlantic_arctic, indo-pacific, global.
     # tripyview ships Atlantic_MOC and IndoPacific_MOC shapefiles whose
@@ -4155,11 +4169,13 @@ def compute_hfbasin_tripyview(data, rule):
     per_basin_results = {n: [] for n, _ in basins}
     glob_lat = None
     for t in range(ntime):
+        # Eager-load only the current timestep — 2 GB peak instead of 24 GB.
         if has_time:
-            v_t = v_da.isel(time=t)
-            ut_t = ut_da.isel(time=t)
+            v_t = v_da.isel(time=t).load()
+            ut_t = ut_da.isel(time=t).load()
         else:
-            v_t, ut_t = v_da, ut_da
+            v_t = v_da.load()
+            ut_t = ut_da.load()
         packed = xr.Dataset({"u": ut_t, "v": v_t})
         packed["dz"] = (("nz1",), dz)
         packed.attrs["proj"] = "index+xy"
@@ -4174,6 +4190,8 @@ def compute_hfbasin_tripyview(data, rule):
             if glob_lat is None and name == "global_ocean":
                 glob_lat = out["lat"].values
             per_basin_results[name].append(out)
+        # Release this iteration's loaded data before the next loop.
+        del v_t, ut_t, packed
 
     if glob_lat is None:
         # safety: if global wasn't iterated yet, pull from first basin
@@ -4287,12 +4305,14 @@ def compute_sltbasin_tripyview(data, rule):
     dz = np.diff(m["depth_bnds"].values)[:nz1].astype(np.float64)
     m.close()
 
+    # Per-timestep eager load (mirror of compute_hfbasin_tripyview fix):
+    # full vsalt+usalt is 24 GB for HR monthly; loading all at once made
+    # the worker oscillate at the 75% pause threshold. Per-iteration
+    # ``.load()`` caps peak input memory at ~2 GB.
     if "nz" in v_da.dims:
         v_da = v_da.rename({"nz": "nz1"})
     if "nz" in ut_da.dims:
         ut_da = ut_da.rename({"nz": "nz1"})
-    v_da = v_da.load()
-    ut_da = ut_da.load()
 
     shp_dir = rule.get("basin_shapefile_dir") or _os.path.join(
         _os.path.dirname(_tpv.__file__), "shapefiles", "moc_basins"
@@ -4315,10 +4335,11 @@ def compute_sltbasin_tripyview(data, rule):
     glob_lat = None
     for t in range(ntime):
         if has_time:
-            v_t = v_da.isel(time=t)
-            ut_t = ut_da.isel(time=t)
+            v_t = v_da.isel(time=t).load()
+            ut_t = ut_da.isel(time=t).load()
         else:
-            v_t, ut_t = v_da, ut_da
+            v_t = v_da.load()
+            ut_t = ut_da.load()
         packed = xr.Dataset({"u": ut_t, "v": v_t})
         packed["dz"] = (("nz1",), dz)
         packed.attrs["proj"] = "index+xy"
@@ -4333,6 +4354,7 @@ def compute_sltbasin_tripyview(data, rule):
             if glob_lat is None and name == "global_ocean":
                 glob_lat = out["lat"].values
             per_basin_results[name].append(out)
+        del v_t, ut_t, packed
 
     if glob_lat is None:
         glob_lat = per_basin_results[basins[0][0]][0]["lat"].values
