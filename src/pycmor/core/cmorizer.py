@@ -1,6 +1,7 @@
 import copy
 import getpass
 import os
+import time
 from importlib.resources import files
 from pathlib import Path
 
@@ -77,6 +78,40 @@ def _resolve_throttle_caps(pymor_cfg):
         except (TypeError, ValueError):
             continue
     return caps
+
+
+def _is_transient_compute_error(exc):
+    """Return True if `exc` is a dask/distributed failure that typically
+    recovers on retry. Used by ``_process_rule``'s whole-rule retry loop
+    to decide whether to retry vs. fail fast.
+
+    Transient patterns seen in production:
+      - FutureCancelledError("scheduler-connection-lost"): driver lost
+        connection to its own LocalCluster during finalize (cli30
+        cap7_land_5: 19/20 rules succeeded, 1 failed).
+      - OSError("Timed out trying to connect to tcp://..."): same shape
+        but caught earlier in the stack (cli33 veg_land 1/2/3,
+        cli33 lrcs_land mrsofc).
+      - ConnectionResetError / ConnectionRefusedError from dask comm.
+
+    Lifted from reverted commit fb639fa where it was scoped to
+    ``_safe_to_netcdf``; veg_land's OSError fires above the save call
+    (in ``lpjg_yearly_pipeline``) so we apply it at the rule level.
+    """
+    name = type(exc).__name__
+    if name in ("FutureCancelledError", "CancelledError"):
+        return True
+    msg = str(exc)
+    if "scheduler-connection-lost" in msg:
+        return True
+    if "Timed out trying to connect" in msg:
+        return True
+    if isinstance(exc, (ConnectionError, ConnectionResetError, TimeoutError)):
+        return True
+    # OSError covers many distributed-comm flavours
+    if isinstance(exc, OSError) and ("connect" in msg.lower() or "timed out" in msg.lower()):
+        return True
+    return False
 
 
 class CMORizer:
@@ -1275,24 +1310,47 @@ class CMORizer:
     @staticmethod
     @task(name="Process rule")
     def _process_rule(rule):
-        logger.info(f"Starting to process rule {rule}")
-        data = None
-        if not len(rule.pipelines) > 0:
-            logger.error("No pipeline defined, something is wrong!")
-        for pipeline in rule.pipelines:
-            logger.info(f"Running {str(pipeline)}")
-            data = pipeline.run(data, rule)
-        # Don't ship the final dataset back to the scheduler/driver.
-        # Under parallel/dask orchestration the caller does
-        # client.gather(futures), which deserialises every rule's return
-        # value into the driver process. Even if save_dataset is the
-        # last step and "should" return None, intermediate paths can
-        # leave a Dataset in `data`; with 50+ rules that accumulates to
-        # tens of GB in the driver and OOMs the cgroup before any
-        # worker hits its memory cap. Drop the reference and return
-        # just the rule name so the gather payload is tiny.
-        del data
-        return getattr(rule, "name", "unnamed")
+        # Whole-rule retry on transient dask/distributed errors.
+        # Why manual loop instead of @task(retries=N): the decorator path
+        # forces Prefect to hash the `rule` argument for retry-state
+        # cache-key computation, which fails (HashError) on Rule objects
+        # and triggered the cli33 regression (atm-tier slowdowns + OOM).
+        # Curated transient list lifted from reverted commit fb639fa;
+        # broader scope (whole pipeline, not just save) catches the
+        # cli33 veg_land OSError that fires from lpjg_yearly_pipeline.
+        max_attempts = int(os.environ.get("PYCMOR_RULE_RETRIES", "3"))
+        rule_name = getattr(rule, "name", "unnamed")
+        for attempt in range(max_attempts):
+            try:
+                logger.info(f"Starting to process rule {rule}"
+                            + (f" (attempt {attempt+1}/{max_attempts})" if attempt > 0 else ""))
+                data = None
+                if not len(rule.pipelines) > 0:
+                    logger.error("No pipeline defined, something is wrong!")
+                for pipeline in rule.pipelines:
+                    logger.info(f"Running {str(pipeline)}")
+                    data = pipeline.run(data, rule)
+                # Don't ship the final dataset back to the scheduler/driver.
+                # Under parallel/dask orchestration the caller does
+                # client.gather(futures), which deserialises every rule's
+                # return value into the driver process. Even if save_dataset
+                # is the last step and "should" return None, intermediate
+                # paths can leave a Dataset in `data`; with 50+ rules that
+                # accumulates to tens of GB in the driver and OOMs the
+                # cgroup before any worker hits its memory cap. Drop the
+                # reference and return just the rule name so the gather
+                # payload is tiny.
+                del data
+                return rule_name
+            except Exception as exc:
+                if attempt + 1 < max_attempts and _is_transient_compute_error(exc):
+                    logger.warning(
+                        f"Process rule {rule_name}: attempt {attempt+1}/{max_attempts} "
+                        f"hit transient {type(exc).__name__}: {exc}; retrying in 30s"
+                    )
+                    time.sleep(30)
+                    continue
+                raise
 
     def _post_init_create_global_attributes_on_rules(self):
         """Create global attributes on rules using factory pattern."""
