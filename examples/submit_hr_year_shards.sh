@@ -147,6 +147,23 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
       ;;
   esac
 
+  # Per-tier dask worker count. Default uses global N_WORKERS (4).
+  # extra_atm reduced to 3: cli33/cli34 both OOM'd at ~213 GiB MaxRSS
+  # on 256 GiB cgroup. Workers stayed within their 48 GiB limits — the
+  # cgroup overflow came from driver-side eager-gather pileup when
+  # Fix #3 (worker_compute) returns 14 GiB hourly OIFS arrays to the
+  # driver before to_netcdf. 4 workers × 4 TPW = 16 concurrent rules
+  # → 4 simultaneous eager Datasets ≈ 56 GiB driver. 3 workers caps
+  # concurrent in-flight at 12 rules → ~42 GiB driver, ~55 GiB free.
+  case "$short_tier" in
+    extra_atm)
+      tier_workers=3
+      ;;
+    *)
+      tier_workers="$N_WORKERS"
+      ;;
+  esac
+
   # Per-tier Fix #3 (PYCMOR_WORKER_COMPUTE) selection. Default OFF.
   # Heavy 3D pressure-level atmos pipelines (zg/va/hus/ta/wap monthly)
   # have *small* output (~380 MB) despite reading 280 GB of hourly input.
@@ -170,12 +187,12 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
         -J "$jobname" \
         --time="$tier_walltime" \
         $MEM_FLAG \
-        --export=ALL,CGROUP_GB=$tier_cgroup,SHARD_FIX3=$FIX3 \
+        --export=ALL,CGROUP_GB=$tier_cgroup,SHARD_FIX3=$FIX3,N_WORKERS=$tier_workers \
         "$HERE/run_hr_shard.sh" \
         "$shards_dir" "$RUN_ABS" "$YEAR" "${short_tier}/cmorized" 2>&1) \
     || { echo "sbatch failed for $short_tier"; continue; }
-  submitted+=("$jid:$short_tier[$num_shards shards, $MEM_FLAG, fix3=$FIX3, t=$tier_walltime]")
-  echo "  submitted $jobname  jid=$jid  shards=$num_shards  $MEM_FLAG  fix3=$FIX3  t=$tier_walltime"
+  submitted+=("$jid:$short_tier[$num_shards shards, $MEM_FLAG, fix3=$FIX3, t=$tier_walltime, n_w=$tier_workers]")
+  echo "  submitted $jobname  jid=$jid  shards=$num_shards  $MEM_FLAG  fix3=$FIX3  t=$tier_walltime  n_w=$tier_workers"
 done
 
 echo
