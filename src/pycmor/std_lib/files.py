@@ -490,36 +490,6 @@ def _is_dask_backed(ds):
     return any(v.chunks is not None for v in ds.data_vars.values())
 
 
-def _is_transient_compute_error(exc):
-    """Return True if `exc` is the kind of dask/distributed failure that
-    typically recovers on retry. We use this to decide whether to retry
-    a save_dataset call versus give up.
-
-    Transient patterns we've seen:
-      - FutureCancelledError("scheduler-connection-lost"): driver lost
-        connection to its own LocalCluster scheduler during finalize.
-        cli30 cap7_land_5 hit this — 19/20 rules succeeded, 1 failed
-        on what's clearly a transient dask issue.
-      - OSError("Timed out trying to connect to tcp://..."): same shape
-        but caught earlier in the stack (cli26 veg_land_3).
-      - ConnectionResetError / ConnectionRefusedError from dask comm.
-    """
-    name = type(exc).__name__
-    if name in ("FutureCancelledError", "CancelledError"):
-        return True
-    msg = str(exc)
-    if "scheduler-connection-lost" in msg:
-        return True
-    if "Timed out trying to connect" in msg:
-        return True
-    if isinstance(exc, (ConnectionError, ConnectionResetError, TimeoutError)):
-        return True
-    # OSError covers many distributed-comm flavours
-    if isinstance(exc, OSError) and ("connect" in msg.lower() or "timed out" in msg.lower()):
-        return True
-    return False
-
-
 def _graph_metrics(ds_or_da):
     """Cheap measurement of a dask-backed Dataset/DataArray's task graph
     for instrumentation. Returns ``(n_keys, n_layers, approx_bytes,
@@ -647,90 +617,42 @@ def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
                 f"nodes={n_keys} layers={n_layers} bytes={approx_bytes} chunks={n_chunks}"
             )
             t0 = time.time()
-            # Retry worker_compute on transient errors before falling back.
-            # Same env knob as the sync path. Backoff: 5s, 10s, 15s.
-            max_retries = int(os.environ.get("PYCMOR_SAFE_RETRIES", "2"))
-            wc_attempt = 0
-            wc_done = False
-            while wc_attempt <= max_retries and not wc_done:
-                try:
-                    eager = client.compute(ds_or_da, sync=True)
-                    # Eager Dataset/DataArray now backed by numpy -- the
-                    # regular to_netcdf path doesn't build a dask graph.
-                    eager.to_netcdf(*args, **kwargs)
-                    logger.info(
-                        f"GRAPH_RESULT rule={rule_id} backend=worker_compute "
-                        f"status=ok elapsed_s={time.time()-t0:.2f}"
-                        + (f" attempts={wc_attempt+1}" if wc_attempt > 0 else "")
-                    )
-                    return None
-                except Exception as exc:
-                    if wc_attempt < max_retries and _is_transient_compute_error(exc):
-                        wait = 5 * (wc_attempt + 1)
-                        logger.warning(
-                            f"_safe_to_netcdf worker_compute attempt {wc_attempt+1}/"
-                            f"{max_retries+1} hit transient error "
-                            f"({type(exc).__name__}: {exc}); retrying in {wait}s"
-                        )
-                        time.sleep(wait)
-                        wc_attempt += 1
-                        continue
-                    logger.warning(
-                        f"GRAPH_RESULT rule={rule_id} backend=worker_compute "
-                        f"status=fallback elapsed_s={time.time()-t0:.2f} "
-                        f"exc={type(exc).__name__}"
-                        + (f" attempts={wc_attempt+1}" if wc_attempt > 0 else "")
-                    )
-                    logger.warning(
-                        f"_safe_to_netcdf: Client.compute path failed "
-                        f"({type(exc).__name__}: {exc}); falling back to "
-                        f"synchronous scheduler. Set PYCMOR_WORKER_COMPUTE=off "
-                        f"to skip this path entirely."
-                    )
-                    wc_done = True  # break out of retry loop, fall through to sync path
+            try:
+                eager = client.compute(ds_or_da, sync=True)
+                # Eager Dataset/DataArray now backed by numpy -- the
+                # regular to_netcdf path doesn't build a dask graph.
+                eager.to_netcdf(*args, **kwargs)
+                logger.info(
+                    f"GRAPH_RESULT rule={rule_id} backend=worker_compute "
+                    f"status=ok elapsed_s={time.time()-t0:.2f}"
+                )
+                return None
+            except Exception as exc:
+                logger.warning(
+                    f"GRAPH_RESULT rule={rule_id} backend=worker_compute "
+                    f"status=fallback elapsed_s={time.time()-t0:.2f} exc={type(exc).__name__}"
+                )
+                logger.warning(
+                    f"_safe_to_netcdf: Client.compute path failed "
+                    f"({type(exc).__name__}: {exc}); falling back to "
+                    f"synchronous scheduler. Set PYCMOR_WORKER_COMPUTE=off "
+                    f"to skip this path entirely."
+                )
 
     # Legacy / fallback: build the lazy write graph and execute it
     # in-process via the synchronous scheduler. Driver-bytes-through
     # behaviour, but doesn't OOM the worker pool and survives the
     # HLG pickle bug.
-    #
-    # Retry on transient distributed errors (scheduler-connection-lost,
-    # OSError timeout, etc.) up to PYCMOR_SAFE_RETRIES times. cli30
-    # cap7_land_5 lost rule #20 to FutureCancelledError during finalize;
-    # a single retry would have caught it.
     logger.info(
         f"GRAPH_METRIC rule={rule_id} backend=sync "
         f"nodes={n_keys} layers={n_layers} bytes={approx_bytes} chunks={n_chunks}"
     )
-    max_retries = int(os.environ.get("PYCMOR_SAFE_RETRIES", "2"))
     t0 = time.time()
-    for attempt in range(max_retries + 1):
-        try:
-            delayed = ds_or_da.to_netcdf(*args, compute=False, **kwargs)
-            with dask.config.set(scheduler=scheduler):
-                delayed.compute()
-            logger.info(
-                f"GRAPH_RESULT rule={rule_id} backend=sync status=ok "
-                f"elapsed_s={time.time()-t0:.2f}"
-                + (f" attempts={attempt+1}" if attempt > 0 else "")
-            )
-            return None
-        except Exception as exc:
-            if attempt < max_retries and _is_transient_compute_error(exc):
-                wait = 5 * (attempt + 1)  # 5s, 10s, 15s backoff
-                logger.warning(
-                    f"_safe_to_netcdf sync attempt {attempt+1}/{max_retries+1} "
-                    f"hit transient error ({type(exc).__name__}: {exc}); "
-                    f"retrying in {wait}s"
-                )
-                time.sleep(wait)
-                continue
-            logger.error(
-                f"GRAPH_RESULT rule={rule_id} backend=sync status=failed "
-                f"elapsed_s={time.time()-t0:.2f} exc={type(exc).__name__}"
-                + (f" attempts={attempt+1}" if attempt > 0 else "")
-            )
-            raise
+    delayed = ds_or_da.to_netcdf(*args, compute=False, **kwargs)
+    with dask.config.set(scheduler=scheduler):
+        delayed.compute()
+    logger.info(f"GRAPH_RESULT rule={rule_id} backend=sync status=ok elapsed_s={time.time()-t0:.2f}")
+    return None
 
 
 def _is_tmpfs(path):
