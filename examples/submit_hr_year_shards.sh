@@ -125,8 +125,17 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
   # Only Pattern A benefits from a bigger cgroup.
   case "$short_tier" in
     lrcs_seaice)
-      MEM_FLAG="--mem=512G"
-      tier_cgroup=512
+      # 512G default for lrcs_seaice based on cli26 driver-side OOM
+      # at 235 GiB on 256 GB cgroup. cli31+ adds Fix #3 ON for this
+      # tier which shifts compute off the driver → 235 GiB pattern
+      # shouldn't repeat. Override via LRCS_SEAICE_MEM env to test
+      # whether 512G is still needed (cli32 experiment).
+      MEM_FLAG="--mem=${LRCS_SEAICE_MEM:-512G}"
+      if [ "${LRCS_SEAICE_MEM:-512G}" = "0" ]; then
+        tier_cgroup=256
+      else
+        tier_cgroup=512
+      fi
       ;;
     *)
       MEM_FLAG="--mem=0"
@@ -144,7 +153,13 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
   # Tiers without 3D-plev-monthly rules stay OFF — they don't benefit
   # and Fix #3 ON re-introduces big-graph OOMs for OIFS-regrid families.
   case "$short_tier" in
-    cap7_atm|core_atm|extra_atm|veg_atm)
+    cap7_atm|core_atm|extra_atm|veg_atm|lrcs_seaice)
+      # lrcs_seaice added after cli30: chunk(time:1) in regrid_oifs_to_fesom
+      # (cli29 edit) bounds per-chunk intermediate at ~12 MB. The cli23-era
+      # justification for Fix #3 OFF (OIFS-regrid intermediate exploding
+      # 14 GB → 100 GB) is fixed. Fix #3 ON should bring the 60-90 min
+      # per-shard wall down to ~10-15 min via worker parallelism across
+      # the 8760 hourly timesteps.
       FIX3="auto"
       ;;
     *)
