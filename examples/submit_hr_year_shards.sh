@@ -164,24 +164,26 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
       ;;
   esac
 
-  # Per-tier malloc allocator. Default = glibc (off).
-  # lrcs_seaice opts into jemalloc via LD_PRELOAD — cli34 lrcs_seaice_2
-  # and _3 hit signal-6 SIGABRT at MaxVMSize=557 GiB / RSS=232 GiB on
-  # a 512 GiB cgroup. That's the classic glibc malloc arena-fragmentation
-  # footprint (lots of mmap-backed VM space, less actual RSS) — abort()
-  # fires when malloc's internal bookkeeping can't satisfy an alloc
-  # despite cgroup headroom. malloc_trim alone (ea564dd) wasn't enough.
-  # jemalloc bounds fragmentation by design. /lib64/libjemalloc.so.2
-  # ships on Levante. Per-tier opt-in because allocator swaps can
-  # regress unrelated workloads.
-  case "$short_tier" in
-    lrcs_seaice)
-      tier_jemalloc=on
-      ;;
-    *)
-      tier_jemalloc=off
-      ;;
-  esac
+  # Malloc allocator: jemalloc on all tiers.
+  #
+  # cli34 lrcs_seaice_2/_3 hit signal-6 SIGABRT at MaxVMSize=557 GiB /
+  # RSS=232 GiB on a 512 GiB cgroup — the classic glibc malloc arena-
+  # fragmentation footprint (lots of mmap-backed VM space, less actual
+  # RSS), abort() firing when malloc bookkeeping can't satisfy an alloc
+  # despite cgroup headroom. cli34+jem rescued 2 of 3 failing shards;
+  # the 3rd stopped abort()-ing but wedged on slow synchronous compute
+  # (a separate issue).
+  #
+  # cli34 extra_atm OOM'd at MaxRSS=215 GiB / MaxVMSize=281 GiB — the
+  # same fragmentation footprint. N_WORKERS=3 hotfix only delayed it,
+  # didn't fix it; jemalloc is the actual lever.
+  #
+  # Initially opted-in per-tier (lrcs_seaice only) because allocator
+  # swaps can regress unrelated workloads, but the cli34 evidence
+  # is that the fragmentation pattern shows up in every tier with
+  # heavy long-running shards. Risk of regression < risk of OOM.
+  # /lib64/libjemalloc.so.2 ships on Levante.
+  tier_jemalloc=on
 
   # Per-tier Fix #3 (PYCMOR_WORKER_COMPUTE) selection. Default OFF.
   # Heavy 3D pressure-level atmos pipelines (zg/va/hus/ta/wap monthly)
