@@ -189,13 +189,24 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
   # Heavy 3D pressure-level atmos pipelines (zg/va/hus/ta/wap monthly)
   # have *small* output (~380 MB) despite reading 280 GB of hourly input.
   # The lazy graph for the aggregation is wide (many time-chunks) but
-  # shallow — exactly the shape Fix #3 handles well with worker-side
-  # parallel reads. cli30's cap7_atm_1 took 25+ min on synchronous I/O;
-  # Fix #3 should bring that to 2-5 min (cli7 baseline).
-  # Tiers without 3D-plev-monthly rules stay OFF — they don't benefit
-  # and Fix #3 ON re-introduces big-graph OOMs for OIFS-regrid families.
+  # shallow — Fix #3 handles single rules of this shape well with
+  # worker-side parallel reads.
+  #
+  # cap7_atm SPECIFICALLY removed from this list: cli34 shards 1/2/3
+  # all TIMEOUT at 3h with 7-13 of their 17-18 rules saved. Logs show
+  # 8 concurrent saves wedged at heartbeat #30 (t=1801s) with no I/O
+  # progress on the heavy 3D rules (zg/va/ua/hus_6hr_pl7h, ta_mon_ml,
+  # pfull_mon). cli9 (May 9) ran the WHOLE 52-rule cap7_atm tier in
+  # 1:41:08 — pre-Fix #3 commit (3604c53). The regression hypothesis:
+  # Fix #3 client.compute(sync=True) eager-gathers each rule's lazy
+  # graph through the LocalCluster scheduler. Single rule = fast.
+  # 8 concurrent heavy 3D rules = scheduler saturation + driver-side
+  # eager Dataset pileup → wedge.
+  # core_atm/extra_atm/veg_atm kept auto for now — they completed
+  # cleanly in cli34. If extra_atm OOM persists with jemalloc, may
+  # need to flip it too.
   case "$short_tier" in
-    cap7_atm|core_atm|extra_atm|veg_atm)
+    core_atm|extra_atm|veg_atm)
       FIX3="auto"
       ;;
     *)
