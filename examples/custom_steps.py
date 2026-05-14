@@ -2692,9 +2692,6 @@ def load_lpjguess_monthly(data, rule):
     lon_vals = coords_df["Lon"].values
     lat_vals = coords_df["Lat"].values
 
-    # Map each (lon, lat) to a cell index
-    cell_map = {(row.Lon, row.Lat): i for i, row in coords_df.iterrows()}
-
     # Build time coordinate
     times = []
     for yr in years:
@@ -2705,25 +2702,35 @@ def load_lpjguess_monthly(data, rule):
     n_times = len(times)
     values = np.full((n_times, ncells), np.nan, dtype=np.float64)
 
+    # Vectorized cell-index lookup via pandas merge. The earlier
+    # df_all.iterrows() Python loop held the GIL for several minutes
+    # at HR resolution, which prevented the dask worker thread from
+    # heartbeating to its own LocalCluster scheduler — the scheduler
+    # disconnected the worker after 30s, manifesting as
+    # ``OSError: Timed out trying to connect to tcp://127.0.0.1:...``
+    # in every cli3X veg_land run. Vectorizing drops the load from
+    # minutes to seconds; the GIL is held only inside numpy C code.
+    coords_df_with_idx = coords_df.copy()
+    coords_df_with_idx["_cell_idx"] = np.arange(len(coords_df_with_idx))
+    df_merged = df_all.merge(
+        coords_df_with_idx[["Lon", "Lat", "_cell_idx"]], on=["Lon", "Lat"], how="left"
+    )
+    cell_idx_arr = df_merged["_cell_idx"].values
+    valid = ~np.isnan(cell_idx_arr)
+    cell_idx_int = cell_idx_arr[valid].astype(np.int64)
+    yr_idx_arr = np.searchsorted(years, df_merged["Year"].values[valid])
+
     # Fill values — Jan..Dec columns ARE the monthly data for all LPJ-GUESS .out files
     model_variable = rule.get("model_variable", "Total")
     if is_pft_format:
-        for _, row in df_all.iterrows():
-            cell_idx = cell_map.get((row["Lon"], row["Lat"]))
-            if cell_idx is None:
-                continue
-            yr_idx = np.searchsorted(years, row["Year"])
-            t_idx = yr_idx * 12 + (int(row["Mth"]) - 1)
-            values[t_idx, cell_idx] = row["_total"]
+        m_idx = df_merged["Mth"].values[valid].astype(np.int64) - 1
+        t_idx_arr = yr_idx_arr * 12 + m_idx
+        values[t_idx_arr, cell_idx_int] = df_merged["_total"].values[valid]
     else:
-        for _, row in df_all.iterrows():
-            cell_idx = cell_map.get((row["Lon"], row["Lat"]))
-            if cell_idx is None:
-                continue
-            yr_idx = np.searchsorted(years, row["Year"])
-            for m_idx, month in enumerate(months):
-                t_idx = yr_idx * 12 + m_idx
-                values[t_idx, cell_idx] = row[month]
+        # 12 monthly columns assigned per row → broadcast across months.
+        for m_idx, month in enumerate(months):
+            t_idx_arr = yr_idx_arr * 12 + m_idx
+            values[t_idx_arr, cell_idx_int] = df_merged[month].values[valid]
 
     # Create xarray Dataset
     da = xr.DataArray(
@@ -2826,7 +2833,6 @@ def load_lpjguess_yearly(data, rule):
     lon_vals = coords_df["Lon"].values
     lat_vals = coords_df["Lat"].values
     ncells = len(coords_df)
-    cell_map = {(row.Lon, row.Lat): i for i, row in coords_df.iterrows()}
 
     # Time coordinate: one per year (mid-year)
     times = [cftime.DatetimeProlepticGregorian(int(yr), 7, 1) for yr in years]
@@ -2834,12 +2840,19 @@ def load_lpjguess_yearly(data, rule):
     model_variable = rule.get("model_variable", "Total")
     values = np.full((len(times), ncells), np.nan, dtype=np.float64)
 
-    for _, row in df_all.iterrows():
-        cell_idx = cell_map.get((row["Lon"], row["Lat"]))
-        if cell_idx is None:
-            continue
-        yr_idx = np.searchsorted(years, row["Year"])
-        values[yr_idx, cell_idx] = row[model_variable]
+    # Vectorized cell + year indexing. The earlier iterrows() Python
+    # loop held the GIL long enough to break dask's LocalCluster
+    # heartbeat (cf. load_lpjguess_monthly for the full rationale).
+    coords_df_with_idx = coords_df.copy()
+    coords_df_with_idx["_cell_idx"] = np.arange(len(coords_df_with_idx))
+    df_merged = df_all.merge(
+        coords_df_with_idx[["Lon", "Lat", "_cell_idx"]], on=["Lon", "Lat"], how="left"
+    )
+    cell_idx_arr = df_merged["_cell_idx"].values
+    valid = ~np.isnan(cell_idx_arr)
+    cell_idx_int = cell_idx_arr[valid].astype(np.int64)
+    yr_idx_arr = np.searchsorted(years, df_merged["Year"].values[valid])
+    values[yr_idx_arr, cell_idx_int] = df_merged[model_variable].values[valid]
 
     da = xr.DataArray(
         values,
@@ -2886,19 +2899,23 @@ def load_lpjguess_yearly_lut(data, rule):
     lon_vals = coords_df["Lon"].values
     lat_vals = coords_df["Lat"].values
     ncells = len(coords_df)
-    cell_map = {(row.Lon, row.Lat): i for i, row in coords_df.iterrows()}
 
     times = [cftime.DatetimeProlepticGregorian(int(yr), 7, 1) for yr in years]
 
     model_variable = rule.get("model_variable", "psl")
     values = np.full((len(times), ncells), np.nan, dtype=np.float64)
 
-    for _, row in df_all.iterrows():
-        cell_idx = cell_map.get((row["Lon"], row["Lat"]))
-        if cell_idx is None:
-            continue
-        yr_idx = np.searchsorted(years, row["Year"])
-        values[yr_idx, cell_idx] = row[model_variable]
+    # Vectorized cell + year indexing (cf. load_lpjguess_monthly for rationale).
+    coords_df_with_idx = coords_df.copy()
+    coords_df_with_idx["_cell_idx"] = np.arange(len(coords_df_with_idx))
+    df_merged = df_all.merge(
+        coords_df_with_idx[["Lon", "Lat", "_cell_idx"]], on=["Lon", "Lat"], how="left"
+    )
+    cell_idx_arr = df_merged["_cell_idx"].values
+    valid = ~np.isnan(cell_idx_arr)
+    cell_idx_int = cell_idx_arr[valid].astype(np.int64)
+    yr_idx_arr = np.searchsorted(years, df_merged["Year"].values[valid])
+    values[yr_idx_arr, cell_idx_int] = df_merged[model_variable].values[valid]
 
     da = xr.DataArray(
         values,
@@ -2945,7 +2962,6 @@ def load_lpjguess_monthly_lut(data, rule):
     lon_vals = coords_df["Lon"].values
     lat_vals = coords_df["Lat"].values
     ncells = len(coords_df)
-    cell_map = {(row.Lon, row.Lat): i for i, row in coords_df.iterrows()}
 
     # Build time axis: one per (year, month)
     times = []
@@ -2957,14 +2973,19 @@ def load_lpjguess_monthly_lut(data, rule):
     n_times = len(times)
     values = np.full((n_times, ncells), np.nan, dtype=np.float64)
 
-    for _, row in df_all.iterrows():
-        cell_idx = cell_map.get((row["Lon"], row["Lat"]))
-        if cell_idx is None:
-            continue
-        yr_idx = np.searchsorted(years, row["Year"])
-        m_idx = int(row["Mth"]) - 1
-        t_idx = yr_idx * 12 + m_idx
-        values[t_idx, cell_idx] = row[model_variable]
+    # Vectorized cell + (year, month) indexing (cf. load_lpjguess_monthly for rationale).
+    coords_df_with_idx = coords_df.copy()
+    coords_df_with_idx["_cell_idx"] = np.arange(len(coords_df_with_idx))
+    df_merged = df_all.merge(
+        coords_df_with_idx[["Lon", "Lat", "_cell_idx"]], on=["Lon", "Lat"], how="left"
+    )
+    cell_idx_arr = df_merged["_cell_idx"].values
+    valid = ~np.isnan(cell_idx_arr)
+    cell_idx_int = cell_idx_arr[valid].astype(np.int64)
+    yr_idx_arr = np.searchsorted(years, df_merged["Year"].values[valid])
+    m_idx_arr = df_merged["Mth"].values[valid].astype(np.int64) - 1
+    t_idx_arr = yr_idx_arr * 12 + m_idx_arr
+    values[t_idx_arr, cell_idx_int] = df_merged[model_variable].values[valid]
 
     da = xr.DataArray(
         values,
@@ -5025,7 +5046,6 @@ def load_lpjguess_monthly_depth(data, rule):
     lon_vals = coords_df["Lon"].values
     lat_vals = coords_df["Lat"].values
     ncells = len(coords_df)
-    cell_map = {(row.Lon, row.Lat): i for i, row in coords_df.iterrows()}
 
     # Time axis
     times = []
@@ -5037,15 +5057,22 @@ def load_lpjguess_monthly_depth(data, rule):
     n_depths = len(_DEPTH_COLS)
     values = np.full((n_times, n_depths, ncells), np.nan, dtype=np.float64)
 
-    for _, row in df_all.iterrows():
-        cell_idx = cell_map.get((row["Lon"], row["Lat"]))
-        if cell_idx is None:
-            continue
-        yr_idx = np.searchsorted(years, row["Year"])
-        m_idx = int(row["Mth"]) - 1
-        t_idx = yr_idx * 12 + m_idx
-        for d_idx, dcol in enumerate(_DEPTH_COLS):
-            values[t_idx, d_idx, cell_idx] = row[dcol]
+    # Vectorized cell + (year, month, depth) indexing
+    # (cf. load_lpjguess_monthly for rationale — iterrows held the GIL
+    # long enough to break the dask LocalCluster heartbeat).
+    coords_df_with_idx = coords_df.copy()
+    coords_df_with_idx["_cell_idx"] = np.arange(len(coords_df_with_idx))
+    df_merged = df_all.merge(
+        coords_df_with_idx[["Lon", "Lat", "_cell_idx"]], on=["Lon", "Lat"], how="left"
+    )
+    cell_idx_arr = df_merged["_cell_idx"].values
+    valid = ~np.isnan(cell_idx_arr)
+    cell_idx_int = cell_idx_arr[valid].astype(np.int64)
+    yr_idx_arr = np.searchsorted(years, df_merged["Year"].values[valid])
+    m_idx_arr = df_merged["Mth"].values[valid].astype(np.int64) - 1
+    t_idx_arr = yr_idx_arr * 12 + m_idx_arr
+    for d_idx, dcol in enumerate(_DEPTH_COLS):
+        values[t_idx_arr, d_idx, cell_idx_int] = df_merged[dcol].values[valid]
 
     model_variable = rule.get("model_variable", "Total")
 
@@ -5121,7 +5148,6 @@ def load_lpjguess_monthly_pool(data, rule):
     lon_vals = coords_df["Lon"].values
     lat_vals = coords_df["Lat"].values
     ncells = len(coords_df)
-    cell_map = {(row.Lon, row.Lat): i for i, row in coords_df.iterrows()}
 
     times = []
     for yr in years:
@@ -5132,15 +5158,21 @@ def load_lpjguess_monthly_pool(data, rule):
     n_pools = len(_POOL_NAMES)
     values = np.full((n_times, n_pools, ncells), np.nan, dtype=np.float64)
 
-    for _, row in df_all.iterrows():
-        cell_idx = cell_map.get((row["Lon"], row["Lat"]))
-        if cell_idx is None:
-            continue
-        yr_idx = np.searchsorted(years, row["Year"])
-        m_idx = int(row["Mth"]) - 1
-        t_idx = yr_idx * 12 + m_idx
-        for p_idx, pool in enumerate(_POOL_NAMES):
-            values[t_idx, p_idx, cell_idx] = row[pool]
+    # Vectorized cell + (year, month, pool) indexing
+    # (cf. load_lpjguess_monthly for rationale).
+    coords_df_with_idx = coords_df.copy()
+    coords_df_with_idx["_cell_idx"] = np.arange(len(coords_df_with_idx))
+    df_merged = df_all.merge(
+        coords_df_with_idx[["Lon", "Lat", "_cell_idx"]], on=["Lon", "Lat"], how="left"
+    )
+    cell_idx_arr = df_merged["_cell_idx"].values
+    valid = ~np.isnan(cell_idx_arr)
+    cell_idx_int = cell_idx_arr[valid].astype(np.int64)
+    yr_idx_arr = np.searchsorted(years, df_merged["Year"].values[valid])
+    m_idx_arr = df_merged["Mth"].values[valid].astype(np.int64) - 1
+    t_idx_arr = yr_idx_arr * 12 + m_idx_arr
+    for p_idx, pool in enumerate(_POOL_NAMES):
+        values[t_idx_arr, p_idx, cell_idx_int] = df_merged[pool].values[valid]
 
     model_variable = rule.get("model_variable", "Total")
 
