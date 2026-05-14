@@ -147,22 +147,11 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
       ;;
   esac
 
-  # Per-tier dask worker count. Default uses global N_WORKERS (4).
-  # extra_atm reduced to 3: cli33/cli34 both OOM'd at ~213 GiB MaxRSS
-  # on 256 GiB cgroup. Workers stayed within their 48 GiB limits — the
-  # cgroup overflow came from driver-side eager-gather pileup when
-  # Fix #3 (worker_compute) returns 14 GiB hourly OIFS arrays to the
-  # driver before to_netcdf. 4 workers × 4 TPW = 16 concurrent rules
-  # → 4 simultaneous eager Datasets ≈ 56 GiB driver. 3 workers caps
-  # concurrent in-flight at 12 rules → ~42 GiB driver, ~55 GiB free.
-  case "$short_tier" in
-    extra_atm)
-      tier_workers=3
-      ;;
-    *)
-      tier_workers="$N_WORKERS"
-      ;;
-  esac
+  # Per-tier dask worker count. All tiers use the global N_WORKERS (4).
+  # The earlier extra_atm=3 override was a fix for the Fix #3 eager-
+  # gather driver-pileup OOM, but cli35 flipped extra_atm to fix3=off,
+  # which removes that pile-up entirely. No need for the override now.
+  tier_workers="$N_WORKERS"
 
   # Malloc allocator: jemalloc on all tiers.
   #
@@ -202,11 +191,14 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
   # graph through the LocalCluster scheduler. Single rule = fast.
   # 8 concurrent heavy 3D rules = scheduler saturation + driver-side
   # eager Dataset pileup → wedge.
-  # core_atm/extra_atm/veg_atm kept auto for now — they completed
-  # cleanly in cli34. If extra_atm OOM persists with jemalloc, may
-  # need to flip it too.
+  # cli35 confirmed extra_atm follows the cap7_atm pattern: wedged on
+  # 3D pressure-level rules (cl, pfull) at heartbeat #47+ with fix3=
+  # auto, TIMEOUT at 3h. Same hypothesis: 8+ concurrent eager-gather
+  # via client.compute(sync=True) saturates the LocalCluster scheduler.
+  # Flip extra_atm to fix3=off like cap7_atm.
+  # core_atm/veg_atm kept auto — they completed cleanly in cli34/cli35.
   case "$short_tier" in
-    core_atm|extra_atm|veg_atm)
+    core_atm|veg_atm)
       FIX3="auto"
       ;;
     *)
