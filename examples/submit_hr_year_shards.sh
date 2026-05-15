@@ -123,8 +123,21 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
   #   core_land:     2.6 GiB (Pattern B scheduler wedge — memory irrelevant)
   #   veg_land:     12 GiB (Pattern B — memory irrelevant)
   # Only Pattern A benefits from a bigger cgroup.
+  # extra_atm joins lrcs_seaice on 512G:
+  # sacct history (May 1-15) — every reliable extra_atm completion
+  # used 512G memory:
+  #   24733123 mem512  1:51:28   24733545 (whole-tier) 1:11:17
+  #   24743470 cli3    2:07:45   24748551 cli5         2:34:58
+  #   24784803 cli9    1:22:15   24813316 cli17        1:10:25
+  # Since switching to sharded --mem=0 (~256G default):
+  #   cli28 OOM, cli29 timeout, cli30 OOM (1:30 MaxRSS=235G),
+  #   cli33 OOM, cli34 OOM, cli35 OOM, cli36 OOM (MaxRSS=167G,
+  #   MaxVMSize=458G — fragmentation past cgroup limit).
+  # 6 completions on 512G vs 0 reliable on 256G — proven config.
+  # Trade: +1 task on the scarcer ~282-node 512G pool; brings the
+  # 512G footprint to 5/35 tasks (14%), still minor pool pressure.
   case "$short_tier" in
-    lrcs_seaice)
+    lrcs_seaice|extra_atm)
       MEM_FLAG="--mem=512G"
       tier_cgroup=512
       ;;
