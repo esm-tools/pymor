@@ -167,6 +167,17 @@ mkdir -p "$OUTDIR"
 command -v lfs >/dev/null && lfs setstripe -c 8 "$OUTDIR" 2>/dev/null || true
 
 # Inject runtime parallel knobs into a copy of the shard yaml.
+# SHARD_DRS=on enables pycmor's enable_output_subdirs, which appends the
+# full CMIP DRS sub-tree
+#   <mip_era>/<activity>/<institution>/<source>/<experiment>/<member>/
+#       <table>/<variable>/<grid>/v<YYYYMMDD>/
+# under OUTDIR. Submitter sets SHARD_DRS=on and OUTSUB="" so all tiers
+# write into one shared DRS root.
+SHARD_DRS_FLAG=False
+if [ "${SHARD_DRS:-off}" = "on" ]; then
+  SHARD_DRS_FLAG=True
+  echo "=== enable_output_subdirs=True (CMIP DRS output) ==="
+fi
 python3 - <<PY
 import yaml
 y = yaml.safe_load(open("$shard_yaml"))
@@ -177,6 +188,7 @@ y["pycmor"]["dask_cluster"] = "local"
 y["pycmor"]["dask_n_workers"] = ${N_WORKERS}
 y["pycmor"]["dask_threads_per_worker"] = ${TPW}
 y["pycmor"]["dask_memory_limit"] = "${MEM_PER_WORKER}"
+y["pycmor"]["enable_output_subdirs"] = $SHARD_DRS_FLAG
 yaml.safe_dump(y, open("$PYCMOR_SCRATCH/par.yaml", "w"), sort_keys=False)
 PY
 

@@ -84,6 +84,13 @@ export TPW=${TPW:-4}
 export MEM_PER_WORKER=${MEM_PER_WORKER:-48GB}  # bumped from 32GB after cli22 cap7_land_05 OOM'd on hourly OIFS tas
 export CGROUP_GB=${CGROUP_GB:-256}
 export PYCMOR_PREFECT_COLLAPSE=${PYCMOR_PREFECT_COLLAPSE:-1}
+# SHARD_DRS=on enables the CMIP DRS sub-tree under each shard's OUTDIR
+# (pycmor.enable_output_subdirs). When on, the per-tier "<tier>/cmorized"
+# OUTSUB prefix is dropped so all tiers land in one shared DRS root.
+# Off by default; downstream tools that consume per-tier flat layouts
+# can keep using the historical structure.
+SHARD_DRS=${SHARD_DRS:-off}
+export SHARD_DRS
 # No global PYCMOR_MAX_IN_FLIGHT — cli7 (May 9) ran 77-rule core_atm
 # clean in 1h25 with the default (n_workers × tpw). cli22's throttle=2
 # was an 8× throughput regression and didn't fix the actual root cause
@@ -214,17 +221,26 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
       ;;
   esac
 
+  # OUTSUB is the per-tier subdir under OUTROOT. With SHARD_DRS=on the
+  # pycmor DRS sub-tree is appended inside the saver, so we collapse the
+  # tier prefix and write everything into one shared DRS root.
+  if [ "$SHARD_DRS" = "on" ]; then
+    tier_outsub="."
+  else
+    tier_outsub="${short_tier}/cmorized"
+  fi
+
   jid=$(sbatch --parsable \
         --array=1-"$num_shards" \
         -J "$jobname" \
         --time="$tier_walltime" \
         $MEM_FLAG \
-        --export=ALL,CGROUP_GB=$tier_cgroup,SHARD_FIX3=$FIX3,N_WORKERS=$tier_workers,SHARD_JEMALLOC=$tier_jemalloc \
+        --export=ALL,CGROUP_GB=$tier_cgroup,SHARD_FIX3=$FIX3,N_WORKERS=$tier_workers,SHARD_JEMALLOC=$tier_jemalloc,SHARD_DRS=$SHARD_DRS \
         "$HERE/run_hr_shard.sh" \
-        "$shards_dir" "$RUN_ABS" "$YEAR" "${short_tier}/cmorized" 2>&1) \
+        "$shards_dir" "$RUN_ABS" "$YEAR" "$tier_outsub" 2>&1) \
     || { echo "sbatch failed for $short_tier"; continue; }
-  submitted+=("$jid:$short_tier[$num_shards shards, $MEM_FLAG, fix3=$FIX3, t=$tier_walltime, n_w=$tier_workers, jem=$tier_jemalloc]")
-  echo "  submitted $jobname  jid=$jid  shards=$num_shards  $MEM_FLAG  fix3=$FIX3  t=$tier_walltime  n_w=$tier_workers  jem=$tier_jemalloc"
+  submitted+=("$jid:$short_tier[$num_shards shards, $MEM_FLAG, fix3=$FIX3, t=$tier_walltime, n_w=$tier_workers, jem=$tier_jemalloc, drs=$SHARD_DRS]")
+  echo "  submitted $jobname  jid=$jid  shards=$num_shards  $MEM_FLAG  fix3=$FIX3  t=$tier_walltime  n_w=$tier_workers  jem=$tier_jemalloc  drs=$SHARD_DRS"
 done
 
 echo
