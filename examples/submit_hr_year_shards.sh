@@ -147,18 +147,13 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
       ;;
   esac
 
-  # Per-tier walltime. lrcs_seaice synchronous-I/O path is slow: cli30
-  # lrcs_seaice_3 TIMEOUTed at 3h ~70% through its 16 rules. Give it 6h
-  # of headroom so the slow but-eventually-completing case doesn't get
-  # killed. All other tiers finish well under 3h.
-  case "$short_tier" in
-    lrcs_seaice)
-      tier_walltime="06:00:00"
-      ;;
-    *)
-      tier_walltime="$WALLTIME"
-      ;;
-  esac
+  # All tiers run on the global WALLTIME (default 3h).
+  # lrcs_seaice was previously 6h because cli30 lrcs_seaice_3 TIMEOUTed at
+  # 3h — but that was pre-jemalloc when fragmentation drove the slow path.
+  # Since cli35+ (jemalloc on), the slowest lrcs_seaice shard runs:
+  #   cli35 _2: 1:08:52   cli36 _2: 1:12:04   (well under 3h)
+  # No tier-specific override needed.
+  tier_walltime="$WALLTIME"
 
   # Per-tier dask worker count. All tiers use the global N_WORKERS (4).
   # The earlier extra_atm=3 override was a fix for the Fix #3 eager-
