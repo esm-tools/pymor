@@ -64,7 +64,7 @@ output files, so they can be used as an independent sanity check.
 | dcw | land | kg m-2 | -5 | ~0 | 5 | Change in interception; near zero annual mean |
 | deptho | ocean | m | 0 | ~3700 | ~11000 | Mean ocean depth; Mariana trench max |
 | dgw | land | kg m-2 | -50 | ~0 | 50 | Annual groundwater change ~0 in steady state |
-| difmxylo | ocean | m2 s-1 | 0 | ~1000 | ~1e4 | Laplacian horizontal viscosity typical |
+| difmxylo | ocean | m2 s-1 | 0 | ~0.01 | ~5 | HR-FESOM (DARS ~10km) Laplacian eddy mixing; higher-res models have much lower values than coarse-res defaults (Christian, cli37 review). cli37 observed mean ~0.01, max ~1.6 |
 | difvho | ocean | m2 s-1 | ~1e-7 | ~1e-3 | ~10 | CMIP convention: includes convective Kv from KPP/TKE/EVD schemes. Interior background is Munk-Ledwell (median ~1e-5, Whalen 2012; Waterhouse 2014 JPO), but convective columns in winter high latitudes hit the scheme cap (FESOM CVMix 1-10 m2/s; NEMO `rn_avevd` 100 m2/s default). Global volumetric mean is dominated by the convective tail (~1e-4 to ~1e-3 m2/s typical). |
 | difvso | ocean | m2 s-1 | ~1e-7 | ~1e-3 | ~10 | Same Kv as difvho in FESOM CVMix (one diffusivity for heat + salt); same convective-tail behaviour |
 | dslw | land | kg m-2 | -100 | ~0 | 100 | Soil moisture change; steady state ~0 |
@@ -274,7 +274,7 @@ output files, so they can be used as an independent sanity check.
 | sbl | landIce | kg m-2 s-1 | -1e-4 | ~1e-7 | 1e-4 | Snow/ice sublimation; Antarctic Plateau katabatic events reach ~1e-4 (Lenaerts 2012 RACMO; Box & Steffen 2001) |
 | scint | ocean | kg m-2 | 0 | ~1.4e5 | ~1.5e5 | S*rho*H, ~35 PSU*1025*4000m |
 | sfcWind | atmos | m s-1 | 0 | ~6.5 | ~40 | ERA5 10m wind daily max |
-| sfdsi | ocean | kg m-2 s-1 | -1e-5 | ~0 | 1e-5 | Sea-ice salt flux |
+| sfdsi | ocean | kg m-2 s-1 | -5e-4 | ~0 | 5e-4 | Sea-ice salt flux; strong Arctic freezing bursts can hit ~1e-4, mean cancels to ~0 (cli37 observed min -1.6e-4, max 6e-5, pattern PASS per review) |
 | sftgif | land | % | 0 | ~3 | 100 | Glacier/ice fraction (Greenland/Antarctica=100) |
 | sftlf | atmos | % | 0 | ~29 | 100 | Land fraction, ~29% globe |
 | sftof | ocean | % | 0 | ~71 | 100 | Ocean fraction complement |
