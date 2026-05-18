@@ -21,7 +21,7 @@ set -e
 # Resume mode: build_maps.py skips PNGs that already exist on disk, so
 # this only renders the 14-ish missing files unless the maps/ dir is
 # wiped first. To force a fresh full regen, uncomment:
-# rm -f /work/ab0246/a270092/software/pycmor/tools/sanity_check/reports/test06_cli_y1587_v7_html/assets/maps/*.png
+# rm -f /work/ab0246/a270092/software/pycmor/tools/sanity_check/reports/cli37_extraatm_512g_filecache_vec_html/assets/maps/*.png
 
 source ~/loadconda.sh
 conda activate pycmor_py312
@@ -38,11 +38,11 @@ export NUMEXPR_NUM_THREADS=1
 cd /work/ab0246/a270092/software/pycmor
 
 python tools/sanity_check/build_maps.py \
-    --jsonl tools/sanity_check/reports/test06_cli_y1587_v7.jsonl \
-    --out-dir tools/sanity_check/reports/test06_cli_y1587_v7_html \
+    --jsonl tools/sanity_check/reports/cli37_extraatm_512g_filecache_vec.jsonl \
+    --out-dir tools/sanity_check/reports/cli37_extraatm_512g_filecache_vec_html \
     --parallel 12
 
 # Then on the login node:
 #   python tools/sanity_check/build_html_report.py \
-#       --jsonl tools/sanity_check/reports/test06_cli_y1587_v7.jsonl \
-#       --out-dir tools/sanity_check/reports/test06_cli_y1587_v7_html
+#       --jsonl tools/sanity_check/reports/cli37_extraatm_512g_filecache_vec.jsonl \
+#       --out-dir tools/sanity_check/reports/cli37_extraatm_512g_filecache_vec_html

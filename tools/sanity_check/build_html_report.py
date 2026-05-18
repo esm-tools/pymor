@@ -1102,13 +1102,25 @@ def render_file_card(ent: VarEntry,
     obs_mean = to_float(rec.get("mean"))
     obs_max = to_float(rec.get("max"))
 
+    # Cadence-aware: walker stores per-file bounds in the JSONL rec
+    # (e.g. hfls mon row vs hfls_day row). Prefer those; fall back to
+    # the variable-group entry only if absent.
+    def _pref(key):
+        v = rec.get(key)
+        if v in (None, ""):
+            return getattr(ent, key)
+        return v
+    rec_emin = _pref("expected_min")
+    rec_emean = _pref("expected_mean")
+    rec_emax = _pref("expected_max")
+
     # Per-file VarEntry-like snapshot for build_svg / diagnosis_text.
     file_entry = VarEntry(
         var=ent.var,
         realm=ent.realm,
-        expected_min=ent.expected_min,
-        expected_mean=ent.expected_mean,
-        expected_max=ent.expected_max,
+        expected_min=rec_emin,
+        expected_mean=rec_emean,
+        expected_max=rec_emax,
         source=ent.source,
         worst_status=status,
         worst_severity=sev,
@@ -1189,11 +1201,11 @@ def render_file_card(ent: VarEntry,
         '<table class="numbers">'
         "<thead><tr><th>Quantity</th><th>Expected</th><th>Observed</th></tr></thead>"
         "<tbody>"
-        f'<tr><td class="label">min</td><td>{fmt_num(ent.expected_min)}</td>'
+        f'<tr><td class="label">min</td><td>{fmt_num(rec_emin)}</td>'
         f"<td>{fmt_num(obs_min)}</td></tr>"
-        f'<tr><td class="label">mean</td><td>{fmt_num(ent.expected_mean)}</td>'
+        f'<tr><td class="label">mean</td><td>{fmt_num(rec_emean)}</td>'
         f"<td>{fmt_num(obs_mean)}</td></tr>"
-        f'<tr><td class="label">max</td><td>{fmt_num(ent.expected_max)}</td>'
+        f'<tr><td class="label">max</td><td>{fmt_num(rec_emax)}</td>'
         f"<td>{fmt_num(obs_max)}</td></tr>"
         "</tbody></table>"
     )

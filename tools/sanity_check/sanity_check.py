@@ -491,7 +491,7 @@ def driver_main(dirs, timeout, max_parallel):
         if not dpath.is_dir():
             print(f"SKIP {d}: not a directory", file=sys.stderr)
             continue
-        for f in sorted(dpath.glob("*.nc")):
+        for f in sorted(dpath.rglob("*.nc")):
             if str(f) in seen:
                 continue
             work.append((str(f), d, timeout, str(TABLE), self_path))
