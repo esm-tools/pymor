@@ -32,7 +32,7 @@ output files, so they can be used as an independent sanity check.
 | cfc12 | atmosChem | 1E-12 | 0 | ~0 | ~0 | piControl 1850: zero anthropogenic CFC; CMIP6 forcing dataset (Meinshausen 2017) |
 | ch4 | atmosChem | mol mol-1 | ~1e-7 | ~7.22e-7 | ~9e-7 | Pre-industrial CH4 ~722 ppb; ice cores Etheridge 1998; strat depleted to ~150 ppb |
 | ci | atmos | 1 | 0 | ~0.1 | 1 | Convection fraction; ITCZ higher |
-| cl | atmos | % | 0 | ~30 | 100 | CMIP6 cloud cover profile |
+| cl | atmos | % | 0 | ~5 | 100 | Cloud area fraction PER atm layer; volume-averaged over all model levels is small (~5%) because most levels are cloud-free. Column-total ~65% is clt, not cl. |
 | cLand | land | kg m-2 | 0 | ~25 | ~80 | Total land C ~2000 PgC / land area; IPCC AR6 carbon cycle |
 | cLeaf | land | kg m-2 | 0 | ~0.3 | ~2 | Leaf C; tropical forest LAI; TRENDY |
 | cli | atmos | kg kg-1 | 0 | ~1e-6 | ~1e-3 | Cloud ice mixing ratio; ERA5/CMIP |
@@ -155,7 +155,7 @@ output files, so they can be used as an independent sanity check.
 | laiLut | land | 1 | 0 | ~1.2 | ~7 | MODIS per-tile LAI |
 | landCoverFrac | land | % | 0 | varies by PFT | 100 | Fraction bounded 0-100 |
 | lwp | aerosol | kg m-2 | 0 | ~0.05-0.1 | ~0.5 | CMIP6/ISCCP cloud LWP climatology |
-| masscello | ocean | kg m-2 | ~0 | ~1e5-1e6 | ~1e7 | rho*dz per layer, ~1025*dz |
+| masscello | ocean | kg m-2 | 5125 | ~1e5 | 358750 | rho*dz per layer: AWI-ESM vertical discretization has min(dz)=5m, max(dz)=350m; rho~1025 kg/m3 |
 | masso | ocean | kg | 1.3e21 | 1.35e21 | 1.4e21 | Global ocean mass ~1.35e21 kg |
 | mlotst | ocean | m | ~10 | ~60 | ~2000 | de Boyer Montegut climatology; deep Labrador/Weddell |
 | mlotstsq | ocean | m2 | 100 | ~1e4 | ~4e6 | Square of mlotst |
@@ -216,14 +216,14 @@ output files, so they can be used as an independent sanity check.
 | pastureFracC4 | land | % | 0 | ~1 | 100 | LUH2 1850 C4 pasture in tropical savanna; ~40% of global pasture |
 | pbo | ocean | Pa | 0 | ~4e7 | ~1.1e8 | rho*g*H; 4000m ocean |
 | pfull | atmos | Pa | ~1 | ~5e4 | ~101325 | Model level pressures |
-| phcint | ocean | J m-2 | 0 | ~1e10 | ~5e10 | Ocean heat content rho*cp*T*H |
+| phcint | ocean | J m-2 | -1e10 | ~1e10 | ~5e10 | rho*cp*T*H with T in degC (ref 0 degC): high-lat columns with T<0 give phcint<0 |
 | pr | atmos | kg m-2 s-1 | 0 | ~3e-5 (~2.7 mm/day) | ~3e-4 | GPCP global mean precip (mon-cadence default) |
 | pr_day | atmos | kg m-2 s-1 | 0 | ~3e-5 | ~1e-2 | Daily extreme — tropical convergence zones |
 | pr_3hr | atmos | kg m-2 s-1 | 0 | ~3e-5 | ~2e-2 | 3-hourly extreme — convective storm cores |
 | pr_1hr | atmos | kg m-2 s-1 | 0 | ~3e-5 | ~3e-2 | Hourly extreme — single-cell convective burst |
 | prc | atmos | kg m-2 s-1 | 0 | ~1.5e-5 | ~2e-4 | Convective fraction ~50% (mon default) |
 | prc_day | atmos | kg m-2 s-1 | 0 | ~1.5e-5 | ~3e-3 | Daily convective extreme |
-| prra | seaIce | kg m-2 s-1 | 0 | ~1e-6 | ~1e-4 | Rain over sea ice rare |
+| prra | seaIce | kg m-2 s-1 | 0 | ~3e-5 | ~1e-3 | pycmor writes prra over the full FESOM domain (not masked to ice), so walker sees global rain ~ pr magnitudes; not "rain over ice only" |
 | prsn | atmos | kg m-2 s-1 | 0 | ~5e-6 | ~1e-4 | Snowfall ~15% of precip (mon default) |
 | prsn_day | atmos | kg m-2 s-1 | 0 | ~5e-6 | ~2e-3 | Daily extreme snowstorm (SWE rate) |
 | prsn_6hr | atmos | kg m-2 s-1 | 0 | ~5e-6 | ~3e-3 | 6-hourly extreme snowstorm |
@@ -278,13 +278,13 @@ output files, so they can be used as an independent sanity check.
 | sftgif | land | % | 0 | ~3 | 100 | Glacier/ice fraction (Greenland/Antarctica=100) |
 | sftlf | atmos | % | 0 | ~29 | 100 | Land fraction, ~29% globe |
 | sftof | ocean | % | 0 | ~71 | 100 | Ocean fraction complement |
-| sfx | ocean | kg s-1 | -1e8 | ~0 | 1e8 | 3D salt transport |
-| sfy | ocean | kg s-1 | -1e8 | ~0 | 1e8 | 3D salt transport |
+| sfx | ocean | kg s-1 | -1e10 | ~0 | 1e10 | 3D salt transport per cell edge. compute_salt_transport multiplies by sqrt(cell_area) as effective edge width on FESOM Voronoi cells. cli37 values are pre-fix (kg/(s*m)) and FAIL; first run with the fix should PASS. |
+| sfy | ocean | kg s-1 | -1e10 | ~0 | 1e10 | Same as sfx (y-component) |
 | shrubFrac | land | % | 0 | 5-10 | 100 | LUH2/CMIP6 land cover |
 | siarea | seaIce | 1e6 km2 | 4 (Sep) | 11 | 16 (Mar) | NSIDC NH climatology |
 | sicompstren | seaIce | N m-1 | 0 | 5e3 | 5e4 | Hibler rheology P* typical |
-| siconc | seaIce | % | 0 | ~5 global / ~60 in ice zone | 100 | NSIDC/OSI-SAF |
-| siconca | seaIce | % | 0 | ~5 global / ~60 ice zone | 100 | Sea-ice concentration on atmosphere grid; same as siconc; NSIDC/OSI-SAF |
+| siconc | seaIce | % | 0 | ~60 | 100 | Walker averages over non-NaN cells; pycmor's si-mask keeps ice-capable nodes, so mean is ice-zone (~60%), not full-ocean ~5% |
+| siconca | seaIce | % | 0 | ~5 | 100 | Sea-ice concentration on the global atm grid (lat-lon, includes ice-free tropics): mean is global ~5% |
 | sidconcdyn | seaIce | s-1 | -1e-5 | ~0 | 1e-5 | CMIP6 sea-ice tendencies |
 | sidconcth | seaIce | s-1 | -1e-5 | ~0 | 1e-5 | CMIP6 sea-ice tendencies |
 | sidmassdyn | seaIce | kg m-2 s-1 | -1e-3 | ~0 | 1e-3 | CMIP6 order-of-magnitude |
@@ -320,7 +320,7 @@ output files, so they can be used as an independent sanity check.
 | sistryubot | seaIce | N m-2 | -1 | 0 | 1 | Ocean stress on ice |
 | sitempbot | seaIce | K | 271 | 271.35 | 273.15 | Freezing point sea water |
 | sithick | seaIce | m | 0 | 0.3 (ice zone 1-3) | 12 | Multi-year ridged ice grid cells reach 8-10 m monthly mean (Laxon 2013 CryoSat-2; Petty 2020 ICESat-2; Belter 2020 AWI atlas); piControl can support thicker (Kay 2015 CESM-LE) |
-| sitimefrac | seaIce | 1 | 0 | 0.1 | 1 | Fraction of year with ice |
+| sitimefrac | seaIce | 1 | 0 | ~0.3 | 1 | Fraction of period with ice, walker averages over ice-capable cells; obs day~0.8 (winter-heavy) / mon~0.3 |
 | siu | seaIce | m s-1 | -1 | 0 | 1 | IABP drift buoys |
 | siv | seaIce | m s-1 | -1 | 0 | 1 | IABP drift buoys |
 | sivol | seaIce | 1e3 km3 | 10 (Sep) | 20 | 30 (Apr) | PIOMAS NH volume |
@@ -366,7 +366,7 @@ output files, so they can be used as an independent sanity check.
 | uas_day | atmos | m s-1 | -50 | ~0 | 50 | Daily extreme — ERA5 storm/TC 10m |
 | uas_3hr | atmos | m s-1 | -65 | ~0 | 65 | 3-hourly extreme |
 | uas_1hr | atmos | m s-1 | -75 | ~0 | 75 | Hourly extreme — Cat-5 TC (Saffir-Simpson) |
-| umo | ocean | kg s-1 | -1e12 | 0 | 1e12 | Cell-scale mass transport |
+| umo | ocean | kg s-1 | -1e12 | 0 | 1e12 | Mass transport per cell edge. compute_mass_transport multiplies by sqrt(cell_area) as effective edge width on FESOM Voronoi cells. cli37 values are pre-fix (kg/(s*m)) and FAIL; first run with the fix should PASS. |
 | uo | ocean | m s-1 | -2 | ~0 | 2 | WOCE/Argo currents |
 | uos | ocean | m s-1 | -2 | ~0 | 2.5 | OSCAR surface currents |
 | va | atmos | m s-1 | -60 | ~0 | 60 | ERA5 meridional wind (mon default) |
@@ -378,7 +378,7 @@ output files, so they can be used as an independent sanity check.
 | vas_1hr | atmos | m s-1 | -75 | ~0 | 75 | Hourly extreme — Cat-5 TC (Saffir-Simpson) |
 | vegFrac | land | % | 0 | 70 | 100 | LUH2 vegetated fraction |
 | vegHeight | land | m | 0 | ~5 | ~50 | Canopy height per PFT; trees 5-30m, shrubs 0.5-3m, grass <1m; Simard 2011 |
-| vmo | ocean | kg s-1 | -1e12 | 0 | 1e12 | Cell-scale mass transport |
+| vmo | ocean | kg s-1 | -1e12 | 0 | 1e12 | Same as umo (y-component) |
 | vo | ocean | m s-1 | -2 | ~0 | 2 | WOCE/Argo currents |
 | volcello | ocean | m3 | 1e6 | 1e10 | 1e12 | Grid cell volume |
 | volo | ocean | m3 | 1.33e18 | 1.335e18 | 1.34e18 | Global ocean volume ~1.335e18 m3 |

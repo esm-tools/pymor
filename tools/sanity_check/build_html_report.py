@@ -707,7 +707,23 @@ def diagnosis_text(entry: VarEntry) -> str:
         msg = notes_text or ""
         return f"Within tolerance of the bound. {msg}".strip()
 
-    # FAIL branches
+    # FAIL branches — prepare a generic suffix to flag "bulk of field
+    # within bounds, single-cell extremes triggered the fail" cases. The
+    # walker doesn't store the violation fraction, but if the mean sits
+    # inside the expected [min, max] window then by construction the
+    # offending values must be confined to outlier cells.
+    mean_in_bounds = (
+        is_finite(ae) and is_finite(em) and is_finite(ex) and em <= ae <= ex
+    )
+    extreme_suffix = ""
+    if mean_in_bounds:
+        extreme_suffix = (
+            f" The field mean ({fmt_num(ae)}) sits inside the expected "
+            f"window [{fmt_num(em)}, {fmt_num(ex)}], so the bound "
+            "violation is confined to outlier cells; the bulk of the "
+            "field looks healthy (compare map)."
+        )
+
     if sev == "DATA_INTEGRITY":
         return (
             f"All {n_total} cells are non-finite (NaN/fill-value). "
@@ -763,7 +779,7 @@ def diagnosis_text(entry: VarEntry) -> str:
             "(e.g. flux scheme overshoot, regridding artefact) rather than "
             "a forcing issue. Check whether to clip to 0 in the rule, or "
             "whether the source field has a known sign-error."
-        )
+        ) + extreme_suffix
     if sev == "EXTREME_OUTLIER":
         return (
             f"Extreme outlier: observed range "
@@ -773,7 +789,7 @@ def diagnosis_text(entry: VarEntry) -> str:
             "unit conversion, or accumulated drift. The bound is probably "
             "correct — investigate the rule's compute step rather than "
             "loosen it."
-        )
+        ) + extreme_suffix
     if sev == "BOUNDS_OR_PEAK":
         return (
             f"Grid-cell extremes (min={fmt_num(am)} / max={fmt_num(ax)}) "
@@ -786,8 +802,8 @@ def diagnosis_text(entry: VarEntry) -> str:
         return (
             "Marginal overshoot of the literature bound. "
             "The bound likely needs widening."
-        )
-    return notes_text or "Failed sanity check."
+        ) + extreme_suffix
+    return (notes_text or "Failed sanity check.") + extreme_suffix
 
 
 # ---------------------------------------------------------------------------
@@ -1161,9 +1177,27 @@ def render_file_card(ent: VarEntry,
         ln = meta.get("long_name", "")
         sn = meta.get("standard_name", "")
         cm = meta.get("comment", "")
+        # Hemispheric scalar files (siarea, siextent, sisnmass, sivol, ...)
+        # carry _nh_ / _sh_ in the branding but share one variable-level
+        # long_name in the CMIP7 metadata — which always says "North" by
+        # default. Substitute the hemisphere word when the file is SH so
+        # we don't show "Sea-Ice Area North (SH)" for an Antarctic file.
+        hem_tag = ""
+        parts_fn = fname.split("_")
+        if "nh" in parts_fn:
+            hem_tag = " (NH)"
+        elif "sh" in parts_fn:
+            hem_tag = " (SH)"
+            if ln:
+                ln = re.sub(r"\bNorthern\b", "Southern", ln)
+                ln = re.sub(r"\bnorthern\b", "southern", ln)
+                ln = re.sub(r"\bNorth\b", "South", ln)
+                ln = re.sub(r"\bnorth\b", "south", ln)
         if ln:
             parts.append(
-                f'<p class="longname"><strong>{html.escape(ln)}</strong></p>'
+                f'<p class="longname"><strong>'
+                f'{html.escape(ln)}{html.escape(hem_tag)}'
+                f'</strong></p>'
             )
         if sn:
             parts.append(

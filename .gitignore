@@ -58,3 +58,6 @@ htmlcov/
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+
+# sanity_check report tarballs (too large for git; share via filesystem)
+tools/sanity_check/reports/*.tar.gz

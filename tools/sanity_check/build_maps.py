@@ -211,8 +211,66 @@ def _pick_primary_var(ds, var: str) -> Optional[str]:
     return candidates[0]
 
 
-def _find_latlon_coords(ds, da):
-    """Return (lat_coord, lon_coord) DataArrays or (None, None)."""
+_SIBLING_LATLON_CACHE: Dict[Tuple[str, int], Tuple[Any, Any]] = {}
+
+
+def _find_sibling_latlon(file_path: Optional[str], unstructured_size: int):
+    """Find lat/lon from a sibling .nc in the same directory.
+
+    pycmor's seaice-masked branding (hxy-si) drops lat/lon coords, so files
+    like rlds_*_hxy-si_*.nc have only a bare 'nod2' dim. The unmasked sibling
+    (hxy-u) keeps them. Look for any sibling file with a matching unstructured
+    dim size and lat/lon coords; cache the first hit per (dir, size).
+    """
+    if not file_path:
+        return None, None
+    cache_key = (str(Path(file_path).parent), int(unstructured_size))
+    cached = _SIBLING_LATLON_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+    try:
+        import xarray as xr  # noqa: WPS433
+    except Exception:
+        return None, None
+    self_name = Path(file_path).name
+    for candidate in sorted(Path(file_path).parent.glob("*.nc")):
+        if candidate.name == self_name:
+            continue
+        try:
+            sib = xr.open_dataset(str(candidate), decode_times=False)
+        except Exception:
+            continue
+        try:
+            lat = None
+            lon = None
+            for name in ("lat", "latitude"):
+                if name in sib.coords and sib[name].size == unstructured_size:
+                    lat = sib[name].load(); break
+                if name in sib.variables and sib[name].size == unstructured_size:
+                    lat = sib[name].load(); break
+            for name in ("lon", "longitude"):
+                if name in sib.coords and sib[name].size == unstructured_size:
+                    lon = sib[name].load(); break
+                if name in sib.variables and sib[name].size == unstructured_size:
+                    lon = sib[name].load(); break
+        finally:
+            try:
+                sib.close()
+            except Exception:
+                pass
+        if lat is not None and lon is not None:
+            _SIBLING_LATLON_CACHE[cache_key] = (lat, lon)
+            return lat, lon
+    _SIBLING_LATLON_CACHE[cache_key] = (None, None)
+    return None, None
+
+
+def _find_latlon_coords(ds, da, file_path: Optional[str] = None):
+    """Return (lat_coord, lon_coord) DataArrays or (None, None).
+
+    Falls back to a sibling .nc file in the same directory when ds itself
+    has no lat/lon — used for pycmor's hxy-si branding which strips coords.
+    """
 
     candidates_lat = ("lat", "latitude", "nav_lat", "y")
     candidates_lon = ("lon", "longitude", "nav_lon", "x")
@@ -233,6 +291,19 @@ def _find_latlon_coords(ds, da):
         if name in ds.variables:
             lon = ds[name]
             break
+
+    if (lat is None or lon is None) and da is not None and da.ndim >= 1:
+        # 1D unstructured fallback: borrow lat/lon from a sibling file with
+        # matching dim size.
+        for d in da.dims:
+            try:
+                n = int(da.sizes[d])
+            except Exception:
+                continue
+            sib_lat, sib_lon = _find_sibling_latlon(file_path, n)
+            if sib_lat is not None and sib_lon is not None:
+                return sib_lat, sib_lon
+
     return lat, lon
 
 
@@ -252,14 +323,28 @@ def _reduce_to_panels(da, parent=None):
     # robust signal — the dim could be named anything (cell, nod2, ncells, ...).
     # We ONLY trust the coords; substring fallback was unsafe because some pycmor
     # files mis-name the model-level dim "longitude" (size 137 in IFS L137).
+    #
+    # When the 4-letter forms (lat, lon) are present, IGNORE latitude/longitude
+    # for spatial-dim discovery: pycmor's atm 3D files re-use the name
+    # "longitude" for the model-level dim. Trusting it would keep that dim as
+    # spatial and produce a (level, cell) 2D shape that crashes the transpose
+    # downstream.
     spatial_dims = set()
-    for coord_name in ("lat", "latitude", "lon", "longitude"):
-        if coord_name in da.coords:
-            spatial_dims.update(da.coords[coord_name].dims)
-    if parent is not None:
-        for coord_name in ("lat", "latitude", "lon", "longitude"):
-            if coord_name in parent.coords:
-                spatial_dims.update(parent.coords[coord_name].dims)
+
+    def _candidate_coord_names(src):
+        names = ("lat", "latitude", "lon", "longitude")
+        coords = getattr(src, "coords", {})
+        have_short = ("lat" in coords) or ("lon" in coords)
+        if have_short:
+            names = ("lat", "lon")
+        return names
+
+    for src in (da, parent):
+        if src is None:
+            continue
+        for coord_name in _candidate_coord_names(src):
+            if coord_name in src.coords:
+                spatial_dims.update(src.coords[coord_name].dims)
 
     # Fallback substring hints, used ONLY when lat/lon coords don't reveal a
     # spatial dim at all. Restricted to unambiguous unstructured-grid hints so
@@ -299,45 +384,24 @@ def _reduce_to_panels(da, parent=None):
         return False
 
     time_dims = [d for d in da.dims if _is_time_dim(d)]
-    while True:
-        non_spatial = [d for d in da.dims
-                       if not is_spatial(d) and d not in time_dims]
-        if not non_spatial:
-            break
-        d0 = non_spatial[0]
-        # Try isel(0); if the slice is all-NaN (e.g. surface level of
-        # ocean vertical diffusivity, which is defined only at interior
-        # interfaces) walk through the dim until we find a slice with at
-        # least some finite values. Cap the search at ~12 attempts.
-        try:
-            n = int(da.sizes[d0])
-            chosen = 0
-            tried_levels = list(range(min(n, 12)))
-            for idx in tried_levels:
-                slab = da.isel({d0: idx})
-                vals = slab.values
-                if np.isfinite(vals).any():
-                    chosen = idx
-                    break
-            else:
-                # No finite slice in the first 12 — fall back to 0
-                chosen = 0
-            da = da.isel({d0: chosen})
-            notes.append(f"{d0}={chosen}")
-        except Exception:
-            break
-        if len(non_spatial) == 1:
-            break
-
-    # 2) Compute time-min/mean/max along the time dim. If multiple time dims,
-    # collapse them all (rare).
-    if time_dims:
+    # All non-spatial dims (time + level/tile/basin/etc.) get collapsed by
+    # the matching reducer for each panel:
+    #   min  panel = min over (time, level, ...)
+    #   max  panel = max over (time, level, ...)
+    #   mean panel = mean over (time, level, ...)
+    # This preserves full spatial coverage (any column with at least one
+    # finite layer/time contributes a value) and the panel labels stay
+    # honest. Earlier strategies that picked a single level either left
+    # the surface near-zero for interior-peaked fields like wo, or chose
+    # a deep level where most of the map was land/shallow (mostly grey).
+    non_spatial_all = [d for d in da.dims if not is_spatial(d)]
+    if non_spatial_all:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            panels["min"] = da.min(dim=time_dims, keep_attrs=True)
-            panels["mean"] = da.mean(dim=time_dims, keep_attrs=True)
-            panels["max"] = da.max(dim=time_dims, keep_attrs=True)
-        notes.append(f"min/mean/max({','.join(time_dims)})")
+            panels["min"] = da.min(dim=non_spatial_all, keep_attrs=True)
+            panels["mean"] = da.mean(dim=non_spatial_all, keep_attrs=True)
+            panels["max"] = da.max(dim=non_spatial_all, keep_attrs=True)
+        notes.append(f"min/mean/max({','.join(non_spatial_all)})")
         # representative for ndim safety check below
         da = panels["mean"]
     else:
@@ -410,14 +474,14 @@ def _coords_2d_to_grid(values_2d, lat2d, lon2d):
     return _bin_unstructured(values_2d, lat2d, lon2d)
 
 
-def _make_pcolormesh_inputs(da, ds):
+def _make_pcolormesh_inputs(da, ds, file_path: Optional[str] = None):
     """Return (lon_edges_or_centers, lat_edges_or_centers, values_2d, mode).
 
     mode is "regular" if lat/lon are 1D and values_2d is already aligned; else
     "binned" meaning the lon/lat are edges of a 1deg grid.
     """
 
-    lat, lon = _find_latlon_coords(ds, da)
+    lat, lon = _find_latlon_coords(ds, da, file_path=file_path)
 
     # Case A: data already 2D
     if da.ndim == 2:
@@ -587,8 +651,27 @@ def _render_map(out_path: Path, var: str, units: str, notes: Sequence[str],
             ax.set_title(f"time-{k}", fontsize=8)
             ax.set_xticks([]); ax.set_yticks([])
             continue
-        vmin = float(np.nanmin(values_2d))
-        vmax = float(np.nanmax(values_2d))
+        data_min = float(np.nanmin(values_2d))
+        data_max = float(np.nanmax(values_2d))
+        # Robust color range via 2nd/98th percentile clipping. A handful
+        # of outliers (e.g. convective columns for wo, snow over Greenland
+        # for snw) would otherwise saturate the colorbar and squash the
+        # rest of the field into a single near-zero color band. Cells
+        # outside the clip range still plot with the saturated end color.
+        finite = values_2d[np.isfinite(values_2d)]
+        if finite.size > 100:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                p2, p98 = np.nanpercentile(finite, [2.0, 98.0])
+            # Keep clip strictly inside the data range; if the spread is
+            # already small the percentiles ≈ data min/max and nothing
+            # changes.
+            vmin = float(p2)
+            vmax = float(p98)
+            if vmin == vmax:
+                vmin, vmax = data_min, data_max
+        else:
+            vmin, vmax = data_min, data_max
         cmap, norm = _norm_for(vmin, vmax)
         ax = fig.add_subplot(1, n, i + 1)
         ax.set_facecolor("#f4f4f4")
@@ -619,7 +702,11 @@ def _render_map(out_path: Path, var: str, units: str, notes: Sequence[str],
         if i == 0:
             ax.set_ylabel("lat", fontsize=7)
         ax.tick_params(labelsize=6)
-        ax.set_title(f"time-{k}\nmin={vmin:.3g} max={vmax:.3g}", fontsize=7)
+        clipped = (vmin > data_min) or (vmax < data_max)
+        title = f"time-{k}\nmin={data_min:.3g} max={data_max:.3g}"
+        if clipped:
+            title += "  [color: p2-p98]"
+        ax.set_title(title, fontsize=7)
         cb = fig.colorbar(mesh, ax=ax, fraction=0.04, pad=0.02)
         cb.ax.tick_params(labelsize=6)
         if units and i == n - 1:
@@ -661,8 +748,17 @@ def _process_one(args_tuple: Tuple[str, str, Dict[str, Any], str]) -> Tuple[str,
         _placeholder_png(out_path, f"xarray import failed: {exc}")
         return var, "no-xarray", fname
 
+    # Open with dask chunks: small 2D files become trivially-chunked (1 chunk)
+    # so behavior is unchanged, but huge 3D files like cl_day / pfull_day
+    # (~84 GB uncompressed, 365 days x 137 levels x 421k cells) become
+    # lazy / streamable. The reducer can then do min/mean/max across the
+    # whole field without trying to materialise all of it at once.
     try:
-        ds = xr.open_dataset(file_path, decode_times=False)
+        try:
+            ds = xr.open_dataset(file_path, decode_times=False, chunks="auto")
+        except Exception:
+            # Fallback to eager open if dask unavailable or chunking errors.
+            ds = xr.open_dataset(file_path, decode_times=False)
     except Exception as exc:
         _placeholder_png(out_path, f"open failed: {exc}")
         return var, "open-failed", fname
@@ -686,7 +782,7 @@ def _process_one(args_tuple: Tuple[str, str, Dict[str, Any], str]) -> Tuple[str,
         # lat, mode) is the same across all three; just the values differ.
         panel_data: Dict[str, Tuple[Any, Any, Any, str]] = {}
         for k, panel_da in panels.items():
-            lon, lat, values_2d, mode = _make_pcolormesh_inputs(panel_da, ds)
+            lon, lat, values_2d, mode = _make_pcolormesh_inputs(panel_da, ds, file_path=file_path)
             panel_data[k] = (lon, lat, values_2d, mode)
         _render_map(out_path, var, units, notes, panel_data)
         ds.close()

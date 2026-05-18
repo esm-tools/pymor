@@ -1477,30 +1477,52 @@ def compute_density(data, rule):
     return result
 
 
+def _fesom_edge_width(mesh, data, horiz_dim_candidates=("nod2", "ncells", "ncol")):
+    """Return per-node effective edge width (m) as an xr.DataArray, or None.
+
+    CMIP7 wants mass/salt transport in `kg s-1` (integrated across the cell
+    edge perpendicular to the flow). FESOM 2.7's DARS2 mesh doesn't expose
+    an explicit edge-length variable; it has `cell_area` (node Voronoi-cell
+    area, m²). The effective edge width ≈ sqrt(cell_area) — exact for
+    squares, order-of-magnitude correct for irregular Voronoi cells, and
+    the convention used by AWI for CMIP6 FESOM submissions.
+
+    Aligns the returned DataArray to the data's horizontal dim name.
+    """
+    if "cell_area" not in mesh:
+        return None
+    horiz_dim = next(
+        (d for d in data.dims if d in horiz_dim_candidates), None
+    )
+    if horiz_dim is None:
+        return None
+    cell_area = mesh["cell_area"]
+    if int(cell_area.size) != int(data.sizes[horiz_dim]):
+        return None
+    edge_width = np.sqrt(np.asarray(cell_area.values, dtype=float))
+    return xr.DataArray(edge_width, dims=[horiz_dim])
+
+
 def compute_mass_transport(data, rule):
     """
     Compute ocean mass transport from velocity.
 
     mass_transport = velocity * density * cell_thickness * cell_width
 
-    For FESOM unstructured grid, we approximate:
-      umo = u * rho_0 * dz * dx  (but dx not well-defined on unstructured grids)
+    For FESOM unstructured grid:
+      umo = u * rho_0 * dz * sqrt(cell_area)
 
-    Simplified Boussinesq approach used by most CMIP models:
-      umo = u * rho_0 * cell_area_vertical_face
-
-    Since FESOM doesn't output cell face areas, we use the simpler:
-      umo = u * rho_0 * dz
-
-    where dz is layer thickness and rho_0 is reference density.
-    Units: m/s * kg/m3 * m = kg/(m*s) — needs scaling by cell width for kg/s.
-
-    For unstructured grids, CMIP accepts transport per unit width (kg/m/s)
-    or the model can report on native grid with volcello as cell_measures.
+    The sqrt(cell_area) factor is the effective Voronoi-cell edge width
+    perpendicular to the flow — order-of-magnitude correct for an
+    unstructured grid where an explicit edge-length variable isn't in
+    the mesh. Yields integrated transport in `kg s-1` per cell as CMIP7
+    requires (Omon.umo, Omon.vmo: standard_name `ocean_mass_x/y_transport`).
 
     Rule attributes:
       - reference_density: Boussinesq rho_0 (default 1025.0 kg/m3)
       - transport_component: 'x', 'y', or 'z' (for metadata)
+      - grid_file: path to FESOM mesh netCDF (needs `depth_bnds` and
+        `cell_area`)
     """
     rho_0 = float(rule.get("reference_density", 1025.0))
     grid_file = rule.get("grid_file")
@@ -1509,14 +1531,22 @@ def compute_mass_transport(data, rule):
     if not isinstance(data, xr.DataArray):
         raise ValueError("compute_mass_transport expects velocity as xr.DataArray")
 
-    # Get layer thickness from mesh
+    # Get layer thickness and cell-edge width from mesh
     mesh = xr.open_dataset(grid_file)
     if "depth_bnds" in mesh:
         depth_bnds = mesh["depth_bnds"].values
         dz = np.diff(depth_bnds)
     else:
+        mesh.close()
         raise ValueError("Mesh file must contain 'depth_bnds' for layer thickness")
+    edge_width = _fesom_edge_width(mesh, data)
     mesh.close()
+    if edge_width is None:
+        raise ValueError(
+            "Mesh file must contain 'cell_area' (m²) aligned to data's "
+            "horizontal dimension; effective edge width = sqrt(cell_area) "
+            "is required to convert transport from kg/(s*m) to kg/s."
+        )
 
     # Detect vertical dimension
     vertical_dim = None
@@ -1548,16 +1578,19 @@ def compute_mass_transport(data, rule):
     else:
         raise ValueError(f"Mesh has {len(dz)} levels but data has {nz_data}")
 
-    # mass transport = velocity * rho_0 * layer_thickness
-    # Units: m/s * kg/m3 * m = kg/(m2*s) ... this is transport per unit width
-    # For FESOM unstructured grid, this is the standard approach
-    transport = data * rho_0 * thickness
+    # mass transport = velocity * rho_0 * layer_thickness * edge_width
+    # Units: m/s * kg/m3 * m * m = kg/s (integrated across the Voronoi-cell
+    # edge perpendicular to the flow). CMIP7 Omon.{umo,vmo} require kg/s.
+    transport = data * rho_0 * thickness * edge_width
 
     transport.name = data.name
     component = rule.get("transport_component", "")
     transport.attrs = {
         "units": "kg s-1",
-        "processing_note": f"Computed as velocity * rho_0({rho_0}) * dz. " f"Transport per grid cell {component}-face.",
+        "processing_note": (
+            f"Computed as velocity * rho_0({rho_0}) * dz * sqrt(cell_area). "
+            f"Integrated mass transport across grid-cell {component}-face."
+        ),
     }
     return transport
 
@@ -1566,16 +1599,16 @@ def compute_salt_transport(data, rule):
     """
     Compute 3D ocean salt mass transport from velocity and salinity.
 
-    sfx = u * S * rho_0 * dz  (x-component, from unod + salt)
-    sfy = v * S * rho_0 * dz  (y-component, from vnod + salt)
+    sfx = u * S * rho_0 * dz * sqrt(cell_area)  (x-component, kg s-1)
+    sfy = v * S * rho_0 * dz * sqrt(cell_area)  (y-component, kg s-1)
 
     Salt (S) from FESOM is in psu (g/kg); converted to kg/kg by * 1e-3.
-    Result is transport per grid-cell vertical face [kg s-1] on the native
-    unstructured grid, following the same Boussinesq approximation as
-    compute_mass_transport.
+    Result is integrated salt mass transport across the Voronoi-cell edge
+    (kg s-1) as CMIP7 Omon.{sfx,sfy} require — same edge-width treatment
+    as compute_mass_transport.
 
     Rule attributes:
-      - grid_file: path to mesh file (for depth_bnds)
+      - grid_file: path to FESOM mesh (needs `depth_bnds` and `cell_area`)
       - salt_path: directory containing salt files
       - salt_pattern: glob pattern for salt files (e.g. salt.fesom.*.nc)
       - salt_variable: variable name in salt files (default: 'salt')
@@ -1588,12 +1621,20 @@ def compute_salt_transport(data, rule):
     if not isinstance(data, xr.DataArray):
         raise ValueError("compute_salt_transport expects velocity as xr.DataArray")
 
-    # Load layer thickness from mesh
+    # Load layer thickness and cell-edge width from mesh
     mesh = xr.open_dataset(grid_file)
     if "depth_bnds" not in mesh:
+        mesh.close()
         raise ValueError("Mesh file must contain 'depth_bnds' for layer thickness")
     dz = np.diff(mesh["depth_bnds"].values)
+    edge_width = _fesom_edge_width(mesh, data)
     mesh.close()
+    if edge_width is None:
+        raise ValueError(
+            "Mesh file must contain 'cell_area' (m²) aligned to data's "
+            "horizontal dimension; effective edge width = sqrt(cell_area) "
+            "is required to convert transport from kg/(s*m) to kg/s."
+        )
 
     # Detect vertical dimension
     vertical_dim = None
@@ -1620,18 +1661,19 @@ def compute_salt_transport(data, rule):
         else:
             salt = salt.reindex(time=data.time, method="ffill")
 
-    # Convert psu → kg/kg, then compute transport
-    # sfx [kg s-1 per cell face] = u [m/s] * S [kg/kg] * rho_0 [kg/m3] * dz [m]
+    # Convert psu → kg/kg, then compute integrated transport.
+    # sfx [kg s-1] = u [m/s] * S [kg/kg] * rho_0 [kg/m3] * dz [m] * w [m]
     salt_kgkg = salt * 1e-3
-    transport = data * salt_kgkg * rho_0 * thickness
+    transport = data * salt_kgkg * rho_0 * thickness * edge_width
 
     component = rule.get("transport_component", "")
     transport.name = data.name
     transport.attrs = {
         "units": "kg s-1",
         "processing_note": (
-            f"Computed as velocity * (salt*1e-3) * rho_0({rho_0}) * dz. "
-            f"Salt transport per grid-cell {component}-face."
+            f"Computed as velocity * (salt*1e-3) * rho_0({rho_0}) * dz "
+            f"* sqrt(cell_area). Integrated salt transport across "
+            f"grid-cell {component}-face."
         ),
     }
     return transport
