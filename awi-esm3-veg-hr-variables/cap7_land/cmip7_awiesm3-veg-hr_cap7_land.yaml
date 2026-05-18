@@ -1163,6 +1163,15 @@ rules:
     source_units: m
     pipelines:
       - lpjg_monthly_pipeline
+  - name: vegHeightGrass_mon
+    inputs:
+      - path: *ldp
+        pattern: "*/run1/vegHeightGrass_monthly.out"
+    compound_name: land.vegHeight.tavg-u-hxy-grs.mon.GLB
+    model_variable: Total
+    source_units: m
+    pipelines:
+      - lpjg_monthly_pipeline
   - name: vegHeightTree_mon
     inputs:
       - path: *ldp
