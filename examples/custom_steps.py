@@ -11,6 +11,7 @@ Function index (keep this list in sync when adding/removing steps; helps avoid d
   Loaders / generic
     load_basin_mask, load_gridfile, _load_secondary_mf,
     load_lpjguess_monthly, load_lpjguess_yearly,
+    broadcast_yearly_to_monthly,
     load_lpjguess_yearly_lut, load_lpjguess_monthly_lut,
     sum_lpjguess_monthly_files
 
@@ -1171,7 +1172,11 @@ def compute_msftbarot(data, rule):
 
     Near the equator where |f| < f_min the result is set to NaN.
     See CMIP7 OMDP document for details on streamfunction approximations
-    for free-surface ocean models.
+    for free-surface ocean models. The geostrophic approximation breaks
+    down within ~10° of the equator (|f| ≈ 2.5e-5 1/s), so f_min=2.5e-5
+    is the default — Christian's cli37 review flagged a residual
+    artifact band at ±4-10° that came from the previous f_min=1e-5
+    cutoff (which only masked |lat| < ~4°).
 
     Primary input (data) is SSH (sea surface height, in metres).
 
@@ -1181,12 +1186,14 @@ def compute_msftbarot(data, rule):
       - reference_density: Boussinesq rho_0 (default 1025.0 kg/m3)
       - gravity: g (default 9.80665 m/s2)
       - omega: Earth's angular velocity (default 7.2921e-5 rad/s)
-      - f_min: minimum |f| cutoff for equatorial masking (default 1e-5 1/s)
+      - f_min: minimum |f| cutoff for equatorial masking (default
+        2.5e-5 1/s = ±~10° latitude; widen further if downstream tools
+        still show non-physical equatorial spikes)
     """
     rho_0 = float(rule.get("reference_density", 1025.0))
     g = float(rule.get("gravity", 9.80665))
     omega = float(rule.get("omega", 7.2921e-5))
-    f_min = float(rule.get("f_min", 1e-5))
+    f_min = float(rule.get("f_min", 2.5e-5))
 
     grid_file = rule.get("grid_file")
     if grid_file is None:
@@ -1243,7 +1250,8 @@ def compute_msftbarot(data, rule):
         "processing_note": (
             f"Geostrophic SSH approx: psi = rho_0*g*H/f*eta. "
             f"rho_0={rho_0} kg/m3, g={g} m/s2, omega={omega} rad/s, "
-            f"f_min={f_min} 1/s (NaN in equatorial band |lat| < ~4 deg)."
+            f"f_min={f_min} 1/s (NaN in equatorial band where the "
+            f"geostrophic balance breaks down)."
         ),
     }
     # Keep original model_variable name; set_variable_attrs will rename to cmor_variable
@@ -1555,31 +1563,34 @@ def compute_mass_transport(data, rule):
     """
     Compute ocean mass transport from velocity.
 
-    mass_transport = velocity * density * cell_thickness * cell_width
+    Horizontal (transport_component in {'x','y'}):
+      mass_transport = u * rho_0 * dz * sqrt(cell_area)
+      Units: m/s * kg/m³ * m * m = kg/s, integrated across the cell's
+      Voronoi-edge perpendicular to the flow.
 
-    For FESOM unstructured grid:
-      umo = u * rho_0 * dz * sqrt(cell_area)
-
-    The sqrt(cell_area) factor is the effective Voronoi-cell edge width
-    perpendicular to the flow — order-of-magnitude correct for an
-    unstructured grid where an explicit edge-length variable isn't in
-    the mesh. Yields integrated transport in `kg s-1` per cell as CMIP7
-    requires (Omon.umo, Omon.vmo: standard_name `ocean_mass_x/y_transport`).
+    Vertical (transport_component == 'z'):
+      mass_transport = w * rho_0 * cell_area
+      Units: m/s * kg/m³ * m² = kg/s, integrated across the horizontal
+      face of the cell. (The horizontal formula's `dz * sqrt(cell_area)`
+      term is the wrong area for the vertical face — using it for `w`
+      undercounts by ~dz/sqrt(cell_area), which at FESOM HR resolution
+      is ~50 m / 1e4 m = ~200x too small.)
 
     Rule attributes:
       - reference_density: Boussinesq rho_0 (default 1025.0 kg/m3)
-      - transport_component: 'x', 'y', or 'z' (for metadata)
+      - transport_component: 'x', 'y', or 'z' (controls area factor)
       - grid_file: path to FESOM mesh netCDF (needs `depth_bnds` and
         `cell_area`)
     """
     rho_0 = float(rule.get("reference_density", 1025.0))
     grid_file = rule.get("grid_file")
+    component = rule.get("transport_component", "")
 
     # data is a DataArray (velocity field, already extracted by get_variable)
     if not isinstance(data, xr.DataArray):
         raise ValueError("compute_mass_transport expects velocity as xr.DataArray")
 
-    # Get layer thickness and cell-edge width from mesh
+    # Get layer thickness and cell-edge width / cell area from mesh
     mesh = xr.open_dataset(grid_file)
     if "depth_bnds" in mesh:
         depth_bnds = mesh["depth_bnds"].values
@@ -1588,6 +1599,15 @@ def compute_mass_transport(data, rule):
         mesh.close()
         raise ValueError("Mesh file must contain 'depth_bnds' for layer thickness")
     edge_width = _fesom_edge_width(mesh, data)
+    # cell_area is needed verbatim for vertical mass flux (horizontal face)
+    horiz_dim_for_area = next((d for d in data.dims if d in ("nod2", "ncells", "ncol")), None)
+    if str(component).lower() == "z" and horiz_dim_for_area is not None and "cell_area" in mesh:
+        cell_area = xr.DataArray(
+            np.asarray(mesh["cell_area"].values, dtype=float),
+            dims=[horiz_dim_for_area],
+        )
+    else:
+        cell_area = None
     mesh.close()
     if edge_width is None:
         raise ValueError(
@@ -1626,17 +1646,22 @@ def compute_mass_transport(data, rule):
     else:
         raise ValueError(f"Mesh has {len(dz)} levels but data has {nz_data}")
 
-    # mass transport = velocity * rho_0 * layer_thickness * edge_width
-    # Units: m/s * kg/m3 * m * m = kg/s (integrated across the Voronoi-cell
-    # edge perpendicular to the flow). CMIP7 Omon.{umo,vmo} require kg/s.
-    transport = data * rho_0 * thickness * edge_width
+    # Vertical mass transport (Omon.wmo): the area is the horizontal cell
+    # face, not the vertical Voronoi-edge. Use cell_area directly.
+    # Horizontal mass transport (Omon.{umo,vmo}): integrate across the
+    # vertical face = dz * sqrt(cell_area).
+    if str(component).lower() == "z" and cell_area is not None:
+        transport = data * rho_0 * cell_area
+        area_note = "cell_area (horizontal face)"
+    else:
+        transport = data * rho_0 * thickness * edge_width
+        area_note = "dz * sqrt(cell_area) (vertical face perpendicular to flow)"
 
     transport.name = data.name
-    component = rule.get("transport_component", "")
     transport.attrs = {
         "units": "kg s-1",
         "processing_note": (
-            f"Computed as velocity * rho_0({rho_0}) * dz * sqrt(cell_area). "
+            f"Computed as velocity * rho_0({rho_0}) * {area_note}. "
             f"Integrated mass transport across grid-cell {component}-face."
         ),
     }
@@ -2954,6 +2979,40 @@ def load_lpjguess_yearly(data, rule):
     if source_units:
         da.attrs["units"] = source_units
     return da.to_dataset()
+
+
+def broadcast_yearly_to_monthly(data, rule):
+    """
+    Broadcast a yearly LPJ-GUESS-loaded Dataset to monthly cadence.
+
+    Each yearly sample is repeated 12 times with mid-month timestamps
+    (day 15). Used for CMIP7 Emon variables whose authoritative source
+    is the LPJ-GUESS yearly stand-area file (e.g. treeFrac_yearly.out):
+    the native monthly file is LAI/phenology weighted and incorrectly
+    imparts an annual cycle. See HANDOFF_d4_treeFrac_per_pft.md.
+    """
+    import cftime
+
+    var_name = list(data.data_vars)[0]
+    da = data[var_name]
+
+    years = [int(t.year) for t in da.time.values]
+    new_times = [
+        cftime.DatetimeProlepticGregorian(yr, m, 15)
+        for yr in years
+        for m in range(1, 13)
+    ]
+    new_values = np.repeat(da.values, 12, axis=0)
+
+    new_coords = {"time": new_times}
+    for coord_name in ("lon", "lat"):
+        if coord_name in da.coords:
+            new_coords[coord_name] = da.coords[coord_name]
+
+    new_da = xr.DataArray(
+        new_values, dims=da.dims, coords=new_coords, name=var_name, attrs=da.attrs,
+    )
+    return new_da.to_dataset()
 
 
 def load_lpjguess_yearly_lut(data, rule):
@@ -4357,6 +4416,15 @@ def compute_hfbasin_tripyview(data, rule):
                        "tools/sanity_check/reports/hfbasin_research_plan.md.",
         },
     )
+    # Attach CF attrs to the lat coord so the written file has a usable
+    # coordinate variable (was previously a bare numeric coord — cli37
+    # review: "flawed coordinate variable").
+    hfbasin["lat"].attrs.update({
+        "standard_name": "latitude",
+        "long_name": "Latitude",
+        "units": "degrees_north",
+        "axis": "Y",
+    })
     return hfbasin.to_dataset()
 
 
@@ -4523,6 +4591,12 @@ def compute_sltbasin_tripyview(data, rule):
                        "see tools/sanity_check/reports/hfbasin_research_plan.md.",
         },
     )
+    sltbasin["lat"].attrs.update({
+        "standard_name": "latitude",
+        "long_name": "Latitude",
+        "units": "degrees_north",
+        "axis": "Y",
+    })
     return sltbasin.to_dataset()
 
 

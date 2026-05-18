@@ -218,12 +218,24 @@ rules:
     compound_name: ocean.zos.tavg-u-hxy-sea.mon.GLB
     model_variable: ssh
 
+  # FESOM `fh` (heat_flux_in in ice_oce_coupling.F90:418) is the net
+  # heat flux at the ocean surface with sign convention positive=UP
+  # (positive when the ocean loses heat to the atmosphere — the density-
+  # flux equation `dens_flux = sw_alpha * heat_flux_in / vcpw + ...` at
+  # ice_oce_coupling.F90:654 confirms: positive heat_flux_in → positive
+  # density flux → cooling/densification). CMIP7 `hfds` is positive=DOWN
+  # (Net flux of heat entering the liquid water column through its upper
+  # surface). The two conventions are opposite, so flip the sign.
   - name: hfds
     inputs:
       - path: *dp
         pattern: fh\.fesom\..*\.nc
     compound_name: ocean.hfds.tavg-u-hxy-sea.mon.GLB
     model_variable: fh
+    scale_factor: -1.0
+    scaled_units: "W m-2"
+    pipelines:
+      - scale_pipeline
 
   - name: mlotst
     inputs:
