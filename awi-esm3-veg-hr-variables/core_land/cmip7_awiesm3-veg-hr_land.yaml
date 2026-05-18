@@ -158,6 +158,12 @@ rules:
   # Fixed (fx) variables
   # ============================================================
 
+  # Duplicates the core_atm/.../areacella rule on the same compound
+  # `atmos.areacella.ti-u-hxy-u.fx.GLB`. Kept here too because each tier
+  # is processed as a stand-alone job and needs areacella in its own
+  # cmorized/ subtree for cell_measures resolution. Outputs are byte-
+  # identical to the core_atm copy (verified: sum/mean/min/max match to
+  # f64 precision), so consumers can use whichever copy they encounter.
   - name: areacella
     inputs:
       - path: *dp

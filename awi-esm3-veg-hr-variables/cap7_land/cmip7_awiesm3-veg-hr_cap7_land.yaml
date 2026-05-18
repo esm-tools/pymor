@@ -668,15 +668,24 @@ rules:
     source_units: kg m-2
     pipelines:
       - lpjg_monthly_pipeline
-  - name: evspsbl_mon
-    inputs:
-      - path: *ldp
-        pattern: "*/run1/evspsbl_monthly.out"
-    compound_name: atmos.evspsbl.tavg-u-hxy-u.mon.GLB
-    model_variable: Total
-    source_units: kg m-2 s-1
-    pipelines:
-      - lpjg_monthly_pipeline
+  # DISABLED: collides with core_land/.../evspsbl rule. Both emit the
+  # same compound `atmos.evspsbl.tavg-u-hxy-u.mon.GLB` and the file
+  # metadata is identical (long_name, standard_name, cell_methods,
+  # realm — all same), so downstream tools can't tell the LPJ-GUESS
+  # value from the OIFS coupled value. CMIP7's canonical `evspsbl`
+  # is the IFS coupled water flux to atmosphere, which is what
+  # core_land emits. If LPJ-specific ET is needed later, re-enable
+  # under a distinct CMIP7 name (e.g. evspsblveg = canopy, or tran =
+  # transpiration only).
+  # - name: evspsbl_mon
+  #   inputs:
+  #     - path: *ldp
+  #       pattern: "*/run1/evspsbl_monthly.out"
+  #   compound_name: atmos.evspsbl.tavg-u-hxy-u.mon.GLB
+  #   model_variable: Total
+  #   source_units: kg m-2 s-1
+  #   pipelines:
+  #     - lpjg_monthly_pipeline
   - name: fco2antt_mon
     inputs:
       - path: *ldp
@@ -848,42 +857,47 @@ rules:
     source_units: '%'
     pipelines:
       - lpjg_monthly_pipeline
-  - name: mrro_mon
-    inputs:
-      - path: *ldp
-        pattern: "*/run1/mrro_monthly.out"
-    compound_name: land.mrro.tavg-u-hxy-lnd.mon.GLB
-    model_variable: Total
-    source_units: kg m-2 s-1
-    pipelines:
-      - lpjg_monthly_pipeline
-  - name: mrros_mon
-    inputs:
-      - path: *ldp
-        pattern: "*/run1/mrros_monthly.out"
-    compound_name: land.mrros.tavg-u-hxy-lnd.mon.GLB
-    model_variable: Total
-    source_units: kg m-2 s-1
-    pipelines:
-      - lpjg_monthly_pipeline
-  - name: mrso_mon
-    inputs:
-      - path: *ldp
-        pattern: "*/run1/mrso_monthly.out"
-    compound_name: land.mrso.tavg-u-hxy-lnd.mon.GLB
-    model_variable: Total
-    source_units: kg m-2
-    pipelines:
-      - lpjg_monthly_pipeline
-  - name: mrsos_mon
-    inputs:
-      - path: *ldp
-        pattern: "*/run1/mrsos_monthly.out"
-    compound_name: land.mrsol.tavg-d10cm-hxy-lnd.mon.GLB
-    model_variable: Total
-    source_units: kg m-2
-    pipelines:
-      - lpjg_monthly_pipeline
+  # DISABLED: mrro/mrros/mrso/mrsol all collide with core_land OIFS rules
+  # on the same compound_name; metadata is identical and downstream tools
+  # can't tell LPJ-GUESS from OIFS. Core OIFS values are the canonical
+  # CMIP7 deliverable. Re-enable under distinct names if LPJ-specific
+  # land-hydrology values are needed for vegetation analysis.
+  # - name: mrro_mon
+  #   inputs:
+  #     - path: *ldp
+  #       pattern: "*/run1/mrro_monthly.out"
+  #   compound_name: land.mrro.tavg-u-hxy-lnd.mon.GLB
+  #   model_variable: Total
+  #   source_units: kg m-2 s-1
+  #   pipelines:
+  #     - lpjg_monthly_pipeline
+  # - name: mrros_mon
+  #   inputs:
+  #     - path: *ldp
+  #       pattern: "*/run1/mrros_monthly.out"
+  #   compound_name: land.mrros.tavg-u-hxy-lnd.mon.GLB
+  #   model_variable: Total
+  #   source_units: kg m-2 s-1
+  #   pipelines:
+  #     - lpjg_monthly_pipeline
+  # - name: mrso_mon
+  #   inputs:
+  #     - path: *ldp
+  #       pattern: "*/run1/mrso_monthly.out"
+  #   compound_name: land.mrso.tavg-u-hxy-lnd.mon.GLB
+  #   model_variable: Total
+  #   source_units: kg m-2
+  #   pipelines:
+  #     - lpjg_monthly_pipeline
+  # - name: mrsos_mon
+  #   inputs:
+  #     - path: *ldp
+  #       pattern: "*/run1/mrsos_monthly.out"
+  #   compound_name: land.mrsol.tavg-d10cm-hxy-lnd.mon.GLB
+  #   model_variable: Total
+  #   source_units: kg m-2
+  #   pipelines:
+  #     - lpjg_monthly_pipeline
   - name: nLeaf_mon
     inputs:
       - path: *ldp
@@ -1082,33 +1096,37 @@ rules:
     source_units: kg m-2 s-1
     pipelines:
       - lpjg_monthly_pipeline
-  - name: snc_mon
-    inputs:
-      - path: *ldp
-        pattern: "*/run1/snc_monthly.out"
-    compound_name: landIce.snc.tavg-u-hxy-lnd.mon.GLB
-    model_variable: Total
-    source_units: '%'
-    pipelines:
-      - lpjg_monthly_pipeline
-  - name: snd_mon
-    inputs:
-      - path: *ldp
-        pattern: "*/run1/snd_monthly.out"
-    compound_name: landIce.snd.tavg-u-hxy-lnd.mon.GLB
-    model_variable: Total
-    source_units: m
-    pipelines:
-      - lpjg_monthly_pipeline
-  - name: snw_mon
-    inputs:
-      - path: *ldp
-        pattern: "*/run1/snw_monthly.out"
-    compound_name: landIce.snw.tavg-u-hxy-lnd.mon.GLB
-    model_variable: Total
-    source_units: kg m-2
-    pipelines:
-      - lpjg_monthly_pipeline
+  # DISABLED: snc/snd/snw all collide on compound_name with core_land
+  # (snw) and cap7_atm (snc, snd). Same metadata in all duplicates so
+  # downstream tools can't pick the LPJ-GUESS value over the canonical
+  # OIFS one. CMIP7 ships the OIFS-derived snow variables.
+  # - name: snc_mon
+  #   inputs:
+  #     - path: *ldp
+  #       pattern: "*/run1/snc_monthly.out"
+  #   compound_name: landIce.snc.tavg-u-hxy-lnd.mon.GLB
+  #   model_variable: Total
+  #   source_units: '%'
+  #   pipelines:
+  #     - lpjg_monthly_pipeline
+  # - name: snd_mon
+  #   inputs:
+  #     - path: *ldp
+  #       pattern: "*/run1/snd_monthly.out"
+  #   compound_name: landIce.snd.tavg-u-hxy-lnd.mon.GLB
+  #   model_variable: Total
+  #   source_units: m
+  #   pipelines:
+  #     - lpjg_monthly_pipeline
+  # - name: snw_mon
+  #   inputs:
+  #     - path: *ldp
+  #       pattern: "*/run1/snw_monthly.out"
+  #   compound_name: landIce.snw.tavg-u-hxy-lnd.mon.GLB
+  #   model_variable: Total
+  #   source_units: kg m-2
+  #   pipelines:
+  #     - lpjg_monthly_pipeline
   - name: treeFracBdlEvg_mon
     inputs:
       - path: *ldp
