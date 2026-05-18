@@ -159,6 +159,26 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # wo pipeline: load FESOM w (on layer interfaces, nz=57), average to
+  # cell-center midpoints (nz1=56) per the CMIP wo convention.
+  # ``average_w_interfaces_to_midpoints`` folds the surface BC into the
+  # first midpoint, removing the "uppermost layer looks clean, rest
+  # noisy" artefact that cli37 reviewers flagged.
+  - name: wo_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script://$PYCMOR_HOME/examples/custom_steps.py:average_w_interfaces_to_midpoints
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
   # Zostoga pipeline: load temperature → extract → compute global thermosteric SL
   - name: zostoga_pipeline
     steps:
@@ -317,8 +337,13 @@ rules:
     compound_name: ocean.wo.tavg-ol-hxy-sea.mon.GLB
     model_variable: w
     lazy_write: true
-    # NOTE: w is on nz (57 interfaces), not nz1 (56 midpoints).
-    # May need vertical coordinate handling different from tracers.
+    # FESOM w is declared on (nl=57 interfaces, nod2D); CMIP wo is on
+    # cell-center midpoints (nz1=56). The wo_pipeline averages adjacent
+    # interfaces to midpoints, folding the w=0 surface BC into the first
+    # midpoint so the cli37 "uppermost layer clean, rest noisy" artefact
+    # is resolved.
+    pipelines:
+      - wo_pipeline
 
   # ============================================================
   # Depth-integrated variables — ocean_vertical_integration_pipeline

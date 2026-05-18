@@ -1559,6 +1559,112 @@ def _fesom_edge_width(mesh, data, horiz_dim_candidates=("nod2", "ncells", "ncol"
     return xr.DataArray(edge_width, dims=[horiz_dim])
 
 
+def average_w_interfaces_to_midpoints(data, rule):
+    """
+    Average FESOM ``w`` from layer interfaces to cell-center midpoints,
+    matching the CMIP convention for ``wo``.
+
+    FESOM 2.7 emits ``w`` on the top N layer interfaces (N=57 for the
+    DARS mesh: surface at z=0 through the top of the deepest layer).
+    The mesh has N cell-centre midpoints between N+1 interfaces; only
+    the top N interfaces are stored, the bottom-most (seabed) being
+    implicitly w=0 (flat-seabed BC).
+
+    cli37's bare passthrough wrote w on the 57 interface depths
+    ``[0, 5, 10, 20, 30, …, 6250]`` but labelled the coord with
+    ``olevel:name = "nz1"`` (the midpoint name). Reviewers (Christian)
+    flagged the result: "uppermost layer not too bad, those below are
+    noisy". That's exactly what an interface emission produces — the
+    surface BC (w=0 at interface 0) is preserved literally, while every
+    deeper interface carries the diagnostic-w noise from integrating
+    horizontal divergence down from the surface.
+
+    This step folds adjacent interfaces into midpoints so:
+      - the surface BC is averaged into the first midpoint (no more
+        "clean top, noisy below" jump);
+      - the vertical coord becomes mesh.depth (the CMIP midpoint axis);
+      - the output has the same number of levels as the mesh has cells
+        (57 here), so downstream CMOR validation matches.
+
+    Formula:
+      midpoint[i] = 0.5 * (w[i] + w[i+1])      for i = 0 … N-2
+      midpoint[N-1] = 0.5 * w[N-1]              (bottom BC w_seabed=0)
+
+    Rule attributes:
+      - grid_file: FESOM mesh netCDF (needs ``depth`` for midpoint
+        coords and ``depth_bnds`` for the N-vs-N+1 sanity check)
+    """
+    grid_file = rule.get("grid_file")
+    if grid_file is None:
+        raise ValueError(
+            "Rule must specify 'grid_file' for average_w_interfaces_to_midpoints"
+        )
+
+    if not isinstance(data, xr.DataArray):
+        raise ValueError(
+            "average_w_interfaces_to_midpoints expects an xr.DataArray"
+        )
+
+    vertical_dim = next(
+        (d for d in ("nz", "nz1", "lev", "depth", "olevel") if d in data.dims),
+        None,
+    )
+    if vertical_dim is None:
+        raise ValueError(
+            f"No vertical dimension found in data dims={list(data.dims)}"
+        )
+
+    mesh = xr.open_dataset(grid_file)
+    if "depth" not in mesh:
+        mesh.close()
+        raise ValueError("Mesh file must contain 'depth' (midpoint coords)")
+    midpoint_depth = np.asarray(mesh["depth"].values, dtype=float)
+    n_midpoints = midpoint_depth.size
+    mesh.close()
+
+    nz_data = data.sizes[vertical_dim]
+    if nz_data != n_midpoints:
+        raise ValueError(
+            f"Expected vertical size {n_midpoints} (FESOM cell layers, "
+            f"matches mesh 'depth'); got {nz_data}"
+        )
+
+    # Pad the deepest interface with zero (bottom BC: w=0 at seabed),
+    # then average adjacent interfaces to get midpoints.
+    upper = data
+    lower = xr.concat(
+        [
+            data.isel({vertical_dim: slice(1, None)}),
+            xr.zeros_like(data.isel({vertical_dim: 0})).expand_dims(
+                {vertical_dim: 1}
+            ),
+        ],
+        dim=vertical_dim,
+    )
+    # Strip stale interface coords on `lower` so the addition doesn't
+    # trigger an axis-value mismatch.
+    lower = lower.assign_coords({vertical_dim: upper[vertical_dim].values})
+    result = 0.5 * (upper + lower)
+
+    # Replace the interface coord with midpoint depths and rename the
+    # dim to the canonical CMIP midpoint name so downstream
+    # set_coordinates / map_dimensions sees the expected axis.
+    result = result.assign_coords({vertical_dim: midpoint_depth})
+    if vertical_dim != "nz1":
+        result = result.rename({vertical_dim: "nz1"})
+
+    result.attrs = dict(data.attrs)
+    result.attrs["processing_note"] = (
+        "Averaged from FESOM w on the top N layer interfaces (i.e. layer "
+        "tops, surface at z=0) to N cell-centre midpoints. Bottom BC "
+        "w_seabed=0 assumed for the deepest midpoint. Surface BC w=0 "
+        "folded into the first midpoint, eliminating the 'clean top, "
+        "noisy below' artefact."
+    )
+    result.name = data.name
+    return result
+
+
 def compute_mass_transport(data, rule):
     """
     Compute ocean mass transport from velocity.
