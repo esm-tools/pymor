@@ -11,7 +11,7 @@ Function index (keep this list in sync when adding/removing steps; helps avoid d
   Loaders / generic
     load_basin_mask, load_gridfile, _load_secondary_mf,
     load_lpjguess_monthly, load_lpjguess_yearly,
-    broadcast_yearly_to_monthly,
+    broadcast_yearly_to_monthly, clip_small_negatives, clip_floor_zero,
     load_lpjguess_yearly_lut, load_lpjguess_monthly_lut,
     sum_lpjguess_monthly_files
 
@@ -2979,6 +2979,44 @@ def load_lpjguess_yearly(data, rule):
     if source_units:
         da.attrs["units"] = source_units
     return da.to_dataset()
+
+
+def clip_small_negatives(data, rule):
+    """
+    Set values in [-threshold, +threshold] to zero.
+
+    Clears tiny-negative numerical noise (~1e-12 to 1e-10) that the
+    underlying model produces and that propagates through the pipeline
+    untouched. Threshold defaults to 1e-10; override via rule.clip_threshold.
+
+    Reviewer claim (Laszlo): for fNnetmin / fVegLitterMortality / fNloss /
+    gpp / gppLut / mrtws / wetlandCH4, raw .out files already contain the
+    same tiny-negative band — this is not a pycmor bug to chase upstream
+    but to silence in the rule. LPJ-GUESS land variables have no legit
+    signal below 1e-10, so this is safe to apply broadly.
+    """
+    threshold = float(rule.get("clip_threshold", 1e-10))
+    for var_name in list(data.data_vars):
+        da = data[var_name]
+        data[var_name] = da.where((da > threshold) | (da < -threshold), 0.0)
+    return data
+
+
+def clip_floor_zero(data, rule):
+    """
+    Floor all values at zero (one-sided clip).
+
+    Used for variables whose physical floor is 0 (soil moisture content,
+    heterotrophic respiration efflux) but whose pycmor pipeline introduces
+    negative values not present in the raw model output. Reviewer claim
+    (Laszlo): for mrsol / rhSoil, raw .out has nneg == 0 but cmor has
+    real negatives — the pycmor rule is introducing them and the cmor
+    convention is non-negative.
+    """
+    for var_name in list(data.data_vars):
+        da = data[var_name]
+        data[var_name] = da.where(da >= 0.0, 0.0)
+    return data
 
 
 def broadcast_yearly_to_monthly(data, rule):

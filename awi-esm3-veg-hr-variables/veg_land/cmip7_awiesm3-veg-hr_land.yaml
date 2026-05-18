@@ -49,6 +49,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_mrtws
+      - script://$PYCMOR_HOME/examples/custom_steps.py:clip_small_negatives
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -78,6 +79,7 @@ pipelines:
   - name: lpjg_monthly_pipeline
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly
+      - script://$PYCMOR_HOME/examples/custom_steps.py:clip_small_negatives
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -120,6 +122,7 @@ pipelines:
   - name: lpjg_monthly_lut_pipeline
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly_lut
+      - script://$PYCMOR_HOME/examples/custom_steps.py:clip_small_negatives
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable

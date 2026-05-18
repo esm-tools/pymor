@@ -33,6 +33,7 @@ pipelines:
   - name: lpjg_monthly_pipeline
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly
+      - script://$PYCMOR_HOME/examples/custom_steps.py:clip_small_negatives
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -50,6 +51,60 @@ pipelines:
       - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_lpjguess_monthly_depth
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.set_time_bounds
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # LPJ-GUESS monthly + clip-floor-at-zero (for variables whose physical
+  # floor is 0 but where the pipeline introduces small negatives;
+  # currently used by rhSoil — raw .out has nneg==0 per Laszlo).
+  - name: lpjg_monthly_clip0_pipeline
+    steps:
+      - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly
+      - script://$PYCMOR_HOME/examples/custom_steps.py:clip_small_negatives
+      - script://$PYCMOR_HOME/examples/custom_steps.py:clip_floor_zero
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # LPJ-GUESS monthly depth + clip-floor-at-zero (currently used by mrsol).
+  - name: lpjg_monthly_depth_clip0_pipeline
+    steps:
+      - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_lpjguess_monthly_depth
+      - script://$PYCMOR_HOME/examples/custom_steps.py:clip_small_negatives
+      - script://$PYCMOR_HOME/examples/custom_steps.py:clip_floor_zero
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.set_time_bounds
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
+  # LPJ-GUESS yearly→monthly broadcast (loads yearly stand-area file and
+  # repeats each yearly value across 12 mid-month time stamps).
+  # Used where the native monthly file is LAI/phenology-weighted and the
+  # yearly file is the authoritative stand-area source; see
+  # HANDOFF_d4_treeFrac_per_pft.md.
+  - name: lpjg_yearly_to_monthly_pipeline
+    steps:
+      - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_yearly
+      - script://$PYCMOR_HOME/examples/custom_steps.py:broadcast_yearly_to_monthly
+      - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -454,8 +509,10 @@ rules:
         pattern: "*/run1/rhSoil_monthly.out"
     compound_name: land.rhSoil.tavg-u-hxy-lnd.mon.GLB
     model_variable: Total
+    variable_attributes:
+      comment: "Heterotrophic soil respiration efflux floored at 0; small negatives introduced by the pycmor pipeline (not in raw LPJ-GUESS .out per Laszlo) are clipped. CMIP convention is one-sided efflux from soil C pool."
     pipelines:
-      - lpjg_monthly_pipeline
+      - lpjg_monthly_clip0_pipeline
 
   # --- Land cover fractions (8) ---
 
@@ -532,12 +589,14 @@ rules:
   - name: treeFrac_mon
     inputs:
       - path: *ldp
-        pattern: "*/run1/treeFrac_monthly.out"
+        pattern: "*/run1/treeFrac_yearly.out"
     compound_name: land.treeFrac.tavg-u-hxy-u.mon.GLB
     model_variable: Total
     source_units: "%"
+    variable_attributes:
+      comment: "Sourced from LPJ-GUESS yearly stand-area output (treeFrac_yearly.out) and broadcast to monthly cadence (each month within a year holds the same yearly value). The native monthly file (treeFrac_monthly.out) is LAI/phenology-weighted and incorrectly imparts an annual cycle; see HANDOFF_d4_treeFrac_per_pft.md."
     pipelines:
-      - lpjg_monthly_pipeline
+      - lpjg_yearly_to_monthly_pipeline
 
   # --- Other LPJ-GUESS variables (4) ---
 
@@ -1238,8 +1297,10 @@ rules:
     compound_name: land.mrsol.tavg-sl-hxy-lnd.mon.GLB
     model_variable: Total
     source_units: kg m-2
+    variable_attributes:
+      comment: "Soil moisture content floored at 0; small negatives introduced by the pycmor pipeline (not in raw LPJ-GUESS .out per Laszlo) are clipped. Physical floor is 0 — soil cannot hold negative water."
     pipelines:
-      - lpjg_monthly_depth_pipeline
+      - lpjg_monthly_depth_clip0_pipeline
   - name: tsl_mon
     inputs:
       - path: *ldp
