@@ -1288,13 +1288,38 @@ def compute_sispeed(data, rule):
 
 def compute_ice_mass_transport(data, rule):
     """
-    Compute sea ice mass transport: velocity × mass per area.
+    Compute sea ice mass transport: velocity × ice mass × cell width.
 
-    ice_mass_transport = velocity_component × m_ice
+    CMIP ``sidmasstranx`` / ``sidmasstrany`` are in ``kg s-1`` — the total
+    sea-ice mass crossing a cell edge per unit time, not a mass flux per
+    unit edge length. The physical formula is
+
+        sidmasstran = uice [m/s] × m_ice [m] × rho_ice [kg/m³]
+                    × cell_width_perp [m]
+
+    On a regular grid ``cell_width_perp`` is dy (for x-transport) or dx
+    (for y-transport). On FESOM's unstructured mesh there is no clean
+    anisotropic edge width per node, so we use the isotropic
+    approximation ``sqrt(cell_area)`` — this is what's available in the
+    mesh file and matches the FESOM community convention for reporting
+    node-level transports on a regular CMIP grid.
+
+    FESOM's ``m_ice`` is *effective ice height per unit area* (units 'm';
+    see ice/io_meandata.F90 def_stream long_name "ice height per unit
+    area"), so ``m_ice × rho_ice`` converts to mass per area. AOMIP
+    ``rho_ice = 910 kg/m³`` is the FESOM default (MOD_ICE.F90:61);
+    override via ``rho_ice`` on the rule.
+
+    Without ``cell_width_perp`` and ``rho_ice``, the legacy formula
+    ``uice × m_ice`` returned ``m²/s`` mislabelled as ``kg/s`` — values
+    were ~5 orders of magnitude too low at TCo319/DARS resolution.
 
     Rule attributes:
-      - mice_file: path to m_ice file
+      - mice_path / mice_pattern: m_ice files (required)
       - mice_variable: variable name (default: 'm_ice')
+      - rho_ice: ice density, kg/m³ (default 910.0, FESOM AOMIP)
+      - grid_file: FESOM mesh.nc containing ``cell_area`` (required)
+      - fesom_node_dim: name of node dimension (default: 'nod2')
 
     FESOM writes ``uice``/``vice`` daily and ``m_ice`` monthly when the run
     is configured with mixed-cadence ice diagnostics. xarray's coord-value
@@ -1303,6 +1328,14 @@ def compute_ice_mass_transport(data, rule):
     Resample the velocity to the m_ice cadence before multiplying so both
     sides agree on time.
     """
+    rho_ice = float(rule.get("rho_ice", 910.0))
+    grid_file = rule.get("grid_file")
+    if grid_file is None:
+        raise ValueError(
+            "Rule must specify 'grid_file' for compute_ice_mass_transport "
+            "(needs cell_area to scale by cell width perpendicular to flow)"
+        )
+
     m_ice = _load_secondary_mf(rule, "mice_path", "mice_pattern", "mice_variable")
 
     # Coarsen whichever side is finer to monthly. m_ice is the canonical
@@ -1316,9 +1349,24 @@ def compute_ice_mass_transport(data, rule):
             data = data.resample({data_time: "MS"}).mean()
     m_ice = _resample_to_match(data, m_ice)
 
-    result = data * m_ice
+    mesh = xr.open_dataset(grid_file)
+    edge_width = _fesom_edge_width(mesh, data)
+    mesh.close()
+    if edge_width is None:
+        raise ValueError(
+            "Mesh file must contain 'cell_area' (m²) aligned to data's "
+            "horizontal dimension; effective edge width = sqrt(cell_area) "
+            "is required to convert ice transport from m²/s to kg/s."
+        )
+
+    result = data * m_ice * rho_ice * edge_width
     result.attrs = data.attrs.copy()
     result.attrs["units"] = "kg s-1"
+    result.attrs["processing_note"] = (
+        f"sidmasstran = uice * m_ice * rho_ice({rho_ice}) * sqrt(cell_area). "
+        f"FESOM m_ice is effective ice height per cell area [m]; "
+        f"sqrt(cell_area) is the isotropic Voronoi-cell edge width."
+    )
     result.name = data.name
     return result
 
@@ -3547,6 +3595,18 @@ def regrid_oifs_to_fesom(data, rule):
     # ``isel`` preserves attrs, but be explicit in case of edge cases.
     if not result.attrs:
         result.attrs = dict(data.attrs)
+    # The isel above drops the source-grid lat/lon coords (they were on
+    # the now-removed ``source_dim``). Attach the FESOM target lat/lon
+    # on the new node_dim so the written file has lat(nod2)/lon(nod2)
+    # — matching the pure-FESOM hxy-si siblings (simass etc.) and the
+    # CMIP7 ``dimensions: longitude latitude time`` requirement. Without
+    # this, external tools (ushow, Panoply, ncview) can't render the
+    # field, and per-file sanity-check maps fall back to the
+    # _find_sibling_latlon workaround.
+    result = result.assign_coords({
+        "lat": (node_dim, fesom_lat),
+        "lon": (node_dim, fesom_lon),
+    })
     # Drop OIFS auxiliary time coords. XIOS files carry ``time_centered`` /
     # ``time_instant`` (plus their *_bounds twins) alongside the renamed
     # ``time`` (== old time_counter). Both reference dim ``time`` but with

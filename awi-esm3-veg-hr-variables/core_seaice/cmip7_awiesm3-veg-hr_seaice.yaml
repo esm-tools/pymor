@@ -80,6 +80,26 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # Scale + mask where no sea ice. Used by hxy-si rules whose CMIP7
+  # cell_methods is ``area: time: mean where sea_ice (mask=siconc)``.
+  # Rule must supply aice_path / aice_pattern.
+  - name: scale_mask_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
+      - script://$PYCMOR_HOME/examples/custom_steps.py:mask_where_no_seaice
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
 inherit:
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd
@@ -111,8 +131,10 @@ rules:
     model_variable: m_ice
     scale_factor: 917.0
     scaled_units: "kg m-2"
+    aice_path: *dp
+    aice_pattern: a_ice\.fesom\..*\.nc
     pipelines:
-      - scale_pipeline
+      - scale_mask_pipeline
 
   - name: siu
     inputs:

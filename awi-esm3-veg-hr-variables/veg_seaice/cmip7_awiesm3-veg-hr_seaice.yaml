@@ -28,12 +28,16 @@ jobqueue:
 
 pipelines:
   # Snow heat content from daily m_snow + a_ice
-  # h_snow = m_snow / (rho_snow * a_ice), sisnhc = -rho_snow * L_f * h_snow
+  # h_snow = m_snow / (rho_snow * a_ice), sisnhc = -rho_snow * L_f * h_snow.
+  # compute_sisnhc_from_msnow fills 0.0 where a_ice==0; the trailing
+  # mask_where_no_seaice flips those zeros back to NaN so the written
+  # field matches CMIP7 cell_methods ``where sea_ice (mask=siconc)``.
   - name: sisnhc_from_msnow_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sisnhc_from_msnow
+      - script://$PYCMOR_HOME/examples/custom_steps.py:mask_where_no_seaice
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -74,6 +78,8 @@ rules:
     second_input_path: *dp
     second_input_pattern: a_ice.fesom.*.nc
     second_variable: a_ice
+    aice_path: *dp
+    aice_pattern: a_ice\.fesom\..*\.nc
     rho_snow: 330.0
     L_f: 334000.0
     pipelines:

@@ -46,6 +46,27 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+  # Scale by constant + mask where no sea ice. Required for any compound
+  # branded ``hxy-si`` whose CMIP7 cell_methods is
+  # ``area: time: mean where sea_ice (mask=siconc)``. Rule must supply
+  # aice_path / aice_pattern.
+  - name: scale_mask_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
+      - script://$PYCMOR_HOME/examples/custom_steps.py:mask_where_no_seaice
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+
 inherit:
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd
@@ -111,7 +132,8 @@ rules:
     compound_name: seaIce.sieqthick.tavg-u-hxy-si.mon.GLB
     model_variable: m_ice
 
-  # snw = m_snow (snow mass per area); m → kg m-2 via ×1000 (water density)
+  # snw = m_snow (snow mass per area); m → kg m-2 via ×1000 (water density).
+  # hxy-si: mask where no sea ice (CMIP7 cell_methods says so).
   - name: snw
     inputs:
       - path: *dp
@@ -120,13 +142,19 @@ rules:
     model_variable: m_snow
     scale_factor: 1000.0
     scaled_units: "kg m-2"
+    aice_path: *dp
+    aice_pattern: a_ice\.fesom\..*\.nc
     pipelines:
-      - scale_pipeline
+      - scale_mask_pipeline
 
   # ============================================================
   # Part 3: Monthly — precipitation/evaporation (need ×1000 scaling)
   # ============================================================
-  # FESOM outputs in m/s, CMOR needs kg m-2 s-1 (× rho_water = 1000)
+  # FESOM outputs in m/s, CMOR needs kg m-2 s-1 (× rho_water = 1000).
+  # All three (evspsbl, prra, prsn) are hxy-si branding with CMIP7
+  # cell_methods ``area: time: mean where sea_ice (mask=siconc)`` —
+  # mask the FESOM-grid scaled field to NaN where a_ice == 0 so the
+  # written field only contains values over sea-ice-covered nodes.
 
   - name: evspsbl
     inputs:
@@ -136,8 +164,10 @@ rules:
     model_variable: evap
     scale_factor: -1000.0  # FESOM evap is negative-up; CMIP7 evspsbl positive=upward
     scaled_units: "kg m-2 s-1"
+    aice_path: *dp
+    aice_pattern: a_ice\.fesom\..*\.nc
     pipelines:
-      - scale_pipeline
+      - scale_mask_pipeline
 
   - name: prra
     inputs:
@@ -147,8 +177,10 @@ rules:
     model_variable: prec
     scale_factor: 1000.0
     scaled_units: "kg m-2 s-1"
+    aice_path: *dp
+    aice_pattern: a_ice\.fesom\..*\.nc
     pipelines:
-      - scale_pipeline
+      - scale_mask_pipeline
 
   - name: prsn
     inputs:
@@ -158,5 +190,7 @@ rules:
     model_variable: snow
     scale_factor: 1000.0
     scaled_units: "kg m-2 s-1"
+    aice_path: *dp
+    aice_pattern: a_ice\.fesom\..*\.nc
     pipelines:
-      - scale_pipeline
+      - scale_mask_pipeline
