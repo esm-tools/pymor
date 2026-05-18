@@ -399,6 +399,13 @@ def worker_main(filepath, table_path):
         var = nc.variables[primary]
         t0 = time.time()
         gmin, gmean, gmax, n_fin, n_tot = chunked_stats(var)
+        # The file's own ``:realm`` global attribute is authoritative — it
+        # reflects the compound's branding (e.g. rlds_tavg-u-hxy-si carries
+        # ``realm=seaIce``, distinct from rlds_tavg-u-hxy-u's ``realm=atmos``
+        # even though the bounds table is keyed by out_name and only stores
+        # one realm per variable). Without this, every branded variant of a
+        # shared out_name gets routed to the bounds-table realm's HTML page.
+        file_realm = getattr(nc, "realm", None)
         record.update({
             "primary": primary, "shape": list(var.shape),
             "n_finite": n_fin, "n_total": n_tot,
@@ -409,13 +416,16 @@ def worker_main(filepath, table_path):
         if bounds is None:
             record.update({"status": "NOBOUNDS",
                            "notes": ["no entry in sanity table"]})
+            if file_realm:
+                record["realm"] = str(file_realm)
         else:
             status, notes = classify(gmin, gmean, gmax, bounds)
             record.update({
                 "status": status, "notes": notes,
                 "expected_min": bounds["min_raw"], "expected_mean": bounds["mean_raw"],
                 "expected_max": bounds["max_raw"],
-                "units": bounds["units"], "realm": bounds["realm"],
+                "units": bounds["units"],
+                "realm": str(file_realm) if file_realm else bounds["realm"],
             })
         print(json.dumps(record))
     except Exception as e:

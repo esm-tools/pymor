@@ -428,19 +428,28 @@ class VarEntry:
 
 def collapse(records: Sequence[Dict[str, Any]],
              bounds_meta: Dict[str, Dict[str, Any]]) -> List[VarEntry]:
-    by_var: Dict[str, VarEntry] = {}
+    # Key by (var, realm) — same out_name can belong to different realms
+    # across branded compounds (e.g. rlds.tavg-u-hxy-u → atmos,
+    # rlds.tavg-u-hxy-si → seaIce). Keying by var alone bundled every
+    # branding into one card and routed it to whichever realm appeared
+    # first in the JSONL.
+    by_var: Dict[Tuple[str, str], VarEntry] = {}
 
     for rec in records:
         var = rec.get("var") or rec.get("primary") or "?"
-        ent = by_var.get(var)
+        # Realm key: prefer the per-record value (now sourced from the
+        # file's own :realm global attribute, see sanity_check.py
+        # worker_main). Fall back to bounds-table realm so records that
+        # never got a realm written (e.g. open-failed ERRORs) still group
+        # with their siblings.
+        realm = str(rec.get("realm") or bounds_meta.get(var, {}).get("realm", "") or "")
+        key = (var, realm)
+        ent = by_var.get(key)
         if ent is None:
-            ent = VarEntry(var=var)
-            by_var[var] = ent
+            ent = VarEntry(var=var, realm=realm)
+            by_var[key] = ent
 
         ent.files.append(rec)
-        # Realm / dir / domain — last one wins, all should be consistent.
-        if not ent.realm and rec.get("realm"):
-            ent.realm = str(rec.get("realm") or "")
         if not ent.directory and rec.get("dir"):
             ent.directory = str(rec.get("dir") or "")
 
@@ -477,7 +486,7 @@ def collapse(records: Sequence[Dict[str, Any]],
 
     # Now decorate each entry with bounds-table metadata, severity, domain.
     out: List[VarEntry] = []
-    for var, ent in by_var.items():
+    for (var, _realm), ent in by_var.items():
         meta = bounds_meta.get(var, {})
         if not ent.realm:
             ent.realm = str(meta.get("realm", "") or "")
