@@ -84,7 +84,7 @@ output files, so they can be used as an independent sanity check.
 | evspsblpot | land | kg m-2 s-1 | 0 | ~5e-5 | ~3e-4 | PET highest subtropics |
 | evspsblsoi | land | kg m-2 s-1 | 0 | ~1e-5 | ~1e-4 | Soil evap component |
 | evspsblveg | land | kg m-2 s-1 | 0 | ~1e-5 | ~1.5e-4 | Canopy evap/transpiration |
-| fAnthDisturb | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl: no anthropogenic; ~0 |
+| fAnthDisturb | land | kg m-2 s-1 | 0 | ~1e-10 | ~1e-8 | piControl: small but non-zero — LUH3 1850 transitions file carries wood-harvest rates (`primf_harv` ~1.7e-4/yr on 21% of cells, max 1.6e-2/yr; `secmf_harv`, `secnf_harv` similar) which drive `acflux_wood_harvest` even when macro LU state is frozen (Laszlo round 3); cli37 cmor mean 4.3e-10, max 1.14e-8 |
 | fBNF | land | kg m-2 s-1 | 0 | ~3e-12 | ~3e-10 | Natural BNF ~100 TgN/yr global (Vitousek 2013); tropical legume stands reach ~1e-9 (Davies-Barnard & Friedlingstein 2020) |
 | fCLandToOcean | land | kg m-2 s-1 | 0 | ~1e-11 | ~1e-9 | Riverine C ~0.9 PgC/yr; IPCC AR6 |
 | fco2antt | atmos | kg m-2 s-1 | 0 | ~0 | ~0 | piControl 1850: no anthropogenic CO2 emissions; LUH2/CMIP6 |
@@ -101,9 +101,9 @@ output files, so they can be used as an independent sanity check.
 | fLuc | land | kg m-2 s-1 | -1e-9 | ~0 | ~1e-9 | piControl LUC ~0; CMIP6 spec |
 | fLulccAtmLut | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl LUC ~0 |
 | fN2O | land | kg m-2 s-1 | 0 | ~5e-13 | ~3e-10 | Pre-industrial land N2O ~7 TgN-N2O/yr (Tian 2020); tropical wet-forest hotspots ~order higher (Davidson & Kanter 2014) |
-| fNAnthDisturb | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl: no anthropogenic disturbance |
+| fNAnthDisturb | land | kg m-2 s-1 | 0 | ~2e-11 | ~5e-10 | piControl: N analog of fAnthDisturb — N in biomass removed by LUH3 1850 wood harvest (Laszlo round 3); cli37 cmor mean 1.47e-11, max 4.85e-10 |
 | fNdep | land | kg m-2 s-1 | 0 | ~3e-13 | ~5e-11 | 1850 N deposition ~5 TgN/yr (Galloway 2004; Lamarque 2013 input4MIPs); lightning-active tropics reach ~3e-11 |
-| fNfert | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl: no synthetic/manure fertiliser; LUH2 1850 |
+| fNfert | land | kg m-2 s-1 | 0 | ~3e-11 | ~5e-9 | piControl: LUH3 `fertl_*` is 0 in 1850, but LPJ-GUESS management still emits a small implicit baseline (manure-N / residue redistribution) on the ~10% cropland + ~20% pasture inherited from 1850 LUH3 state (Laszlo round 3); cli37 cmor mean 2.26e-11, max 3.14e-9. Magnitude ~0.07 g N m-2 yr-1, ~100x below modern application — origin worth a future LPJ-GUESS code audit |
 | fNgas | land | kg m-2 s-1 | 0 | ~3e-12 | ~3e-9 | Gaseous N loss; tropical denitrification/NH3 hotspots ~1e-9 (Davidson 2009; Bouwman 2013) |
 | fNgasFire | land | kg m-2 s-1 | 0 | ~1e-12 | ~1e-9 | N from fires; active fire cells ~1e-9 (Andreae 2019) |
 | fNgasNonFire | land | kg m-2 s-1 | 0 | ~3e-12 | ~3e-9 | Non-fire gaseous N loss ~50 TgN/yr (IPCC AR6); per-cell hotspots Davidson 2009 |
