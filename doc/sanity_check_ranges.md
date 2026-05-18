@@ -94,7 +94,7 @@ output files, so they can be used as an independent sanity check.
 | fFire | land | kg m-2 s-1 | 0 | ~5e-10 | ~3e-6 | piControl: PI fire higher than PD (Hamilton 2018, SIMFIRE-BLAZE PI 2-5x CMIP6 PI). Global 1.5-6 PgC/yr -> land-mean ~3e-10 to 1.3e-9. Per-pixel monthly peak: GFED5 grid-cell peaks ~1-3 kg C/m2/month at 0.25 deg; DGVMs (LPJ-GUESS BLAZE) typically overshoot 2-3x; TCo319 smaller cells concentrate further -> ceiling ~3e-6 kg/m2/s (~7.9 kg C/m2/month) |
 | fFireAll | land | kg m-2 s-1 | 0 | ~5e-10 | ~3e-6 | Same as fFire (incl. fLuc, zero in piControl). FireMIP PD 1.7-3.0 PgC/yr (Li 2019 ACP); GFED5 3.4 PgC/yr; PI plausibly elevated. Per-pixel monthly peak ceiling tracks fFire |
 | fFireNat | land | kg m-2 s-1 | 0 | ~5e-10 | ~3e-6 | Natural-only fire; in piControl ~equals fFire. SIMFIRE-BLAZE PI range; per-pixel monthly peak ceiling tracks fFire |
-| fHarvestToAtmos | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl: negligible harvest |
+| fHarvestToAtmos | land | kg m-2 s-1 | 0 | ~1e-10 | ~1e-8 | piControl: small but non-zero — 1850 LUH3 state has ~10% cropland + ~20% pasture that keeps being harvested every year (Laszlo round 2); cli37 cmor mean 4.3e-10, max 1.14e-8 |
 | fHarvestToProduct | land | kg m-2 s-1 | 0 | ~0 | ~0 | piControl negligible harvest; LUH2 1850 |
 | fLitterFire | land | kg m-2 s-1 | 0 | ~2e-11 | ~2e-9 | Litter burning component |
 | fLitterSoil | land | kg m-2 s-1 | 0 | ~2e-9 | ~5e-8 | Litter->soil turnover |
@@ -163,7 +163,7 @@ output files, so they can be used as an independent sanity check.
 | mrro | land | kg m-2 s-1 | 0 | ~1e-5 (30 mm/yr land avg) | ~2e-4 | GRDC/CMIP6 land runoff (mon default) |
 | mrro_day | land | kg m-2 s-1 | 0 | ~1e-5 | ~3e-3 | Daily extreme — saturated land + heavy rain |
 | mrro_3hr | land | kg m-2 s-1 | 0 | ~1e-5 | ~1e-2 | 3-hourly runoff burst |
-| mrrob | land | kg m-2 s-1 | 0 | ~1e-5 | ~1e-4 | Subsurface runoff, wettest tropics |
+| mrrob | land | kg m-2 s-1 | 0 | ~1e-5 | ~5e-3 | Subsurface runoff, wettest tropics — singular grid-cell spikes are real model output, global field is fine (Laszlo + Christian round 2); cli37 cmor max 2.34e-3 |
 | mrros | land | kg m-2 s-1 | 0 | ~5e-6 | ~1e-4 | Surface runoff fraction of total (mon default) |
 | mrros_3hr | land | kg m-2 s-1 | 0 | ~5e-6 | ~1e-2 | 3-hourly surface runoff burst |
 | mrsll | land | kg m-2 | 0 | ~30 | ~300 | Per-layer liquid soil water; thicker layers larger; CMIP6 Land |
@@ -179,7 +179,7 @@ output files, so they can be used as an independent sanity check.
 | n2o | atmosChem | mol mol-1 | ~1e-7 | ~2.72e-7 | ~3.5e-7 | Pre-industrial N2O ~272 ppb; Flueckiger 2002 ice cores; strat depleted |
 | nbp | land | kg m-2 s-1 | -1e-7 | ~0 (piControl balanced) | 1e-7 | piControl NBP near zero, Friedlingstein 2022 |
 | nbpLut | land | kg m-2 s-1 | -1e-7 | ~0 | 1e-7 | Per-tile NBP; same scale as nbp; piControl ~0 mean |
-| nep | land | kg m-2 s-1 | -5e-8 | ~0 | 5e-8 | NEP near zero annual mean in piControl |
+| nep | land | kg m-2 s-1 | -5e-6 | ~0 | 2e-7 | NEP near zero annual mean in piControl; Central America wet-tropics drainage spikes are real model output, raw .out matches cmor (Laszlo round 2); cli37 cmor min -1.93e-6, max 1.01e-7 |
 | nLand | land | kg m-2 | 0 | ~1.5 | ~20 | Total N in soil+veg, ~200 PgN / land |
 | nLeaf | land | kg m-2 | 0 | ~0.01 | ~0.05 | Leaf N from cLeaf~0.3 with C:N~30 (TRENDY canopy) |
 | nLitter | land | kg m-2 | 0 | ~0.05 | ~1 | Litter N, small pool |
@@ -357,7 +357,7 @@ output files, so they can be used as an independent sanity check.
 | treeFracNdlDcd | land | % | 0 | ~3 | 100 | Boreal larch (Siberian taiga); LUH2/MODIS |
 | treeFracNdlEvg | land | % | 0 | ~5 | 100 | Boreal pine/spruce; LUH2/MODIS |
 | ts | atmos | K | 220 | 288 | 330 | ERA5 skin temperature |
-| tsl | land | K | 220 | ~285 | 325 | Soil temperature per layer; ERA5/CMIP6 Land |
+| tsl | land | K | 150 | ~285 | 325 | Soil temperature per layer; ERA5/CMIP6 Land. Floor relaxed from 220 to 150 K: LPJ-GUESS shallow-layer Tsoil tracks OpenIFS forcing when uninsulated, 1.5% of values <220 K in NH winter (Laszlo round 2). Anything below 150 K is physically impossible and must remain a FAIL. |
 | tslsi | land | K | 220 | 285 | 330 | Land/sea-ice skin temp |
 | tsn | landIce | K | 220 | 260 | 273.15 | Snow temperature ≤ 0°C |
 | ua | atmos | m s-1 | -80 | ~0 | 100 | ERA5 zonal wind (mon default; jet-stream-aware) |
@@ -377,7 +377,7 @@ output files, so they can be used as an independent sanity check.
 | vas_3hr | atmos | m s-1 | -65 | ~0 | 65 | 3-hourly extreme |
 | vas_1hr | atmos | m s-1 | -75 | ~0 | 75 | Hourly extreme — Cat-5 TC (Saffir-Simpson) |
 | vegFrac | land | % | 0 | 70 | 100 | LUH2 vegetated fraction |
-| vegHeight | land | m | 0 | ~5 | ~50 | Canopy height per PFT; trees 5-30m, shrubs 0.5-3m, grass <1m; Simard 2011 |
+| vegHeight | land | m | 0 | ~5 | ~50 | Tree canopy height; Simard 2011. NB: LPJ-GUESS does not emit a grass-only height (vegHeightGrass), so cmor falls back to the tree-dominated field (Laszlo round 2). Bounds revisit pending model-side fix. |
 | vmo | ocean | kg s-1 | -1e12 | 0 | 1e12 | Same as umo (y-component) |
 | vo | ocean | m s-1 | -2 | ~0 | 2 | WOCE/Argo currents |
 | volcello | ocean | m3 | 1e6 | 1e10 | 1e12 | Grid cell volume |
