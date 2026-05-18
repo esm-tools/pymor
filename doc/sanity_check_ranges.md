@@ -131,7 +131,7 @@ output files, so they can be used as an independent sanity check.
 | grassFracC3 | land | % | 0 | ~15 | 100 | C3 natural grass fraction; temperate dominant; LUH2/CMIP6 |
 | grassFracC4 | land | % | 0 | ~5 | 100 | C4 natural grass fraction; tropical/subtropical; LUH2/CMIP6 |
 | hfbasin | ocean | W | -2e15 | ~0 | 2e15 | Northward heat transport per basin; peak ~1.3 PW Atlantic; Trenberth 2001 |
-| hfds | ocean | W m-2 | -300 | ~2 | 300 | Net heat into ocean; ~2 W/m2 piControl drift |
+| hfds | ocean | W m-2 | -500 | ~0 | 500 | Net heat into ocean (positive=down). piControl steady state should give global mean near 0; small drift either sign is acceptable. Per-cell monthly peaks in deep-convection / strong air-sea contrast regions can reach ±500 W/m² (Labrador/Greenland Sea; subtropical evaporation maxima). Values beyond ±1000 are a sentinel for outlier cells worth investigating |
 | hfdsl | land | W m-2 | -300 | ~0 | 300 | Ground heat flux; subtropical desert mon extremes ±200 (mon default) |
 | hfdsl_3hr | land | W m-2 | -1200 | ~0 | 1200 | 3-hourly net surface flux extremes |
 | hfls | atmos | W m-2 | 0 | ~80 | 250 | LH flux; CERES/ERA5 (mon default) |
