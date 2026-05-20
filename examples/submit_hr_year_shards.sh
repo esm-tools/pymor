@@ -107,9 +107,20 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
   mkdir -p "$shards_dir"
   rm -f "$shards_dir"/*.yaml  # in case of re-run
 
+  # Per-tier SHARD_SIZE override.
+  # extra_land has 4 long-pole rules (tas_1hr_south30, orog_south30,
+  # mrsow_day, dslw_day) whose synchronous netcdf saves contend in
+  # parallel — cli39 wedged 3h walltime with all four stuck at
+  # heartbeat #16. Splitting to ~5 rules per shard distributes the
+  # contention across ~4 shards, well inside 3h each.
+  case "$short_tier" in
+    extra_land) tier_shard_size=5 ;;
+    *)          tier_shard_size="$SHARD_SIZE" ;;
+  esac
+
   # Run the splitter; capture how many shards it produced.
   python3 "$HERE/shard_tier_yaml.py" "$yaml" \
-      shard --shard-size "$SHARD_SIZE" \
+      shard --shard-size "$tier_shard_size" \
       --seed "$SHUFFLE_SEED" \
       --out-dir "$shards_dir" >/dev/null
   num_shards=$(ls -1 "$shards_dir"/*.yaml | wc -l)
