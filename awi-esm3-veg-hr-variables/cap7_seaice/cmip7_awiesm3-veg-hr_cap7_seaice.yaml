@@ -9,7 +9,7 @@ general:
   name: "awiesm3-cmip7-cap7-seaice"
   cmor_version: "CMIP7"
   mip: "CMIP"
-  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.3/metadata.json"
 
 pycmor:
   warn_on_no_rule: False
@@ -94,21 +94,21 @@ rules:
     inputs:
       - path: *dp
         pattern: h_ice\.fesom\..*\.nc
-    compound_name: seaIce.sithick.tavg-u-hxy-si.day.GLB
+    compound_name: seaIce.sithick.tavg-u-hxy-si.day.glb
     model_variable: h_ice
 
   - name: snd_day
     inputs:
       - path: *dp
         pattern: h_snow\.fesom\..*\.nc
-    compound_name: seaIce.snd.tavg-u-hxy-sn.day.GLB
+    compound_name: seaIce.snd.tavg-u-hxy-sn.day.glb
     model_variable: h_snow
 
   - name: siu_day
     inputs:
       - path: *dp
         pattern: uice\.fesom\..*\.nc
-    compound_name: seaIce.siu.tavg-u-hxy-si.day.GLB
+    compound_name: seaIce.siu.tavg-u-hxy-si.day.glb
     model_variable: uice
     # vec_autorotate=.true. set in namelist.io
 
@@ -116,7 +116,7 @@ rules:
     inputs:
       - path: *dp
         pattern: vice\.fesom\..*\.nc
-    compound_name: seaIce.siv.tavg-u-hxy-si.day.GLB
+    compound_name: seaIce.siv.tavg-u-hxy-si.day.glb
     model_variable: vice
     # vec_autorotate=.true. set in namelist.io
 
@@ -129,7 +129,7 @@ rules:
     inputs:
       - path: *dp
         pattern: m_ice\.fesom\..*\.nc
-    compound_name: seaIce.sieqthick.tavg-u-hxy-si.mon.GLB
+    compound_name: seaIce.sieqthick.tavg-u-hxy-si.mon.glb
     model_variable: m_ice
 
   # snw = m_snow (snow mass per area); m → kg m-2 via ×1000 (water density).
@@ -138,7 +138,7 @@ rules:
     inputs:
       - path: *dp
         pattern: m_snow\.fesom\..*\.nc
-    compound_name: seaIce.snw.tavg-u-hxy-si.mon.GLB
+    compound_name: seaIce.snw.tavg-u-hxy-si.mon.glb
     model_variable: m_snow
     scale_factor: 1000.0
     scaled_units: "kg m-2"
@@ -160,7 +160,7 @@ rules:
     inputs:
       - path: *dp
         pattern: evap\.fesom\..*\.nc
-    compound_name: seaIce.evspsbl.tavg-u-hxy-si.mon.GLB
+    compound_name: seaIce.evspsbl.tavg-u-hxy-si.mon.glb
     model_variable: evap
     scale_factor: -1000.0  # FESOM evap is negative-up; CMIP7 evspsbl positive=upward
     scaled_units: "kg m-2 s-1"
@@ -173,7 +173,7 @@ rules:
     inputs:
       - path: *dp
         pattern: prec\.fesom\..*\.nc
-    compound_name: seaIce.prra.tavg-u-hxy-si.mon.GLB
+    compound_name: seaIce.prra.tavg-u-hxy-si.mon.glb
     model_variable: prec
     scale_factor: 1000.0
     scaled_units: "kg m-2 s-1"
@@ -186,7 +186,7 @@ rules:
     inputs:
       - path: *dp
         pattern: snow\.fesom\..*\.nc
-    compound_name: seaIce.prsn.tavg-u-hxy-si.mon.GLB
+    compound_name: seaIce.prsn.tavg-u-hxy-si.mon.glb
     model_variable: snow
     scale_factor: 1000.0
     scaled_units: "kg m-2 s-1"

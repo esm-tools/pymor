@@ -9,7 +9,7 @@ general:
   name: "awiesm3-cmip7-cap7-ocean"
   cmor_version: "CMIP7"
   mip: "CMIP"
-  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.3/metadata.json"
 
 pycmor:
   warn_on_no_rule: False
@@ -171,7 +171,7 @@ rules:
     inputs:
       - path: *dp
         pattern: sst\.fesom\..*\.nc
-    compound_name: ocean.tossq.tavg-u-hxy-sea.day.GLB
+    compound_name: ocean.tossq.tavg-u-hxy-sea.day.glb
     model_variable: sst
     squared_units: "degC2"
     pipelines:
@@ -187,7 +187,7 @@ rules:
     inputs:
       - path: *dp
         pattern: hnode\.fesom\..*\.nc
-    compound_name: ocean.volcello.tavg-ol-hxy-sea.mon.GLB
+    compound_name: ocean.volcello.tavg-ol-hxy-sea.mon.glb
     model_variable: hnode
     lazy_write: true
     pipelines:
@@ -203,7 +203,7 @@ rules:
     inputs:
       - path: *dp
         pattern: runoff\.fesom\..*\.nc
-    compound_name: ocean.friver.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.friver.tavg-u-hxy-sea.mon.glb
     model_variable: runoff
     scale_factor: 1000.0
     scaled_units: "kg m-2 s-1"
@@ -220,7 +220,7 @@ rules:
     inputs:
       - path: *dp
         pattern: utemp\.fesom\..*\.nc
-    compound_name: ocean.hfx.tavg-ol-hxy-sea.mon.GLB
+    compound_name: ocean.hfx.tavg-ol-hxy-sea.mon.glb
     model_variable: utemp
     scale_factor: 4095900.0
     scaled_units: "W"
@@ -240,7 +240,7 @@ rules:
     inputs:
       - path: *dp
         pattern: utemp\.fesom\..*\.nc
-    compound_name: ocean.hfx.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.hfx.tavg-u-hxy-sea.mon.glb
     model_variable: utemp
     scale_factor: 4095900.0
     scaled_units: "W"
@@ -255,7 +255,7 @@ rules:
     inputs:
       - path: *dp
         pattern: vtemp\.fesom\..*\.nc
-    compound_name: ocean.hfy.tavg-ol-hxy-sea.mon.GLB
+    compound_name: ocean.hfy.tavg-ol-hxy-sea.mon.glb
     model_variable: vtemp
     scale_factor: 4095900.0
     scaled_units: "W"
@@ -272,7 +272,7 @@ rules:
     inputs:
       - path: *dp
         pattern: vtemp\.fesom\..*\.nc
-    compound_name: ocean.hfy.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.hfy.tavg-u-hxy-sea.mon.glb
     model_variable: vtemp
     scale_factor: 4095900.0
     scaled_units: "W"
@@ -296,12 +296,12 @@ rules:
   #   inputs:
   #     - path: *dp
   #       pattern: unod\.fesom\..*\.nc
-  #   compound_name: ocean.sfx.tavg-ol-hxy-sea.mon.GLB
+  #   compound_name: ocean.sfx.tavg-ol-hxy-sea.mon.glb
   #   model_variable: unod
 
   # - name: sfy
   #   inputs:
   #     - path: *dp
   #       pattern: vnod\.fesom\..*\.nc
-  #   compound_name: ocean.sfy.tavg-ol-hxy-sea.mon.GLB
+  #   compound_name: ocean.sfy.tavg-ol-hxy-sea.mon.glb
   #   model_variable: vnod

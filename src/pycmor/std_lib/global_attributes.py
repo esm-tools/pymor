@@ -133,7 +133,7 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         sub_experiment_id = self.get_sub_experiment_id()
         if sub_experiment_id != "none":
             member_id = f"{member_id}-{sub_experiment_id}"
-        region = self.get_region() or "GLB"
+        region = self.get_region() or "glb"
         frequency = self.get_frequency()
         variable_id = self.get_variable_id()
         branding_suffix = self.get_branding_suffix() or "unknown"

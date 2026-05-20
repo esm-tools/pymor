@@ -11,7 +11,7 @@ general:
   name: "awiesm3-cmip7-core-ocean"
   cmor_version: "CMIP7"
   mip: "CMIP"
-  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.3/metadata.json"
 
 pycmor:
   warn_on_no_rule: False
@@ -221,21 +221,21 @@ rules:
     inputs:
       - path: *dp
         pattern: sst\.fesom\..*\.nc
-    compound_name: ocean.tos.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.tos.tavg-u-hxy-sea.mon.glb
     model_variable: sst
 
   - name: sos
     inputs:
       - path: *dp
         pattern: sss\.fesom\..*\.nc
-    compound_name: ocean.sos.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.sos.tavg-u-hxy-sea.mon.glb
     model_variable: sss
 
   - name: zos
     inputs:
       - path: *dp
         pattern: ssh\.fesom\..*\.nc
-    compound_name: ocean.zos.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.zos.tavg-u-hxy-sea.mon.glb
     model_variable: ssh
 
   # FESOM `fh` (heat_flux_in in ice_oce_coupling.F90:418) is the net
@@ -250,7 +250,7 @@ rules:
     inputs:
       - path: *dp
         pattern: fh\.fesom\..*\.nc
-    compound_name: ocean.hfds.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.hfds.tavg-u-hxy-sea.mon.glb
     model_variable: fh
     scale_factor: -1.0
     scaled_units: "W m-2"
@@ -261,7 +261,7 @@ rules:
     inputs:
       - path: *dp
         pattern: MLD3\.fesom\..*\.nc
-    compound_name: ocean.mlotst.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.mlotst.tavg-u-hxy-sea.mon.glb
     model_variable: MLD3
     scale_factor: -1.0  # FESOM MLD3 is negative depth; CMIP7 mlotst is positive-down
     scaled_units: "m"
@@ -273,7 +273,7 @@ rules:
     inputs:
       - path: *dp
         pattern: tx_sur\.fesom\..*\.nc
-    compound_name: ocean.tauuo.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.tauuo.tavg-u-hxy-sea.mon.glb
     model_variable: tx_sur
     # NOTE: tx_sur is on elem grid (6.2M elements), not nod2 (3.1M nodes).
     # vec_autorotate=.true. set in namelist.io
@@ -283,7 +283,7 @@ rules:
     inputs:
       - path: *dp
         pattern: ty_sur\.fesom\..*\.nc
-    compound_name: ocean.tauvo.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.tauvo.tavg-u-hxy-sea.mon.glb
     model_variable: ty_sur
     # NOTE: Same elem grid caveat as tauuo.
 
@@ -295,7 +295,7 @@ rules:
     inputs:
       - path: *dp
         pattern: temp\.fesom\..*\.nc
-    compound_name: ocean.thetao.tavg-ol-hxy-sea.mon.GLB
+    compound_name: ocean.thetao.tavg-ol-hxy-sea.mon.glb
     model_variable: temp
     lazy_write: true
 
@@ -306,7 +306,7 @@ rules:
     inputs:
       - path: *dp
         pattern: salt\.fesom\..*\.nc
-    compound_name: ocean.so.tavg-ol-hxy-sea.mon.GLB
+    compound_name: ocean.so.tavg-ol-hxy-sea.mon.glb
     model_variable: salt
     lazy_write: true
 
@@ -314,7 +314,7 @@ rules:
     inputs:
       - path: *dp
         pattern: unod\.fesom\..*\.nc
-    compound_name: ocean.uo.tavg-ol-hxy-sea.mon.GLB
+    compound_name: ocean.uo.tavg-ol-hxy-sea.mon.glb
     model_variable: unod
     lazy_write: true
     # Using unod (nodal velocity, nod2 grid) instead of u (elem grid).
@@ -324,7 +324,7 @@ rules:
     inputs:
       - path: *dp
         pattern: vnod\.fesom\..*\.nc
-    compound_name: ocean.vo.tavg-ol-hxy-sea.mon.GLB
+    compound_name: ocean.vo.tavg-ol-hxy-sea.mon.glb
     model_variable: vnod
     lazy_write: true
     # Using vnod (nodal velocity, nod2 grid) instead of v (elem grid).
@@ -334,7 +334,7 @@ rules:
     inputs:
       - path: *dp
         pattern: w\.fesom\..*\.nc
-    compound_name: ocean.wo.tavg-ol-hxy-sea.mon.GLB
+    compound_name: ocean.wo.tavg-ol-hxy-sea.mon.glb
     model_variable: w
     lazy_write: true
     # FESOM w is declared on (nl=57 interfaces, nod2D); CMIP wo is on
@@ -356,7 +356,7 @@ rules:
     inputs:
       - path: *dp
         pattern: salt\.fesom\..*\.nc
-    compound_name: ocean.absscint.tavg-op4-hxy-sea.mon.GLB
+    compound_name: ocean.absscint.tavg-op4-hxy-sea.mon.glb
     model_variable: salt
     lazy_write: true
     scale_factor: 1.027          # rho_0 * 1e-3 (1027 kg m-3 * psu->mass-fraction)
@@ -376,21 +376,21 @@ rules:
     inputs:
       - path: *dp
         pattern: sst\.fesom\..*\.nc
-    compound_name: ocean.tos.tavg-u-hxy-sea.day.GLB
+    compound_name: ocean.tos.tavg-u-hxy-sea.day.glb
     model_variable: sst
 
   - name: sos_day
     inputs:
       - path: *dp
         pattern: sss\.fesom\..*\.nc
-    compound_name: ocean.sos.tavg-u-hxy-sea.day.GLB
+    compound_name: ocean.sos.tavg-u-hxy-sea.day.glb
     model_variable: sss
 
   - name: zos_day
     inputs:
       - path: *dp
         pattern: ssh\.fesom\..*\.nc
-    compound_name: ocean.zos.tavg-u-hxy-sea.day.GLB
+    compound_name: ocean.zos.tavg-u-hxy-sea.day.glb
     model_variable: ssh
 
   # ============================================================
@@ -401,7 +401,7 @@ rules:
     inputs:
       - path: *mp
         pattern: mesh.nc
-    compound_name: ocean.areacello.ti-u-hxy-u.fx.GLB
+    compound_name: ocean.areacello.ti-u-hxy-u.fx.glb
     model_variable: cell_area
     pipelines:
       - fx_extract_pipeline
@@ -410,7 +410,7 @@ rules:
     inputs:
       - path: *mp
         pattern: mesh.nc
-    compound_name: ocean.deptho.ti-u-hxy-sea.fx.GLB
+    compound_name: ocean.deptho.ti-u-hxy-sea.fx.glb
     model_variable: deptho
     pipelines:
       - fx_deptho_pipeline
@@ -419,7 +419,7 @@ rules:
     inputs:
       - path: *mp
         pattern: mesh.nc
-    compound_name: ocean.sftof.ti-u-hxy-u.fx.GLB
+    compound_name: ocean.sftof.ti-u-hxy-u.fx.glb
     model_variable: sftof
     pipelines:
       - fx_sftof_pipeline
@@ -428,7 +428,7 @@ rules:
     inputs:
       - path: *mp
         pattern: mesh.nc
-    compound_name: ocean.thkcello.ti-ol-hxy-sea.fx.GLB
+    compound_name: ocean.thkcello.ti-ol-hxy-sea.fx.glb
     model_variable: thkcello
     pipelines:
       - fx_thkcello_pipeline
@@ -437,7 +437,7 @@ rules:
     inputs:
       - path: *mp
         pattern: mesh.nc
-    compound_name: ocean.masscello.ti-ol-hxy-sea.fx.GLB
+    compound_name: ocean.masscello.ti-ol-hxy-sea.fx.glb
     model_variable: masscello
     reference_density: 1025.0
     pipelines:
@@ -448,7 +448,7 @@ rules:
     inputs:
       - path: *mp
         pattern: basin_mask.nc
-    compound_name: ocean.basin.ti-u-hxy-u.fx.GLB
+    compound_name: ocean.basin.ti-u-hxy-u.fx.glb
     model_variable: basin
     basin_mask_file: /work/ab0246/a270092/input/fesom2/dars2/basin_mask.nc
     pipelines:
@@ -464,7 +464,7 @@ rules:
     inputs:
       - path: *dp
         pattern: hnode\.fesom\..*\.nc
-    compound_name: ocean.thkcello.tavg-ol-hxy-sea.mon.GLB
+    compound_name: ocean.thkcello.tavg-ol-hxy-sea.mon.glb
     model_variable: hnode
     lazy_write: true
 
@@ -472,7 +472,7 @@ rules:
     inputs:
       - path: *dp
         pattern: hnode\.fesom\..*\.nc
-    compound_name: ocean.masscello.tavg-ol-hxy-sea.mon.GLB
+    compound_name: ocean.masscello.tavg-ol-hxy-sea.mon.glb
     model_variable: hnode
     lazy_write: true
     scale_factor: 1025.0
@@ -489,7 +489,7 @@ rules:
     inputs:
       - path: *dp
         pattern: unod\.fesom\..*\.nc
-    compound_name: ocean.umo.tavg-ol-hxy-sea.mon.GLB
+    compound_name: ocean.umo.tavg-ol-hxy-sea.mon.glb
     model_variable: unod
     lazy_write: true
     reference_density: 1025.0
@@ -501,7 +501,7 @@ rules:
     inputs:
       - path: *dp
         pattern: vnod\.fesom\..*\.nc
-    compound_name: ocean.vmo.tavg-ol-hxy-sea.mon.GLB
+    compound_name: ocean.vmo.tavg-ol-hxy-sea.mon.glb
     model_variable: vnod
     lazy_write: true
     reference_density: 1025.0
@@ -513,7 +513,7 @@ rules:
     inputs:
       - path: *dp
         pattern: w\.fesom\..*\.nc
-    compound_name: ocean.wmo.tavg-ol-hxy-sea.mon.GLB
+    compound_name: ocean.wmo.tavg-ol-hxy-sea.mon.glb
     model_variable: w
     lazy_write: true
     reference_density: 1025.0
@@ -530,7 +530,7 @@ rules:
     inputs:
       - path: *dp
         pattern: temp\.fesom\..*\.nc
-    compound_name: ocean.zostoga.tavg-u-hm-sea.mon.GLB
+    compound_name: ocean.zostoga.tavg-u-hm-sea.mon.glb
     model_variable: temp
     salt_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
     salt_pattern: salt\.fesom\..*\.nc

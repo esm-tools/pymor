@@ -8,7 +8,7 @@ general:
   name: "awiesm3-cmip7-lrcs-ocean"
   cmor_version: "CMIP7"
   mip: "CMIP"
-  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.3/metadata.json"
 
 pycmor:
   warn_on_no_rule: False
@@ -387,7 +387,7 @@ rules:
     inputs:
       - path: *dp
         pattern: pbo\.fesom\..*\.nc
-    compound_name: ocean.pbo.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.pbo.tavg-u-hxy-sea.mon.glb
     model_variable: pbo
 
   # volo — sea water volume (from ldiag_cmor=.true., global scalar)
@@ -395,7 +395,7 @@ rules:
     inputs:
       - path: *dp
         pattern: volo\.fesom\..*\.nc
-    compound_name: ocean.volo.tavg-u-hm-sea.mon.GLB
+    compound_name: ocean.volo.tavg-u-hm-sea.mon.glb
     model_variable: volo
 
   # tos_ga — global average sea surface temperature (thetaoga from ldiag_cmor)
@@ -403,7 +403,7 @@ rules:
     inputs:
       - path: *dp
         pattern: thetaoga\.fesom\..*\.nc
-    compound_name: ocean.tos.tavg-u-hm-sea.mon.GLB
+    compound_name: ocean.tos.tavg-u-hm-sea.mon.glb
     model_variable: thetaoga
 
   # sos_ga — global average sea surface salinity (soga from ldiag_cmor)
@@ -411,7 +411,7 @@ rules:
     inputs:
       - path: *dp
         pattern: soga\.fesom\..*\.nc
-    compound_name: ocean.sos.tavg-u-hm-sea.mon.GLB
+    compound_name: ocean.sos.tavg-u-hm-sea.mon.glb
     model_variable: soga
 
   # thetao_ga — global average potential temperature (per level, from ldiag_cmor)
@@ -422,7 +422,7 @@ rules:
     inputs:
       - path: *dp
         pattern: thetaoga\.fesom\..*\.nc
-    compound_name: ocean.thetao.tavg-ol-hm-sea.mon.GLB
+    compound_name: ocean.thetao.tavg-ol-hm-sea.mon.glb
     model_variable: thetaoga
 
   # so_ga — global mean salinity (scalar from ldiag_cmor)
@@ -430,7 +430,7 @@ rules:
     inputs:
       - path: *dp
         pattern: soga\.fesom\..*\.nc
-    compound_name: ocean.so.tavg-ol-hm-sea.mon.GLB
+    compound_name: ocean.so.tavg-ol-hm-sea.mon.glb
     model_variable: soga
 
   # obvfsq — Brunt-Vaisala frequency squared (N2 from namelist.io)
@@ -438,7 +438,7 @@ rules:
     inputs:
       - path: *dp
         pattern: N2\.fesom\..*\.nc
-    compound_name: ocean.obvfsq.tavg-ol-hxy-sea.mon.GLB
+    compound_name: ocean.obvfsq.tavg-ol-hxy-sea.mon.glb
     model_variable: N2
     lazy_write: true
 
@@ -447,7 +447,7 @@ rules:
     inputs:
       - path: *dp
         pattern: fw\.fesom\..*\.nc
-    compound_name: ocean.wfo.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.wfo.tavg-u-hxy-sea.mon.glb
     model_variable: fw
     scale_factor: 1000.0
     scaled_units: "kg m-2 s-1"
@@ -459,7 +459,7 @@ rules:
     inputs:
       - path: *dp
         pattern: virtsalt\.fesom\..*\.nc
-    compound_name: ocean.vsf.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.vsf.tavg-u-hxy-sea.mon.glb
     model_variable: virtsalt
     model_unit: "kg m-2 s-1"
 
@@ -472,7 +472,7 @@ rules:
     inputs:
       - path: *dp
         pattern: evap\.fesom\..*\.nc
-    compound_name: ocean.evspsbl.tavg-u-hxy-ifs.mon.GLB
+    compound_name: ocean.evspsbl.tavg-u-hxy-ifs.mon.glb
     model_variable: evap
     scale_factor: -1000.0  # FESOM evap is negative-up; CMIP7 evspsbl positive=upward
     scaled_units: "kg m-2 s-1"
@@ -493,7 +493,7 @@ rules:
     inputs:
       - path: *dp
         pattern: relaxsalt\.fesom\..*\.nc
-    compound_name: ocean.vsfcorr.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.vsfcorr.tavg-u-hxy-sea.mon.glb
     model_variable: relaxsalt
     model_unit: "kg m-2 s-1"
     pipelines:
@@ -507,7 +507,7 @@ rules:
     inputs:
       - path: *dp
         pattern: MLD3\.fesom\..*\.nc
-    compound_name: ocean.mlotst.tavg-u-hxy-sea.day.GLB
+    compound_name: ocean.mlotst.tavg-u-hxy-sea.day.glb
     model_variable: MLD3
     scale_factor: -1.0  # FESOM MLD3 is negative depth; CMIP7 mlotst is positive-down
     scaled_units: "m"
@@ -518,7 +518,7 @@ rules:
     inputs:
       - path: *dp
         pattern: unod_sfc\.fesom\..*\.nc
-    compound_name: ocean.uos.tavg-u-hxy-sea.day.GLB
+    compound_name: ocean.uos.tavg-u-hxy-sea.day.glb
     model_variable: unod_sfc
     lazy_write: true
     pipelines:
@@ -528,7 +528,7 @@ rules:
     inputs:
       - path: *dp
         pattern: vnod_sfc\.fesom\..*\.nc
-    compound_name: ocean.vos.tavg-u-hxy-sea.day.GLB
+    compound_name: ocean.vos.tavg-u-hxy-sea.day.glb
     model_variable: vnod_sfc
     lazy_write: true
     pipelines:
@@ -550,7 +550,7 @@ rules:
   #   inputs:
   #     - path: *dp
   #       pattern: utemp\.fesom\..*\.nc
-  #   compound_name: ocean.hfx.tavg-u-hxy-sea.day.GLB
+  #   compound_name: ocean.hfx.tavg-u-hxy-sea.day.glb
   #   model_variable: utemp
   #   scale_factor: 4095900.0
   #   scaled_units: "W m-2"
@@ -566,7 +566,7 @@ rules:
   #   inputs:
   #     - path: *dp
   #       pattern: vtemp\.fesom\..*\.nc
-  #   compound_name: ocean.hfy.tavg-u-hxy-sea.day.GLB
+  #   compound_name: ocean.hfy.tavg-u-hxy-sea.day.glb
   #   model_variable: vtemp
   #   scale_factor: 4095900.0
   #   scaled_units: "W m-2"
@@ -582,7 +582,7 @@ rules:
     inputs:
       - path: *dp
         pattern: sst\.fesom\..*\.nc
-    compound_name: ocean.tossq.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.tossq.tavg-u-hxy-sea.mon.glb
     model_variable: sst
     squared_units: "degC2"
     pipelines:
@@ -592,7 +592,7 @@ rules:
     inputs:
       - path: *dp
         pattern: sss\.fesom\..*\.nc
-    compound_name: ocean.sossq.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.sossq.tavg-u-hxy-sea.mon.glb
     model_variable: sss
     squared_units: "1E-06"
     pipelines:
@@ -602,7 +602,7 @@ rules:
     inputs:
       - path: *dp
         pattern: ssh\.fesom\..*\.nc
-    compound_name: ocean.zossq.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.zossq.tavg-u-hxy-sea.mon.glb
     model_variable: ssh
     squared_units: "m2"
     pipelines:
@@ -612,7 +612,7 @@ rules:
     inputs:
       - path: *dp
         pattern: MLD3\.fesom\..*\.nc
-    compound_name: ocean.mlotstsq.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.mlotstsq.tavg-u-hxy-sea.mon.glb
     model_variable: MLD3
     squared_units: "m2"
     pipelines:
@@ -626,7 +626,7 @@ rules:
     inputs:
       - path: *dp
         pattern: temp\.fesom\..*\.nc
-    compound_name: ocean.tob.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.tob.tavg-u-hxy-sea.mon.glb
     model_variable: temp
     lazy_write: true
     pipelines:
@@ -636,7 +636,7 @@ rules:
     inputs:
       - path: *dp
         pattern: salt\.fesom\..*\.nc
-    compound_name: ocean.sob.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.sob.tavg-u-hxy-sea.mon.glb
     model_variable: salt
     lazy_write: true
     pipelines:
@@ -651,7 +651,7 @@ rules:
     inputs:
       - path: *dp
         pattern: ssh\.fesom\..*\.nc
-    compound_name: ocean.pso.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.pso.tavg-u-hxy-sea.mon.glb
     model_variable: ssh
     reference_density: 1025.0
     pipelines:
@@ -663,7 +663,7 @@ rules:
     inputs:
       - path: *dp
         pattern: volo\.fesom\..*\.nc
-    compound_name: ocean.masso.tavg-u-hm-sea.mon.GLB
+    compound_name: ocean.masso.tavg-u-hm-sea.mon.glb
     model_variable: volo
     scale_factor: 1025.0
     scaled_units: "kg"
@@ -680,7 +680,7 @@ rules:
     inputs:
       - path: *dp
         pattern: temp\.fesom\..*\.nc
-    compound_name: ocean.phcint.tavg-op4-hxy-sea.mon.GLB
+    compound_name: ocean.phcint.tavg-op4-hxy-sea.mon.glb
     model_variable: temp
     lazy_write: true
     scale_factor: 4097273.0      # rho_0 * c_p = 1027 kg m-3 * 3990 J kg-1 K-1
@@ -700,7 +700,7 @@ rules:
     inputs:
       - path: *dp
         pattern: salt\.fesom\..*\.nc
-    compound_name: ocean.scint.tavg-op4-hxy-sea.mon.GLB
+    compound_name: ocean.scint.tavg-op4-hxy-sea.mon.glb
     model_variable: salt
     lazy_write: true
     scale_factor: 1.027          # rho_0 * 1e-3 (1027 kg m-3 * psu->mass-fraction)
@@ -718,7 +718,7 @@ rules:
     inputs:
       - path: *dp
         pattern: temp\.fesom\..*\.nc
-    compound_name: ocean.opottempmint.tavg-u-hxy-sea.yr.GLB
+    compound_name: ocean.opottempmint.tavg-u-hxy-sea.yr.glb
     model_variable: temp
     lazy_write: true
     scale_factor: 1027.0         # rho_0, kg m-3
@@ -738,7 +738,7 @@ rules:
     inputs:
       - path: *dp
         pattern: salt\.fesom\..*\.nc
-    compound_name: ocean.somint.tavg-u-hxy-sea.yr.GLB
+    compound_name: ocean.somint.tavg-u-hxy-sea.yr.glb
     model_variable: salt
     lazy_write: true
     scale_factor: 1027.0         # rho_0; the 1e-3 prefix on psu cancels the 1000 g/kg
@@ -756,7 +756,7 @@ rules:
     inputs:
       - path: *mp
         pattern: mesh.nc
-    compound_name: ocean.volcello.ti-ol-hxy-sea.fx.GLB
+    compound_name: ocean.volcello.ti-ol-hxy-sea.fx.glb
     model_variable: volcello
     lazy_write: true
     pipelines:
@@ -772,7 +772,7 @@ rules:
     inputs:
       - path: *dp
         pattern: Kv\.fesom\..*\.nc
-    compound_name: ocean.difvho.tavg-ol-hxy-sea.yr.GLB
+    compound_name: ocean.difvho.tavg-ol-hxy-sea.yr.glb
     model_variable: Kv
     lazy_write: true
     # NOTE: monthly data, CMIP wants yearly average — needs yearly timeavg
@@ -782,7 +782,7 @@ rules:
     inputs:
       - path: *dp
         pattern: Kv\.fesom\..*\.nc
-    compound_name: ocean.difvso.tavg-ol-hxy-sea.yr.GLB
+    compound_name: ocean.difvso.tavg-ol-hxy-sea.yr.glb
     model_variable: Kv
     lazy_write: true
 
@@ -791,7 +791,7 @@ rules:
     inputs:
       - path: *dp
         pattern: Av\.fesom\..*\.nc
-    compound_name: ocean.difmxylo.tavg-ol-hxy-sea.yr.GLB
+    compound_name: ocean.difmxylo.tavg-ol-hxy-sea.yr.glb
     model_variable: Av
     lazy_write: true
 
@@ -805,7 +805,7 @@ rules:
     inputs:
       - path: *dp
         pattern: temp\.fesom\..*\.nc
-    compound_name: ocean.thetao.tavg-ol-hxy-sea.dec.GLB
+    compound_name: ocean.thetao.tavg-ol-hxy-sea.dec.glb
     model_variable: temp
     lazy_write: true
     # Depth-resolved 3D output (~1 GB compressed); 8 concurrent staged
@@ -819,7 +819,7 @@ rules:
     inputs:
       - path: *dp
         pattern: salt\.fesom\..*\.nc
-    compound_name: ocean.so.tavg-ol-hxy-sea.dec.GLB
+    compound_name: ocean.so.tavg-ol-hxy-sea.dec.glb
     model_variable: salt
     lazy_write: true
     # Depth-resolved 3D output; see thetao_dec for rationale.
@@ -829,21 +829,21 @@ rules:
     inputs:
       - path: *dp
         pattern: tx_sur\.fesom\..*\.nc
-    compound_name: ocean.tauuo.tavg-u-hxy-sea.dec.GLB
+    compound_name: ocean.tauuo.tavg-u-hxy-sea.dec.glb
     model_variable: tx_sur
 
   - name: tauvo_dec
     inputs:
       - path: *dp
         pattern: ty_sur\.fesom\..*\.nc
-    compound_name: ocean.tauvo.tavg-u-hxy-sea.dec.GLB
+    compound_name: ocean.tauvo.tavg-u-hxy-sea.dec.glb
     model_variable: ty_sur
 
   - name: thkcello_dec
     inputs:
       - path: *dp
         pattern: hnode\.fesom\..*\.nc
-    compound_name: ocean.thkcello.tavg-ol-hxy-sea.dec.GLB
+    compound_name: ocean.thkcello.tavg-ol-hxy-sea.dec.glb
     model_variable: hnode
     lazy_write: true
 
@@ -851,14 +851,14 @@ rules:
     inputs:
       - path: *dp
         pattern: volo\.fesom\..*\.nc
-    compound_name: ocean.volo.tavg-u-hm-sea.dec.GLB
+    compound_name: ocean.volo.tavg-u-hm-sea.dec.glb
     model_variable: volo
 
   - name: masscello_dec
     inputs:
       - path: *dp
         pattern: hnode\.fesom\..*\.nc
-    compound_name: ocean.masscello.tavg-ol-hxy-sea.dec.GLB
+    compound_name: ocean.masscello.tavg-ol-hxy-sea.dec.glb
     model_variable: hnode
     scale_factor: 1025.0
     scaled_units: "kg m-2"
@@ -870,7 +870,7 @@ rules:
     inputs:
       - path: *dp
         pattern: hnode\.fesom\..*\.nc
-    compound_name: ocean.volcello.tavg-ol-hxy-sea.dec.GLB
+    compound_name: ocean.volcello.tavg-ol-hxy-sea.dec.glb
     model_variable: hnode
     lazy_write: true
     pipelines:
@@ -880,7 +880,7 @@ rules:
     inputs:
       - path: *dp
         pattern: volo\.fesom\..*\.nc
-    compound_name: ocean.masso.tavg-u-hm-sea.dec.GLB
+    compound_name: ocean.masso.tavg-u-hm-sea.dec.glb
     model_variable: volo
     scale_factor: 1025.0
     scaled_units: "kg"
@@ -899,7 +899,7 @@ rules:
     inputs:
       - path: *dp
         pattern: ssh\.fesom\..*\.nc
-    compound_name: ocean.msftbarot.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.msftbarot.tavg-u-hxy-sea.mon.glb
     model_variable: ssh
     pipelines:
       - msftbarot_pipeline
@@ -914,7 +914,7 @@ rules:
     inputs:
       - path: *dp
         pattern: opottemptend\.fesom\..*\.nc
-    compound_name: ocean.opottemptend.tavg-ol-hxy-sea.yr.GLB
+    compound_name: ocean.opottemptend.tavg-ol-hxy-sea.yr.glb
     model_variable: opottemptend
     lazy_write: true
     # NOTE: monthly data, CMIP wants yearly — needs yearly timeavg
@@ -929,7 +929,7 @@ rules:
     inputs:
       - path: *dp
         pattern: osalttend\.fesom\..*\.nc
-    compound_name: ocean.osalttend.tavg-ol-hxy-sea.yr.GLB
+    compound_name: ocean.osalttend.tavg-ol-hxy-sea.yr.glb
     model_variable: osalttend
     model_unit: "kg m-2 s-1"
     lazy_write: true
@@ -939,7 +939,7 @@ rules:
     inputs:
       - path: *dp
         pattern: opottemprmadvect\.fesom\..*\.nc
-    compound_name: ocean.opottemprmadvect.tavg-ol-hxy-sea.yr.GLB
+    compound_name: ocean.opottemprmadvect.tavg-ol-hxy-sea.yr.glb
     model_variable: opottemprmadvect
     lazy_write: true
 
@@ -948,7 +948,7 @@ rules:
     inputs:
       - path: *dp
         pattern: opottempdiff\.fesom\..*\.nc
-    compound_name: ocean.opottempdiff.tavg-ol-hxy-sea.yr.GLB
+    compound_name: ocean.opottempdiff.tavg-ol-hxy-sea.yr.glb
     model_variable: opottempdiff
     lazy_write: true
 
@@ -957,7 +957,7 @@ rules:
     inputs:
       - path: *dp
         pattern: osaltrmadvect\.fesom\..*\.nc
-    compound_name: ocean.osaltrmadvect.tavg-ol-hxy-sea.yr.GLB
+    compound_name: ocean.osaltrmadvect.tavg-ol-hxy-sea.yr.glb
     model_variable: osaltrmadvect
     model_unit: "kg m-2 s-1"
     lazy_write: true
@@ -967,7 +967,7 @@ rules:
     inputs:
       - path: *dp
         pattern: osaltdiff\.fesom\..*\.nc
-    compound_name: ocean.osaltdiff.tavg-ol-hxy-sea.yr.GLB
+    compound_name: ocean.osaltdiff.tavg-ol-hxy-sea.yr.glb
     model_variable: osaltdiff
     model_unit: "kg m-2 s-1"
     lazy_write: true
@@ -977,7 +977,7 @@ rules:
     inputs:
       - path: *dp
         pattern: rsdoabsorb\.fesom\..*\.nc
-    compound_name: ocean.rsdoabsorb.tavg-ol-hxy-sea.yr.GLB
+    compound_name: ocean.rsdoabsorb.tavg-ol-hxy-sea.yr.glb
     model_variable: rsdoabsorb
     lazy_write: true
 
@@ -993,7 +993,7 @@ rules:
     inputs:
       - path: *dp
         pattern: std_dens_DIV\.fesom\..*\.nc
-    compound_name: ocean.msftm.tavg-rho-hyb-sea.mon.GLB
+    compound_name: ocean.msftm.tavg-rho-hyb-sea.mon.glb
     model_variable: msftm
     pipelines:
       - msftm_density_pipeline
@@ -1007,7 +1007,7 @@ rules:
   #   inputs:
   #     - path: *dp
   #       pattern: bolus_w\.fesom\..*\.nc
-  #   compound_name: ocean.msftmmpa.tavg-ol-hyb-sea.mon.GLB
+  #   compound_name: ocean.msftmmpa.tavg-ol-hyb-sea.mon.glb
   #   model_variable: msftmmpa
   #   pipelines:
   #     - msftmmpa_depth_pipeline
@@ -1019,7 +1019,7 @@ rules:
   #   inputs:
   #     - path: *dp
   #       pattern: std_dens_DIVbolus\.fesom\..*\.nc
-  #   compound_name: ocean.msftmmpa.tavg-rho-hyb-sea.mon.GLB
+  #   compound_name: ocean.msftmmpa.tavg-rho-hyb-sea.mon.glb
   #   model_variable: msftmmpa
   #   pipelines:
   #     - msftmmpa_density_pipeline
@@ -1037,7 +1037,7 @@ rules:
     inputs:
       - path: *dp
         pattern: unod\.fesom\..*\.nc
-    compound_name: ocean.sfx.tavg-ol-hxy-sea.mon.GLB
+    compound_name: ocean.sfx.tavg-ol-hxy-sea.mon.glb
     model_variable: unod
     salt_path: *dp
     salt_pattern: salt\.fesom\..*\.nc
@@ -1052,7 +1052,7 @@ rules:
     inputs:
       - path: *dp
         pattern: unod\.fesom\..*\.nc
-    compound_name: ocean.sfx.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.sfx.tavg-u-hxy-sea.mon.glb
     model_variable: unod
     salt_path: *dp
     salt_pattern: salt\.fesom\..*\.nc
@@ -1067,7 +1067,7 @@ rules:
     inputs:
       - path: *dp
         pattern: vnod\.fesom\..*\.nc
-    compound_name: ocean.sfy.tavg-ol-hxy-sea.mon.GLB
+    compound_name: ocean.sfy.tavg-ol-hxy-sea.mon.glb
     model_variable: vnod
     salt_path: *dp
     salt_pattern: salt\.fesom\..*\.nc
@@ -1082,7 +1082,7 @@ rules:
     inputs:
       - path: *dp
         pattern: vnod\.fesom\..*\.nc
-    compound_name: ocean.sfy.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.sfy.tavg-u-hxy-sea.mon.glb
     model_variable: vnod
     salt_path: *dp
     salt_pattern: salt\.fesom\..*\.nc
@@ -1104,7 +1104,7 @@ rules:
     inputs:
       - path: *dp
         pattern: w\.fesom\..*\.nc
-    compound_name: ocean.msftm.tavg-ol-hyb-sea.mon.GLB
+    compound_name: ocean.msftm.tavg-ol-hyb-sea.mon.glb
     model_variable: msftmz
     pipelines:
       - msftmz_pipeline
@@ -1113,7 +1113,7 @@ rules:
     inputs:
       - path: *dp
         pattern: vtemp\.fesom\..*\.nc
-    compound_name: ocean.hfbasin.tavg-u-hyb-sea.mon.GLB
+    compound_name: ocean.hfbasin.tavg-u-hyb-sea.mon.glb
     model_variable: hfbasin
     # compute_hfbasin_tripyview loads utemp as a secondary input alongside
     # the primary vtemp; both are needed for the edge-crossing integral.
@@ -1127,7 +1127,7 @@ rules:
     inputs:
       - path: *dp
         pattern: vsalt\.fesom\..*\.nc
-    compound_name: ocean.sltbasin.tavg-u-hyb-sea.mon.GLB
+    compound_name: ocean.sltbasin.tavg-u-hyb-sea.mon.glb
     model_variable: sltbasin
     # compute_sltbasin_tripyview loads usalt as a secondary input alongside
     # the primary vsalt; both are needed for the edge-crossing integral.

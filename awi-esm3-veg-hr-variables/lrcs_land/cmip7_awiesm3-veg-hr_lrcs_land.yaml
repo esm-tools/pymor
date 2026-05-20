@@ -7,7 +7,7 @@ general:
   name: "awiesm3-cmip7-lrcs-land"
   cmor_version: "CMIP7"
   mip: "CMIP"
-  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.3/metadata.json"
 
 pycmor:
   warn_on_no_rule: False
@@ -105,7 +105,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/evspsblsoi_monthly.out"
-    compound_name: land.evspsblsoi.tavg-u-hxy-lnd.mon.GLB
+    compound_name: land.evspsblsoi.tavg-u-hxy-lnd.mon.glb
     model_variable: evspsblsoi
     source_units: "kg m-2 s-1"
     pipelines:
@@ -116,7 +116,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/evspsblveg_monthly.out"
-    compound_name: land.evspsblveg.tavg-u-hxy-lnd.mon.GLB
+    compound_name: land.evspsblveg.tavg-u-hxy-lnd.mon.glb
     model_variable: evspsblveg
     source_units: "kg m-2 s-1"
     pipelines:
@@ -127,7 +127,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/mrfso_monthly.out"
-    compound_name: landIce.mrfso.tavg-u-hxy-lnd.mon.GLB
+    compound_name: landIce.mrfso.tavg-u-hxy-lnd.mon.glb
     model_variable: mrfso
     source_units: "kg m-2"
     pipelines:
@@ -142,7 +142,7 @@ rules:
     inputs:
       - path: *dp
         pattern: atmos_mon_land_static_(tvl|tvh|cvl|cvh)_.*\.nc
-    compound_name: land.sftgif.ti-u-hxy-u.fx.GLB
+    compound_name: land.sftgif.ti-u-hxy-u.fx.glb
     model_variable: sftgif
     pipelines:
       - sftgif_pipeline
@@ -152,7 +152,7 @@ rules:
     inputs:
       - path: *dp
         pattern: atmos_mon_land_static_slt_.*\.nc
-    compound_name: land.mrsofc.ti-u-hxy-lnd.fx.GLB
+    compound_name: land.mrsofc.ti-u-hxy-lnd.fx.glb
     model_variable: mrsofc
     pipelines:
       - mrsofc_pipeline
@@ -162,7 +162,7 @@ rules:
     inputs:
       - path: *dp
         pattern: atmos_mon_land_static_(tvl|tvh|cvl|cvh)_.*\.nc
-    compound_name: land.rootd.ti-u-hxy-lnd.fx.GLB
+    compound_name: land.rootd.ti-u-hxy-lnd.fx.glb
     model_variable: rootd
     pipelines:
       - rootd_pipeline
