@@ -17,6 +17,15 @@ pycmor:
   dask_n_workers: 1
   dask_cluster_scaling_mode: "fixed"
   dask_cluster_scaling_fixed_jobs: 1
+  # Force strict serial within this tier: at most 1 rule from
+  # lrcs_seaice_serial group runs concurrently. The earlier
+  # oifs_regrid cap=2 (for driver-RSS) is replaced — this tier-wide
+  # serial subsumes it and additionally protects against the
+  # HDF5-global-write-lock save wedge that timed out
+  # lrcs_seaice_3 in cli40 (siarea/siextent/sisnmass/sfdsi/sihc
+  # all stuck at heartbeat ≥87 for >3h).
+  throttle_caps:
+    lrcs_seaice_serial: 1
 
 jobqueue:
   slurm:
@@ -30,6 +39,7 @@ jobqueue:
 pipelines:
   # Fraction to percent. Used by siconca/siconca_day (hxy-u, no mask).
   - name: fraction_to_percent_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -48,6 +58,7 @@ pipelines:
   # Fraction to percent + mask where no sea ice. Used by simpconc
   # (hxy-si). Rule must supply aice_path / aice_pattern.
   - name: fraction_to_percent_mask_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -65,6 +76,7 @@ pipelines:
 
   # Generic: multiply by constant (rho_ice, rho_snow, rho_water, etc.)
   - name: scale_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -84,6 +96,7 @@ pipelines:
   # cell_methods is ``area: time: mean where sea_ice (mask=siconc)``.
   # Rule must supply aice_path / aice_pattern.
   - name: scale_mask_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -104,6 +117,7 @@ pipelines:
   # (hxy-si): the mask_where_no_seaice step enforces CMIP7 cell_methods
   # ``where sea_ice (mask=siconc)``.
   - name: snm_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -122,6 +136,7 @@ pipelines:
 
   # Sea ice speed: sqrt(uice² + vice²). hxy-si branding ⇒ mask.
   - name: sispeed_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -141,6 +156,7 @@ pipelines:
   # variant (sfdsi): no masking — fw_ice is intrinsically zero outside
   # ice so cell_methods ``where sea`` is satisfied by the model itself.
   - name: sfdsi_from_fw_ice_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -160,6 +176,7 @@ pipelines:
   # ``where sea_ice``; the mask is the only difference from the hxy-sea
   # variant above.
   - name: sfdsi_from_fw_ice_mask_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -178,6 +195,7 @@ pipelines:
   # and sidmasstrany are hxy-u branding (CMIP7 cell_methods is
   # ``area: time: mean`` with no ``where sea_ice``), so no mask step.
   - name: ice_mass_transport_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -195,6 +213,7 @@ pipelines:
 
   # Average normal stress: (sgm11 + sgm22) / 2. hxy-si branding ⇒ mask.
   - name: sistressave_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -211,6 +230,7 @@ pipelines:
 
   # Maximum shear stress: sqrt(((sgm11-sgm22)/2)² + sgm12²). hxy-si ⇒ mask.
   - name: sistressmax_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -228,6 +248,7 @@ pipelines:
   # Conductive heat flux at ice surface: k_ice*(T_base-T_surface)/h_ice.
   # hxy-si branding ⇒ mask.
   - name: siflcondtop_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -244,6 +265,7 @@ pipelines:
 
   # Sea ice heat content: rho_ice*h_ice*(c_ice*(T_mean-T_melt)-L_f)
   - name: sihc_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -260,6 +282,7 @@ pipelines:
 
   # Snow heat content: -rho_snow * L_f * h_snow. hxy-si ⇒ mask.
   - name: sisnhc_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -276,6 +299,7 @@ pipelines:
 
   # Freezing point from SSS → sitempbot. hxy-si ⇒ mask.
   - name: sitempbot_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -292,6 +316,7 @@ pipelines:
 
   # Freeboard from h_ice and h_snow. hxy-si ⇒ mask.
   - name: sifb_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -308,6 +333,7 @@ pipelines:
 
   # Effective melt pond fraction: apnd*(1-ipnd/hpnd)*100. hxy-si ⇒ mask.
   - name: simpeffconc_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -325,6 +351,7 @@ pipelines:
   # Constant field (e.g. drag coefficient). Used by sidragtop/sidragbot,
   # both hxy-si ⇒ mask.
   - name: constant_field_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -341,6 +368,7 @@ pipelines:
 
   # Regrid from OpenIFS regular grid to FESOM unstructured nodes
   - name: regrid_atm_to_fesom_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -363,7 +391,7 @@ pipelines:
   # cascaded 15 rule failures (cli16). See
   # FORENSIC_lrcs_seaice_failure.md.
   - name: regrid_atm_to_fesom_seaice_mask_pipeline
-    throttle_group: oifs_regrid
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -384,7 +412,7 @@ pipelines:
   # (sifllattop, siflsenstop) are positive=down. Apply a final
   # scale_by_constant(-1) step to flip the sign.
   - name: regrid_atm_to_fesom_seaice_mask_negate_pipeline
-    throttle_group: oifs_regrid  # see *_pipeline above for rationale
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
@@ -432,6 +460,7 @@ pipelines:
   #      and sets scaled_units (e.g. "kg") on the array.
   #   -> handle_unit_conversion -> kg -> kg (no-op or relabel)
   - name: hemisphere_integral_scale_pipeline
+    throttle_group: lrcs_seaice_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable

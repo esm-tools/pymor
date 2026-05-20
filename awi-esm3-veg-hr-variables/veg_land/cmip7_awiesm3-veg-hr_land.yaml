@@ -18,6 +18,12 @@ pycmor:
   dask_n_workers: 1
   dask_cluster_scaling_mode: "fixed"
   dask_cluster_scaling_fixed_jobs: 1
+  # Force strict serial within this tier: at most 1 rule from
+  # veg_land_serial group runs concurrently. Trades a small wall-time
+  # penalty for elimination of the HDF5-global-write-lock save wedge
+  # pattern that timed out veg_land_1 in cli40.
+  throttle_caps:
+    veg_land_serial: 1
 
 jobqueue:
   slurm:
@@ -31,6 +37,7 @@ jobqueue:
 pipelines:
   # Custom pipeline for temporal differencing (dgw, dsn, dsw)
   - name: temporal_diff_pipeline
+    throttle_group: veg_land_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_temporal_diff
@@ -46,6 +53,7 @@ pipelines:
 
   # Custom pipeline for terrestrial water storage (summation)
   - name: mrtws_pipeline
+    throttle_group: veg_land_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_mrtws
@@ -62,6 +70,7 @@ pipelines:
 
   # Custom pipeline for snow depth (SWE to physical depth)
   - name: snd_pipeline
+    throttle_group: veg_land_serial
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_snd
@@ -77,6 +86,7 @@ pipelines:
 
   # LPJ-GUESS monthly loader (Jan..Dec format)
   - name: lpjg_monthly_pipeline
+    throttle_group: veg_land_serial
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly
       - script://$PYCMOR_HOME/examples/custom_steps.py:clip_small_negatives
@@ -92,6 +102,7 @@ pipelines:
 
   # LPJ-GUESS yearly loader (Lon/Lat/Year/Total format)
   - name: lpjg_yearly_pipeline
+    throttle_group: veg_land_serial
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_yearly
       - pycmor.std_lib.units.handle_unit_conversion
@@ -106,6 +117,7 @@ pipelines:
 
   # LPJ-GUESS yearly Lut loader (Lon/Lat/Year/psl/crp/pst/urb format)
   - name: lpjg_yearly_lut_pipeline
+    throttle_group: veg_land_serial
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_yearly_lut
       - pycmor.std_lib.units.handle_unit_conversion
@@ -120,6 +132,7 @@ pipelines:
 
   # LPJ-GUESS monthly Lut loader (Lon/Lat/Year/Mth/psl/crp/pst/urb format)
   - name: lpjg_monthly_lut_pipeline
+    throttle_group: veg_land_serial
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly_lut
       - script://$PYCMOR_HOME/examples/custom_steps.py:clip_small_negatives
@@ -137,6 +150,7 @@ pipelines:
   # Pint cannot convert kg/m2 (water mass per area) to m without a hydrostatic
   # context; use scale_by_constant 0.001 (mm → m) before the unit relabel.
   - name: lpjg_monthly_lut_scaled_pipeline
+    throttle_group: veg_land_serial
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly_lut
       - pycmor.std_lib.generic.get_variable
