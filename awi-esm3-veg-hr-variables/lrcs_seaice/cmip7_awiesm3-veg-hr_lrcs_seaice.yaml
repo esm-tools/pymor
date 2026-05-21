@@ -17,15 +17,13 @@ pycmor:
   dask_n_workers: 1
   dask_cluster_scaling_mode: "fixed"
   dask_cluster_scaling_fixed_jobs: 1
-  # Force strict serial within this tier: at most 1 rule from
-  # lrcs_seaice_serial group runs concurrently. The earlier
-  # oifs_regrid cap=2 (for driver-RSS) is replaced — this tier-wide
-  # serial subsumes it and additionally protects against the
-  # HDF5-global-write-lock save wedge that timed out
-  # lrcs_seaice_3 in cli40 (siarea/siextent/sisnmass/sfdsi/sihc
-  # all stuck at heartbeat ≥87 for >3h).
-  throttle_caps:
-    lrcs_seaice_serial: 1
+  # `throttle_caps` lives on the launch side (see submit_hr_year_shards.sh
+  # `tier_throttle_caps` case), not here — yaml-level throttle_caps gets
+  # dropped by the Everett PycmorConfig schema (only declared Options
+  # survive). The per-pipeline `throttle_group: lrcs_seaice_serial`
+  # annotation below is what bind the rules into the group; the cap
+  # value (1 = strict serial) is supplied via the PYCMOR_THROTTLE_CAPS
+  # env var by the submitter.
 
 jobqueue:
   slurm:

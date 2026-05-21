@@ -232,6 +232,18 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
       ;;
   esac
 
+  # Per-tier throttle caps (env-var path; the yaml-side `throttle_caps`
+  # key gets dropped by the Everett PycmorConfig schema, only declared
+  # Options survive). Format: `group:N,...`.
+  # lrcs_seaice and veg_land tiers force strict serial (cap=1) on their
+  # respective save-throttle groups so the HDF5 global write lock can't
+  # wedge 9+ parallel saves the way it did in cli40/cli41 lrcs_seaice_3.
+  case "$short_tier" in
+    lrcs_seaice) tier_throttle_caps="lrcs_seaice_serial:1" ;;
+    veg_land)    tier_throttle_caps="veg_land_serial:1" ;;
+    *)           tier_throttle_caps="" ;;
+  esac
+
   # OUTSUB is the per-tier subdir under OUTROOT. With SHARD_DRS=on the
   # pycmor DRS sub-tree is appended inside the saver, so we collapse the
   # tier prefix and write everything into one shared DRS root.
@@ -246,7 +258,7 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
         -J "$jobname" \
         --time="$tier_walltime" \
         $MEM_FLAG \
-        --export=ALL,CGROUP_GB=$tier_cgroup,SHARD_FIX3=$FIX3,N_WORKERS=$tier_workers,SHARD_JEMALLOC=$tier_jemalloc,SHARD_DRS=$SHARD_DRS \
+        --export=ALL,CGROUP_GB=$tier_cgroup,SHARD_FIX3=$FIX3,N_WORKERS=$tier_workers,SHARD_JEMALLOC=$tier_jemalloc,SHARD_DRS=$SHARD_DRS,PYCMOR_THROTTLE_CAPS=$tier_throttle_caps \
         "$HERE/run_hr_shard.sh" \
         "$shards_dir" "$RUN_ABS" "$YEAR" "$tier_outsub" 2>&1) \
     || { echo "sbatch failed for $short_tier"; continue; }

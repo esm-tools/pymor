@@ -18,12 +18,11 @@ pycmor:
   dask_n_workers: 1
   dask_cluster_scaling_mode: "fixed"
   dask_cluster_scaling_fixed_jobs: 1
-  # Force strict serial within this tier: at most 1 rule from
-  # veg_land_serial group runs concurrently. Trades a small wall-time
-  # penalty for elimination of the HDF5-global-write-lock save wedge
-  # pattern that timed out veg_land_1 in cli40.
-  throttle_caps:
-    veg_land_serial: 1
+  # `throttle_caps` lives on the launch side (see submit_hr_year_shards.sh
+  # `tier_throttle_caps` case), not here — yaml-level throttle_caps gets
+  # dropped by the Everett PycmorConfig schema. The per-pipeline
+  # `throttle_group: veg_land_serial` annotation below binds the rules
+  # into the group; cap=1 is supplied via PYCMOR_THROTTLE_CAPS env var.
 
 jobqueue:
   slurm:
