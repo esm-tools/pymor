@@ -1053,6 +1053,13 @@ class CMORizer:
         )
 
         def _rule_throttle_group(rule):
+            # Rule-level annotation wins (per-rule override). Falls back
+            # to pipeline-level annotation. This lets unpipelined rules
+            # (no ``pipelines:`` key, default pipeline used) join tier
+            # throttling via ``inherit: throttle_group: <name>``.
+            grp = getattr(rule, "throttle_group", None)
+            if grp:
+                return grp
             for pl in getattr(rule, "pipelines", None) or []:
                 grp = getattr(pl, "throttle_group", None)
                 if grp:

@@ -165,6 +165,12 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
+  # Tier-wide throttle: applies to ALL rules (pipelined or default-piped).
+  # Cmorizer reads rule.throttle_group as a fallback when no pipeline
+  # carries the annotation. Combined with PYCMOR_THROTTLE_CAPS=
+  # veg_land_serial:1 from the launcher, this forces strict serial across
+  # the whole tier.
+  throttle_group: veg_land_serial
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd
   netcdf_compression_level: 3

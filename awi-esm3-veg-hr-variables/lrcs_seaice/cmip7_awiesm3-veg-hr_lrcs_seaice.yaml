@@ -476,6 +476,14 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
+  # Tier-wide throttle: applies to ALL rules (pipelined or default-piped).
+  # cli43 lrcs_seaice_3 still timed out after pipeline-level annotation
+  # because 20 of 64 rules (siarea_north, siextent_north_day, siflcondbot,
+  # sidconcth, sitimefrac, etc.) have no `pipelines:` key, use the default
+  # pipeline, and were thus _unthrottled. With the cmorizer change to read
+  # rule.throttle_group as a fallback, the inherit value propagates to
+  # every rule.
+  throttle_group: lrcs_seaice_serial
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd
   netcdf_compression_level: 3
