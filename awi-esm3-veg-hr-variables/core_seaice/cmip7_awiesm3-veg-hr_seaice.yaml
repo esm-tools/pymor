@@ -126,20 +126,20 @@ rules:
   - name: simass
     inputs:
       - path: *dp
-        pattern: m_ice\.fesom\..*\.nc
+        pattern: m_ice\.fesom\.\d{4}\.nc
     compound_name: seaIce.simass.tavg-u-hxy-si.mon.glb
     model_variable: m_ice
     scale_factor: 917.0
     scaled_units: "kg m-2"
     aice_path: *dp
-    aice_pattern: a_ice\.fesom\..*\.nc
+    aice_pattern: a_ice\.fesom\.\d{4}\.nc
     pipelines:
       - scale_mask_pipeline
 
   - name: siu
     inputs:
       - path: *dp
-        pattern: uice\.fesom\..*\.nc
+        pattern: uice\.fesom\.\d{4}\.nc
     compound_name: seaIce.siu.tavg-u-hxy-si.mon.glb
     model_variable: uice
     # vec_autorotate=.true. set in namelist.io
@@ -147,7 +147,7 @@ rules:
   - name: siv
     inputs:
       - path: *dp
-        pattern: vice\.fesom\..*\.nc
+        pattern: vice\.fesom\.\d{4}\.nc
     compound_name: seaIce.siv.tavg-u-hxy-si.mon.glb
     model_variable: vice
     # vec_autorotate=.true. set in namelist.io
@@ -159,21 +159,21 @@ rules:
   - name: sithick
     inputs:
       - path: *dp
-        pattern: h_ice\.fesom\..*\.nc
+        pattern: h_ice\.fesom\.\d{4}\.nc
     compound_name: seaIce.sithick.tavg-u-hxy-si.mon.glb
     model_variable: h_ice
 
   - name: snd
     inputs:
       - path: *dp
-        pattern: h_snow\.fesom\..*\.nc
+        pattern: h_snow\.fesom\.\d{4}\.nc
     compound_name: seaIce.snd.tavg-u-hxy-sn.mon.glb
     model_variable: h_snow
 
   - name: ts
     inputs:
       - path: *dp
-        pattern: ist\.fesom\..*\.nc
+        pattern: ist\.fesom\.\d{4}\.nc
     compound_name: seaIce.ts.tavg-u-hxy-si.mon.glb
     model_variable: ist
     # ist outputs in K, CMIP wants K — no conversion needed
@@ -185,7 +185,7 @@ rules:
   - name: siconc
     inputs:
       - path: *dp
-        pattern: a_ice\.fesom\..*\.nc
+        pattern: a_ice\.fesom\.\d{4}\.nc
     compound_name: seaIce.siconc.tavg-u-hxy-u.mon.glb
     model_variable: a_ice
     pipelines:
@@ -194,7 +194,7 @@ rules:
   - name: sitimefrac
     inputs:
       - path: *dp
-        pattern: a_ice\.fesom\..*\.nc
+        pattern: a_ice\.fesom\.\d{4}\.nc
     compound_name: seaIce.sitimefrac.tavg-u-hxy-sea.mon.glb
     model_variable: a_ice
     pipelines:
@@ -207,7 +207,7 @@ rules:
   - name: siconc_day
     inputs:
       - path: *dp
-        pattern: a_ice\.fesom\..*\.nc
+        pattern: a_ice\.fesom\.\d{4}\.nc
     compound_name: seaIce.siconc.tavg-u-hxy-u.day.glb
     model_variable: a_ice
     pipelines:

@@ -79,7 +79,7 @@ rules:
     second_input_pattern: a_ice.fesom.*.nc
     second_variable: a_ice
     aice_path: *dp
-    aice_pattern: a_ice\.fesom\..*\.nc
+    aice_pattern: a_ice\.fesom\.\d{4}\.nc
     rho_snow: 330.0
     L_f: 334000.0
     pipelines:

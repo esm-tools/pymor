@@ -93,21 +93,21 @@ rules:
   - name: sithick_day
     inputs:
       - path: *dp
-        pattern: h_ice\.fesom\..*\.nc
+        pattern: h_ice\.fesom\.\d{4}\.nc
     compound_name: seaIce.sithick.tavg-u-hxy-si.day.glb
     model_variable: h_ice
 
   - name: snd_day
     inputs:
       - path: *dp
-        pattern: h_snow\.fesom\..*\.nc
+        pattern: h_snow\.fesom\.\d{4}\.nc
     compound_name: seaIce.snd.tavg-u-hxy-sn.day.glb
     model_variable: h_snow
 
   - name: siu_day
     inputs:
       - path: *dp
-        pattern: uice\.fesom\..*\.nc
+        pattern: uice\.fesom\.\d{4}\.nc
     compound_name: seaIce.siu.tavg-u-hxy-si.day.glb
     model_variable: uice
     # vec_autorotate=.true. set in namelist.io
@@ -115,7 +115,7 @@ rules:
   - name: siv_day
     inputs:
       - path: *dp
-        pattern: vice\.fesom\..*\.nc
+        pattern: vice\.fesom\.\d{4}\.nc
     compound_name: seaIce.siv.tavg-u-hxy-si.day.glb
     model_variable: vice
     # vec_autorotate=.true. set in namelist.io
@@ -128,7 +128,7 @@ rules:
   - name: sieqthick
     inputs:
       - path: *dp
-        pattern: m_ice\.fesom\..*\.nc
+        pattern: m_ice\.fesom\.\d{4}\.nc
     compound_name: seaIce.sieqthick.tavg-u-hxy-si.mon.glb
     model_variable: m_ice
 
@@ -137,13 +137,13 @@ rules:
   - name: snw
     inputs:
       - path: *dp
-        pattern: m_snow\.fesom\..*\.nc
+        pattern: m_snow\.fesom\.\d{4}\.nc
     compound_name: seaIce.snw.tavg-u-hxy-si.mon.glb
     model_variable: m_snow
     scale_factor: 1000.0
     scaled_units: "kg m-2"
     aice_path: *dp
-    aice_pattern: a_ice\.fesom\..*\.nc
+    aice_pattern: a_ice\.fesom\.\d{4}\.nc
     pipelines:
       - scale_mask_pipeline
 
@@ -159,38 +159,38 @@ rules:
   - name: evspsbl
     inputs:
       - path: *dp
-        pattern: evap\.fesom\..*\.nc
+        pattern: evap\.fesom\.\d{4}\.nc
     compound_name: seaIce.evspsbl.tavg-u-hxy-si.mon.glb
     model_variable: evap
     scale_factor: -1000.0  # FESOM evap is negative-up; CMIP7 evspsbl positive=upward
     scaled_units: "kg m-2 s-1"
     aice_path: *dp
-    aice_pattern: a_ice\.fesom\..*\.nc
+    aice_pattern: a_ice\.fesom\.\d{4}\.nc
     pipelines:
       - scale_mask_pipeline
 
   - name: prra
     inputs:
       - path: *dp
-        pattern: prec\.fesom\..*\.nc
+        pattern: prec\.fesom\.\d{4}\.nc
     compound_name: seaIce.prra.tavg-u-hxy-si.mon.glb
     model_variable: prec
     scale_factor: 1000.0
     scaled_units: "kg m-2 s-1"
     aice_path: *dp
-    aice_pattern: a_ice\.fesom\..*\.nc
+    aice_pattern: a_ice\.fesom\.\d{4}\.nc
     pipelines:
       - scale_mask_pipeline
 
   - name: prsn
     inputs:
       - path: *dp
-        pattern: snow\.fesom\..*\.nc
+        pattern: snow\.fesom\.\d{4}\.nc
     compound_name: seaIce.prsn.tavg-u-hxy-si.mon.glb
     model_variable: snow
     scale_factor: 1000.0
     scaled_units: "kg m-2 s-1"
     aice_path: *dp
-    aice_pattern: a_ice\.fesom\..*\.nc
+    aice_pattern: a_ice\.fesom\.\d{4}\.nc
     pipelines:
       - scale_mask_pipeline

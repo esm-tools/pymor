@@ -220,21 +220,21 @@ rules:
   - name: tos
     inputs:
       - path: *dp
-        pattern: sst\.fesom\..*\.nc
+        pattern: sst\.fesom\.\d{4}\.nc
     compound_name: ocean.tos.tavg-u-hxy-sea.mon.glb
     model_variable: sst
 
   - name: sos
     inputs:
       - path: *dp
-        pattern: sss\.fesom\..*\.nc
+        pattern: sss\.fesom\.\d{4}\.nc
     compound_name: ocean.sos.tavg-u-hxy-sea.mon.glb
     model_variable: sss
 
   - name: zos
     inputs:
       - path: *dp
-        pattern: ssh\.fesom\..*\.nc
+        pattern: ssh\.fesom\.\d{4}\.nc
     compound_name: ocean.zos.tavg-u-hxy-sea.mon.glb
     model_variable: ssh
 
@@ -249,7 +249,7 @@ rules:
   - name: hfds
     inputs:
       - path: *dp
-        pattern: fh\.fesom\..*\.nc
+        pattern: fh\.fesom\.\d{4}\.nc
     compound_name: ocean.hfds.tavg-u-hxy-sea.mon.glb
     model_variable: fh
     scale_factor: -1.0
@@ -260,7 +260,7 @@ rules:
   - name: mlotst
     inputs:
       - path: *dp
-        pattern: MLD3\.fesom\..*\.nc
+        pattern: MLD3\.fesom\.\d{4}\.nc
     compound_name: ocean.mlotst.tavg-u-hxy-sea.mon.glb
     model_variable: MLD3
     scale_factor: -1.0  # FESOM MLD3 is negative depth; CMIP7 mlotst is positive-down
@@ -272,7 +272,7 @@ rules:
   - name: tauuo
     inputs:
       - path: *dp
-        pattern: tx_sur\.fesom\..*\.nc
+        pattern: tx_sur\.fesom\.\d{4}\.nc
     compound_name: ocean.tauuo.tavg-u-hxy-sea.mon.glb
     model_variable: tx_sur
     # NOTE: tx_sur is on elem grid (6.2M elements), not nod2 (3.1M nodes).
@@ -282,7 +282,7 @@ rules:
   - name: tauvo
     inputs:
       - path: *dp
-        pattern: ty_sur\.fesom\..*\.nc
+        pattern: ty_sur\.fesom\.\d{4}\.nc
     compound_name: ocean.tauvo.tavg-u-hxy-sea.mon.glb
     model_variable: ty_sur
     # NOTE: Same elem grid caveat as tauuo.
@@ -294,7 +294,7 @@ rules:
   - name: thetao
     inputs:
       - path: *dp
-        pattern: temp\.fesom\..*\.nc
+        pattern: temp\.fesom\.\d{4}\.nc
     compound_name: ocean.thetao.tavg-ol-hxy-sea.mon.glb
     model_variable: temp
     lazy_write: true
@@ -305,7 +305,7 @@ rules:
   - name: so
     inputs:
       - path: *dp
-        pattern: salt\.fesom\..*\.nc
+        pattern: salt\.fesom\.\d{4}\.nc
     compound_name: ocean.so.tavg-ol-hxy-sea.mon.glb
     model_variable: salt
     lazy_write: true
@@ -313,7 +313,7 @@ rules:
   - name: uo
     inputs:
       - path: *dp
-        pattern: unod\.fesom\..*\.nc
+        pattern: unod\.fesom\.\d{4}\.nc
     compound_name: ocean.uo.tavg-ol-hxy-sea.mon.glb
     model_variable: unod
     lazy_write: true
@@ -323,7 +323,7 @@ rules:
   - name: vo
     inputs:
       - path: *dp
-        pattern: vnod\.fesom\..*\.nc
+        pattern: vnod\.fesom\.\d{4}\.nc
     compound_name: ocean.vo.tavg-ol-hxy-sea.mon.glb
     model_variable: vnod
     lazy_write: true
@@ -333,7 +333,7 @@ rules:
   - name: wo
     inputs:
       - path: *dp
-        pattern: w\.fesom\..*\.nc
+        pattern: w\.fesom\.\d{4}\.nc
     compound_name: ocean.wo.tavg-ol-hxy-sea.mon.glb
     model_variable: w
     lazy_write: true
@@ -355,7 +355,7 @@ rules:
   - name: absscint
     inputs:
       - path: *dp
-        pattern: salt\.fesom\..*\.nc
+        pattern: salt\.fesom\.\d{4}\.nc
     compound_name: ocean.absscint.tavg-op4-hxy-sea.mon.glb
     model_variable: salt
     lazy_write: true
@@ -375,21 +375,21 @@ rules:
   - name: tos_day
     inputs:
       - path: *dp
-        pattern: sst\.fesom\..*\.nc
+        pattern: sst\.fesom\.\d{4}\.nc
     compound_name: ocean.tos.tavg-u-hxy-sea.day.glb
     model_variable: sst
 
   - name: sos_day
     inputs:
       - path: *dp
-        pattern: sss\.fesom\..*\.nc
+        pattern: sss\.fesom\.\d{4}\.nc
     compound_name: ocean.sos.tavg-u-hxy-sea.day.glb
     model_variable: sss
 
   - name: zos_day
     inputs:
       - path: *dp
-        pattern: ssh\.fesom\..*\.nc
+        pattern: ssh\.fesom\.\d{4}\.nc
     compound_name: ocean.zos.tavg-u-hxy-sea.day.glb
     model_variable: ssh
 
@@ -463,7 +463,7 @@ rules:
   - name: thkcello
     inputs:
       - path: *dp
-        pattern: hnode\.fesom\..*\.nc
+        pattern: hnode\.fesom\.\d{4}\.nc
     compound_name: ocean.thkcello.tavg-ol-hxy-sea.mon.glb
     model_variable: hnode
     lazy_write: true
@@ -471,7 +471,7 @@ rules:
   - name: masscello
     inputs:
       - path: *dp
-        pattern: hnode\.fesom\..*\.nc
+        pattern: hnode\.fesom\.\d{4}\.nc
     compound_name: ocean.masscello.tavg-ol-hxy-sea.mon.glb
     model_variable: hnode
     lazy_write: true
@@ -488,7 +488,7 @@ rules:
   - name: umo
     inputs:
       - path: *dp
-        pattern: unod\.fesom\..*\.nc
+        pattern: unod\.fesom\.\d{4}\.nc
     compound_name: ocean.umo.tavg-ol-hxy-sea.mon.glb
     model_variable: unod
     lazy_write: true
@@ -500,7 +500,7 @@ rules:
   - name: vmo
     inputs:
       - path: *dp
-        pattern: vnod\.fesom\..*\.nc
+        pattern: vnod\.fesom\.\d{4}\.nc
     compound_name: ocean.vmo.tavg-ol-hxy-sea.mon.glb
     model_variable: vnod
     lazy_write: true
@@ -512,7 +512,7 @@ rules:
   - name: wmo
     inputs:
       - path: *dp
-        pattern: w\.fesom\..*\.nc
+        pattern: w\.fesom\.\d{4}\.nc
     compound_name: ocean.wmo.tavg-ol-hxy-sea.mon.glb
     model_variable: w
     lazy_write: true
@@ -529,11 +529,11 @@ rules:
   - name: zostoga
     inputs:
       - path: *dp
-        pattern: temp\.fesom\..*\.nc
+        pattern: temp\.fesom\.\d{4}\.nc
     compound_name: ocean.zostoga.tavg-u-hm-sea.mon.glb
     model_variable: temp
     salt_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
-    salt_pattern: salt\.fesom\..*\.nc
+    salt_pattern: salt\.fesom\.\d{4}\.nc
     salt_variable: salt
     reference_density: 1025.0
     pipelines:

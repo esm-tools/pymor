@@ -170,7 +170,7 @@ rules:
   - name: tossq_day
     inputs:
       - path: *dp
-        pattern: sst\.fesom\..*\.nc
+        pattern: sst\.fesom\.\d{4}\.nc
     compound_name: ocean.tossq.tavg-u-hxy-sea.day.glb
     model_variable: sst
     squared_units: "degC2"
@@ -186,7 +186,7 @@ rules:
   - name: volcello_mon
     inputs:
       - path: *dp
-        pattern: hnode\.fesom\..*\.nc
+        pattern: hnode\.fesom\.\d{4}\.nc
     compound_name: ocean.volcello.tavg-ol-hxy-sea.mon.glb
     model_variable: hnode
     lazy_write: true
@@ -202,7 +202,7 @@ rules:
   - name: friver
     inputs:
       - path: *dp
-        pattern: runoff\.fesom\..*\.nc
+        pattern: runoff\.fesom\.\d{4}\.nc
     compound_name: ocean.friver.tavg-u-hxy-sea.mon.glb
     model_variable: runoff
     scale_factor: 1000.0
@@ -219,13 +219,13 @@ rules:
   - name: hfx
     inputs:
       - path: *dp
-        pattern: utemp\.fesom\..*\.nc
+        pattern: utemp\.fesom\.\d{4}\.nc
     compound_name: ocean.hfx.tavg-ol-hxy-sea.mon.glb
     model_variable: utemp
     scale_factor: 4095900.0
     scaled_units: "W"
     hnode_path: *dp
-    hnode_pattern: hnode\.fesom\..*\.nc
+    hnode_pattern: hnode\.fesom\.\d{4}\.nc
     hnode_variable: hnode
     lazy_write: true
     # Depth-resolved 3D output (~8 GB compressed); 8 concurrent workers
@@ -239,13 +239,13 @@ rules:
   - name: hfxint
     inputs:
       - path: *dp
-        pattern: utemp\.fesom\..*\.nc
+        pattern: utemp\.fesom\.\d{4}\.nc
     compound_name: ocean.hfx.tavg-u-hxy-sea.mon.glb
     model_variable: utemp
     scale_factor: 4095900.0
     scaled_units: "W"
     hnode_path: *dp
-    hnode_pattern: hnode\.fesom\..*\.nc
+    hnode_pattern: hnode\.fesom\.\d{4}\.nc
     hnode_variable: hnode
     vertical_sum: true
     pipelines:
@@ -254,13 +254,13 @@ rules:
   - name: hfy
     inputs:
       - path: *dp
-        pattern: vtemp\.fesom\..*\.nc
+        pattern: vtemp\.fesom\.\d{4}\.nc
     compound_name: ocean.hfy.tavg-ol-hxy-sea.mon.glb
     model_variable: vtemp
     scale_factor: 4095900.0
     scaled_units: "W"
     hnode_path: *dp
-    hnode_pattern: hnode\.fesom\..*\.nc
+    hnode_pattern: hnode\.fesom\.\d{4}\.nc
     hnode_variable: hnode
     lazy_write: true
     # Depth-resolved 3D output (~8 GB compressed); see hfx for rationale.
@@ -271,13 +271,13 @@ rules:
   - name: hfyint
     inputs:
       - path: *dp
-        pattern: vtemp\.fesom\..*\.nc
+        pattern: vtemp\.fesom\.\d{4}\.nc
     compound_name: ocean.hfy.tavg-u-hxy-sea.mon.glb
     model_variable: vtemp
     scale_factor: 4095900.0
     scaled_units: "W"
     hnode_path: *dp
-    hnode_pattern: hnode\.fesom\..*\.nc
+    hnode_pattern: hnode\.fesom\.\d{4}\.nc
     hnode_variable: hnode
     vertical_sum: true
     pipelines:
@@ -295,13 +295,13 @@ rules:
   # - name: sfx
   #   inputs:
   #     - path: *dp
-  #       pattern: unod\.fesom\..*\.nc
+  #       pattern: unod\.fesom\.\d{4}\.nc
   #   compound_name: ocean.sfx.tavg-ol-hxy-sea.mon.glb
   #   model_variable: unod
 
   # - name: sfy
   #   inputs:
   #     - path: *dp
-  #       pattern: vnod\.fesom\..*\.nc
+  #       pattern: vnod\.fesom\.\d{4}\.nc
   #   compound_name: ocean.sfy.tavg-ol-hxy-sea.mon.glb
   #   model_variable: vnod
