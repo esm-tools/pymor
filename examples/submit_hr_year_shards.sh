@@ -20,6 +20,12 @@
 #   TIER                   single tier name; if set, only that tier's
 #                          yaml is submitted (used for smoke tests)
 #   WALLTIME               default 01:00:00
+#   WITH_GR                yes/no (default no). When yes, also derive a
+#                          gr-grid variant of every FESOM-ingesting tier
+#                          yaml (via generate_gr_yaml.py) and submit it
+#                          alongside the gn original. Single source of
+#                          truth — the gr yamls are regenerated each run,
+#                          never committed.
 #   N_WORKERS, TPW, MEM_PER_WORKER, CGROUP_GB — see run_hr_shard.sh
 set -euo pipefail
 
@@ -46,6 +52,28 @@ fi
 YAMLS_DIR="$WORKDIR/yamls"
 mkdir -p "$YAMLS_DIR"
 python3 "$HERE/repoint_hr_year.py" "$RUN" "$YEAR" "$YAMLS_DIR"
+
+# Step 1b: optionally derive gr-grid yamls for FESOM-ingesting tiers.
+# Single source of truth: the gn yaml in the source tree. The gr yaml
+# is regenerated every run and never committed. Drops non-FESOM rules,
+# rewrites \.fesom\.\d{4}\.nc → \.fesom\.gr\.\d{4}\.nc, overrides
+# inherit: grid_label/grid/nominal_resolution. See generate_gr_yaml.py.
+WITH_GR="${WITH_GR:-no}"
+case "$WITH_GR" in
+  yes|y|true|1|on)
+    echo "=== generating gr-variant yamls for FESOM-ingesting tiers ==="
+    for yaml in "$YAMLS_DIR"/*.yaml; do
+      case "$yaml" in *_gr.yaml) continue ;; esac
+      # only generate gr for yamls that actually reference fesom files
+      if ! grep --color=never -q '\.fesom\.' "$yaml"; then
+        continue
+      fi
+      base="$(basename "$yaml" .yaml)"
+      gr_yaml="$YAMLS_DIR/${base}_gr.yaml"
+      python3 "$HERE/generate_gr_yaml.py" "$yaml" "$gr_yaml"
+    done
+    ;;
+esac
 
 # Optional single-tier filter
 if [ -n "${TIER:-}" ]; then
