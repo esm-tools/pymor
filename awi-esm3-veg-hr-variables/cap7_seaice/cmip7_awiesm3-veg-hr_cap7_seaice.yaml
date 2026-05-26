@@ -68,6 +68,12 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
+  # Tier-wide throttle: prevent the HDF5-write-lock parallel-save wedge
+  # observed across FESOM-ingesting tiers (cli40/43/45). Cap=1 via
+  # PYCMOR_THROTTLE_CAPS forces strict serial. Wall-time penalty is ~5-15%
+  # in the contended case, essentially zero when lock contention dominates
+  # already.
+  throttle_group: cap7_seaice_serial
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd
   netcdf_compression_level: 3

@@ -101,6 +101,11 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
+  # Tier-wide throttle: same HDF5-write-lock-wedge protection as the
+  # other FESOM-ingesting seaice tiers. cli45 core_seaice_1 TIMEOUTed
+  # with 7 saves stuck at heartbeat #16 (siconc/ts/snd/siv/siu/sitimefrac/
+  # sithick). Cap=1 via PYCMOR_THROTTLE_CAPS forces strict serial.
+  throttle_group: core_seaice_serial
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd
   netcdf_compression_level: 3

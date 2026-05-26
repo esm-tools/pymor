@@ -49,6 +49,12 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 inherit:
+  # Tier-wide throttle: HDF5-write-lock parallel-save protection.
+  # (cli45 veg_seaice died from an unrelated prefect sqlite race, but
+  # this tier shares the same single-rule-no-pipeline structure that
+  # bit core_seaice/lrcs_seaice and is equally vulnerable.) Cap=1 via
+  # PYCMOR_THROTTLE_CAPS forces strict serial.
+  throttle_group: veg_seaice_serial
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd
   netcdf_compression_level: 3
