@@ -64,8 +64,11 @@ case "$WITH_GR" in
     echo "=== generating gr-variant yamls for FESOM-ingesting tiers ==="
     for yaml in "$YAMLS_DIR"/*.yaml; do
       case "$yaml" in *_gr.yaml) continue ;; esac
-      # only generate gr for yamls that actually reference fesom files
-      if ! grep --color=never -q '\.fesom\.' "$yaml"; then
+      # only generate gr for yamls that actually reference fesom files.
+      # -F so the literal regex pattern `\.fesom\.` is matched verbatim
+      # (without -F it would match free-text mentions like ".fesom." in
+      # comments, missing yamls that only have escaped regex patterns).
+      if ! grep --color=never -qF '\.fesom\.' "$yaml"; then
         continue
       fi
       base="$(basename "$yaml" .yaml)"
@@ -266,7 +269,11 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
   # lrcs_seaice and veg_land tiers force strict serial (cap=1) on their
   # respective save-throttle groups so the HDF5 global write lock can't
   # wedge 9+ parallel saves the way it did in cli40/cli41 lrcs_seaice_3.
-  case "$short_tier" in
+  # Strip trailing _gr so gr variants inherit the same throttle config
+  # as their gn source tier (the throttle_group name carries over via
+  # generate_gr_yaml.py preserving inherit:).
+  short_tier_base="${short_tier%_gr}"
+  case "$short_tier_base" in
     lrcs_seaice) tier_throttle_caps="lrcs_seaice_serial:1" ;;
     veg_land)    tier_throttle_caps="veg_land_serial:1" ;;
     core_seaice) tier_throttle_caps="core_seaice_serial:1" ;;
