@@ -28,6 +28,9 @@ Inherit overrides:
 Usage:
     generate_gr_yaml.py <input.yaml> <output.yaml>
 """
+import functools
+import os
+import re
 import sys
 import yaml
 from pathlib import Path
@@ -44,13 +47,32 @@ GR_PAT = r"\.fesom\.gr\.\d{4}\.nc"
 #   ice_mass_transport_pipeline  → lrcs_seaice_gr_1/2/3 FAILED
 # Add more substrings here as new gr failures surface.
 FESOM_MESH_STEP_SUBSTRINGS = (
+    # Transport calcs needing FESOM cell_area aligned to nod2/elem
     "compute_mass_transport",
     "compute_ice_mass_transport",
+    "compute_salt_transport",
+    "compute_heat_transport",
+    # MOC / barotropic streamfunctions on FESOM mesh
+    "compute_msftbarot",
+    "compute_msftmz",
+    "compute_msftm_density",
+    # Volume / vertical-integration steps needing mesh
+    "compute_volcello",
+    "compute_ocean_vertical_integration",
+    # Basin diagnostics via tripyview (mesh-bound)
     "compute_hfbasin",
     "compute_sltbasin",
-    "compute_msftbarot",
+    # Bottom extraction by mesh indexer
+    "compute_bottom_extract",
+    # Hemispheric integration expects nod2 horizontal dim
+    "compute_hemisphere_integral",
+    "hemisphere_integral",
+    # Steric SSH from FESOM column
     "compute_zostoga",
+    # FESOM w on layer interfaces → midpoints
     "average_w_interfaces_to_midpoints",
+    # Snow heat from sea-ice snow content; broken broadcasting on gr
+    "compute_sisnhc_from_msnow",
 )
 
 
@@ -74,6 +96,39 @@ def pipeline_needs_fesom_mesh(pl_def):
 def rule_uses_fesom_mesh(rule, mesh_pipeline_names):
     pls = rule.get("pipelines") or []
     return any(p in mesh_pipeline_names for p in pls)
+
+
+@functools.lru_cache(maxsize=16)
+def _listdir(path):
+    try:
+        return tuple(os.listdir(path))
+    except OSError:
+        return ()
+
+
+def gr_input_files_exist(rule):
+    """Return True if at least one file in the rule's primary input path
+    matches the (already gr-rewritten) pattern.
+
+    cli47 surfaced a separate failure class: rules whose primary input
+    variable is in the FESOM gn set but not in Patrick's XIOS regrid set
+    (Test_v342_1y_01: 87 gn vs 78 gr variables = 9 variable gap). Those
+    rules fail with `OSError('no files to open')`. Drop them here so the
+    gr derivative only contains rules with actual source data.
+    """
+    inputs = rule.get("inputs") or []
+    if not inputs:
+        return True
+    inp = inputs[0]
+    data_path = inp.get("path", "")
+    pattern_re = inp.get("pattern", "")
+    if not data_path or not pattern_re:
+        return True
+    try:
+        regex = re.compile(pattern_re)
+    except re.error:
+        return True
+    return any(regex.fullmatch(fn) for fn in _listdir(data_path))
 
 
 def rewrite_patterns(obj):
@@ -101,15 +156,17 @@ def main():
     }
 
     rules = d.get("rules", []) or []
-    kept = [
-        r
-        for r in rules
-        if is_fesom_primary(r) and not rule_uses_fesom_mesh(r, mesh_pls)
-    ]
-    d["rules"] = rewrite_patterns(kept)
-    n_mesh_dropped = sum(
-        1 for r in rules if is_fesom_primary(r) and rule_uses_fesom_mesh(r, mesh_pls)
-    )
+    after_fesom = [r for r in rules if is_fesom_primary(r)]
+    after_mesh = [r for r in after_fesom if not rule_uses_fesom_mesh(r, mesh_pls)]
+    # Pattern rewrite happens BEFORE file-existence check so the gr-prefixed
+    # filenames are what we look for on disk.
+    after_mesh = rewrite_patterns(after_mesh)
+    after_files = [r for r in after_mesh if gr_input_files_exist(r)]
+
+    d["rules"] = after_files
+    n_mesh_dropped = len(after_fesom) - len(after_mesh)
+    n_missing_dropped = len(after_mesh) - len(after_files)
+    kept = after_files
 
     inh = d.setdefault("inherit", {})
     inh["grid_label"] = "gr"
@@ -135,7 +192,8 @@ def main():
     print(
         f"  {Path(src).name} -> {Path(dst).name}: "
         f"{len(kept)}/{len(rules)} rules kept "
-        f"({n_mesh_dropped} fesom-mesh-only dropped)",
+        f"({n_mesh_dropped} fesom-mesh-only, "
+        f"{n_missing_dropped} no-gr-input dropped)",
         file=sys.stderr,
     )
 
