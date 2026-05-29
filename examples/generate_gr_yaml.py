@@ -58,21 +58,29 @@ FESOM_MESH_STEP_SUBSTRINGS = (
     "compute_msftm_density",
     # Volume / vertical-integration steps needing mesh
     "compute_volcello",
-    "compute_ocean_vertical_integration",
+    "vertical_integrate",
     # Basin diagnostics via tripyview (mesh-bound)
     "compute_hfbasin",
     "compute_sltbasin",
-    # Bottom extraction by mesh indexer
-    "compute_bottom_extract",
+    # Bottom extraction by mesh indexer (function: extract_bottom)
+    "extract_bottom",
     # Hemispheric integration expects nod2 horizontal dim
-    "compute_hemisphere_integral",
-    "hemisphere_integral",
+    # (function: integrate_over_hemisphere)
+    "integrate_over_hemisphere",
     # Steric SSH from FESOM column
     "compute_zostoga",
     # FESOM w on layer interfaces → midpoints
     "average_w_interfaces_to_midpoints",
-    # Snow heat from sea-ice snow content; broken broadcasting on gr
-    "compute_sisnhc_from_msnow",
+)
+
+# Some pipelines share step functions with working pipelines (compute_sisnhc
+# is used by both the simple sisnhc_pipeline and the mesh-dependent
+# sisnhc_from_msnow_pipeline). Substring-match these pipeline NAMES to
+# filter the broken variants surgically.
+FESOM_MESH_PIPELINE_NAME_SUBSTRINGS = (
+    # veg_seaice sisnhc_from_msnow_pipeline: cli47 MemoryError
+    # (297708764688000,) from a broken broadcast on gr.
+    "sisnhc_from_msnow",
 )
 
 
@@ -85,6 +93,12 @@ def is_fesom_primary(rule):
 
 
 def pipeline_needs_fesom_mesh(pl_def):
+    # First: pipeline-name match (catches variants whose step function is
+    # shared with a working pipeline)
+    name = pl_def.get("name", "")
+    if any(needle in name for needle in FESOM_MESH_PIPELINE_NAME_SUBSTRINGS):
+        return True
+    # Then: step-substring match
     for step in pl_def.get("steps", []) or []:
         if not isinstance(step, str):
             continue
