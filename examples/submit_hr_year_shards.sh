@@ -186,20 +186,20 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
   # Trade: +1 task on the scarcer ~282-node 512G pool; brings the
   # 512G footprint to 5/35 tasks (14%), still minor pool pressure.
   #
-  # cli49 EXPERIMENT (2026-05-29): empirical 512G determination above
-  # predates several memory-pressure-relevant changes:
-  #   - jemalloc on by default (cli35+) — mitigates malloc fragmentation
-  #   - lrcs_seaice throttle_group cap=1 (cli44+) — only one rule's
-  #     working set in memory at a time; pre-throttle peak 235 GiB was
-  #     N rules stacked. Single-rule footprint estimated ~80-100 GiB,
-  #     well inside 256 GiB cgroup.
-  #   - fix3=off default for extra_atm — avoids driver eager-gather pile-up
-  # The 19-hour pending wait on the 512G pool now exceeds the cost of a
-  # 256G OOM retry. Test 256G for both; if either OOMs, revert.
+  # cli49 EXPERIMENT verdict (2026-05-29): split the special-case.
+  #   - lrcs_seaice: 256G works under cap=1 throttle (cli44+).
+  #     All 4 cli49 shards completed: 3:36 / 1:20:32 / 1:22:53 / 56:29.
+  #     Peak memory now bounded by single-rule footprint (~80-100 GiB).
+  #     Dropped from the 512G case.
+  #   - extra_atm: 256G OOM'd at 1:05:25 in cli49 (jid 25242261).
+  #     No throttle is applied here (3D pl pipelines need parallel saves
+  #     for throughput), so working memory still exceeds 256 GiB.
+  #     Stays on 512G until a throttle / chunking strategy lands.
   case "$short_tier" in
-    # (empty for cli49 — both lrcs_seaice and extra_atm temporarily
-    # default to --mem=0 / 256G to evaluate whether the recent memory
-    # reductions make the 512G special-case unnecessary.)
+    extra_atm)
+      MEM_FLAG="--mem=512G"
+      tier_cgroup=512
+      ;;
     *)
       MEM_FLAG="--mem=0"
       tier_cgroup=256
