@@ -134,6 +134,13 @@ pipelines:
     uses: pycmor.core.pipeline.AreacellaFxPipeline
 
 inherit:
+  # Tier-wide throttle: protect against the HDF5-write-lock parallel-save
+  # wedge that timed out core_atm_3 in cli52 and reproduced under cli52
+  # retry (3 saves zg/ta/va stuck at heartbeat #32 for 32 min on the
+  # 3D pressure-level fields). Cap=1 via PYCMOR_THROTTLE_CAPS forces
+  # strict serial; parallelism ratio was 1.27-2.15x on cli52 successful
+  # shards so worst-case serial wall ~45 min (well inside 3h).
+  throttle_group: core_atm_serial
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd
   netcdf_compression_level: 3
