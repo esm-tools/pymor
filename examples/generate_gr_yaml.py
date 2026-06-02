@@ -37,6 +37,10 @@ from pathlib import Path
 
 NATIVE_PAT = r"\.fesom\.\d{4}\.nc"
 GR_PAT = r"\.fesom\.gr\.\d{4}\.nc"
+# Post-repoint patterns have the year already substituted:
+#   \.fesom\.1851\.nc  (instead of \.fesom\.\d{4}\.nc)
+# This regex matches either placeholder form for the gr rewrite.
+NATIVE_PAT_REGEX = re.compile(r"\\\.fesom\\\.(\\d\{4\}|\d{4})\\\.nc")
 
 # Custom-step name fragments that mark a pipeline as
 # FESOM-unstructured-mesh-dependent. Rules using such a pipeline
@@ -147,7 +151,10 @@ def gr_input_files_exist(rule):
 
 def rewrite_patterns(obj):
     if isinstance(obj, str):
-        return obj.replace(NATIVE_PAT, GR_PAT)
+        # Insert `gr\.` between `\.fesom\.` and the year token (which may
+        # be the placeholder `\d{4}` or a literal 4-digit year if repoint
+        # has already substituted it).
+        return NATIVE_PAT_REGEX.sub(r"\.fesom\.gr\.\1\.nc", obj)
     if isinstance(obj, dict):
         return {k: rewrite_patterns(v) for k, v in obj.items()}
     if isinstance(obj, list):

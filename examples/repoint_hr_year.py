@@ -57,9 +57,17 @@ def add_year_to_pattern(pat: str, year: str) -> str:
         # YAML double-quote semantics: \\ -> \. Single-quoted strings are literal.
         canonical = inner.replace("\\\\", "\\") if quote == '"' else inner
 
-    # FESOM regex form: <var>\.fesom\..*\.nc  (used in `pattern:` lines)
+    # FESOM regex form: <var>\.fesom\..*\.nc  OR  <var>\.fesom\.\d{4}\.nc
+    # (used in `pattern:` lines). Two placeholder forms are accepted:
+    #   `.*`     — legacy, matches any text between `.fesom.` and `.nc`
+    #   `\d{4}`  — tightened (commit 4fdade1), matches the 4-digit year
+    # Without the tightened branch the substitution silently no-ops, the
+    # pattern keeps matching every year on disk, and cli51-style year
+    # mixing happens. Also handles the gr-prefixed variant
+    # `<var>\.fesom\.gr\.\d{4}\.nc` for symmetry with generate_gr_yaml.py.
     if r"\.fesom\." in canonical:
         out = re.sub(r"\\\.\.\*\\\.nc$", rf"\\.{year}\\.nc", canonical)
+        out = out.replace(r"\d{4}", year)
     # FESOM glob form: <var>.fesom.*.nc  (used in `*_file:` lines, literal path)
     elif ".fesom." in canonical and canonical.endswith(".nc"):
         out = re.sub(r"\.\*\.nc$", rf".{year}.nc", canonical)
