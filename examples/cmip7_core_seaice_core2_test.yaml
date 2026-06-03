@@ -43,6 +43,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # sitimefrac: binary ice presence from siconc > 0
   - name: sitimefrac_pipeline
@@ -98,6 +99,14 @@ inherit:
   output_directory: ./cmorized_output/core_seaice_core2_test
   year_start: 1900
   year_end: 1901
+  # Per-shard QC (fires after save_dataset for pipelines that include
+  # pycmor.std_lib.qc.run_compliance_checker — currently siconc_pipeline only).
+  qc_enabled: true
+  qc_tests:
+    - cf
+    - wcrp_cmip7
+  qc_criteria: normal
+  qc_fail_on_mandatory: false
 
 rules:
   # ============================================================
