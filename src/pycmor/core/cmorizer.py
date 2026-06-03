@@ -506,6 +506,7 @@ class CMORizer:
     def _post_init_populate_rules_with_controlled_vocabularies(self):
         for rule in self.rules:
             rule.controlled_vocabularies = self.controlled_vocabularies
+            rule.cmor_version = self.cmor_version
 
     def _post_init_populate_rules_with_aux_files(self):
         """Attaches auxiliary files to the rules"""

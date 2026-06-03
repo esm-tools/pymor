@@ -264,7 +264,8 @@ def _ensure_coordinates_attr(ds):
 
 def _strip_unportable_encoding(ds):
     """Drop encoding keys that vary by xarray backend engine and would
-    otherwise propagate from the load engine into the save call.
+    otherwise propagate from the load engine into the save call, plus
+    CF-incompatible leading-underscore attrs on data variables.
 
     Specifically: when the input was opened with ``engine="h5netcdf"``,
     coord variables (``lat``, ``lon``, ``time*``, etc.) get an
@@ -274,9 +275,10 @@ def _strip_unportable_encoding(ds):
     ``to_netcdf`` then fails on save with
     ``ValueError("Unsupported value for compression kwarg ...")``.
 
-    Data variables are unaffected because pycmor builds their encoding
-    from scratch in ``_encoding_from_dask_chunks``. We only need to
-    sanitise coords + non-data variables.
+    Also strips leading-underscore attrs from data variables (other than
+    the netCDF-reserved ``_FillValue``) — CF §2.3 reserves the
+    ``_``-prefix for netCDF internals, and quantize-bit-groom filters
+    emit such attrs (e.g. ``_QuantizeBitGroomNumberOfSignificantDigits``).
     """
     if not isinstance(ds, xr.Dataset):
         return ds
@@ -289,6 +291,72 @@ def _strip_unportable_encoding(ds):
         if val in (None, "unknown") or val is False:
             for k in bad_keys:
                 var.encoding.pop(k, None)
+    # CF §2.3: data-var attribute names must not start with `_`. The
+    # netCDF-reserved `_FillValue` is the one allowed exception.
+    for vname in ds.data_vars:
+        var = ds.variables.get(vname)
+        if var is None:
+            continue
+        stale = [a for a in list(var.attrs) if a.startswith("_") and a != "_FillValue"]
+        for a in stale:
+            var.attrs.pop(a, None)
+    return ds
+
+
+_HORIZONTAL_COORD_ATTRS = {
+    "lat":       {"standard_name": "latitude",  "long_name": "latitude",  "units": "degrees_north", "axis": "Y"},
+    "latitude":  {"standard_name": "latitude",  "long_name": "latitude",  "units": "degrees_north", "axis": "Y"},
+    "lon":       {"standard_name": "longitude", "long_name": "longitude", "units": "degrees_east",  "axis": "X"},
+    "longitude": {"standard_name": "longitude", "long_name": "longitude", "units": "degrees_east",  "axis": "X"},
+}
+
+# Pairs where one is a renamed dim coord and the other is an auxiliary
+# carry-over. Only the dim coord may declare ``axis`` / ``standard_name``
+# to avoid the cf §5 "duplicate axis" mandatory finding.
+_AXIS_PREFERRED = (("longitude", "lon"), ("latitude", "lat"))
+
+
+def _ensure_horizontal_coord_attrs(ds):
+    """Safety-net: guarantee CF attrs on horizontal coords + their bounds.
+
+    Coords added after ``set_coordinate_attributes`` (e.g. by a regrid step)
+    can miss ``standard_name``/``axis``/``units``. Also strips stale
+    vertical-coord leftovers (``positive``, ``long_name`` mentioning
+    "vertical", a stray ``name`` attr) and any per-variable attrs on the
+    bounds variable (CF §7.1 — bounds inherit from the parent).
+    """
+    if not isinstance(ds, xr.Dataset):
+        return ds
+
+    # Identify which coord wins the axis/standard_name when a renamed
+    # dim coord and an auxiliary copy coexist.
+    demoted = set()
+    for dim_name, aux_name in _AXIS_PREFERRED:
+        if dim_name in ds.variables and aux_name in ds.variables:
+            demoted.add(aux_name)
+
+    for name, expected in _HORIZONTAL_COORD_ATTRS.items():
+        if name not in ds.variables:
+            continue
+        attrs = ds[name].attrs
+        # Strip vertical-coord leftovers regardless of who claimed this slot.
+        attrs.pop("positive", None)
+        attrs.pop("name", None)
+        ln = attrs.get("long_name")
+        if isinstance(ln, str) and "vertical" in ln.lower():
+            attrs.pop("long_name", None)
+        # Apply CF essentials; skip axis/standard_name on the demoted aux
+        # copy to avoid duplicate-axis findings.
+        for k, v in expected.items():
+            if name in demoted and k in ("axis", "standard_name"):
+                attrs.pop(k, None)
+                continue
+            attrs[k] = v
+        bname = f"{name}_bnds"
+        if bname in ds.variables:
+            stale = [a for a in list(ds[bname].attrs) if a != "_FillValue"]
+            for a in stale:
+                ds[bname].attrs.pop(a, None)
     return ds
 
 
@@ -298,6 +366,7 @@ def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
     ds = _ensure_lat_lon_bounds_impl(ds, rule)
     ds = _ensure_external_variables(ds)
     ds = _ensure_coordinates_attr(ds)
+    ds = _ensure_horizontal_coord_attrs(ds)
     ds = _strip_unportable_encoding(ds)
     return ds
 
@@ -1625,9 +1694,14 @@ def _save_dataset_impl(da: xr.DataArray, rule):
         time_encoding["units"] = time_units
     if time_calendar is not None and isinstance(time_calendar, str):
         time_encoding["calendar"] = time_calendar
-    # Set default calendar if none is specified
+    # Set default calendar if none is specified. CMIP7 recommends
+    # ``proleptic_gregorian`` (wcrp_cmip7 TIME003a); CMIP6 historically
+    # used ``standard``.
     if time_encoding.get("calendar") is None:
-        time_encoding["calendar"] = "standard"
+        cmor_ver = getattr(rule, "cmor_version", None)
+        time_encoding["calendar"] = (
+            "proleptic_gregorian" if cmor_ver == "CMIP7" else "standard"
+        )
     if not has_time_axis(da):
         filepath = create_filepath(da, rule)
         # Calculate chunking encoding

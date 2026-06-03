@@ -54,6 +54,18 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
         logger.info(f"{k}: {v}")
     da.attrs.update(attrs)
 
+    # CF §3.1.2 (CF 1.11): variables on an absolute-temperature scale
+    # should declare ``units_metadata`` so consumers know the value is
+    # measured-temperature, not a temperature difference.
+    sn = (da.attrs.get("standard_name") or "").lower()
+    units = (da.attrs.get("units") or "").strip()
+    is_abs_temp = (
+        units in {"K", "degK", "kelvin", "Kelvin"}
+        or ("temperature" in sn and sn.endswith("temperature"))
+    ) and "difference" not in sn and "anomaly" not in sn
+    if is_abs_temp and "units_metadata" not in da.attrs:
+        da.attrs["units_metadata"] = "temperature: on_scale"
+
     # CMIP/CF requires `_FillValue` via encoding and `missing_value` as a CF attribute
     # with matching dtype. xarray casts encoded _FillValue to the variable dtype; we must
     # match that manually for the attribute to avoid dtype-mismatch warnings.
