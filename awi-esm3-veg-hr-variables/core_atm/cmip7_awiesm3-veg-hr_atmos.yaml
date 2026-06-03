@@ -621,12 +621,20 @@ rules:
   # Daily 3D on pressure levels (day, plev19)
   # ============================================================
 
+  # Compression DISABLED on these 7 daily 3D pressure-level rules.
+  # Measured zstd ratio on real wap_day_p19 data = 1.22× at every level
+  # — high-entropy atmospheric data, compression buys ~18% disk for
+  # significant CPU cost. cli53 _4 stalled on wap_day / va_day saves
+  # (~6935 chunks of 3.3 MB each, sequential through the HDF5 lock,
+  # ~0.32 s/chunk of pure compress at blosc_zstd:3). Disabling
+  # compression removes that CPU bottleneck; files grow ~22%.
   - name: ta_day
     inputs:
       - path: *dp
         pattern: atm_remapped_1d_pl_t_.*\.nc
     compound_name: atmos.ta.tavg-p19-hxy-air.day.glb
     model_variable: t
+    netcdf_enable_compression: false
     lazy_write: true
 
   - name: ua_day
@@ -635,6 +643,7 @@ rules:
         pattern: atm_remapped_1d_pl_u_.*\.nc
     compound_name: atmos.ua.tavg-p19-hxy-air.day.glb
     model_variable: u
+    netcdf_enable_compression: false
     lazy_write: true
 
   - name: va_day
@@ -643,6 +652,7 @@ rules:
         pattern: atm_remapped_1d_pl_v_.*\.nc
     compound_name: atmos.va.tavg-p19-hxy-air.day.glb
     model_variable: v
+    netcdf_enable_compression: false
     lazy_write: true
 
   - name: hus_day
@@ -651,6 +661,7 @@ rules:
         pattern: atm_remapped_1d_pl_q_.*\.nc
     compound_name: atmos.hus.tavg-p19-hxy-u.day.glb
     model_variable: q
+    netcdf_enable_compression: false
     lazy_write: true
 
   - name: wap_day
@@ -659,6 +670,7 @@ rules:
         pattern: atm_remapped_1d_pl_w_.*\.nc
     compound_name: atmos.wap.tavg-p19-hxy-u.day.glb
     model_variable: w
+    netcdf_enable_compression: false
     lazy_write: true
 
   - name: zg_day
@@ -667,6 +679,7 @@ rules:
         pattern: atmos_day_pl_zg_.*\.nc
     compound_name: atmos.zg.tavg-p19-hxy-air.day.glb
     model_variable: zg
+    netcdf_enable_compression: false
     lazy_write: true
 
   - name: hur_day
@@ -679,6 +692,7 @@ rules:
     second_input_pattern: atmos_day_pl_hus_.*\.nc
     second_variable: hus
     pipelines: [hur_plev_pipeline]
+    netcdf_enable_compression: false
     lazy_write: true
 
   # ============================================================
