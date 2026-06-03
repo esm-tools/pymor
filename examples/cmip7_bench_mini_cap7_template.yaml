@@ -32,7 +32,8 @@ inherit:
   data_path: &dp {{DATA_PATH}}
   source_id: AWI-ESM-3
   institution_id: AWI
-  experiment_id: picontrol
+  experiment_id: piControl
+  parent_experiment_id: no parent
   variant_label: r1i1p1f1
   grid_label: gn
   grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"

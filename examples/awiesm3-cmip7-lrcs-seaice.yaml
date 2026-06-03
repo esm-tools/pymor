@@ -252,7 +252,8 @@ pipelines:
 inherit:
   source_id: AWI-ESM-3
   institution_id: AWI
-  experiment_id: picontrol
+  experiment_id: piControl
+  parent_experiment_id: no parent
   variant_label: r1i1p1f1
   grid_label: gn
   mesh_path: /work/ab0246/a270092/input/fesom2/dars2

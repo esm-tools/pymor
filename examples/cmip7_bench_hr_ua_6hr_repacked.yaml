@@ -48,11 +48,12 @@ pycmor:
 
 inherit:
   data_path: &dp /scratch/a/a270092/pycmor_repack/24692402
-  source_id: AWI-ESM-3
+  source_id: AWI-ESM3-4-2-veg-HR
   institution_id: AWI
-  experiment_id: picontrol
+  experiment_id: piControl
+  parent_experiment_id: no parent
   variant_label: r1i1p1f1
-  grid_label: gr
+  grid_label: g122
   grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
   nominal_resolution: "25 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
