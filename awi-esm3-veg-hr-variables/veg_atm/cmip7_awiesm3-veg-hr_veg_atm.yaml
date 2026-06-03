@@ -32,6 +32,7 @@ pipelines:
   - name: fire_emission_pipeline
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly
+      - script://$PYCMOR_HOME/examples/custom_steps.py:slice_to_rule_year_range
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_fire_emission
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global

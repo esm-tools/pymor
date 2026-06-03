@@ -88,6 +88,7 @@ pipelines:
     throttle_group: veg_land_serial
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly
+      - script://$PYCMOR_HOME/examples/custom_steps.py:slice_to_rule_year_range
       - script://$PYCMOR_HOME/examples/custom_steps.py:clip_small_negatives
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
@@ -104,6 +105,7 @@ pipelines:
     throttle_group: veg_land_serial
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_yearly
+      - script://$PYCMOR_HOME/examples/custom_steps.py:slice_to_rule_year_range
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -119,6 +121,7 @@ pipelines:
     throttle_group: veg_land_serial
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_yearly_lut
+      - script://$PYCMOR_HOME/examples/custom_steps.py:slice_to_rule_year_range
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -134,6 +137,7 @@ pipelines:
     throttle_group: veg_land_serial
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly_lut
+      - script://$PYCMOR_HOME/examples/custom_steps.py:slice_to_rule_year_range
       - script://$PYCMOR_HOME/examples/custom_steps.py:clip_small_negatives
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
@@ -152,6 +156,7 @@ pipelines:
     throttle_group: veg_land_serial
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly_lut
+      - script://$PYCMOR_HOME/examples/custom_steps.py:slice_to_rule_year_range
       - pycmor.std_lib.generic.get_variable
       - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
       - pycmor.std_lib.units.handle_unit_conversion

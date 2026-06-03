@@ -2859,6 +2859,57 @@ _FIRE_EMISSION_FACTORS_G_PER_KG_DM = {
 _CARBON_FRACTION = 0.45  # kg C per kg dry matter
 
 
+def slice_to_rule_year_range(data, rule):
+    """Slice the time dimension to keep only ``rule.year_start`` ..
+    ``rule.year_end`` inclusive.
+
+    LPJ-GUESS .out files contain every year inline; the loader returns
+    them all. Without this step, pycmor emits cmorized output files for
+    every year on disk (cli57 leaked 152 monthly files per year for
+    years 1850, 1852-1857 when only 1851 was requested).
+
+    No-op when neither bound is set, when there is no time-like
+    dimension, or when the data is not an xarray container.
+    """
+    import pandas as pd
+
+    year_start = getattr(rule, "year_start", None)
+    year_end = getattr(rule, "year_end", None)
+    if year_start is None and year_end is None:
+        return data
+
+    # Find the time-like dim/coord on the data.
+    time_name = None
+    for candidate in ("time", "time_counter", "Time"):
+        if hasattr(data, "coords") and candidate in data.coords:
+            time_name = candidate
+            break
+        if hasattr(data, "dims") and candidate in getattr(data, "dims", ()):
+            time_name = candidate
+            break
+    if time_name is None:
+        return data
+
+    times = data[time_name].values
+    # Convert each timestamp to a year integer. Accepts cftime, numpy
+    # datetime64, and pandas Timestamp without forcing conversion.
+    years = np.fromiter((pd.Timestamp(t).year if hasattr(t, "year") is False else t.year
+                        for t in times), dtype=np.int64, count=len(times))
+
+    lo = year_start if year_start is not None else years.min()
+    hi = year_end if year_end is not None else years.max()
+    mask = (years >= lo) & (years <= hi)
+    if mask.all():
+        return data
+    if not mask.any():
+        logger.warning(
+            f"slice_to_rule_year_range: rule {getattr(rule, 'name', '<?>')} has "
+            f"no time steps in range [{lo}, {hi}]; data years observed: "
+            f"{int(years.min())}-{int(years.max())}"
+        )
+    return data.isel({time_name: mask})
+
+
 def load_lpjguess_monthly(data, rule):
     """
     Load LPJ-GUESS monthly .out files into an xarray Dataset.
