@@ -146,20 +146,22 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
   # contention across ~4 shards, well inside 3h each.
   case "$short_tier" in
     extra_land) tier_shard_size=5 ;;
-    # core_atm: 1 rule per shard. The 7 heavy daily 3D-pl rules
+    # core_atm: 3 rules per shard. The 7 heavy daily 3D-pl rules
     # (ta_day, ua_day, va_day, hus_day, wap_day, hur_day, zg_day) plus
     # the 6hr/3hr OIFS rules cause worker / HDF5 / Lustre state to
     # accumulate over a serial-throttled sequence within one Python
-    # process. cli53 retry1 stalled on va after 1 heavy save; retry2
-    # stalled on ua after 5; cli54 (compression off) stalled on va
-    # again after 1. Symptom: 42+ min of total log silence on a single
+    # process. cli53 retry1 stalled on va after 5 rules done; retry2
+    # stalled on ua after 16; cli54 (compression off) stalled on va
+    # again after 5. Symptom: 42+ min of total log silence on a single
     # save_dataset — heartbeat thread also blocked, indicating a low-
     # level (HDF5 / Lustre kernel) hang, not a Python-recoverable one.
-    # Each rule in its own SLURM array task = own Python process =
-    # no possible cross-rule state accumulation. Trades ~30 s startup
-    # per task for elimination of the deadlock class. Wall stays low
-    # because tasks dispatch in parallel.
-    core_atm)   tier_shard_size=1 ;;
+    # cli55 with shard_size=1 (77 shards) confirmed the hypothesis:
+    # all 77 completed cleanly. Cost was +3× CPU-time (mostly Prefect/
+    # Dask startup × 77 tasks).
+    # cli56 tries shard_size=3: empirical minimum-before-stall was 5
+    # rules completed, so 3-per-shard stays comfortably below the
+    # trip point while recovering ~2/3 of the lost CPU-time from cli55.
+    core_atm)   tier_shard_size=3 ;;
     *)          tier_shard_size="$SHARD_SIZE" ;;
   esac
 
