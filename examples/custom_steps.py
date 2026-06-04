@@ -2909,17 +2909,16 @@ def slice_to_rule_year_range(data, rule):
         )
     result = data.isel({time_name: mask})
     # xarray's isel can promote serialisation metadata (e.g. 'calendar',
-    # 'units') from encoding into attrs on the time coord. Downstream
-    # save_dataset then raises:
+    # 'units') from encoding into attrs on the time coord, and downstream
+    # pipeline steps (set_coordinates, attribute setters) may also add
+    # `calendar` to attrs. Either way save_dataset then raises:
     #   ValueError: Key 'calendar' already exists in attrs on variable
     #     'time', and will not be overwritten.
-    # Strip the duplicates from attrs — leave them in encoding where they
-    # belong.
+    # Clear both attrs and encoding on the time coord; save_dataset will
+    # re-infer them from the cftime values cleanly.
     if time_name in result.coords:
-        time_coord = result[time_name]
-        for key in ("calendar", "units"):
-            if key in time_coord.attrs:
-                del time_coord.attrs[key]
+        result[time_name].attrs.clear()
+        result[time_name].encoding.clear()
     return result
 
 
