@@ -382,9 +382,18 @@ def _save_dataset_with_native_timespan(
 
 _GEO_COORD_NAMES = frozenset(
     {
-        "lat", "lon", "latitude", "longitude",
-        "lat_bnds", "lon_bnds", "lat_bounds", "lon_bounds",
-        "latitude_bnds", "longitude_bnds", "latitude_bounds", "longitude_bounds",
+        "lat",
+        "lon",
+        "latitude",
+        "longitude",
+        "lat_bnds",
+        "lon_bnds",
+        "lat_bounds",
+        "lon_bounds",
+        "latitude_bnds",
+        "longitude_bnds",
+        "latitude_bounds",
+        "longitude_bounds",
     }
 )
 

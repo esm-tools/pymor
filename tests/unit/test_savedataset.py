@@ -335,12 +335,14 @@ def test_save_dataset_casts_geo_coords_to_float64(tmp_path, coord_name, input_dt
     saved = list(tmp_path.glob("*.nc"))
     assert len(saved) == 1
     with xr.open_dataset(saved[0]) as ds:
-        assert ds[coord_name].dtype == np.float64, (
-            f"{coord_name} should be float64, got {ds[coord_name].dtype}"
-        )
+        assert (
+            ds[coord_name].dtype == np.float64
+        ), f"{coord_name} should be float64, got {ds[coord_name].dtype}"
 
 
-@pytest.mark.parametrize("bounds_name", ["lat_bnds", "lon_bnds", "lat_bounds", "lon_bounds"])
+@pytest.mark.parametrize(
+    "bounds_name", ["lat_bnds", "lon_bnds", "lat_bounds", "lon_bounds"]
+)
 def test_save_dataset_casts_geo_bounds_to_float64(tmp_path, bounds_name):
     """Geographic bounds variables must also be written as float64."""
     dates = xr.cftime_range(start="2001", periods=2, freq="MS", calendar="noleap")
@@ -375,6 +377,6 @@ def test_save_dataset_casts_geo_bounds_to_float64(tmp_path, bounds_name):
     saved = list(tmp_path.glob("*.nc"))
     assert len(saved) == 1
     with xr.open_dataset(saved[0]) as result:
-        assert result[bounds_name].dtype == np.float64, (
-            f"{bounds_name} should be float64, got {result[bounds_name].dtype}"
-        )
+        assert (
+            result[bounds_name].dtype == np.float64
+        ), f"{bounds_name} should be float64, got {result[bounds_name].dtype}"
