@@ -2907,7 +2907,20 @@ def slice_to_rule_year_range(data, rule):
             f"no time steps in range [{lo}, {hi}]; data years observed: "
             f"{int(years.min())}-{int(years.max())}"
         )
-    return data.isel({time_name: mask})
+    result = data.isel({time_name: mask})
+    # xarray's isel can promote serialisation metadata (e.g. 'calendar',
+    # 'units') from encoding into attrs on the time coord. Downstream
+    # save_dataset then raises:
+    #   ValueError: Key 'calendar' already exists in attrs on variable
+    #     'time', and will not be overwritten.
+    # Strip the duplicates from attrs — leave them in encoding where they
+    # belong.
+    if time_name in result.coords:
+        time_coord = result[time_name]
+        for key in ("calendar", "units"):
+            if key in time_coord.attrs:
+                del time_coord.attrs[key]
+    return result
 
 
 def load_lpjguess_monthly(data, rule):
