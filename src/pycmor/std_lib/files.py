@@ -398,30 +398,28 @@ _GEO_COORD_NAMES = frozenset(
 )
 
 
-def _cast_geo_coords_to_float64(da):
-    """Cast geographic coordinate variables to float64 (CMOR3 / CF requirement).
+def _set_geo_coords_encoding_float64(da):
+    """Set float64 encoding on geographic coordinate variables (CMOR3 / CF requirement).
 
-    Accepts both xr.DataArray and xr.Dataset.
+    Defers the cast to write time via xarray's encoding mechanism — in-memory data
+    is unchanged; NetCDF output lands as float64.  Accepts both xr.DataArray and
+    xr.Dataset.
     """
-    coord_updates = {
-        name: da[name].astype(np.float64)
-        for name in da.coords
-        if name in _GEO_COORD_NAMES and da[name].dtype != np.float64
-    }
-    if coord_updates:
-        for name in coord_updates:
+    for name in _GEO_COORD_NAMES:
+        if name in da.coords and da.coords[name].dtype != np.float64:
             logger.debug(
-                f"Casting {name!r} from {da[name].dtype} to float64 for CMIP compliance"
+                f"Setting encoding dtype=float64 for coord {name!r} "
+                f"(in-memory dtype: {da.coords[name].dtype})"
             )
-        da = da.assign_coords(coord_updates)
+            da[name].encoding["dtype"] = np.float64
     if isinstance(da, xr.Dataset):
-        for name in list(da.data_vars):
+        for name in da.data_vars:
             if name in _GEO_COORD_NAMES and da[name].dtype != np.float64:
                 logger.debug(
-                    f"Casting {name!r} from {da[name].dtype} to float64 for CMIP compliance"
+                    f"Setting encoding dtype=float64 for data_var {name!r} "
+                    f"(in-memory dtype: {da[name].dtype})"
                 )
-                da[name] = da[name].astype(np.float64)
-    return da
+                da[name].encoding["dtype"] = np.float64
 
 
 def save_dataset(da: xr.DataArray, rule):
@@ -482,8 +480,8 @@ def save_dataset(da: xr.DataArray, rule):
     if time_encoding.get("calendar") is None:
         time_encoding["calendar"] = "standard"
 
-    # CMOR3 / CF requirement: geographic coordinates must be float64
-    da = _cast_geo_coords_to_float64(da)
+    # CMOR3 / CF requirement: geographic coordinates must be float64 on disk
+    _set_geo_coords_encoding_float64(da)
 
     if not has_time_axis(da):
         filepath = create_filepath(da, rule)

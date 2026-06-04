@@ -306,8 +306,12 @@ def test_save_dataset_with_custom_time_settings(tmp_path):
 
 @pytest.mark.parametrize("coord_name", ["lat", "lon", "latitude", "longitude"])
 @pytest.mark.parametrize("input_dtype", [np.float32, np.float16])
-def test_save_dataset_casts_geo_coords_to_float64(tmp_path, coord_name, input_dtype):
-    """Geographic coordinate variables must be written as float64 (CMOR3 / CF requirement)."""
+def test_save_dataset_writes_geo_coords_as_float64(tmp_path, coord_name, input_dtype):
+    """Geographic coordinate variables must be written as float64 (CMOR3 / CF requirement).
+
+    The cast is deferred to write time via xarray encoding — in-memory dtype is
+    preserved unchanged.
+    """
     dates = xr.cftime_range(start="2001", periods=2, freq="MS", calendar="noleap")
     coords = {
         "time": dates,
@@ -337,13 +341,15 @@ def test_save_dataset_casts_geo_coords_to_float64(tmp_path, coord_name, input_dt
     with xr.open_dataset(saved[0]) as ds:
         assert (
             ds[coord_name].dtype == np.float64
-        ), f"{coord_name} should be float64, got {ds[coord_name].dtype}"
+        ), f"{coord_name} should be float64 on disk, got {ds[coord_name].dtype}"
+    # encoding is deferred — in-memory dtype is not mutated
+    assert da.coords[coord_name].dtype == input_dtype
 
 
 @pytest.mark.parametrize(
     "bounds_name", ["lat_bnds", "lon_bnds", "lat_bounds", "lon_bounds"]
 )
-def test_save_dataset_casts_geo_bounds_to_float64(tmp_path, bounds_name):
+def test_save_dataset_writes_geo_bounds_as_float64(tmp_path, bounds_name):
     """Geographic bounds variables must also be written as float64."""
     dates = xr.cftime_range(start="2001", periods=2, freq="MS", calendar="noleap")
     coord_name = "lat" if "lat" in bounds_name else "lon"
@@ -379,4 +385,6 @@ def test_save_dataset_casts_geo_bounds_to_float64(tmp_path, bounds_name):
     with xr.open_dataset(saved[0]) as result:
         assert (
             result[bounds_name].dtype == np.float64
-        ), f"{bounds_name} should be float64, got {result[bounds_name].dtype}"
+        ), f"{bounds_name} should be float64 on disk, got {result[bounds_name].dtype}"
+    # encoding is deferred — in-memory dtype is not mutated
+    assert ds[bounds_name].dtype == np.float32
