@@ -9,6 +9,7 @@ from typing import List
 
 import deprecation
 import dpath
+import numpy as np
 import xarray as xr
 
 from .filecache import register_cache  # noqa: F401
