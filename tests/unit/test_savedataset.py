@@ -302,3 +302,89 @@ def test_save_dataset_with_custom_time_settings(tmp_path):
         assert (
             time_var.encoding["calendar"] == custom_calendar
         ), f"XArray encoding calendar does not match. Expected {custom_calendar}, got {time_var.encoding['calendar']}"
+
+
+@pytest.mark.parametrize("coord_name", ["lat", "lon", "latitude", "longitude"])
+@pytest.mark.parametrize("input_dtype", [np.float32, np.float16])
+def test_save_dataset_writes_geo_coords_as_float64(tmp_path, coord_name, input_dtype):
+    """Geographic coordinate variables must be written as float64 (CMOR3 / CF requirement).
+
+    The cast is deferred to write time via xarray encoding — in-memory dtype is
+    preserved unchanged.
+    """
+    dates = xr.cftime_range(start="2001", periods=2, freq="MS", calendar="noleap")
+    coords = {
+        "time": dates,
+        coord_name: np.array([-45.0, 0.0, 45.0], dtype=input_dtype),
+    }
+    da = xr.DataArray(
+        np.zeros((2, 3), dtype=np.float32),
+        coords=coords,
+        dims=["time", coord_name],
+        name="tos",
+    )
+    rule = Mock()
+    rule._pycmor_cfg = PycmorConfigManager.from_pycmor_cfg({})
+    rule.data_request_variable.frequency = "mon"
+    rule.data_request_variable.table_header.approx_interval = 30
+    rule.cmor_variable = "tos"
+    rule.variant_label = "r1i1p1f1"
+    rule.source_id = "AWI-ESM-3"
+    rule.experiment_id = "historical"
+    rule.file_timespan = "2YS"
+    rule.output_directory = str(tmp_path)
+
+    save_dataset(da, rule)
+
+    saved = list(tmp_path.glob("*.nc"))
+    assert len(saved) == 1
+    with xr.open_dataset(saved[0]) as ds:
+        assert (
+            ds[coord_name].dtype == np.float64
+        ), f"{coord_name} should be float64 on disk, got {ds[coord_name].dtype}"
+    # encoding is deferred — in-memory dtype is not mutated
+    assert da.coords[coord_name].dtype == input_dtype
+
+
+@pytest.mark.parametrize(
+    "bounds_name", ["lat_bnds", "lon_bnds", "lat_bounds", "lon_bounds"]
+)
+def test_save_dataset_writes_geo_bounds_as_float64(tmp_path, bounds_name):
+    """Geographic bounds variables must also be written as float64."""
+    dates = xr.cftime_range(start="2001", periods=2, freq="MS", calendar="noleap")
+    coord_name = "lat" if "lat" in bounds_name else "lon"
+    coord_vals = np.array([-45.0, 0.0, 45.0], dtype=np.float32)
+    bounds_vals = np.array(
+        [[-67.5, -22.5], [-22.5, 22.5], [22.5, 67.5]], dtype=np.float32
+    )
+    ds = xr.Dataset(
+        {
+            "tos": xr.DataArray(
+                np.zeros((2, 3), dtype=np.float32),
+                coords={"time": dates, coord_name: coord_vals},
+                dims=["time", coord_name],
+            ),
+            bounds_name: xr.DataArray(bounds_vals, dims=[coord_name, "bnds"]),
+        }
+    )
+    rule = Mock()
+    rule._pycmor_cfg = PycmorConfigManager.from_pycmor_cfg({})
+    rule.data_request_variable.frequency = "mon"
+    rule.data_request_variable.table_header.approx_interval = 30
+    rule.cmor_variable = "tos"
+    rule.variant_label = "r1i1p1f1"
+    rule.source_id = "AWI-ESM-3"
+    rule.experiment_id = "historical"
+    rule.file_timespan = "2YS"
+    rule.output_directory = str(tmp_path)
+
+    save_dataset(ds, rule)
+
+    saved = list(tmp_path.glob("*.nc"))
+    assert len(saved) == 1
+    with xr.open_dataset(saved[0]) as result:
+        assert (
+            result[bounds_name].dtype == np.float64
+        ), f"{bounds_name} should be float64 on disk, got {result[bounds_name].dtype}"
+    # encoding is deferred — in-memory dtype is not mutated
+    assert ds[bounds_name].dtype == np.float32

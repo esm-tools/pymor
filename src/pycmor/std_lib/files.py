@@ -40,6 +40,7 @@ Table 2: Precision of time labels used in file names
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import xarray as xr
 from xarray.core.utils import is_scalar
@@ -379,6 +380,48 @@ def _save_dataset_with_native_timespan(
     )
 
 
+_GEO_COORD_NAMES = frozenset(
+    {
+        "lat",
+        "lon",
+        "latitude",
+        "longitude",
+        "lat_bnds",
+        "lon_bnds",
+        "lat_bounds",
+        "lon_bounds",
+        "latitude_bnds",
+        "longitude_bnds",
+        "latitude_bounds",
+        "longitude_bounds",
+    }
+)
+
+
+def _set_geo_coords_encoding_float64(da):
+    """Set float64 encoding on geographic coordinate variables (CMOR3 / CF requirement).
+
+    Defers the cast to write time via xarray's encoding mechanism — in-memory data
+    is unchanged; NetCDF output lands as float64.  Accepts both xr.DataArray and
+    xr.Dataset.
+    """
+    for name in _GEO_COORD_NAMES:
+        if name in da.coords and da.coords[name].dtype != np.float64:
+            logger.debug(
+                f"Setting encoding dtype=float64 for coord {name!r} "
+                f"(in-memory dtype: {da.coords[name].dtype})"
+            )
+            da[name].encoding["dtype"] = np.float64
+    if isinstance(da, xr.Dataset):
+        for name in da.data_vars:
+            if name in _GEO_COORD_NAMES and da[name].dtype != np.float64:
+                logger.debug(
+                    f"Setting encoding dtype=float64 for data_var {name!r} "
+                    f"(in-memory dtype: {da[name].dtype})"
+                )
+                da[name].encoding["dtype"] = np.float64
+
+
 def save_dataset(da: xr.DataArray, rule):
     """
     Save dataset to one or more files.
@@ -436,6 +479,10 @@ def save_dataset(da: xr.DataArray, rule):
     # Set default calendar if none is specified
     if time_encoding.get("calendar") is None:
         time_encoding["calendar"] = "standard"
+
+    # CMOR3 / CF requirement: geographic coordinates must be float64 on disk
+    _set_geo_coords_encoding_float64(da)
+
     if not has_time_axis(da):
         filepath = create_filepath(da, rule)
         return da.to_netcdf(
@@ -455,7 +502,6 @@ def save_dataset(da: xr.DataArray, rule):
         )
     if isinstance(da, xr.DataArray):
         da = da.to_dataset()
-
     # Set time variable attributes
     if rule._pycmor_cfg("xarray_time_set_standard_name"):
         da[time_label].attrs["standard_name"] = "time"
@@ -510,8 +556,6 @@ def save_dataset(da: xr.DataArray, rule):
         da[time_label].attrs["calendar"] = time_encoding["calendar"]
 
     # Ensure the encoding is set on the time variable itself
-    if isinstance(da, xr.DataArray):
-        da = da.to_dataset()
     da[time_label].encoding.update(time_encoding)
 
     if not has_time_axis(da):
