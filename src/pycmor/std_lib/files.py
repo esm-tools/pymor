@@ -1324,18 +1324,14 @@ def _save_dataset_with_native_timespan(
                 # Replace the time coordinate with the encoded values
                 ds[time_label] = xr.DataArray(encoded_values, dims=[time_label], attrs=ds[time_label].attrs.copy())
 
-            # Set time units and calendar as attributes for consistency
-            # Only set if they are actual strings (not Mock objects)
-            # But avoid setting calendar attribute if it conflicts with encoding
+            # Set time units as an attribute for metadata.
             if "units" in time_encoding and isinstance(time_encoding["units"], str):
                 ds[time_label].attrs["units"] = time_encoding["units"]
-            # Only set calendar attribute if we have custom calendar (not default "standard")
-            if (
-                "calendar" in time_encoding
-                and isinstance(time_encoding["calendar"], str)
-                and time_encoding["calendar"] != "standard"
-            ):
-                ds[time_label].attrs["calendar"] = time_encoding["calendar"]
+            # Do NOT set calendar in attrs — xarray's CF encoder copies
+            # encoding["calendar"] to the variable's file attributes and
+            # raises if the key is already present in attrs. See the
+            # corresponding fix in _save_dataset_impl below for details.
+            ds[time_label].attrs.pop("calendar", None)
 
             # Also set the encoding directly on the variable
             ds[time_label].encoding.update(time_encoding)
@@ -1800,18 +1796,24 @@ def _save_dataset_impl(da: xr.DataArray, rule):
         # Replace the time coordinate with the encoded values
         da[time_label] = xr.DataArray(encoded_values, dims=[time_label], attrs=da[time_label].attrs.copy())
 
-    # Set time units and calendar as attributes (for metadata)
-    # Only set if they are actual strings (not Mock objects)
-    # But avoid setting calendar attribute if it conflicts with encoding
+    # Set time units as an attribute for metadata. Only set if it is an
+    # actual string (not a Mock).
     if "units" in time_encoding and isinstance(time_encoding["units"], str):
         da[time_label].attrs["units"] = time_encoding["units"]
-    # Only set calendar attribute if we have custom calendar (not default "standard")
-    if (
-        "calendar" in time_encoding
-        and isinstance(time_encoding["calendar"], str)
-        and time_encoding["calendar"] != "standard"
-    ):
-        da[time_label].attrs["calendar"] = time_encoding["calendar"]
+    # Do NOT set calendar in attrs. xarray's CF encoder (encode_cf_variable
+    # in xarray/coding/times.py) copies encoding["calendar"] to the file's
+    # variable attributes at save time and explicitly refuses if attrs
+    # already contains "calendar":
+    #   ValueError: Key 'calendar' already exists in attrs on variable
+    #     'time', and will not be overwritten.
+    # Earlier behaviour set attrs["calendar"] for any non-"standard"
+    # calendar (commit ed22f11 era) — this worked accidentally on multi-year
+    # cftime data because time_encoding["calendar"] was missing or
+    # collapsed to "standard" upstream, but reliably broke for any rule
+    # whose loader emitted cftime.DatetimeProlepticGregorian (LPJ-GUESS,
+    # FESOM with a calendar override, ...). Strip any stale attrs["calendar"]
+    # and let encoding alone carry the calendar through.
+    da[time_label].attrs.pop("calendar", None)
 
     # Ensure the encoding is set on the time variable itself
     if isinstance(da, xr.DataArray):
