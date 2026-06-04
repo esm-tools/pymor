@@ -421,6 +421,40 @@ def load_mfdataset(data, rule_spec):
     time_dimname = rule_spec.get("time_dimname")
     if time_dimname and time_dimname in mf_ds.dims and "time" not in mf_ds.dims:
         mf_ds = mf_ds.rename({time_dimname: "time"})
+
+    # Data-level year filter (boundary-spill fix).
+    # XIOS per-year input files at 3hr / day cadence include a single
+    # trailing timestep that lands on the NEXT year — e.g. an
+    # ``atmos_3h_..._1851-1851.nc`` file ends at 1852-01-01 01:30:00.
+    # The file-name filter above keeps the file, but pycmor's
+    # split_data_timespan later groups output by timestamp year and emits
+    # a 1-timestep spillover file labelled 1852. Trim those timesteps
+    # here so the year filter is enforced at the data level too.
+    if (
+        year_start is not None
+        and year_end is not None
+        and not skip_filter
+        and "time" in mf_ds.dims
+        and "time" in mf_ds.coords
+    ):
+        import pandas as _pd  # local: gather_inputs.py runs once per rule
+        time_vals = mf_ds["time"].values
+        try:
+            years = _pd.Series(time_vals).dt.year.to_numpy()
+        except (AttributeError, TypeError):
+            # cftime objects don't go through pandas .dt
+            years = np.fromiter(
+                (t.year for t in time_vals), dtype=np.int64, count=len(time_vals)
+            )
+        mask = (years >= int(year_start)) & (years <= int(year_end))
+        if not mask.all():
+            n_dropped = int((~mask).sum())
+            logger.info(
+                f"Data-level year filter: trimming {n_dropped}/{len(time_vals)} "
+                f"timesteps outside [{year_start}, {year_end}]"
+            )
+            mf_ds = mf_ds.isel(time=mask)
+
     return mf_ds
 
 
