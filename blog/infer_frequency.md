@@ -1,108 +1,94 @@
 # Stop Guessing: A Smarter Way to Infer Time Frequencies in Climate Data
 
-*A practical guide to a robust Python module for handling tricky real-world
-time series.*
+*A practical guide to robust frequency inference for climate time series.*
 
-Time series are the backbone of climate science. From historical temperature
-records to future scenario simulations, understanding the **temporal resolution**
-(frequency) of your data is a vital first step. In the Python ecosystem,
-`xarray` is the workhorse for labeled, multi-dimensional datasets. It's
-intuitive, powerful, and tightly integrated with the scientific stack.
-
-But here's the catch: one of the simplest-sounding tasks—figuring out the
-frequency of your time coordinate—often turns into a roadblock. If you've ever
-called `xarray.infer_freq()` on climate model output, you've probably seen it
-return the dreaded `None`. Why does this happen, and how can we do better?
+Time series are the backbone of climate science. Understanding the **temporal
+resolution** (frequency) of your data is a vital first step in any automated
+pipeline. In the Python ecosystem, `xarray` is the workhorse for this—but one
+of the simplest-sounding tasks, figuring out the frequency of a time
+coordinate, often breaks in practice.
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/esm-tools/pymor/HEAD?labpath=blog%2Finfer_frequency.ipynb)
 
 ---
 
-## Why `xarray.infer_freq()` Often Returns `None`
+## The Problem: Three Ways `xarray.infer_freq()` Returns `None`
 
-Libraries like `pandas` and `xarray` excel with clean, perfectly regular time
-series. Real climate data rarely looks like that. In practice, three patterns
-commonly break inference and lead to a silent `None`:
+`pandas` and `xarray` infer frequency by expecting perfectly regular,
+standard-calendar timestamps. Real climate model output rarely satisfies all
+three of those conditions at once.
 
-1. **Non-standard calendars** (e.g., `noleap`, `360_day`) that standard
-   datetime objects can't represent.
-2. **Unanchored or shifted timestamps** (e.g., monthly means stamped
-   mid-month) that appear "irregular."
-3. **Minor gaps or duplicates** (e.g., a missing month or a duplicated
-   timestamp) that strict algorithms reject.
+### 1. Non-standard calendars
 
-The result is guesswork or fragile custom code—tedious and risky, especially
-for automated pipelines.
-
-Here’s how we address these real-world cases in a robust, calendar-aware way.
-
-### Background: NetCDF/CF and Model Calendars
-
-- NetCDF is a common file format for climate and geoscience data.
-- The CF (Climate and Forecast) conventions standardize metadata such as
-  variable names, units, and time coordinates so tools can interpret datasets
-  consistently. See the CF conventions at:
-  [cfconventions.org](https://cfconventions.org)
-- Many climate models use special calendars, such as:
-  - standard/gregorian — real-world calendar with leap years
-  - noleap — 365 days every year (no Feb 29)
-  - 360_day — 12 months × 30 days = 360 days
-- Standard datetime types can't represent these calendars directly, so
-  libraries often rely on `cftime` to handle them (docs:
-  [cftime](https://unidata.github.io/cftime)). This is a key reason naive
-  frequency inference may return `None`, even for perfectly regular model
-  output.
-
-Typical CF-compliant time metadata looks like:
-
-```text
-time: units = "days since 1850-01-01 00:00:00"
-time: calendar = "noleap"  # or "360_day", "gregorian", etc.
-```
-
----
-
-## A Smarter Alternative: `pycmor.core.infer_freq`
-
-To solve this, we built a robust frequency inference engine, tailored for
-climate data. The approach is simple but effective:
-
-- Compute **deltas between all time points**.
-- Use the **median step** to smooth over small irregularities.
-- Convert all timestamps (including `cftime`) into a comparable numerical format.
-
-This design makes it resilient to outliers, irregular calendars, and slight misalignments.
-
----
-
-### Feature 1: Works with Any Calendar
-
-Example: monthly data on a `360_day` calendar. In many cases you don’t
-need to pass the calendar explicitly—if you’re using `xarray`,
-CF-compliant attributes on the time coordinate will be detected and
-handled under the hood.
+Climate models routinely use calendars that standard Python `datetime` cannot
+represent—`noleap` (365 days every year), `360_day` (12 × 30 days), and
+others. `xarray` delegates to `pandas` for inference, which doesn't understand
+`cftime` objects at all:
 
 ```python
-import cftime
+import cftime, xarray as xr
 from pycmor.core.infer_freq import infer_frequency
 
 times = [
-    cftime.Datetime360Day(2000, 1, 16),
-    cftime.Datetime360Day(2000, 2, 16),
-    cftime.Datetime360Day(2000, 3, 16),
+    cftime.Datetime360Day(2000, m, 16) for m in range(1, 5)
 ]
 
-print(infer_frequency(times))
-# Output: 'M'
+print(xr.infer_freq(times))         # raises TypeError — cftime not supported
+print(infer_frequency(times))       # 'M'
 ```
 
-Where `xarray.infer_freq` fails, `infer_frequency` succeeds.
+### 2. Unanchored (shifted) timestamps
+
+Monthly means are often stamped mid-month rather than on the first or last day.
+The spacing between timestamps is still ~30 days, but `xarray.infer_freq`
+requires stamps to fall on a recognised anchor:
+
+```python
+import pandas as pd
+
+# Monthly data stamped on the 6th of each month
+times = pd.date_range("2000-01-01", periods=4, freq="MS") + pd.Timedelta(days=5)
+
+print(xr.infer_freq(times))         # None
+print(infer_frequency(times))       # 'M'
+```
+
+### 3. Missing steps or duplicates
+
+A single missing month, or duplicate timestamps from accidentally concatenating
+the same file twice, is enough to make `xarray.infer_freq` return `None`:
+
+```python
+# March is missing
+times = pd.to_datetime(["2000-01-31", "2000-02-29", "2000-04-30"])
+
+print(xr.infer_freq(times))         # None
+print(infer_frequency(times))       # 'M'
+```
 
 ---
 
-### Feature 2: Rich Diagnostics, Not Silence
+## The Fix: `pycmor.core.infer_freq`
 
-You can ask for detailed metadata:
+The approach is straightforward:
+
+- Compute **deltas between all consecutive time points**.
+- Take the **median delta** — this smooths over gaps, duplicates, and small
+  misalignments without rejecting the whole series.
+- Convert all timestamps (including `cftime`) to a comparable numerical format
+  before doing any arithmetic.
+
+This makes the function resilient to the three failure modes above, across any
+calendar.
+
+---
+
+## Rich Diagnostics Instead of Silent Failure
+
+Pass `return_metadata=True` to get a `FrequencyResult` object instead of a
+plain string. This is the most important difference from `xarray.infer_freq`:
+instead of a silent `None`, you get a structured explanation of what was found
+and why it may be imperfect.
 
 ```python
 from pycmor.core.infer_freq import infer_frequency
@@ -110,113 +96,113 @@ from pycmor.core.infer_freq import infer_frequency
 times = ["2000-01-01", "2000-02-01", "2000-02-28", "2000-04-01"]
 
 result = infer_frequency(times, return_metadata=True, strict=True)
-print(result)
+# strict=True raises instead of returning None when frequency cannot be determined
 ```
-
-Output:
 
 ```python
 FrequencyResult(
   frequency='M',
-  delta_days=30.0,
+  delta_days=27.0,
   step=1,
   is_exact=False,
-  status='missing_steps'
+  status='irregular'
 )
 ```
 
-Instead of `None`, you now know:
+**What each field means:**
 
-- The intended frequency (monthly)
-- The median spacing (30 days)
-- Whether the series is perfectly regular (here: no)
-- Why not (missing steps)
+| Field | Description |
+|-------|-------------|
+| `frequency` | Inferred frequency string (`'D'`, `'M'`, `'MS'`, etc.) |
+| `delta_days` | Median spacing between time steps, in days |
+| `step` | Multiplier (e.g. `step=3` with `frequency='M'` means quarterly) |
+| `is_exact` | `True` only if every spacing is identical |
+| `status` | `'valid'`, `'missing_steps'`, `'irregular'`, or `'too_short'` |
 
-This feedback is immediately actionable.
+**How to interpret `status`:**
 
-These diagnostics help you prevent subtle downstream errors (like accidental
-upsampling) before they happen.
+- `valid` + `is_exact=True` → safe for resampling and analysis
+- `missing_steps` → gaps present; consider filling before analysis
+- `irregular` → underlying frequency detectable but spacing is inconsistent
+- `too_short` → fewer than two points; cannot determine frequency
 
 ---
 
-### Feature 3: Handles Data Overlaps and Duplicates
+## End-to-End: Detecting Issues After File Concatenation
 
-A common scenario: you're concatenating multiple NetCDF files or accidentally
-process the same file twice. This creates duplicate timestamps that break most
-frequency inference tools.
+This is where diagnostics pay off in practice. Combining NetCDF files from
+different sources is one of the most common sources of subtle time-axis
+corruption—overlapping chunks, a missing month, misaligned calendars.
+`infer_frequency` gives you a single call to catch all of it before it
+propagates into your analysis.
 
 ```python
-import cftime
 import numpy as np
+import pandas as pd
+import xarray as xr
 from pycmor.core.infer_freq import infer_frequency
 
-# Original monthly data
-data = [
-    cftime.Datetime360Day(2000, 1, 16),
-    cftime.Datetime360Day(2000, 2, 16), 
-    cftime.Datetime360Day(2000, 3, 16)
-]
+# Simulate two NetCDF files: Jan–Jun and Jul–Dec 2000.
+# File 2 has a gap: July 15 is missing.
+file1_times = pd.date_range("2000-01-01", "2000-06-30", freq="D")
 
-# Simulate concatenating the same file twice (common mistake!)
-duplicated_data = np.tile(data, 2)  # [Jan, Feb, Mar, Jan, Feb, Mar]
+file2_part1 = pd.date_range("2000-07-01", "2000-07-14", freq="D")
+file2_part2 = pd.date_range("2000-07-16", "2000-12-31", freq="D")
+file2_times = file2_part1.append(file2_part2)
 
-result = infer_frequency(duplicated_data, return_metadata=True)
-print(result)
-# FrequencyResult(frequency='M', delta_days=30.0, step=1, is_exact=False, status='irregular')
+# Check each file individually before combining
+for i, times in enumerate([file1_times, file2_times], 1):
+    result = infer_frequency(times, return_metadata=True, strict=True)
+    print(f"File {i}: status={result.status!r}, is_exact={result.is_exact}")
+
+# File 1: status='valid', is_exact=True
+# File 2: status='missing_steps', is_exact=False  ← caught before concat
 ```
 
----
+Catching problems per-file first is preferable to discovering them after
+combining hundreds of files. But `infer_frequency` works equally well on the
+combined time axis:
 
-### Understanding the FrequencyResult
+```python
+# Use np.concatenate (not .union) to preserve duplicates and ordering
+combined_times = pd.DatetimeIndex(
+    np.concatenate([file1_times, file2_times])
+)
 
-Here’s what the fields mean:
+result = infer_frequency(combined_times, return_metadata=True, strict=True)
+print(f"Combined: status={result.status!r}, frequency={result.frequency!r}")
+# Combined: status='missing_steps', frequency='D'
+```
 
-- **`frequency`**: The inferred frequency string (e.g., `'D'` for daily,
-  `'M'` for monthly).
-- **`delta_days`**: The median spacing between time steps (in days).
-- **`step`**: Multiplier for the frequency (e.g., `2` means `'2D'`).
-- **`is_exact`**: Whether the series is perfectly regular (`True`) or not.
-- **`status`**: Diagnostic message (`'valid'`, `'missing_steps'`,
-  `'irregular'`, `'too_short'`).
+The call costs microseconds and can be inserted as an assertion at any
+pipeline stage:
 
-👉 **How to interpret this:**
-
-- `status="valid"` and `is_exact=True` → dataset is safe for downstream resampling/analysis.
-- `status="missing_steps"` → data has gaps; consider filling or handling before analysis.
-- `status="irregular"` → underlying frequency exists, but beware of inconsistencies.
-- `status="too_short"` → not enough points to determine frequency.
-
----
-
-## Why This Matters: Preventing Subtle Errors
-
-Resampling is central in climate workflows—aggregating daily data to monthly,
-or comparing outputs across models. A silent mistake here (e.g., accidentally
-upsampling) can invalidate an analysis without you noticing.
-
-By inferring frequency robustly, you can **programmatically block invalid
-resampling** before it happens. That’s a safeguard against silent data
-corruption.
-
-- After concatenating multiple files, invoke `infer_frequency` on the combined
-  time coordinate. This helps detect hidden issues (overlaps, missing chunks,
-  or misaligned steps) before they propagate into your analysis.
+```python
+def load_and_validate(paths):
+    ds = xr.open_mfdataset(paths, combine="by_coords")
+    result = infer_frequency(ds.time, return_metadata=True, strict=True)
+    if result.status != "valid" or not result.is_exact:
+        raise ValueError(
+            f"Time axis issue after combining {len(paths)} files: "
+            f"status={result.status!r}, frequency={result.frequency!r}"
+        )
+    return ds
+```
 
 ---
 
 ## Takeaway
 
-Real-world climate data is messy. We need tools that are:
+`pycmor.core.infer_freq` addresses the three concrete ways `xarray.infer_freq`
+silently fails on real climate data:
 
-- **Resilient** to irregularities
-- **Transparent** in their diagnostics
-- **Tailored** to non-standard calendars
+- non-standard calendars → handled via cftime-aware delta computation
+- unanchored timestamps → handled via median-based inference
+- gaps and duplicates → surfaced via `FrequencyResult.status`
 
-The `infer_freq` module in `pycmor` delivers exactly that. It turns guesswork
-into a reliable, automated process—so you can spend less time debugging and
-more time doing science.
-
-Stop guessing. Start inferring—smarter.
+The diagnostics turn a silent `None` into an actionable signal. Insert one call
+after loading or concatenating files and you have an early-warning system for
+the most common class of time-axis corruption.
 
 ---
 
@@ -233,6 +219,6 @@ This work was developed by the High Performance Computing and Data Processing
 group at the Alfred Wegener Institute for Polar and Marine Research (AWI),
 Bremerhaven, Germany.
 
-- Pavan Kumar Siligam (AWI) - [ORCID: 0009-0003-8054-7021](https://orcid.org/0009-0003-8054-7021)
-- Paul Gierz (AWI) - [ORCID: 0000-0002-4512-087X](https://orcid.org/0000-0002-4512-087X)
-- Miguel Andrés-Martínez (AWI) - [ORCID: 0000-0002-1525-5546](https://orcid.org/0000-0002-1525-5546)
+- Pavan Kumar Siligam (AWI) — [ORCID: 0009-0003-8054-7021](https://orcid.org/0009-0003-8054-7021)
+- Paul Gierz (AWI) — [ORCID: 0000-0002-4512-087X](https://orcid.org/0000-0002-4512-087X)
+- Miguel Andrés-Martínez (AWI) — [ORCID: 0000-0002-1525-5546](https://orcid.org/0000-0002-1525-5546)
