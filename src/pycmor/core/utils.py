@@ -8,8 +8,8 @@ import os
 import tempfile
 import time
 from functools import partial
-
 from importlib.metadata import entry_points
+
 import requests
 
 from .logging import logger

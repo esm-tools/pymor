@@ -1,9 +1,9 @@
 import os
 import sys
 from importlib import resources
+from importlib.metadata import entry_points
 from typing import List
 
-from importlib.metadata import entry_points
 import rich_click as click
 import yaml
 from click_loguru import ClickLoguru
