@@ -9,7 +9,7 @@ import tempfile
 import time
 from functools import partial
 
-import pkg_resources
+from importlib.metadata import entry_points
 import requests
 
 from .logging import logger
@@ -105,7 +105,7 @@ def get_entrypoint_by_name(name, group="pycmor.steps"):
     if group == "pycmor.steps":
         groups_to_try.append("pymor.steps")  # legacy fallback
     for grp in groups_to_try:
-        for entry_point in pkg_resources.iter_entry_points(group=grp):
+        for entry_point in entry_points(group=grp):
             if entry_point.name == name:
                 return entry_point.load()
 
