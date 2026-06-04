@@ -2957,6 +2957,22 @@ def load_lpjguess_monthly(data, rule):
 
     df_all = pd.concat(frames, ignore_index=True)
 
+    # Year filter: pycmor's --year-start/--year-end CLI flags propagate
+    # to rule.year_start / rule.year_end via core/overrides.py. LPJ-GUESS
+    # .out files hold every year inline, so filtering at the dataframe
+    # level here is the only way to keep cmorized output from leaking
+    # non-requested years (cli57 emitted 152 monthly files per year of
+    # source data). No-op when neither bound is set.
+    _ys = getattr(rule, "year_start", None)
+    _ye = getattr(rule, "year_end", None)
+    if _ys is not None or _ye is not None:
+        _lo = _ys if _ys is not None else int(df_all["Year"].min())
+        _hi = _ye if _ye is not None else int(df_all["Year"].max())
+        df_all = df_all[(df_all["Year"] >= _lo) & (df_all["Year"] <= _hi)].reset_index(drop=True)
+        if df_all.empty:
+            raise ValueError(f"LPJ-GUESS loader: no rows in [{_lo}, {_hi}] for rule {getattr(rule, 'name', '?')}")
+
+
     # Detect PFT-breakdown format: has 'Mth' column instead of Jan..Dec.
     # Sum all non-coordinate columns to produce a per-cell/per-month total.
     is_pft_format = "Mth" in df_all.columns and "Jan" not in df_all.columns
@@ -3109,6 +3125,22 @@ def load_lpjguess_yearly(data, rule):
         frames.append(df)
 
     df_all = pd.concat(frames, ignore_index=True)
+
+    # Year filter: pycmor's --year-start/--year-end CLI flags propagate
+    # to rule.year_start / rule.year_end via core/overrides.py. LPJ-GUESS
+    # .out files hold every year inline, so filtering at the dataframe
+    # level here is the only way to keep cmorized output from leaking
+    # non-requested years (cli57 emitted 152 monthly files per year of
+    # source data). No-op when neither bound is set.
+    _ys = getattr(rule, "year_start", None)
+    _ye = getattr(rule, "year_end", None)
+    if _ys is not None or _ye is not None:
+        _lo = _ys if _ys is not None else int(df_all["Year"].min())
+        _hi = _ye if _ye is not None else int(df_all["Year"].max())
+        df_all = df_all[(df_all["Year"] >= _lo) & (df_all["Year"] <= _hi)].reset_index(drop=True)
+        if df_all.empty:
+            raise ValueError(f"LPJ-GUESS loader: no rows in [{_lo}, {_hi}] for rule {getattr(rule, 'name', '?')}")
+
     years = np.sort(df_all["Year"].unique())
 
     # Build cell index
@@ -3248,6 +3280,22 @@ def load_lpjguess_yearly_lut(data, rule):
         frames.append(df)
 
     df_all = pd.concat(frames, ignore_index=True)
+
+    # Year filter: pycmor's --year-start/--year-end CLI flags propagate
+    # to rule.year_start / rule.year_end via core/overrides.py. LPJ-GUESS
+    # .out files hold every year inline, so filtering at the dataframe
+    # level here is the only way to keep cmorized output from leaking
+    # non-requested years (cli57 emitted 152 monthly files per year of
+    # source data). No-op when neither bound is set.
+    _ys = getattr(rule, "year_start", None)
+    _ye = getattr(rule, "year_end", None)
+    if _ys is not None or _ye is not None:
+        _lo = _ys if _ys is not None else int(df_all["Year"].min())
+        _hi = _ye if _ye is not None else int(df_all["Year"].max())
+        df_all = df_all[(df_all["Year"] >= _lo) & (df_all["Year"] <= _hi)].reset_index(drop=True)
+        if df_all.empty:
+            raise ValueError(f"LPJ-GUESS loader: no rows in [{_lo}, {_hi}] for rule {getattr(rule, 'name', '?')}")
+
     years = np.sort(df_all["Year"].unique())
 
     coords_df = df_all[["Lon", "Lat"]].drop_duplicates()
@@ -3311,6 +3359,22 @@ def load_lpjguess_monthly_lut(data, rule):
         frames.append(df)
 
     df_all = pd.concat(frames, ignore_index=True)
+
+    # Year filter: pycmor's --year-start/--year-end CLI flags propagate
+    # to rule.year_start / rule.year_end via core/overrides.py. LPJ-GUESS
+    # .out files hold every year inline, so filtering at the dataframe
+    # level here is the only way to keep cmorized output from leaking
+    # non-requested years (cli57 emitted 152 monthly files per year of
+    # source data). No-op when neither bound is set.
+    _ys = getattr(rule, "year_start", None)
+    _ye = getattr(rule, "year_end", None)
+    if _ys is not None or _ye is not None:
+        _lo = _ys if _ys is not None else int(df_all["Year"].min())
+        _hi = _ye if _ye is not None else int(df_all["Year"].max())
+        df_all = df_all[(df_all["Year"] >= _lo) & (df_all["Year"] <= _hi)].reset_index(drop=True)
+        if df_all.empty:
+            raise ValueError(f"LPJ-GUESS loader: no rows in [{_lo}, {_hi}] for rule {getattr(rule, 'name', '?')}")
+
     years = np.sort(df_all["Year"].unique())
 
     coords_df = df_all[["Lon", "Lat"]].drop_duplicates()
@@ -3496,6 +3560,22 @@ def sum_lpjguess_monthly_files(data, rule):
             df = pd.read_csv(f, sep=r"\s+")
             frames.append(df)
         df_all = pd.concat(frames, ignore_index=True)
+
+    # Year filter: pycmor's --year-start/--year-end CLI flags propagate
+    # to rule.year_start / rule.year_end via core/overrides.py. LPJ-GUESS
+    # .out files hold every year inline, so filtering at the dataframe
+    # level here is the only way to keep cmorized output from leaking
+    # non-requested years (cli57 emitted 152 monthly files per year of
+    # source data). No-op when neither bound is set.
+    _ys = getattr(rule, "year_start", None)
+    _ye = getattr(rule, "year_end", None)
+    if _ys is not None or _ye is not None:
+        _lo = _ys if _ys is not None else int(df_all["Year"].min())
+        _hi = _ye if _ye is not None else int(df_all["Year"].max())
+        df_all = df_all[(df_all["Year"] >= _lo) & (df_all["Year"] <= _hi)].reset_index(drop=True)
+        if df_all.empty:
+            raise ValueError(f"LPJ-GUESS loader: no rows in [{_lo}, {_hi}] for rule {getattr(rule, 'name', '?')}")
+
         years = sorted(df_all["Year"].unique())
         month_cols = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         time_vals = []
@@ -5421,6 +5501,22 @@ def load_lpjguess_monthly_depth(data, rule):
         frames.append(df)
     df_all = pd.concat(frames, ignore_index=True)
 
+    # Year filter: pycmor's --year-start/--year-end CLI flags propagate
+    # to rule.year_start / rule.year_end via core/overrides.py. LPJ-GUESS
+    # .out files hold every year inline, so filtering at the dataframe
+    # level here is the only way to keep cmorized output from leaking
+    # non-requested years (cli57 emitted 152 monthly files per year of
+    # source data). No-op when neither bound is set.
+    _ys = getattr(rule, "year_start", None)
+    _ye = getattr(rule, "year_end", None)
+    if _ys is not None or _ye is not None:
+        _lo = _ys if _ys is not None else int(df_all["Year"].min())
+        _hi = _ye if _ye is not None else int(df_all["Year"].max())
+        df_all = df_all[(df_all["Year"] >= _lo) & (df_all["Year"] <= _hi)].reset_index(drop=True)
+        if df_all.empty:
+            raise ValueError(f"LPJ-GUESS loader: no rows in [{_lo}, {_hi}] for rule {getattr(rule, 'name', '?')}")
+
+
     years = np.sort(df_all["Year"].unique())
 
     # Build cell index
@@ -5523,6 +5619,22 @@ def load_lpjguess_monthly_pool(data, rule):
         df = pd.read_csv(f, sep=r"\s+")
         frames.append(df)
     df_all = pd.concat(frames, ignore_index=True)
+
+    # Year filter: pycmor's --year-start/--year-end CLI flags propagate
+    # to rule.year_start / rule.year_end via core/overrides.py. LPJ-GUESS
+    # .out files hold every year inline, so filtering at the dataframe
+    # level here is the only way to keep cmorized output from leaking
+    # non-requested years (cli57 emitted 152 monthly files per year of
+    # source data). No-op when neither bound is set.
+    _ys = getattr(rule, "year_start", None)
+    _ye = getattr(rule, "year_end", None)
+    if _ys is not None or _ye is not None:
+        _lo = _ys if _ys is not None else int(df_all["Year"].min())
+        _hi = _ye if _ye is not None else int(df_all["Year"].max())
+        df_all = df_all[(df_all["Year"] >= _lo) & (df_all["Year"] <= _hi)].reset_index(drop=True)
+        if df_all.empty:
+            raise ValueError(f"LPJ-GUESS loader: no rows in [{_lo}, {_hi}] for rule {getattr(rule, 'name', '?')}")
+
 
     years = np.sort(df_all["Year"].unique())
 

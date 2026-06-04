@@ -33,7 +33,6 @@ pipelines:
   - name: lpjg_monthly_pipeline
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly
-      - script://$PYCMOR_HOME/examples/custom_steps.py:slice_to_rule_year_range
       - script://$PYCMOR_HOME/examples/custom_steps.py:clip_small_negatives
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
@@ -50,7 +49,6 @@ pipelines:
   - name: lpjg_monthly_depth_pipeline
     steps:
       - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_lpjguess_monthly_depth
-      - script://$PYCMOR_HOME/examples/custom_steps.py:slice_to_rule_year_range
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.attributes.set_global
@@ -68,7 +66,6 @@ pipelines:
   - name: lpjg_monthly_clip0_pipeline
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly
-      - script://$PYCMOR_HOME/examples/custom_steps.py:slice_to_rule_year_range
       - script://$PYCMOR_HOME/examples/custom_steps.py:clip_small_negatives
       - script://$PYCMOR_HOME/examples/custom_steps.py:clip_floor_zero
       - pycmor.std_lib.units.handle_unit_conversion
@@ -85,7 +82,6 @@ pipelines:
   - name: lpjg_monthly_depth_clip0_pipeline
     steps:
       - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_lpjguess_monthly_depth
-      - script://$PYCMOR_HOME/examples/custom_steps.py:slice_to_rule_year_range
       - script://$PYCMOR_HOME/examples/custom_steps.py:clip_small_negatives
       - script://$PYCMOR_HOME/examples/custom_steps.py:clip_floor_zero
       - pycmor.std_lib.units.handle_unit_conversion
@@ -107,7 +103,6 @@ pipelines:
   - name: lpjg_yearly_to_monthly_pipeline
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_yearly
-      - script://$PYCMOR_HOME/examples/custom_steps.py:slice_to_rule_year_range
       - script://$PYCMOR_HOME/examples/custom_steps.py:broadcast_yearly_to_monthly
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
@@ -124,7 +119,6 @@ pipelines:
   - name: lpjg_monthly_pool_pipeline
     steps:
       - script:///work/ab0246/a270092/software/pycmor/examples/custom_steps.py:load_lpjguess_monthly_pool
-      - script://$PYCMOR_HOME/examples/custom_steps.py:slice_to_rule_year_range
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.attributes.set_global
