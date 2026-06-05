@@ -363,6 +363,13 @@ inherit:
   netcdf_compression_codec: blosc_zstd
   netcdf_compression_level: 3
   netcdf_write_scheduler: synchronous
+  # Serialise save_dataset across the tier: cli62 lrcs_ocean_gr_1
+  # wedged with 8 parallel saves stuck at heartbeat #17 fighting the
+  # HDF5 global write lock. Same fix already applied on core_atm,
+  # lrcs_seaice, veg_land, core/cap7/veg seaice tiers. Submitter sets
+  # PYCMOR_THROTTLE_CAPS=lrcs_ocean_serial:1 — gr variants inherit it
+  # through generate_gr_yaml.py preserving the inherit block.
+  throttle_group: lrcs_ocean_serial
   data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
   source_id: AWI-ESM-3
   institution_id: AWI

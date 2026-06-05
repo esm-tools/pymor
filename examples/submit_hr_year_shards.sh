@@ -306,6 +306,7 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
     cap7_seaice) tier_throttle_caps="cap7_seaice_serial:1" ;;
     veg_seaice)  tier_throttle_caps="veg_seaice_serial:1" ;;
     core_atm)    tier_throttle_caps="core_atm_serial:1" ;;
+    lrcs_ocean)  tier_throttle_caps="lrcs_ocean_serial:1" ;;
     *)           tier_throttle_caps="" ;;
   esac
 
