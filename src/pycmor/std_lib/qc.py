@@ -167,6 +167,40 @@ def _run_cmip7repack(binary: str, files: list[Path]) -> None:
             )
 
 
+def _strip_leading_underscore_attrs(files: list[Path]) -> None:
+    """CF §2.3 forbids leading-``_`` attribute names on data variables
+    (the netCDF-reserved ``_FillValue`` is the one exception). netCDF4
+    writes ``_QuantizeBitGroomNumberOfSignificantDigits`` (and similar)
+    when ``significant_digits`` is set in encoding, and ``cmip7repack``
+    preserves those attrs through its rewrite. Strip them here so the cf
+    §2.3 finding clears without changing the lossy-compression behaviour.
+    Operates in place via netCDF4 (re-opens each file ``r+``).
+    """
+    try:
+        import netCDF4  # noqa: F401  (lazy import — qc.py shouldn't pull netCDF4 unless used)
+    except ImportError:
+        logger.warning("qc: netCDF4 not available; skipping leading-_ attr strip")
+        return
+    for fp in files:
+        try:
+            with netCDF4.Dataset(str(fp), "r+") as ds:
+                stripped = []
+                for vname, var in ds.variables.items():
+                    if vname in ds.dimensions:
+                        continue  # leave coords / coord-like vars alone
+                    for attr in list(var.ncattrs()):
+                        if attr.startswith("_") and attr != "_FillValue":
+                            var.delncattr(attr)
+                            stripped.append(f"{vname}:{attr}")
+                if stripped:
+                    logger.info(
+                        f"qc: stripped leading-_ attrs from {fp.name}: "
+                        f"{', '.join(stripped)}"
+                    )
+        except Exception as exc:
+            logger.warning(f"qc: leading-_ attr strip failed for {fp.name}: {exc}")
+
+
 def run_compliance_checker(data, rule):
     """Pipeline step: run ``cchecker.py`` against this rule's output files.
 
@@ -198,6 +232,11 @@ def run_compliance_checker(data, rule):
             _run_cmip7repack(repack_binary, files)
         else:
             logger.warning(f"qc: {repack_binary} not on PATH — skipping repack")
+
+    # CF §2.3 cleanup: strip leading-_ attrs that the netCDF4 library and
+    # cmip7repack both leave behind on data variables (chiefly
+    # _QuantizeBitGroomNumberOfSignificantDigits).
+    _strip_leading_underscore_attrs(files)
 
     tests = list(getattr(rule, "qc_tests", None) or ["cf"])
     criteria = getattr(rule, "qc_criteria", None) or "normal"

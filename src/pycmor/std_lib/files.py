@@ -546,7 +546,23 @@ def _attach_bounds_from_mesh(ds, rule, coord_names):
                 attrs={},
             )
             ds[bname].encoding["_FillValue"] = None
-            ds[name].attrs["bounds"] = bname
+            # Promote the coord to the mesh's higher-precision values so
+            # that ``coord ∈ bnds`` holds exactly. FESOM data files store
+            # lat/lon as float32 (downcast from the float64 mesh), while
+            # the bnds we just attached are float64 from the mesh. The
+            # float32 coord is then a few ULPs off its own bnds — cf §7.1
+            # then reports "coord lies outside its bounding box" on every
+            # cell where the rounding falls outside. Overwriting with the
+            # mesh's float64 values eliminates that mismatch.
+            mesh_centers = mesh[mesh_centers_name]
+            new_coord = xr.DataArray(
+                mesh_centers.values,
+                dims=(dim_name,),
+                attrs=dict(ds[name].attrs),
+            )
+            new_coord.attrs["bounds"] = bname
+            new_coord.encoding["_FillValue"] = None
+            ds = ds.assign_coords({name: new_coord})
     finally:
         mesh.close()
     return ds
