@@ -49,6 +49,22 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
         if enc_attr in attrs:
             attrs_for_encoding[enc_attr] = attrs.pop(enc_attr)
 
+    # Drop CMIP7 data-request placeholders. As of v1.2.2.3 some variables
+    # carry literal ``--MODEL`` (and similar ``--<ALLCAPS>``) strings in
+    # fields that the modelling group is expected to fill in. Writing
+    # them verbatim fails the cf §7.2 cell_measures format check. Drop
+    # them and let the rule override (if any) populate the real value.
+    _placeholders = {
+        k: v for k, v in attrs.items()
+        if isinstance(v, str) and v.startswith("--") and v[2:].isupper()
+    }
+    for k in _placeholders:
+        logger.warning(
+            f"variable_attrs: dropping data-request placeholder "
+            f"{k!r}={_placeholders[k]!r} for {rule.cmor_variable!r}"
+        )
+        attrs.pop(k, None)
+
     logger.info("Setting the following attributes:")
     for k, v in attrs.items():
         logger.info(f"{k}: {v}")

@@ -101,14 +101,25 @@ inherit:
   output_directory: ./cmorized_output/core_seaice_core2_test
   year_start: 1900
   year_end: 1901
-  # Per-shard QC (fires after save_dataset for pipelines that include
-  # pycmor.std_lib.qc.run_compliance_checker — currently siconc_pipeline only).
+  # Per-shard QC. Runs after save_dataset for every custom pipeline +
+  # DefaultPipeline. qc_repack runs cmip7repack -o in place beforehand
+  # to clear the wcrp FILE004a/d "consolidated metadata + chunk size"
+  # Mandatory findings (it also incidentally clears the cf _QuantizeBit
+  # attr because cmip7repack rewrites the file from scratch).
+  # qc_ignore_codes mutes VAR004 because the wcrp_cmip7 plugin's
+  # (N, 2) bounds-shape expectation does not match FESOM's unstructured
+  # quadrilateral (N, 4 / N, 18) lat_bnds / lon_bnds. Until cc-plugin-wcrp
+  # accepts unstructured shapes, suppress here rather than emit fake
+  # (N, 2) bounds.
   qc_enabled: true
+  qc_repack: true
   qc_tests:
     - cf
     - wcrp_cmip7
   qc_criteria: normal
   qc_fail_on_mandatory: false
+  qc_ignore_codes:
+    - VAR004
 
 rules:
   # ============================================================
