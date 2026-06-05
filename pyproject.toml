@@ -108,6 +108,17 @@ doc = [
     "watchdog[watchmedo]>=4.0.1",
 ]
 
+# Optional CMIP7 QC toolchain. Enable with: pip install -e ".[qc]"
+# Pulls the IOOS compliance-checker engine, the WCRP CMIP plugin
+# (registers `wcrp_cmip6` / `wcrp_cmip6plus` / `wcrp_cmip7` suites and
+# the `esgvoc` controlled-vocabulary cache), and the cmip7_repack tool
+# used by the `qc_repack: true` pre-step in pycmor.std_lib.qc.
+qc = [
+    "compliance-checker>=6.1",
+    "cc-plugin-wcrp>=2.3",
+    "cmip7_repack>=1.1",
+]
+
 fesom = [
     # NOTE(PG): pyfesom2 is now auto-publishing (GH pyfesom2 #215)
     #           See the relevant information in shell::
