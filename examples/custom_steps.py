@@ -2294,16 +2294,24 @@ def _align_time_to(primary, secondary):
     rebind to primary's so broadcasting matches by index when the cardinalities
     agree.
 
-    No-ops (returns unchanged) if either side lacks a recognisable time dim or
-    if cardinalities differ — the latter is a recipe-level cadence mismatch
-    that needs an explicit resample step.
+    Tolerates a 1-2 stamp trailing-end mismatch (the typical
+    boundary-spill case where pycmor's data-level year filter trimmed
+    the primary's last stamp but not the secondary's, because their
+    label conventions differ — e.g. ``_pt_`` top-of-hour vs ``_sfc_``
+    mid-hour). Truncates the secondary's trailing stamps to match.
+    Larger mismatches are recipe-level cadence problems and return
+    unchanged.
     """
     p = _find_time_dim(primary)
     s = _find_time_dim(secondary)
     if p is None or s is None:
         return secondary
-    if primary.sizes.get(p) != secondary.sizes.get(s):
-        return secondary
+    np_, ns = primary.sizes.get(p), secondary.sizes.get(s)
+    if np_ != ns:
+        if 0 < (ns - np_) <= 2:
+            secondary = secondary.isel({s: slice(0, np_)})
+        else:
+            return secondary
     if s != p:
         secondary = secondary.rename({s: p})
     return secondary.assign_coords({p: primary[p].values})
