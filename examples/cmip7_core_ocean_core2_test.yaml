@@ -176,7 +176,7 @@ inherit:
   time_dimname: time
   grid: "FESOM 2.6 unstructured grid CORE2 (126858 surface nodes)"
   nominal_resolution: "100 km"
-  institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
+  institution: "Alfred Wegener Institute for Polar and Marine Research"
   output_directory: ./cmorized_output/core_ocean_core2_test
 
 rules:

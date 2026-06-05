@@ -56,7 +56,7 @@ inherit:
   grid_label: g122
   grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
   nominal_resolution: "25 km"
-  institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
+  institution: "Alfred Wegener Institute for Polar and Marine Research"
   time_dimname: time_counter
   output_directory: ./cmorized_output/bench_hr_ua_6hr_inline
 

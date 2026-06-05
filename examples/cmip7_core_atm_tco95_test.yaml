@@ -145,7 +145,7 @@ inherit:
   grid_label: gn
   grid: "OpenIFS TCo95 reduced Gaussian, interpolated to 1deg regular grid"
   nominal_resolution: "100 km"
-  institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
+  institution: "Alfred Wegener Institute for Polar and Marine Research"
   time_dimname: time_counter
   output_directory: ./cmorized_output/core_atm_tco95_test
   year_start: 1900
