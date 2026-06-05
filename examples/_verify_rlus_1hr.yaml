@@ -11,7 +11,7 @@ general:
   name: "verify-rlus-1hr-hr"
   cmor_version: "CMIP7"
   mip: "CMIP"
-  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.3/metadata.json"
 
 pycmor:
   warn_on_no_rule: False
@@ -48,5 +48,5 @@ rules:
     inputs:
       - path: *dp
         pattern: atmos_1h_sfc_rlus_.*\.nc
-    compound_name: atmos.rlus.tavg-u-hxy-u.1hr.GLB
+    compound_name: atmos.rlus.tavg-u-hxy-u.1hr.glb
     model_variable: rlus

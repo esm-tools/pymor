@@ -11,7 +11,7 @@ general:
   name: "mini-cap7-{{TAG}}"
   cmor_version: "CMIP7"
   mip: "CMIP"
-  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.3/metadata.json"
 
 pycmor:
   enable_output_subdirs: true
@@ -48,48 +48,48 @@ rules:
     inputs:
       - path: *dp
         pattern: atmos_6h_pl7h_ua_.*\.nc
-    compound_name: atmos.ua.tpt-p7h-hxy-air.6hr.GLB
+    compound_name: atmos.ua.tpt-p7h-hxy-air.6hr.glb
     model_variable: ua
     lazy_write: true
   - name: va_6hr_pl7h
     inputs:
       - path: *dp
         pattern: atmos_6h_pl7h_va_.*\.nc
-    compound_name: atmos.va.tpt-p7h-hxy-air.6hr.GLB
+    compound_name: atmos.va.tpt-p7h-hxy-air.6hr.glb
     model_variable: va
     lazy_write: true
   - name: ta_6hr_pl7h
     inputs:
       - path: *dp
         pattern: atmos_6h_pl7h_ta_.*\.nc
-    compound_name: atmos.ta.tpt-p7h-hxy-air.6hr.GLB
+    compound_name: atmos.ta.tpt-p7h-hxy-air.6hr.glb
     model_variable: ta
     lazy_write: true
   - name: hus_6hr_pl7h
     inputs:
       - path: *dp
         pattern: atmos_6h_pl7h_hus_.*\.nc
-    compound_name: atmos.hus.tpt-p7h-hxy-air.6hr.GLB
+    compound_name: atmos.hus.tpt-p7h-hxy-air.6hr.glb
     model_variable: hus
     lazy_write: true
   - name: zg_6hr_pl7h
     inputs:
       - path: *dp
         pattern: atmos_6h_pl7h_zg_.*\.nc
-    compound_name: atmos.zg.tpt-p7h-hxy-air.6hr.GLB
+    compound_name: atmos.zg.tpt-p7h-hxy-air.6hr.glb
     model_variable: zg
     lazy_write: true
   - name: uas_1hr
     inputs:
       - path: *dp
         pattern: atmos_1h_pt_10u_.*\.nc
-    compound_name: atmos.uas.tpt-h10m-hxy-u.1hr.GLB
+    compound_name: atmos.uas.tpt-h10m-hxy-u.1hr.glb
     model_variable: 10u
     lazy_write: true
   - name: ts_1hr
     inputs:
       - path: *dp
         pattern: atmos_1h_ts_ts_.*\.nc
-    compound_name: atmos.ts.tavg-u-hxy-u.1hr.GLB
+    compound_name: atmos.ts.tavg-u-hxy-u.1hr.glb
     model_variable: ts
     lazy_write: true

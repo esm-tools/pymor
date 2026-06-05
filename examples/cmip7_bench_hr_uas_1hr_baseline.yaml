@@ -34,7 +34,7 @@ general:
   name: "hr-uas-1hr-bench"
   cmor_version: "CMIP7"
   mip: "CMIP"
-  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.3/metadata.json"
 
 pycmor:
   enable_output_subdirs: true
@@ -85,7 +85,7 @@ rules:
     inputs:
       - path: *dp
         pattern: atmos_1h_pt_10u_1587-1587\.nc
-    compound_name: atmos.uas.tpt-h10m-hxy-u.1hr.GLB
+    compound_name: atmos.uas.tpt-h10m-hxy-u.1hr.glb
     model_variable: 10u
     lazy_write: true
     netcdf_compression_codec: blosc_zstd

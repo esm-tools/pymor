@@ -7,7 +7,7 @@ general:
   name: "awiesm3-cmip7-veg-seaice-core2-test"
   cmor_version: "CMIP7"
   mip: "CMIP"
-  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.3/metadata.json"
 
 pycmor:
   enable_output_subdirs: true
@@ -75,7 +75,7 @@ rules:
     inputs:
       - path: *dp
         pattern: m_snow\.fesom\..*\.nc
-    compound_name: seaIce.sisnhc.tavg-u-hxy-si.day.GLB
+    compound_name: seaIce.sisnhc.tavg-u-hxy-si.day.glb
     model_variable: m_snow
     second_input_path: *dp
     second_input_pattern: a_ice\.fesom\..*\.nc

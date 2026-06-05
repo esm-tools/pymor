@@ -2,7 +2,7 @@ general:
   name: "awiesm3-cmip7-minimal"
   cmor_version: "CMIP7"
   mip: "CMIP"
-  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.3/metadata.json"
 
 pycmor:
   enable_output_subdirs: true
@@ -156,7 +156,7 @@ rules:
     inputs:
       - path: *mp
         pattern: mesh.nc
-    compound_name: ocean.areacello.ti-u-hxy-u.fx.GLB
+    compound_name: ocean.areacello.ti-u-hxy-u.fx.glb
     model_variable: cell_area
     pipelines:
       - fx_extract_pipeline
@@ -166,7 +166,7 @@ rules:
     inputs:
       - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
         pattern: sst.fesom.1350.nc
-    compound_name: ocean.tos.tavg-u-hxy-sea.mon.GLB
+    compound_name: ocean.tos.tavg-u-hxy-sea.mon.glb
     model_variable: sst
 
   # Depth-integrated absolute salinity (computed from 3D field)
@@ -174,7 +174,7 @@ rules:
     inputs:
       - path: /work/bb1469/a270089/runtime/awiesm3-v3.4.1/AWI-ESM3-VEG-HR-CMIP7-Spinup_cont2/outdata/fesom
         pattern: salt.fesom.1350.nc
-    compound_name: ocean.absscint.tavg-op4-hxy-sea.mon.GLB
+    compound_name: ocean.absscint.tavg-op4-hxy-sea.mon.glb
     model_variable: salt
     integration_attrs:
       long_name: "Integral wrt depth of seawater absolute salinity expressed as salt mass content"

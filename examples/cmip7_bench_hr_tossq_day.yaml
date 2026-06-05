@@ -14,7 +14,7 @@ general:
   name: "hr-tossq-day-bench"
   cmor_version: "CMIP7"
   mip: "CMIP"
-  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.3/metadata.json"
 
 pycmor:
   enable_output_subdirs: true
@@ -62,7 +62,7 @@ rules:
     inputs:
       - path: *dp
         pattern: sst\.fesom\.1587\.nc
-    compound_name: ocean.tossq.tavg-u-hxy-sea.day.GLB
+    compound_name: ocean.tossq.tavg-u-hxy-sea.day.glb
     model_variable: sst
     squared_units: "degC2"
     lazy_write: true
