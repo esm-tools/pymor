@@ -111,6 +111,14 @@ export DASK_DISTRIBUTED__WORKER__MEMORY__TARGET=0.50
 export DASK_DISTRIBUTED__WORKER__MEMORY__SPILL=0.60
 export DASK_DISTRIBUTED__WORKER__MEMORY__PAUSE=0.75
 export DASK_DISTRIBUTED__WORKER__MEMORY__TERMINATE=0.90
+# Bump dask shutdown timeouts. Default 5s is too short for cluster
+# teardown: nanny SIGKILLs workers, daemon threads race with the
+# interpreter's stderr lock at shutdown, and CPython aborts with
+# `_enter_buffered_busy` (SIGABRT) — flagging an otherwise-successful
+# pycmor run as FAILED in SLURM (cli62 veg_land_3: Flow Completed,
+# Exit status: 0, then SIGABRT during dask cluster.close()).
+export DASK_DISTRIBUTED__WORKER__CLOSE_TIMEOUT=60s
+export DASK_DISTRIBUTED__NANNY__PROCESS_CLOSE_TIMEOUT=60s
 
 PYCMOR_SCRATCH=/scratch/a/a270092/pycmor_tmp/${SLURM_JOB_ID:-$$}_${task_idx}
 mkdir -p "$PYCMOR_SCRATCH/prefect/storage"
