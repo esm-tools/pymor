@@ -24,6 +24,7 @@ general:
   CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.2/metadata.json"
 
 pycmor:
+  enable_output_subdirs: true
   warn_on_no_rule: False
   parallel: False
   dask_cluster: "local"
