@@ -44,19 +44,39 @@ class QCFailure(RuntimeError):
 
 
 def _rule_files(rule) -> list[Path]:
+    """Find the .nc files this rule wrote.
+
+    Walks ``rule.output_directory`` recursively so the CMIP7 DRS layout
+    (``MIP-DRS7/CMIP7/.../<frequency>/<variable>/<branding>/<grid>/<version>/``)
+    is covered. Filters by ``<cmor_variable>_`` filename prefix, which
+    is the first token in both the CMIP6 and CMIP7 DRS filename specs.
+    For CMIP7, also filters by the branding_suffix (parsed from
+    ``rule.compound_name``) so two rules that share a variable but
+    differ in branding (e.g. ``siconc`` mon vs day) don't pick up each
+    other's files.
+    """
     out_dir = getattr(rule, "output_directory", None)
     if not out_dir or not os.path.isdir(out_dir):
         return []
     cmor_var = getattr(rule, "cmor_variable", None) or getattr(rule, "name", None)
-    table_id = getattr(rule, "table_id", None)
     if not cmor_var:
         return []
-    prefix = f"{cmor_var}_{table_id}_" if table_id else f"{cmor_var}_"
-    return sorted(
-        Path(out_dir) / name
-        for name in os.listdir(out_dir)
-        if name.endswith(".nc") and name.startswith(prefix)
-    )
+    # CMIP7 compound_name format: <realm>.<var>.<branding>.<frequency>.<region>
+    # Including the frequency in the prefix is necessary to disambiguate
+    # two rules that share the same cmor_variable + branding_suffix but
+    # differ in frequency (e.g. siconc mon vs siconc day).
+    compound = getattr(rule, "compound_name", "") or ""
+    if compound.count(".") >= 4:
+        parts = compound.split(".")
+        prefix = f"{cmor_var}_{parts[2]}_{parts[3]}_"
+    else:
+        prefix = f"{cmor_var}_"
+    matches: list[Path] = []
+    for root, _dirs, files in os.walk(out_dir):
+        for name in files:
+            if name.endswith(".nc") and name.startswith(prefix):
+                matches.append(Path(root) / name)
+    return sorted(matches)
 
 
 def _finding_codes(name: str | None) -> set[str]:
@@ -183,8 +203,15 @@ def run_compliance_checker(data, rule):
     criteria = getattr(rule, "qc_criteria", None) or "normal"
     ignore = set(getattr(rule, "qc_ignore_codes", None) or [])
     cmor_var = getattr(rule, "cmor_variable", "var")
-    table_id = getattr(rule, "table_id", "tab")
-    out_json = Path(rule.output_directory) / f"qc_{cmor_var}_{table_id}.json"
+    # Sidecar filename uniquely identifies the rule. Prefer rule.name
+    # because two rules can share a cmor_variable but differ in
+    # frequency (e.g. siconc vs siconc_day) — using cmor_var alone
+    # would collide. table_id is unreliable across CMIP6 / CMIP7 so we
+    # don't include it.
+    rule_id = getattr(rule, "name", None) or cmor_var
+    out_json = Path(rule.output_directory) / f"qc_{rule_id}.json"
+    # Reflect the actual rule_id in the log header for grep-ability.
+    table_id = rule_id
 
     rc, err = _run_cchecker(binary, tests, criteria, out_json, files)
     if not out_json.exists():
