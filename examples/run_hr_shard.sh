@@ -206,6 +206,37 @@ echo "=== shard yaml: $shard_yaml  ->  $OUTDIR ==="
 echo "=== --data-path ${RUN_ROOT}  --year ${YEAR}  --memory ${MEMORY:-<unset>} ==="
 echo "=== config: parallel=True orchestrator=dask N_WORKERS=${N_WORKERS} TPW=${TPW} MEM_PER_WORKER=${MEM_PER_WORKER} PYCMOR_WORKER_COMPUTE=${PYCMOR_WORKER_COMPUTE} ==="
 echo "=== node $(hostname), $(nproc) cores allocated, $(free -g | awk '/^Mem:/{print $2}') GB visible ==="
+
+# Inactivity watchdog: scancel this job if the SLURM log file's mtime
+# stalls. cli60 cap7_aerosol toz_mon hung the shard for 2h after 4/5
+# rules had already saved — Prefect/Dask cluster wedge with no output.
+# Default 1800s (30 min); set WEDGE_TIMEOUT_SEC=0 to disable.
+WEDGE_TIMEOUT_SEC="${WEDGE_TIMEOUT_SEC:-1800}"
+if [ "$WEDGE_TIMEOUT_SEC" -gt 0 ] && [ -n "${SLURM_JOB_ID:-}" ]; then
+  WEDGE_LOG_FILE="/work/ab0246/a270092/software/pycmor/pycmor_hr_shard_${SLURM_JOB_NAME:-shard}_${SLURM_ARRAY_JOB_ID:-$SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID:-1}.log"
+  WEDGE_TARGET_JOB="${SLURM_ARRAY_JOB_ID:+${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}}"
+  WEDGE_TARGET_JOB="${WEDGE_TARGET_JOB:-$SLURM_JOB_ID}"
+  echo "=== watchdog: scancel ${WEDGE_TARGET_JOB} if ${WEDGE_LOG_FILE} mtime stalls for ${WEDGE_TIMEOUT_SEC}s ==="
+  (
+    # Brief grace period for the log file to appear.
+    sleep 60
+    while sleep 60; do
+      if [ -f "$WEDGE_LOG_FILE" ]; then
+        mtime=$(stat -c %Y "$WEDGE_LOG_FILE" 2>/dev/null || echo 0)
+        now=$(date +%s)
+        age=$((now - mtime))
+        if [ "$age" -ge "$WEDGE_TIMEOUT_SEC" ]; then
+          echo "[WATCHDOG] ${WEDGE_LOG_FILE} inactive for ${age}s >= ${WEDGE_TIMEOUT_SEC}s; scancel ${WEDGE_TARGET_JOB}" >&2
+          scancel "$WEDGE_TARGET_JOB" || true
+          break
+        fi
+      fi
+    done
+  ) &
+  WEDGE_PID=$!
+  trap "rm -rf $PREFECT_NODELOCAL; kill $WEDGE_PID 2>/dev/null || true" EXIT
+fi
+
 date +%s.%N
 /usr/bin/time -v pycmor process "$PYCMOR_SCRATCH/par.yaml" "${CLI_ARGS[@]}"
 date +%s.%N
