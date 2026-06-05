@@ -33,6 +33,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   - name: msftmmpa_depth_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
@@ -44,6 +45,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   - name: msftmmpa_density_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
@@ -55,6 +57,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
 inherit:
   netcdf_compression_codec: blosc_zstd
   netcdf_compression_level: 3

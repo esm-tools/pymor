@@ -48,6 +48,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # LPJ-GUESS monthly loader (Jan..Dec format)
   - name: lpjg_monthly_pipeline
     steps:
@@ -62,6 +63,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # LPJ-GUESS monthly loader + sum additional files (c3PftFrac)
   - name: lpjg_monthly_sum_pipeline
     steps:
@@ -77,6 +79,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Temporal differencing (dcw, dslw)
   - name: temporal_diff_pipeline
     steps:
@@ -92,6 +95,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Soil wetness ratio (mrsow)
   - name: mrsow_pipeline
     steps:
@@ -107,6 +111,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
 inherit:
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd

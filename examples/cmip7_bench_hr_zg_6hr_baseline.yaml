@@ -77,6 +77,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
 rules:
   - name: zg_6hr_pl7h
     inputs:

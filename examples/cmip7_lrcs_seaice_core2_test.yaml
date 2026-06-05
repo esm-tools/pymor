@@ -44,6 +44,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Generic: multiply by constant (rho_ice, rho_snow, rho_water, etc.)
   - name: scale_pipeline
     steps:
@@ -61,6 +62,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Sea ice speed: sqrt(uice² + vice²)
   - name: sispeed_pipeline
     steps:
@@ -77,6 +79,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Ice mass transport: velocity × m_ice
   - name: ice_mass_transport_pipeline
     steps:
@@ -94,6 +97,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Average normal stress: (sgm11 + sgm22) / 2
   - name: sistressave_pipeline
     steps:
@@ -110,6 +114,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Maximum shear stress: sqrt(((sgm11-sgm22)/2)² + sgm12²)
   - name: sistressmax_pipeline
     steps:
@@ -126,6 +131,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Conductive heat flux at ice surface: k_ice*(T_base-T_surface)/h_ice
   - name: siflcondtop_pipeline
     steps:
@@ -142,6 +148,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Sea ice heat content: rho_ice*h_ice*(c_ice*(T_mean-T_melt)-L_f)
   - name: sihc_pipeline
     steps:
@@ -158,6 +165,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Snow heat content: -rho_snow * L_f * h_snow
   - name: sisnhc_pipeline
     steps:
@@ -174,6 +182,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Freezing point from SSS → sitempbot
   - name: sitempbot_pipeline
     steps:
@@ -190,6 +199,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Freeboard from h_ice and h_snow
   - name: sifb_pipeline
     steps:
@@ -206,6 +216,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Effective melt pond fraction: apnd*(1-ipnd/hpnd)*100
   - name: simpeffconc_pipeline
     steps:
@@ -222,6 +233,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Constant field (e.g. drag coefficient)
   - name: constant_field_pipeline
     steps:
@@ -238,6 +250,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Generic hemisphere integral (snow mass, ice area, etc.)
   - name: hemisphere_integral_pipeline
     steps:
@@ -254,6 +267,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   - name: regrid_atm_to_fesom_seaice_mask_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
@@ -270,6 +284,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Generic hemisphere integral (snow mass, ice area, etc.)
 
   # Regrid regular-grid atmos output onto FESOM2 mesh for seaice-mask variables.
@@ -288,6 +303,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
 inherit:
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd

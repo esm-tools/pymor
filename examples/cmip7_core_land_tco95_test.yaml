@@ -43,6 +43,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # areacella: reuse pycmor std_lib FrozenPipeline
   - name: areacella_pipeline
     uses: pycmor.core.pipeline.AreacellaFxPipeline
@@ -61,6 +62,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
 inherit:
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd

@@ -44,6 +44,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Scale by constant (m/s → kg m-2 s-1 via ×1000)
   - name: scale_pipeline
     steps:
@@ -61,6 +62,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Time-varying volcello: hnode (layer thickness) × cell_area
   - name: volcello_time_pipeline
     steps:
@@ -77,6 +79,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Surface extraction from 3D field (uos, vos)
   - name: surface_extract_pipeline
     steps:
@@ -93,6 +96,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Ofx: load grid file, extract variable
   # Scale by constant then vertically integrate (hfxint, hfyint)
   - name: scale_and_integrate_pipeline
@@ -112,6 +116,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Heat transport (W) — utemp/vtemp × ρcp × hnode × edge_length
   - name: heat_transport_pipeline
     steps:
@@ -129,6 +134,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   - name: fx_extract_pipeline
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_gridfile
@@ -141,6 +147,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
 inherit:
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd

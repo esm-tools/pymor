@@ -57,6 +57,7 @@ pipelines:
       - script://$PYCMOR_HOME/examples/custom_steps.py:rechunk_time
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
 rules:
   - name: wap_day
     inputs:

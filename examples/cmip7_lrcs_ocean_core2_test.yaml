@@ -41,6 +41,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   - name: hfbasin_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
@@ -52,6 +53,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   - name: sltbasin_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
@@ -63,6 +65,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Square a field (tossq, sossq, zossq, mlotstsq)
   - name: square_pipeline
     steps:
@@ -79,6 +82,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Generic scaling (multiply by constant, e.g. fw × rho_water)
   - name: scale_pipeline
     steps:
@@ -96,6 +100,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Extract bottom-of-column from 3D field (tob, sob)
   - name: bottom_extract_pipeline
     steps:
@@ -112,6 +117,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Barotropic mass streamfunction from SSH (msftbarot)
   # workflow_backend: native bypasses Prefect task caching to avoid cache
   # collision with surface_pressure_pipeline (both load ssh.fesom.*.nc)
@@ -131,6 +137,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Compute surface pressure from SSH (pso)
   - name: surface_pressure_pipeline
     steps:
@@ -147,6 +154,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Vertical integration (phcint, scint, opottempmint, somint)
   - name: ocean_vertical_integration_pipeline
     steps:
@@ -165,6 +173,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Static volcello from mesh: cell_area × layer_thickness
   - name: volcello_fx_pipeline
     steps:
@@ -178,6 +187,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Time-varying volcello: hnode × cell_area
   - name: volcello_time_pipeline
     steps:
@@ -194,6 +204,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Surface extraction from 3D field (uos, vos)
   - name: surface_extract_pipeline
     steps:
@@ -210,6 +221,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Scale by constant then vertically integrate (hfx_int_day, hfy_int_day)
   - name: scale_and_integrate_pipeline
     steps:
@@ -228,6 +240,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # 3D salt mass transport (sfx, sfy): velocity × salt × rho_0 × dz
   - name: salt_transport_pipeline
     steps:
@@ -244,6 +257,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # 2D vertically integrated salt mass transport (sfx_int, sfy_int)
   - name: salt_transport_integrated_pipeline
     steps:
@@ -260,6 +274,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Meridional overturning in density space (resolved + parameterized).
   # Direct binning of std_dens_DIV (and std_dens_DIVbolus if present).
   - name: msftm_density_pipeline
@@ -273,6 +288,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # MOC due to parameterized mesoscale advection — depth-space (calc_zmoc on bolus_w).
   - name: msftmmpa_depth_pipeline
     steps:
@@ -285,6 +301,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # MOC due to parameterized mesoscale advection — density-space (std_dens_DIVbolus).
   - name: msftmmpa_density_pipeline
     steps:
@@ -297,6 +314,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Ofx: load grid file, extract variable
   - name: fx_extract_pipeline
     steps:
@@ -311,6 +329,7 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
 
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # DEFERRED (HR-only) — see matching block in the rules section below.
   # - name: msftm_density_pipeline
   #   steps:

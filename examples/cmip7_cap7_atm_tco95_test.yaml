@@ -45,6 +45,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # huss: Tetens formula from 2d + sp
   - name: huss_pipeline
     steps:
@@ -62,6 +63,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # sfcWind: sqrt(u10^2 + v10^2)
   - name: sfcwind_pipeline
     steps:
@@ -79,6 +81,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # clwvi: tclw + tciw from daily cap7 output
   - name: clwvi_pipeline
     steps:
@@ -96,6 +99,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # snc: snow cover from snow depth (sd)
   - name: snc_pipeline
     steps:
@@ -113,6 +117,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # snd: snow depth from sd and rsn
   - name: snd_pipeline
     steps:
@@ -130,6 +135,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # rtmt: net downward radiative flux at model top
   - name: rtmt_pipeline
     steps:
@@ -145,6 +151,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # extract single pressure level (ta@700, wap@500)
   - name: single_plevel_pipeline
     steps:
@@ -162,6 +169,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
 inherit:
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd

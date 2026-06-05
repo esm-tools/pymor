@@ -45,6 +45,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # sfcWind: sqrt(u10^2 + v10^2)
   - name: sfcwind_pipeline
     steps:
@@ -62,6 +63,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Southern hemisphere subset (30S-90S)
   - name: southern_hemisphere_pipeline
     steps:
@@ -78,6 +80,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # hurs + southern hemisphere subset
   - name: hurs_south_pipeline
     steps:
@@ -96,6 +99,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # sfcWind + southern hemisphere subset
   - name: sfcwind_south_pipeline
     steps:
@@ -114,6 +118,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
 inherit:
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd

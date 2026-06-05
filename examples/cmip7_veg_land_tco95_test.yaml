@@ -43,6 +43,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Custom pipeline for terrestrial water storage (summation)
   - name: mrtws_pipeline
     steps:
@@ -58,6 +59,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Custom pipeline for snow depth (SWE to physical depth)
   - name: snd_pipeline
     steps:
@@ -73,6 +75,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # LPJ-GUESS monthly loader (Jan..Dec format)
   - name: lpjg_monthly_pipeline
     steps:
@@ -87,6 +90,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # LPJ-GUESS yearly loader (Lon/Lat/Year/Total format)
   - name: lpjg_yearly_pipeline
     steps:
@@ -101,6 +105,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # LPJ-GUESS yearly Lut loader (Lon/Lat/Year/psl/crp/pst/urb format)
   - name: lpjg_yearly_lut_pipeline
     steps:
@@ -115,6 +120,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # LPJ-GUESS monthly Lut loader (Lon/Lat/Year/Mth/psl/crp/pst/urb format)
   - name: lpjg_monthly_lut_pipeline
     steps:
@@ -129,6 +135,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
 inherit:
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd

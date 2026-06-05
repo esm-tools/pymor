@@ -49,6 +49,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # Scale pipeline for toz: tco3 (kg m-2) -> toz (m)
   # toz(m) = tco3(kg/m2) / rho_O3_STP = tco3 / 2.1415
   - name: toz_pipeline
@@ -66,6 +67,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
 inherit:
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd

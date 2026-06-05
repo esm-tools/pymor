@@ -38,6 +38,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # sitimefrac: binary ice presence from siconc > 0
   - name: sitimefrac_pipeline
     steps:
@@ -54,6 +55,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
 # Common attributes inherited by all rules
 inherit:
   source_id: AWI-ESM-3

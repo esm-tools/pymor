@@ -42,6 +42,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   - name: ocean_vertical_integration_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
@@ -59,6 +60,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   # areacello: reuse pycmor std_lib FrozenPipeline
   - name: fx_extract_pipeline
     uses: pycmor.core.pipeline.AreacelloFxPipeline
@@ -75,6 +77,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   - name: fx_sftof_pipeline
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_gridfile
@@ -87,6 +90,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   - name: fx_thkcello_pipeline
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_gridfile
@@ -99,6 +103,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   - name: fx_masscello_pipeline
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_gridfile
@@ -111,6 +116,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   - name: mass_transport_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
@@ -127,6 +133,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   - name: scale_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
@@ -143,6 +150,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
   - name: zostoga_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
@@ -157,6 +165,7 @@ pipelines:
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
 
+      - pycmor.std_lib.qc.run_compliance_checker
 inherit:
   # Write-perf defaults rolled out from HR atm core bench:
   netcdf_compression_codec: blosc_zstd

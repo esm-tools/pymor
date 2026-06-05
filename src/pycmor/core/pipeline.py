@@ -429,6 +429,9 @@ class DefaultPipeline(FrozenPipeline):
         "pycmor.std_lib.generic.trigger_compute",
         "pycmor.std_lib.generic.show_data",
         "pycmor.std_lib.files.save_dataset",
+        # Opt-in per-shard QC. No-op unless ``qc_enabled: true`` is set
+        # on the rule (or in ``inherit:``); see pycmor.std_lib.qc.
+        "pycmor.std_lib.qc.run_compliance_checker",
     )
     NAME = "pycmor.pipeline.DefaultPipeline"
 
@@ -450,6 +453,7 @@ class AreacelloFxPipeline(FrozenPipeline):
         "pycmor.std_lib.attributes.set_coordinates",
         "pycmor.std_lib.dimensions.map_dimensions",
         "pycmor.std_lib.files.save_dataset",
+        "pycmor.std_lib.qc.run_compliance_checker",
     )
     NAME = "pycmor.pipeline.AreacelloFxPipeline"
 
@@ -470,6 +474,7 @@ class AreacellaFxPipeline(FrozenPipeline):
         "pycmor.std_lib.attributes.set_coordinates",
         "pycmor.std_lib.dimensions.map_dimensions",
         "pycmor.std_lib.files.save_dataset",
+        "pycmor.std_lib.qc.run_compliance_checker",
     )
     NAME = "pycmor.pipeline.AreacellaFxPipeline"
 

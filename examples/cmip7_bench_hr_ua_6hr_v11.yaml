@@ -58,6 +58,7 @@ pipelines:
       - pycmor.std_lib.dimensions.map_dimensions
       - script://$PYCMOR_HOME/examples/bench_rechunk.py:save_dataset_per_slab
 
+      - pycmor.std_lib.qc.run_compliance_checker
 rules:
   - name: ua_6hr_pl7h
     inputs:
