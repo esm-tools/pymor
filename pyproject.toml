@@ -113,9 +113,19 @@ doc = [
 # (registers `wcrp_cmip6` / `wcrp_cmip6plus` / `wcrp_cmip7` suites and
 # the `esgvoc` controlled-vocabulary cache), and the cmip7_repack tool
 # used by the `qc_repack: true` pre-step in pycmor.std_lib.qc.
+#
+# IMPORTANT: esgvoc >= 4 switched from local-clone to pre-built sqlite
+# databases. After install you MUST initialise the local CV cache, or
+# the wcrp_cmip7 FILE001 check will crash with
+# `EsgvocDbError: Universe database is not installed or active`:
+#
+#     esgvoc use universe@latest
+#     esgvoc use cmip7@latest
+#
 qc = [
     "compliance-checker>=6.1",
     "cc-plugin-wcrp>=2.3",
+    "esgvoc>=4.1",
     "cmip7_repack>=1.1",
 ]
 
