@@ -44,6 +44,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # hur on pressure levels: recompute from ta + hus using CMIP7 phase-
   # dependent saturation vapour pressure (water >=0 C, ice <0 C). IFS
@@ -63,6 +64,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   - name: hurs_pipeline
     steps:
@@ -79,6 +81,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   - name: huss_pipeline
     steps:
@@ -95,6 +98,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   - name: clwvi_pipeline
     steps:
@@ -111,6 +115,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   - name: scale_pipeline
     steps:
@@ -127,6 +132,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # areacella: atmospheric grid-cell area, referenced by every atm variable
   # via cell_measures: area: areacella.
@@ -156,6 +162,10 @@ inherit:
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   time_dimname: time_counter
   output_directory: ./cmorized_output/awiesm3
+  # QC: in-pipeline CF + WCRP-CMIP7 compliance check on every saved file.
+  qc_enabled: true
+  qc_repack: true
+  qc_ignore_codes: ["VAR004"]
 
 rules:
   # ============================================================

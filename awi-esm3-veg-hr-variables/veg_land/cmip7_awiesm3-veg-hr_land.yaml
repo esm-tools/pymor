@@ -49,6 +49,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Custom pipeline for terrestrial water storage (summation)
   - name: mrtws_pipeline
@@ -66,6 +67,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Custom pipeline for snow depth (SWE to physical depth)
   - name: snd_pipeline
@@ -82,6 +84,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # LPJ-GUESS monthly loader (Jan..Dec format)
   - name: lpjg_monthly_pipeline
@@ -98,6 +101,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # LPJ-GUESS yearly loader (Lon/Lat/Year/Total format)
   - name: lpjg_yearly_pipeline
@@ -113,6 +117,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # LPJ-GUESS yearly Lut loader (Lon/Lat/Year/psl/crp/pst/urb format)
   - name: lpjg_yearly_lut_pipeline
@@ -128,6 +133,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # LPJ-GUESS monthly Lut loader (Lon/Lat/Year/Mth/psl/crp/pst/urb format)
   - name: lpjg_monthly_lut_pipeline
@@ -144,6 +150,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # LPJ-GUESS monthly Lut loader with scale step (water-equivalent → m, etc.)
   # Pint cannot convert kg/m2 (water mass per area) to m without a hydrostatic
@@ -163,6 +170,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
 inherit:
   # Tier-wide throttle: applies to ALL rules (pipelined or default-piped).
@@ -187,6 +195,10 @@ inherit:
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   time_dimname: time_counter
   output_directory: ./cmorized_output/awiesm3
+  # QC: in-pipeline CF + WCRP-CMIP7 compliance check on every saved file.
+  qc_enabled: true
+  qc_repack: true
+  qc_ignore_codes: ["VAR004"]
 
 rules:
   # ============================================================

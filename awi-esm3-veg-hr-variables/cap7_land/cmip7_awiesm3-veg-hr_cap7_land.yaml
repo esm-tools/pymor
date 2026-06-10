@@ -43,6 +43,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # added by LASZLO - 29.04.2026
   # LPJ-GUESS monthly depth-layered loader (Lon/Lat/Year/Mth/Depth0.1..Depth1.5 format)
@@ -59,6 +60,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # LPJ-GUESS monthly + clip-floor-at-zero (for variables whose physical
   # floor is 0 but where the pipeline introduces small negatives;
@@ -77,6 +79,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # LPJ-GUESS monthly depth + clip-floor-at-zero (currently used by mrsol).
   - name: lpjg_monthly_depth_clip0_pipeline
@@ -94,6 +97,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # LPJ-GUESS yearly→monthly broadcast (loads yearly stand-area file and
   # repeats each yearly value across 12 mid-month time stamps).
@@ -113,6 +117,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # added by LASZLO - 29.04.2026
   # LPJ-GUESS monthly carbon pool loader (Lon/Lat/Year/Mth/Fast/Medium/Slow format)
@@ -129,6 +134,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
 inherit:
   # Write-perf defaults rolled out from HR atm core bench:
@@ -147,6 +153,10 @@ inherit:
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   time_dimname: time_counter
   output_directory: ./cmorized_output/awiesm3
+  # QC: in-pipeline CF + WCRP-CMIP7 compliance check on every saved file.
+  qc_enabled: true
+  qc_repack: true
+  qc_ignore_codes: ["VAR004"]
 
 rules:
   # ============================================================

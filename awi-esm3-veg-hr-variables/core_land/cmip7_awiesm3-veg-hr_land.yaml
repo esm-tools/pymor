@@ -44,6 +44,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # areacella: reuse pycmor std_lib FrozenPipeline
   - name: areacella_pipeline
@@ -62,6 +63,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
 inherit:
   # Write-perf defaults rolled out from HR atm core bench:
@@ -79,6 +81,10 @@ inherit:
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   time_dimname: time_counter
   output_directory: ./cmorized_output/awiesm3
+  # QC: in-pipeline CF + WCRP-CMIP7 compliance check on every saved file.
+  qc_enabled: true
+  qc_repack: true
+  qc_ignore_codes: ["VAR004"]
 
 rules:
   # ============================================================

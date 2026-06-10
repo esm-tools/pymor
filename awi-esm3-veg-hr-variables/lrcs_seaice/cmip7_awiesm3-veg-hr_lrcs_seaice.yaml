@@ -52,6 +52,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Fraction to percent + mask where no sea ice. Used by simpconc
   # (hxy-si). Rule must supply aice_path / aice_pattern.
@@ -71,6 +72,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Generic: multiply by constant (rho_ice, rho_snow, rho_water, etc.)
   - name: scale_pipeline
@@ -89,6 +91,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # scale_pipeline + mask where no sea ice. For hxy-si rules whose CMIP7
   # cell_methods is ``area: time: mean where sea_ice (mask=siconc)``.
@@ -109,6 +112,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Like scale_pipeline but with a clip-to-0 step after the sign-flipping
   # scale, so only one branch (e.g. snow melt) survives. Used by snm
@@ -131,6 +135,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Sea ice speed: sqrt(uice² + vice²). hxy-si branding ⇒ mask.
   - name: sispeed_pipeline
@@ -148,6 +153,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # CMIP sfdsi (Downward Sea Ice Basal Salt Flux) reconstructed from
   # fw_ice + sss under linfs (where realsalt is unreachable). hxy-sea
@@ -168,6 +174,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # hxy-si variant of sfdsi_from_fw_ice_pipeline for the SImon `sfdsi`
   # (sfdsi_seaice rule). CMIP7 cell_methods on seaIce.sfdsi is
@@ -188,6 +195,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Ice mass transport: velocity × m_ice × cell_width. Both sidmasstranx
   # and sidmasstrany are hxy-u branding (CMIP7 cell_methods is
@@ -208,6 +216,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Average normal stress: (sgm11 + sgm22) / 2. hxy-si branding ⇒ mask.
   - name: sistressave_pipeline
@@ -225,6 +234,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Maximum shear stress: sqrt(((sgm11-sgm22)/2)² + sgm12²). hxy-si ⇒ mask.
   - name: sistressmax_pipeline
@@ -242,6 +252,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Conductive heat flux at ice surface: k_ice*(T_base-T_surface)/h_ice.
   # hxy-si branding ⇒ mask.
@@ -260,6 +271,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Sea ice heat content: rho_ice*h_ice*(c_ice*(T_mean-T_melt)-L_f)
   - name: sihc_pipeline
@@ -277,6 +289,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Snow heat content: -rho_snow * L_f * h_snow. hxy-si ⇒ mask.
   - name: sisnhc_pipeline
@@ -294,6 +307,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Freezing point from SSS → sitempbot. hxy-si ⇒ mask.
   - name: sitempbot_pipeline
@@ -311,6 +325,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Freeboard from h_ice and h_snow. hxy-si ⇒ mask.
   - name: sifb_pipeline
@@ -328,6 +343,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Effective melt pond fraction: apnd*(1-ipnd/hpnd)*100. hxy-si ⇒ mask.
   - name: simpeffconc_pipeline
@@ -345,6 +361,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Constant field (e.g. drag coefficient). Used by sidragtop/sidragbot,
   # both hxy-si ⇒ mask.
@@ -363,6 +380,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Regrid from OpenIFS regular grid to FESOM unstructured nodes
   - name: regrid_atm_to_fesom_pipeline
@@ -380,6 +398,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Regrid from OpenIFS regular grid to FESOM unstructured nodes, then mask to sea-ice-covered nodes
   # `throttle_group: oifs_regrid` caps how many of this family of rules
@@ -404,6 +423,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Same as above but negates the field at the end. IFS surface heat fluxes
   # (hfls, hfss) are CMIP positive=up; the CMIP sea-ice variants
@@ -426,6 +446,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Generic hemisphere integral (snow mass, ice area, etc.)
   - name: hemisphere_integral_pipeline
@@ -448,6 +469,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
   # Hemisphere-integral pipeline that ALSO applies a constant scaling
   # after integration. Used by sisnmass (m_snow [m] × cell_area [m²] ×
@@ -474,6 +496,7 @@ pipelines:
       - pycmor.std_lib.generic.trigger_compute
       - pycmor.std_lib.generic.show_data
       - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
 
 inherit:
   # Tier-wide throttle: applies to ALL rules (pipelined or default-piped).
@@ -501,6 +524,10 @@ inherit:
   nominal_resolution: "10 km"
   institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   output_directory: ./cmorized_output/awiesm3
+  # QC: in-pipeline CF + WCRP-CMIP7 compliance check on every saved file.
+  qc_enabled: true
+  qc_repack: true
+  qc_ignore_codes: ["VAR004"]
 
 rules:
   # ============================================================
