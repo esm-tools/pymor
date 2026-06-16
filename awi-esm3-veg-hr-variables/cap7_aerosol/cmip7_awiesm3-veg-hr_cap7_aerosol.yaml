@@ -86,6 +86,7 @@ inherit:
   forcing_year: 1850
   source_id: AWI-ESM3-4-2-veg-HR
   institution_id: AWI
+  institution: "Alfred Wegener Institute for Polar and Marine Research"
   experiment_id: piControl
   variant_label: r1i1p1f1
   grid_label: g113

@@ -155,6 +155,7 @@ inherit:
   data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/oifs
   source_id: AWI-ESM3-4-2-veg-HR
   institution_id: AWI
+  institution: "Alfred Wegener Institute for Polar and Marine Research"
   experiment_id: piControl
   variant_label: r1i1p1f1
   grid_label: g113
