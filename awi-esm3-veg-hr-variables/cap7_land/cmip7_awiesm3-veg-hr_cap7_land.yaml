@@ -12,6 +12,7 @@ general:
   CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.3/metadata.json"
 
 pycmor:
+  enable_output_subdirs: true
   warn_on_no_rule: False
   parallel: False
   dask_cluster: "slurm"
@@ -143,14 +144,13 @@ inherit:
   netcdf_write_scheduler: synchronous
   data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/oifs
   lpjg_data_path: &ldp /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/lpj_guess
-  source_id: AWI-ESM-3
+  source_id: AWI-ESM3-4-2-veg-HR
   institution_id: AWI
-  experiment_id: picontrol
+  experiment_id: piControl
   variant_label: r1i1p1f1
-  grid_label: gn
-  grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
+  grid_label: g122
+  grid: "OpenIFS TCo319 reduced Gaussian (~25 km) — LPJ-GUESS on OIFS grid"
   nominal_resolution: "25 km"
-  institution: "Alfred Wegener Institute, Helmholtz Centre for Polar and Marine Research, Bremerhaven, Germany"
   time_dimname: time_counter
   output_directory: ./cmorized_output/awiesm3
   # QC: in-pipeline CF + WCRP-CMIP7 compliance check on every saved file.
@@ -159,6 +159,9 @@ inherit:
   qc_tests: ["cf", "wcrp_cmip7"]
   qc_ignore_codes: ["VAR004"]
 
+  activity_id: CMIP
+  parent_experiment_id: no parent
+  calendar: proleptic_gregorian
 rules:
   # ============================================================
   # Part 1: LPJ-GUESS monthly variables (49 rules)
