@@ -186,8 +186,15 @@ def _create_mean_bounds(time_values, approx_interval):
     time_diff_seconds = np.median(np.diff(time_values.astype("datetime64[s]").astype(float)))
     data_freq_days = time_diff_seconds / (24 * 3600)
 
-    # If approx_interval looks monthly and data frequency is in the monthly range, use month-aware bounds
-    if approx_interval is not None and 28 <= approx_interval <= 32 and 27 <= data_freq_days <= 32:
+    # Use month-aware bounds when the data spacing IS monthly. approx_interval
+    # is an optional sanity check; if set, it must also indicate monthly,
+    # otherwise we fall through to consecutive-step bounds. The previous
+    # logic required approx_interval to be set, which silently degraded
+    # broadcast-style pipelines (cfc11, ch4, ...) where the rule doesn't
+    # carry a DReq-derived interval.
+    data_looks_monthly = 27 <= data_freq_days <= 32
+    approx_disagrees = approx_interval is not None and not (28 <= approx_interval <= 32)
+    if data_looks_monthly and not approx_disagrees:
         logger.info("  detected monthly data, using month-start bounds")
         return _create_monthly_bounds(time_values)
 
