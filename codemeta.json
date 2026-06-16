@@ -1,0 +1,89 @@
+{
+  "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+  "@type": "SoftwareSourceCode",
+  "name": "pycmor",
+  "description": "pycmor (py-cmor) is a Python package that simplifies the conversion of climate model output into Climate Model Output Rewriter (CMOR) compliant formats, supporting both CMIP6 and CMIP7 standards. It provides a modular, plugin-based pipeline architecture for processing NetCDF data from diverse Earth system models, enabling compliance with WCRP Controlled Vocabularies and CF conventions.",
+  "identifier": "https://doi.org/10.5281/zenodo.15530131",
+  "version": "1.0.2",
+  "datePublished": "2025-05-27",
+  "license": "https://spdx.org/licenses/MIT",
+  "codeRepository": "https://github.com/esm-tools/pycmor",
+  "issueTracker": "https://github.com/esm-tools/pycmor/issues",
+  "url": "https://pymor.readthedocs.io",
+  "downloadUrl": "https://pypi.org/project/py-cmor/",
+  "programmingLanguage": {
+    "@type": "ComputerLanguage",
+    "name": "Python",
+    "url": "https://www.python.org"
+  },
+  "operatingSystem": ["Linux", "macOS", "Windows"],
+  "softwareRequirements": "Python >= 3.9",
+  "developmentStatus": "active",
+  "keywords": [
+    "CMOR",
+    "CMORization",
+    "CMIP6",
+    "CMIP7",
+    "climate",
+    "climate model output",
+    "NetCDF",
+    "CF-conventions",
+    "earth system model",
+    "WCRP",
+    "research software",
+    "AWI"
+  ],
+  "author": [
+    {
+      "@type": "Person",
+      "givenName": "Paul",
+      "familyName": "Gierz",
+      "@id": "https://orcid.org/0000-0002-4512-087X",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "Alfred-Wegener-Institut Helmholtz-Zentrum für Polar- und Meeresforschung",
+        "url": "https://www.awi.de"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Miguel",
+      "familyName": "Andrés-Martínez",
+      "@id": "https://orcid.org/0000-0002-1525-5546",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "Alfred-Wegener-Institut Helmholtz-Zentrum für Polar- und Meeresforschung",
+        "url": "https://www.awi.de"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Pavan Kumar",
+      "familyName": "Siligam",
+      "@id": "https://orcid.org/0009-0003-8054-7021",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "Alfred-Wegener-Institut Helmholtz-Zentrum für Polar- und Meeresforschung",
+        "url": "https://www.awi.de"
+      }
+    },
+    {
+      "@type": "Person",
+      "givenName": "Jan",
+      "familyName": "Streffing",
+      "@id": "https://orcid.org/0000-0001-9515-3322",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "Alfred-Wegener-Institut Helmholtz-Zentrum für Polar- und Meeresforschung",
+        "url": "https://www.awi.de"
+      }
+    }
+  ],
+  "funder": {
+    "@type": "Organization",
+    "name": "Alfred-Wegener-Institut Helmholtz-Zentrum für Polar- und Meeresforschung",
+    "url": "https://www.awi.de"
+  },
+  "contIntegration": "https://github.com/esm-tools/pycmor/actions",
+  "readme": "https://github.com/esm-tools/pycmor/blob/main/README.rst"
+}
