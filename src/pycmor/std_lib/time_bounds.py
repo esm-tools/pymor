@@ -89,14 +89,21 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
 
     if time_method == "instantaneous":
         bounds_data = np.column_stack([time_values, time_values])
+        new_time_values = None
     else:
         bounds_data = _create_mean_bounds(time_values, approx_interval)
+        # CF/CMIP and wcrp TIME001 require coord == midpoint(bnds). Source
+        # files often write fixed-day-of-month timestamps (e.g. always the
+        # 16th at 12:00) that are off by 1-2 days for non-31-day months.
+        # Replace time with the bnds midpoint so the check passes. Skipped
+        # for instantaneous time (the point IS the value).
+        new_time_values = _midpoint_bounds(bounds_data)
 
     bounds = xr.DataArray(
         data=bounds_data,
         dims=(time_label, bounds_dim_label),
         coords={
-            time_label: time_values,
+            time_label: new_time_values if new_time_values is not None else time_values,
             # Give the bnds aux a long_name so CF §3.3 doesn't flag it
             # as a meta-data-less coord variable. Without this xarray
             # writes ``int64 bnds(bnds) ;`` with no attrs, which the
@@ -114,11 +121,48 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
 
     ds = ds.assign_coords({time_bounds_label: bounds})
 
-    if "bounds" not in time_var.attrs:
+    if new_time_values is not None:
+        # Preserve attrs/encoding from the original time coord while
+        # swapping in the midpoint-aligned values.
+        new_time = time_var.copy(data=new_time_values)
+        ds = ds.assign_coords({time_label: new_time})
+
+    if "bounds" not in ds[time_label].attrs:
         ds[time_label].attrs["bounds"] = time_bounds_label
+
+    # CMIP7 wcrp_cmip7 TIME003a recommends ``proleptic_gregorian`` over the
+    # CF-equivalent ``standard``/``gregorian``. XIOS-produced FESOM files
+    # arrive with calendar="standard"; force the encoded calendar to the
+    # CMIP7-recommended form so cchecker doesn't recommend a change on
+    # every file. No semantic shift — proleptic_gregorian == standard
+    # for any date after 1582-10-15, and our experiments start in 1850.
+    cal_enc = ds[time_label].encoding.get("calendar")
+    cal_attr = ds[time_label].attrs.get("calendar")
+    if (cal_enc in (None, "standard", "gregorian")) and (cal_attr in (None, "standard", "gregorian")):
+        ds[time_label].encoding["calendar"] = "proleptic_gregorian"
+        # Keep the attr out — encoding wins at write time, and a stale
+        # attr would confuse downstream readers.
+        ds[time_label].attrs.pop("calendar", None)
 
     logger.info(f"  set {time_bounds_label}{bounds.shape}, " f"range: {bounds.values[0][0]} to {bounds.values[-1][-1]}")
     return ds
+
+
+def _midpoint_bounds(bounds_data):
+    """Per-row midpoint of a (n, 2) time-bounds array.
+
+    Handles both numpy ``datetime64`` and ``cftime`` object arrays. The
+    midpoint is computed as ``b0 + (b1 - b0) / 2`` rather than
+    ``np.mean(axis=1)`` so that cftime calendars (proleptic_gregorian,
+    noleap, 360_day, ...) round-trip correctly — ``np.mean`` doesn't
+    know how to average cftime objects.
+    """
+    if np.issubdtype(bounds_data.dtype, np.datetime64):
+        return bounds_data[:, 0] + (bounds_data[:, 1] - bounds_data[:, 0]) / 2
+    return np.array(
+        [b0 + (b1 - b0) / 2 for b0, b1 in bounds_data],
+        dtype=object,
+    )
 
 
 def _create_mean_bounds(time_values, approx_interval):

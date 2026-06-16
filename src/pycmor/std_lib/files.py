@@ -360,9 +360,37 @@ def _ensure_horizontal_coord_attrs(ds):
     return ds
 
 
+def _drop_xios_aux_time_coords(ds):
+    """Drop NEMO/FESOM XIOS auxiliary time coords that don't belong in CMIP7.
+
+    XIOS adds ``time_centered`` (and its companion ``time_centered_bounds``)
+    as auxiliary time coordinates on monthly/daily-mean output, intended as
+    a hint that the timestamp represents the centre of the averaging
+    period. CMIP7 wants exactly one time coord (``time``) with one bounds
+    variable (``time_bnds``); the extra coord causes:
+
+    - wcrp_cmip7 ``[VAR004]`` — ``time_centered`` declares ``bounds=
+      "time_centered_bounds"`` but pycmor's time_bounds step doesn't rebuild
+      that bounds var, so it ends up dangling.
+    - wcrp_cmip7 ``[TIME003a]`` — ``time_centered:calendar='standard'``
+      survives the proleptic_gregorian override pycmor applies to the main
+      ``time`` coord.
+
+    Strip both unconditionally before save. If a future tier needs to keep
+    a model-native time coord, replace this with a per-rule opt-out.
+    """
+    for aux in ("time_centered", "time_centered_bounds"):
+        if aux in ds.variables:
+            ds = ds.drop_vars(aux)
+        elif aux in ds.coords:
+            ds = ds.reset_coords(aux, drop=True)
+    return ds
+
+
 def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
     """Wrap _ensure_lat_lon_bounds with post-passes that announce external
     cell_measures (CF 1.11 §7.2) and refresh the ``coordinates`` attr."""
+    ds = _drop_xios_aux_time_coords(ds)
     ds = _ensure_lat_lon_bounds_impl(ds, rule)
     ds = _ensure_external_variables(ds)
     ds = _ensure_coordinates_attr(ds)
@@ -537,26 +565,25 @@ def _attach_bounds_from_mesh(ds, rule, coord_names):
             # Rename the mesh vertex dim to match the variable's spatial dim.
             # CF §7.1: bounds variables must not carry their own attributes
             # (they inherit from the parent coord); pass an empty attrs dict.
+            #
+            # Force float64 on BOTH the coord and the bnds. The DARS mesh
+            # files store lat/lon as float32; promoting at this layer
+            # gives the CF §7.1 in-bounds check enough precision to
+            # tolerate the ULP-level drift on the ~0.7% of cells where
+            # float32 puts the centroid a hair outside its polygon. Same
+            # geometric truth, more decimals.
             dim_name = coord.dims[0]
             vdim = mb.dims[1]
-            data = mb.values
+            data = mb.values.astype(np.float64, copy=False)
             ds[bname] = xr.DataArray(
                 data,
                 dims=(dim_name, vdim),
                 attrs={},
             )
             ds[bname].encoding["_FillValue"] = None
-            # Promote the coord to the mesh's higher-precision values so
-            # that ``coord ∈ bnds`` holds exactly. FESOM data files store
-            # lat/lon as float32 (downcast from the float64 mesh), while
-            # the bnds we just attached are float64 from the mesh. The
-            # float32 coord is then a few ULPs off its own bnds — cf §7.1
-            # then reports "coord lies outside its bounding box" on every
-            # cell where the rounding falls outside. Overwriting with the
-            # mesh's float64 values eliminates that mismatch.
             mesh_centers = mesh[mesh_centers_name]
             new_coord = xr.DataArray(
-                mesh_centers.values,
+                mesh_centers.values.astype(np.float64, copy=False),
                 dims=(dim_name,),
                 attrs=dict(ds[name].attrs),
             )
