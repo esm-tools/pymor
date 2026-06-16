@@ -37,6 +37,7 @@ pipelines:
       - pycmor.std_lib.generic.get_variable
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_hurs
       - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -55,6 +56,7 @@ pipelines:
       - pycmor.std_lib.generic.get_variable
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sfcwind
       - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -73,6 +75,7 @@ pipelines:
       - pycmor.std_lib.generic.get_variable
       - script://$PYCMOR_HOME/examples/custom_steps.py:select_southern_hemisphere
       - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -91,6 +94,7 @@ pipelines:
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_hurs
       - script://$PYCMOR_HOME/examples/custom_steps.py:select_southern_hemisphere
       - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -110,6 +114,7 @@ pipelines:
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sfcwind
       - script://$PYCMOR_HOME/examples/custom_steps.py:select_southern_hemisphere
       - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable

@@ -183,7 +183,15 @@ def _create_mean_bounds(time_values, approx_interval):
     if len(time_values) < 2:
         raise ValueError("Cannot create mean time bounds: need at least 2 time points")
 
-    time_diff_seconds = np.median(np.diff(time_values.astype("datetime64[s]").astype(float)))
+    # For numpy datetime64 we can cast directly; cftime objects need
+    # date2num via their own calendar to land in a numeric space.
+    if np.issubdtype(time_values.dtype, np.datetime64):
+        time_diff_seconds = np.median(np.diff(time_values.astype("datetime64[s]").astype(float)))
+    else:
+        import cftime
+        cal = getattr(time_values[0], "calendar", "standard")
+        nums = cftime.date2num(time_values, units="seconds since 1970-01-01", calendar=cal)
+        time_diff_seconds = float(np.median(np.diff(np.asarray(nums, dtype=float))))
     data_freq_days = time_diff_seconds / (24 * 3600)
 
     # Use month-aware bounds when the data spacing IS monthly. approx_interval
@@ -207,25 +215,40 @@ def _create_mean_bounds(time_values, approx_interval):
 def _create_monthly_bounds(time_values):
     """Create monthly bounds as (month_start, next_month_start).
 
+    Handles both numpy ``datetime64`` and ``cftime`` object arrays.
+    cftime is the common case for FESOM/XIOS output (calendar=standard
+    or proleptic_gregorian), where ``pd.Timestamp(cftime_obj)`` raises.
+
     Parameters
     ----------
     time_values : np.ndarray
-        Array of numpy datetime64 time values.
+        Array of time values (datetime64 or cftime objects).
 
     Returns
     -------
     np.ndarray
         Array of shape (n, 2) with monthly bounds.
     """
-    import pandas as pd
+    if np.issubdtype(time_values.dtype, np.datetime64):
+        import pandas as pd
+
+        bounds_data = []
+        for time_val in time_values:
+            ts = pd.Timestamp(time_val)
+            month_start = ts.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            if ts.month == 12:
+                next_month_start = month_start.replace(year=ts.year + 1, month=1)
+            else:
+                next_month_start = month_start.replace(month=ts.month + 1)
+            bounds_data.append([month_start.to_numpy(), next_month_start.to_numpy()])
+        return np.array(bounds_data)
 
     bounds_data = []
     for time_val in time_values:
-        ts = pd.Timestamp(time_val)
-        month_start = ts.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        if ts.month == 12:
-            next_month_start = month_start.replace(year=ts.year + 1, month=1)
+        month_start = time_val.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        if time_val.month == 12:
+            next_month_start = month_start.replace(year=time_val.year + 1, month=1)
         else:
-            next_month_start = month_start.replace(month=ts.month + 1)
-        bounds_data.append([month_start.to_numpy(), next_month_start.to_numpy()])
-    return np.array(bounds_data)
+            next_month_start = month_start.replace(month=time_val.month + 1)
+        bounds_data.append([month_start, next_month_start])
+    return np.array(bounds_data, dtype=object)

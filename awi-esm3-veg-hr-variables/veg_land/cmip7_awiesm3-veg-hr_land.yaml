@@ -42,6 +42,7 @@ pipelines:
       - pycmor.core.gather_inputs.load_mfdataset
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_temporal_diff
       - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -60,6 +61,7 @@ pipelines:
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_mrtws
       - script://$PYCMOR_HOME/examples/custom_steps.py:clip_small_negatives
       - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -77,6 +79,7 @@ pipelines:
       - pycmor.core.gather_inputs.load_mfdataset
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_snd
       - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -94,6 +97,7 @@ pipelines:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly
       - script://$PYCMOR_HOME/examples/custom_steps.py:clip_small_negatives
       - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -110,6 +114,7 @@ pipelines:
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_yearly
       - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -126,6 +131,7 @@ pipelines:
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_yearly_lut
       - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -143,6 +149,7 @@ pipelines:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly_lut
       - script://$PYCMOR_HOME/examples/custom_steps.py:clip_small_negatives
       - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -163,6 +170,7 @@ pipelines:
       - pycmor.std_lib.generic.get_variable
       - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
       - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates

@@ -33,6 +33,7 @@ pipelines:
     steps:
       - script://$PYCMOR_HOME/examples/custom_steps.py:load_lpjguess_monthly
       - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -48,6 +49,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sftgif
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -62,6 +64,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_mrsofc
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -76,6 +79,7 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_rootd
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates

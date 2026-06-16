@@ -38,6 +38,7 @@ pipelines:
       - pycmor.std_lib.generic.get_variable
       - script://$PYCMOR_HOME/examples/custom_steps.py:fraction_to_percent
       - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -56,6 +57,7 @@ pipelines:
       - pycmor.std_lib.generic.get_variable
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_sitimefrac
       - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -73,6 +75,7 @@ pipelines:
       - pycmor.std_lib.generic.get_variable
       - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
       - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -94,6 +97,7 @@ pipelines:
       - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
       - script://$PYCMOR_HOME/examples/custom_steps.py:mask_where_no_seaice
       - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.set_time_bounds
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable

@@ -422,8 +422,10 @@ class DefaultPipeline(FrozenPipeline):
         "pycmor.std_lib.timeaverage.timeavg",
         # CF/CMIP and wcrp TIME001 require time == midpoint(time_bnds). The
         # step is a no-op when bnds already exist; otherwise it builds the
-        # canonical month-start bounds and realigns the time coord.
-        "pycmor.std_lib.time_bounds.time_bounds",
+        # canonical month-start bounds and realigns the time coord. Uses
+        # the std_lib wrapper so DataArray-typed pipeline payloads still
+        # round-trip through the Dataset-only inner function.
+        "pycmor.std_lib.set_time_bounds",
         "pycmor.std_lib.units.handle_unit_conversion",
         "pycmor.std_lib.attributes.set_global",
         "pycmor.std_lib.attributes.set_variable",
