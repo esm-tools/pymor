@@ -320,7 +320,7 @@ inherit:
   grid_label: gn
   mesh_path: &mp /work/ab0246/a270092/input/fesom2/core2
   grid_file: /work/ab0246/a270092/input/fesom2/core2/mesh.nc
-  grid: "FESOM 2.6 unstructured grid CORE2 (126858 surface nodes)"
+  grid: "FESOM 2.7 unstructured grid CORE2 (126858 surface nodes)"
   nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute for Polar and Marine Research"
   output_directory: ./cmorized_output/lrcs_seaice_core2_test
@@ -955,7 +955,7 @@ rules:
         pattern: atm_remapped_1m_ci_.*\.nc
     compound_name: seaIce.siconca.tavg-u-hxy-u.mon.glb
     model_variable: ci
-    grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
+    grid: "OpenIFS TCo319 reduced Gaussian"
     nominal_resolution: "25 km"
     time_dimname: time_counter
     pipelines:
@@ -968,7 +968,7 @@ rules:
         pattern: atm_remapped_1d_cmip7_ci_.*\.nc
     compound_name: seaIce.siconca.tavg-u-hxy-u.day.glb
     model_variable: ci
-    grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
+    grid: "OpenIFS TCo319 reduced Gaussian"
     nominal_resolution: "25 km"
     time_dimname: time_counter
     pipelines:

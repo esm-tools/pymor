@@ -95,7 +95,7 @@ inherit:
   grid_label: gn
   mesh_path: &mp /work/ab0246/a270092/input/fesom2/core2
   grid_file: /work/ab0246/a270092/input/fesom2/core2/mesh.nc
-  grid: "FESOM 2.6 unstructured grid CORE2 (126858 surface nodes)"
+  grid: "FESOM 2.7 unstructured grid CORE2 (126858 surface nodes)"
   nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute for Polar and Marine Research"
   output_directory: ./cmorized_output/core_seaice_core2_test
@@ -106,11 +106,10 @@ inherit:
   # to clear the wcrp FILE004a/d "consolidated metadata + chunk size"
   # Mandatory findings (it also incidentally clears the cf _QuantizeBit
   # attr because cmip7repack rewrites the file from scratch).
-  # qc_ignore_codes mutes VAR004 because the wcrp_cmip7 plugin's
-  # (N, 2) bounds-shape expectation does not match FESOM's unstructured
-  # quadrilateral (N, 4 / N, 18) lat_bnds / lon_bnds. Until cc-plugin-wcrp
-  # accepts unstructured shapes, suppress here rather than emit fake
-  # (N, 2) bounds.
+  #
+  # VAR004 unstructured (N, m>=3) polygon bounds are accepted by
+  # cc-plugin-wcrp PR #38 (merged 2026-06-09); requires the next
+  # release after v2.3.1. qc_ignore_codes is no longer needed.
   qc_enabled: true
   qc_repack: true
   qc_tests:
@@ -118,8 +117,6 @@ inherit:
     - wcrp_cmip7
   qc_criteria: normal
   qc_fail_on_mandatory: false
-  qc_ignore_codes:
-    - VAR004
 
 rules:
   # ============================================================

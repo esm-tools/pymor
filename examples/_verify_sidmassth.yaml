@@ -282,7 +282,7 @@ inherit:
   grid_label: gn
   mesh_path: &mp /work/ab0246/a270092/input/fesom2/core2
   grid_file: /work/ab0246/a270092/input/fesom2/core2/mesh.nc
-  grid: "FESOM 2.6 unstructured grid CORE2 (126858 surface nodes)"
+  grid: "FESOM 2.7 unstructured grid CORE2 (126858 surface nodes)"
   nominal_resolution: "100 km"
   institution: "Alfred Wegener Institute for Polar and Marine Research"
   output_directory: ./cmorized_output/verify_sidmassth

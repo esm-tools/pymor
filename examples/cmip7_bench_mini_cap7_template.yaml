@@ -37,7 +37,7 @@ inherit:
   parent_experiment_id: no parent
   variant_label: r1i1p1f1
   grid_label: gn
-  grid: "OpenIFS TCo319 reduced Gaussian, interpolated to 0.25deg regular grid"
+  grid: "OpenIFS TCo319 reduced Gaussian"
   nominal_resolution: "25 km"
   institution: "Alfred Wegener Institute for Polar and Marine Research"
   time_dimname: time_counter
