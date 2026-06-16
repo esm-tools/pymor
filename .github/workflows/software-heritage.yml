@@ -1,0 +1,34 @@
+name: Archive on Software Heritage
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  save-to-swh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request Software Heritage archival
+        run: |
+          ORIGIN="https://github.com/esm-tools/pycmor"
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            "https://archive.softwareheritage.org/api/1/origin/save/git/url/${ORIGIN}/")
+          echo "SWH save request HTTP status: $RESPONSE"
+
+      - name: Post release notes reminder
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          ORIGIN="https://github.com/esm-tools/pycmor"
+          SWH_URL="https://archive.softwareheritage.org/browse/origin/directory/?origin_url=${ORIGIN}"
+          gh release edit "$TAG" \
+            --notes "$(gh release view "$TAG" --json body -q .body)
+
+---
+**Software Heritage archival** was requested automatically for this release.
+Once processed (usually within 1 hour), retrieve the snapshot SWHID at:
+${SWH_URL}
+
+Then update \`CITATION.cff\` (identifiers.swh) and \`codemeta.json\` (identifier[swh]) with the new SWHID.
+You can use the helper script: \`python scripts/update_swhid.py\`" || true
