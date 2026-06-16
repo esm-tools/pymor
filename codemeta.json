@@ -3,7 +3,18 @@
   "@type": "SoftwareSourceCode",
   "name": "pycmor",
   "description": "pycmor (py-cmor) is a Python package that simplifies the conversion of climate model output into Climate Model Output Rewriter (CMOR) compliant formats, supporting both CMIP6 and CMIP7 standards. It provides a modular, plugin-based pipeline architecture for processing NetCDF data from diverse Earth system models, enabling compliance with WCRP Controlled Vocabularies and CF conventions.",
-  "identifier": "https://doi.org/10.5281/zenodo.15530131",
+  "identifier": [
+    {
+      "@type": "PropertyValue",
+      "propertyID": "doi",
+      "value": "https://doi.org/10.5281/zenodo.15530131"
+    },
+    {
+      "@type": "PropertyValue",
+      "propertyID": "swh",
+      "value": "swh:1:snp:e4d5216be639a8e2dd2be23be1e78981de3fc67d"
+    }
+  ],
   "version": "1.0.2",
   "datePublished": "2025-05-27",
   "license": "https://spdx.org/licenses/MIT",
