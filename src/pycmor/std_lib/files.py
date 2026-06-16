@@ -1023,6 +1023,14 @@ def _encoding_from_dask_chunks(ds, rule):
             var_encoding["_FillValue"] = 1.0e20
         encoding[var] = var_encoding
 
+    # CF §2.5.1: coordinate variables (lat, lon, time, lev, plev, ...) must
+    # not have _FillValue. xarray's default for float coords is NaN, which
+    # the netCDF library serialises as _FillValue=NaN — flagged by cchecker
+    # on every areacella/areacello/fx file. Explicit None here suppresses
+    # both the attr and the encoded fill.
+    for cname in ds.coords:
+        encoding.setdefault(str(cname), {})["_FillValue"] = None
+
     logger.info(f"Using dask-aligned netCDF chunks: {encoding.get(list(ds.data_vars)[0], {}).get('chunksizes', 'none')}")
     return encoding
 

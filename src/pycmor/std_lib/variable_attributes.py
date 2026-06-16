@@ -65,6 +65,23 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
         )
         attrs.pop(k, None)
 
+    # CF §3.1 / UDUNITS: practical salinity unit "psu" is not UDUNITS-
+    # recognised. The CMIP convention since CMIP6 is to spell it "1e-3"
+    # (or "0.001"), which UDUNITS accepts as a dimensionless scaling
+    # factor. The CMIP7 data request still ships "psu" in some compound-
+    # unit strings (e.g. ``vsfcorr`` -> ``m s-1 psu``); we substitute
+    # it just before applying attrs so the QC checker doesn't reject
+    # the file.
+    _u = attrs.get("units")
+    if isinstance(_u, str) and "psu" in _u:
+        import re as _re
+        _new_u = _re.sub(r"\bpsu\b", "1e-3", _u)
+        if _new_u != _u:
+            logger.info(
+                f"variable_attrs: rewriting non-UDUNITS units {_u!r} -> {_new_u!r}"
+            )
+            attrs["units"] = _new_u
+
     logger.info("Setting the following attributes:")
     for k, v in attrs.items():
         logger.info(f"{k}: {v}")

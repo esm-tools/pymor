@@ -1649,7 +1649,31 @@ def average_w_interfaces_to_midpoints(data, rule):
     # Replace the interface coord with midpoint depths and rename the
     # dim to the canonical CMIP midpoint name so downstream
     # set_coordinates / map_dimensions sees the expected axis.
-    result = result.assign_coords({vertical_dim: midpoint_depth})
+    #
+    # On the DARS mesh the deepest "midpoint" in mesh.depth is a seabed
+    # boundary artefact: depths run monotonically through index N-2
+    # (e.g. 6125 m) and then drop back at index N-1 (e.g. 3160 m). The
+    # corresponding w-midpoint is just 0.5*w[N-1] (the synthetic seabed
+    # BC) so it has no physics either. Trim it so the vertical coord
+    # is strictly monotonic — CF §1.2.
+    diffs = np.diff(midpoint_depth)
+    if not (np.all(diffs > 0) or np.all(diffs < 0)):
+        n_keep = 1 + int(np.argmin(diffs > 0)) if diffs[0] > 0 else 1 + int(np.argmin(diffs < 0))
+        result = result.isel({vertical_dim: slice(0, n_keep)})
+        midpoint_depth = midpoint_depth[:n_keep]
+    result = result.assign_coords({
+        vertical_dim: xr.DataArray(
+            midpoint_depth,
+            dims=(vertical_dim,),
+            attrs={
+                "long_name": "ocean depth",
+                "standard_name": "depth",
+                "units": "m",
+                "axis": "Z",
+                "positive": "down",
+            },
+        ),
+    })
     if vertical_dim != "nz1":
         result = result.rename({vertical_dim: "nz1"})
 
