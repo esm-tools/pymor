@@ -486,6 +486,41 @@ def _ensure_lat_lon_bounds_impl(ds, rule=None):
             ds[cf_bname] = recovered
             ds[name].attrs["bounds"] = cf_bname
             ds[cf_bname].encoding["_FillValue"] = None
+    # Prefer the mesh's polygon bnds over whatever was renamed/recovered above
+    # when a ``rule.grid_file`` is configured. FESOM/XIOS writes
+    # ``bounds_lat``/``bounds_lon`` truncated to nvertex=8 with many cells
+    # collapsed to 1-2 unique vertices padded with the last value — degenerate
+    # line / thin-triangle polygons whose bbox doesn't contain the stored
+    # centroid. The full polygon (up to 16 vertices on DARS2) lives in
+    # ``mesh.nc``. Drop the truncated lat_bnds/lon_bnds so the unstructured
+    # branch below pulls the canonical mesh polygons via
+    # ``_attach_bounds_from_mesh``. Skipped when no mesh is configured or the
+    # mesh doesn't carry matching-size lat_bnds/lon_bnds.
+    if rule is not None and getattr(rule, "grid_file", None):
+        try:
+            mesh_probe = xr.open_dataset(rule.grid_file, decode_times=False)
+            try:
+                coord_sizes = {ds[c].size for c in ("lat", "latitude", "lon", "longitude") if c in ds.variables}
+                has_mesh_bnds = any(
+                    v in mesh_probe.variables
+                    and mesh_probe[v].ndim == 2
+                    and mesh_probe[v].shape[0] in coord_sizes
+                    for v in ("lat_bnds", "lon_bnds")
+                )
+            finally:
+                mesh_probe.close()
+            if has_mesh_bnds:
+                dropped = []
+                for stale in ("lat_bnds", "lon_bnds"):
+                    if stale in ds.variables:
+                        ds = ds.drop_vars(stale)
+                        dropped.append(stale)
+                for name in ("lat", "latitude", "lon", "longitude"):
+                    if name in ds.variables:
+                        ds[name].attrs.pop("bounds", None)
+                logger.info(f"  → mesh-bnds-prefer: dropped {dropped} so mesh polygons are used")
+        except Exception as e:
+            logger.warning(f"  → mesh-bnds-prefer probe failed: {e}")
     regular = []
     unstructured = []
     for name in ("lat", "latitude", "lon", "longitude"):
@@ -514,6 +549,46 @@ def _ensure_lat_lon_bounds_impl(ds, rule=None):
                 ds[bname].encoding["_FillValue"] = None
     if unstructured and rule is not None:
         ds = _attach_bounds_from_mesh(ds, rule, unstructured)
+
+    # CMIP6/7 cmor-tables specify `type=double` (float64) for latitude /
+    # longitude coordinate variables, and CMOR writes them that way by
+    # default. FESOM/XIOS source files store lat/lon (and their bounds)
+    # as float32. Without an explicit promotion here the ~0.7% of cells
+    # whose centroid is a float32-quantum outside its own polygon trip
+    # cf §7.1 ("coord outside bnds"). Promote both data and the encoded
+    # on-disk dtype so it survives save_dataset's round-trip.
+    for name in ("lat", "latitude", "lon", "longitude"):
+        if name not in ds.variables:
+            continue
+        coord = ds[name]
+        if coord.ndim != 1 or coord.size < 2:
+            continue
+        if str(coord.dtype) == "float64":
+            # Already double — make sure encoding agrees but skip the cast.
+            ds[name].encoding["dtype"] = "float64"
+        else:
+            promoted = xr.DataArray(
+                coord.values.astype(np.float64, copy=False),
+                dims=coord.dims,
+                attrs=dict(coord.attrs),
+            )
+            promoted.encoding = dict(coord.encoding)
+            promoted.encoding["dtype"] = "float64"
+            promoted.encoding["_FillValue"] = None
+            ds = ds.assign_coords({name: promoted})
+        bname = f"{name}_bnds"
+        if bname in ds.variables:
+            bvar = ds[bname]
+            if str(bvar.dtype) != "float64":
+                new_b = xr.DataArray(
+                    bvar.values.astype(np.float64, copy=False),
+                    dims=bvar.dims,
+                    attrs=dict(bvar.attrs),
+                )
+                new_b.encoding = dict(bvar.encoding)
+                ds[bname] = new_b
+            ds[bname].encoding["dtype"] = "float64"
+            ds[bname].encoding["_FillValue"] = None
     return ds
 
 
@@ -581,6 +656,14 @@ def _attach_bounds_from_mesh(ds, rule, coord_names):
                 attrs={},
             )
             ds[bname].encoding["_FillValue"] = None
+            # In-memory cast above is not enough — xarray's write path uses
+            # ``encoding["dtype"]`` to pick the on-disk type and will downcast
+            # back to float32 if the encoding inherited from the source file
+            # says so. Force float64 explicitly so what we write matches what
+            # the mesh actually contains. CMOR's de facto convention is
+            # double-precision spatial coords; the 21k+ cf §7.1 outliers on
+            # DARS2 are quantum-level float32 drift, not real geometry.
+            ds[bname].encoding["dtype"] = "float64"
             mesh_centers = mesh[mesh_centers_name]
             new_coord = xr.DataArray(
                 mesh_centers.values.astype(np.float64, copy=False),
@@ -589,6 +672,7 @@ def _attach_bounds_from_mesh(ds, rule, coord_names):
             )
             new_coord.attrs["bounds"] = bname
             new_coord.encoding["_FillValue"] = None
+            new_coord.encoding["dtype"] = "float64"
             ds = ds.assign_coords({name: new_coord})
     finally:
         mesh.close()
