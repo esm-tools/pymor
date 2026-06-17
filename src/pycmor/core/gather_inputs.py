@@ -317,6 +317,51 @@ def _filter_files_by_year_range(files, year_start, year_end):
     return sorted(filtered, key=lambda f: f.name)
 
 
+def _check_compatible_schemas(files, rule_spec):
+    """Fail fast when files in the same gather have incompatible primary dims.
+
+    ``open_mfdataset`` lazily concatenates the file list; when two files share
+    a coordinate name but disagree on its size (e.g. a native unstructured
+    ``nod2`` file and a regridded ``lat``/``lon`` variant both matched by a
+    loose ``.*`` pattern), xarray's ``merge_collected`` tries to broadcast-
+    equate the coords and blows up with a multi-petabyte allocation request
+    inside ``dask.tokenize``. Reading just the headers up front turns that
+    failure into an actionable error.
+
+    Opt-out via ``skip_input_schema_check: true`` on the rule when files
+    legitimately differ (e.g. concatenating an areacello fx with monthly
+    data — though that combination would normally use separate steps).
+    """
+    if len(files) < 2:
+        return
+    if rule_spec.get("skip_input_schema_check", False):
+        return
+    try:
+        reference = None
+        ref_path = None
+        for f in files:
+            with xr.open_dataset(f, decode_times=False, engine="netcdf4") as ds:
+                dims = {k: int(v) for k, v in ds.sizes.items() if k != "time"}
+            if reference is None:
+                reference = dims
+                ref_path = f
+                continue
+            for k, v in dims.items():
+                if k in reference and reference[k] != v:
+                    raise ValueError(
+                        "input file list has incompatible schemas. "
+                        f"dim '{k}' = {reference[k]} in {ref_path} "
+                        f"but = {v} in {f}. tighten the rule's input "
+                        "pattern to one grid family, or set "
+                        "skip_input_schema_check: true on the rule if "
+                        "this is intentional."
+                    )
+            for k, v in dims.items():
+                reference.setdefault(k, v)
+    except (OSError, FileNotFoundError) as exc:
+        logger.warning(f"schema pre-check skipped: {exc}")
+
+
 def filter_files_by_year_range(files, year_start, year_end):
     """Public year-range filter. Accepts paths or strings.
 
@@ -417,6 +462,7 @@ def load_mfdataset(data, rule_spec):
     )
     for f in all_files:
         logger.info(f"  * {f}")
+    _check_compatible_schemas(all_files, rule_spec)
     mf_ds = xr.open_mfdataset(all_files, **open_kwargs)
     # Rename non-standard time dimension if specified in rule (e.g., OpenIFS uses different names)
     time_dimname = rule_spec.get("time_dimname")

@@ -486,6 +486,16 @@ def _ensure_lat_lon_bounds_impl(ds, rule=None):
             ds[cf_bname] = recovered
             ds[name].attrs["bounds"] = cf_bname
             ds[cf_bname].encoding["_FillValue"] = None
+            continue
+        # Recovery failed and the canonical name still isn't in ds; if the
+        # stale XIOS pointer ``bounds_lat`` / ``bounds_lon`` is still in the
+        # attrs it would trip wcrp_cmip7 VAR004 ``Bounds variable 'bounds_lat'
+        # referenced by 'lat' not found``. Drop the dangling pointer so the
+        # file at least passes CF, even if the actual bnds variable is
+        # missing (that's a separate ATTR001 finding handled per-rule).
+        if declared and declared not in ds.variables and cf_bname not in ds.variables:
+            ds[name].attrs.pop("bounds", None)
+            ds[name].encoding.pop("bounds", None)
     # Prefer the mesh's polygon bnds over whatever was renamed/recovered above
     # when a ``rule.grid_file`` is configured. FESOM/XIOS writes
     # ``bounds_lat``/``bounds_lon`` truncated to nvertex=8 with many cells
@@ -1427,8 +1437,20 @@ def _save_dataset_with_native_timespan(
 ):
     paths = []
     drv = rule.data_request_variable
-    if getattr(drv, 'frequency', None) == "fx":
-        # fx variables: write a single file, no time splitting
+    is_fx = getattr(drv, 'frequency', None) in ("fx", "ofx")
+    if is_fx:
+        # fx / ofx variables are time-invariant. CMIP convention is to write
+        # no time coord and no time_bnds at all. The source FESOM/XIOS file
+        # ships a singleton time dim (so the model can emit the field once);
+        # squeeze it out here and drop the bnds so cf §7.1 doesn't compare
+        # time vs time_bnds attrs on a file that has no business carrying
+        # either, and so wcrp ATTR004 doesn't flag the inherited
+        # ``seconds since`` units string.
+        if time_label in da.dims and da.sizes.get(time_label, 0) <= 1:
+            da = da.isel({time_label: 0}, drop=True)
+        for stale in (time_label, f"{time_label}_bnds", f"{time_label}_bounds"):
+            if stale in getattr(da, "coords", {}):
+                da = da.reset_coords(stale, drop=True)
         datasets = [da]
     else:
         datasets = split_data_timespan(da, rule)
@@ -2035,6 +2057,20 @@ def _save_dataset_impl(da: xr.DataArray, rule):
             datasets = []
             for group_name, group_ds in groups:
                 paths.append(create_filepath(group_ds, rule))
+                # The pipeline payload is a DataArray, and xarray refuses to
+                # let the bnds aux ride on a DataArray (its 'bnds' dim isn't
+                # a subset of (time, nod2)). By the time we reach save_dataset
+                # the time_bnds variable that the std_lib wrapper computed has
+                # been dropped. Recreate it on each Dataset-shaped group so the
+                # canonical bnds make it into the written file. The function
+                # is idempotent: if bnds are already present it just realigns
+                # time to midpoint(bnds).
+                if hasattr(group_ds, "data_vars"):
+                    try:
+                        from .time_bounds import time_bounds as _set_time_bounds
+                        group_ds = _set_time_bounds(group_ds, rule)
+                    except Exception as _exc:
+                        logger.warning(f"could not re-attach time_bnds in save_dataset: {_exc}")
                 # CMIP spec fixups: strip fractional seconds from time:units (preserve epoch);
                 # drop stale bounds/coordinates encodings; remove _FillValue from coords.
                 if time_label in group_ds.variables:

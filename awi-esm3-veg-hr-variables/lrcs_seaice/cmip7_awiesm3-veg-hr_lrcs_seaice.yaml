@@ -1090,6 +1090,7 @@ rules:
       - path: *dp
         pattern: siarean\.fesom\.\d{4}\.nc
     compound_name: seaIce.siarea.tavg-u-hm-u.mon.nh
+    cell_measures: ""
     model_variable: siarean
     model_unit: "1e12 m2"
 
@@ -1098,6 +1099,7 @@ rules:
       - path: *dp
         pattern: siareas\.fesom\.\d{4}\.nc
     compound_name: seaIce.siarea.tavg-u-hm-u.mon.sh
+    cell_measures: ""
     model_variable: siareas
     model_unit: "1e12 m2"
 
@@ -1108,6 +1110,7 @@ rules:
       - path: *dp
         pattern: a_ice\.fesom\.\d{4}\.nc
     compound_name: seaIce.siarea.tavg-u-hm-u.day.nh
+    cell_measures: ""
     model_variable: a_ice
     model_unit: "m2"
     hemisphere: "N"
@@ -1119,6 +1122,7 @@ rules:
       - path: *dp
         pattern: a_ice\.fesom\.\d{4}\.nc
     compound_name: seaIce.siarea.tavg-u-hm-u.day.sh
+    cell_measures: ""
     model_variable: a_ice
     model_unit: "m2"
     hemisphere: "S"
@@ -1130,6 +1134,7 @@ rules:
       - path: *dp
         pattern: siextentn\.fesom\.\d{4}\.nc
     compound_name: seaIce.siextent.tavg-u-hm-u.mon.nh
+    cell_measures: ""
     model_variable: siextentn
     model_unit: "1e12 m2"
 
@@ -1138,6 +1143,7 @@ rules:
       - path: *dp
         pattern: siextents\.fesom\.\d{4}\.nc
     compound_name: seaIce.siextent.tavg-u-hm-u.mon.sh
+    cell_measures: ""
     model_variable: siextents
     model_unit: "1e12 m2"
 
@@ -1148,6 +1154,7 @@ rules:
       - path: *dp
         pattern: a_ice\.fesom\.\d{4}\.nc
     compound_name: seaIce.siextent.tavg-u-hm-u.day.nh
+    cell_measures: ""
     model_variable: a_ice
     model_unit: "m2"
     hemisphere: "N"
@@ -1160,6 +1167,7 @@ rules:
       - path: *dp
         pattern: a_ice\.fesom\.\d{4}\.nc
     compound_name: seaIce.siextent.tavg-u-hm-u.day.sh
+    cell_measures: ""
     model_variable: a_ice
     model_unit: "m2"
     hemisphere: "S"
@@ -1172,6 +1180,7 @@ rules:
       - path: *dp
         pattern: sivoln\.fesom\.\d{4}\.nc
     compound_name: seaIce.sivol.tavg-u-hm-u.mon.nh
+    cell_measures: ""
     model_variable: sivoln
 
   - name: sivol_south
@@ -1179,6 +1188,7 @@ rules:
       - path: *dp
         pattern: sivols\.fesom\.\d{4}\.nc
     compound_name: seaIce.sivol.tavg-u-hm-u.mon.sh
+    cell_measures: ""
     model_variable: sivols
 
   # Daily sivol: using ldiag_cmor scalar files (same as monthly); if daily scalar output not available,
@@ -1188,6 +1198,7 @@ rules:
       - path: *dp
         pattern: sivoln\.fesom\.\d{4}\.nc
     compound_name: seaIce.sivol.tavg-u-hm-u.day.nh
+    cell_measures: ""
     model_variable: sivoln
 
   - name: sivol_south_day
@@ -1195,6 +1206,7 @@ rules:
       - path: *dp
         pattern: sivols\.fesom\.\d{4}\.nc
     compound_name: seaIce.sivol.tavg-u-hm-u.day.sh
+    cell_measures: ""
     model_variable: sivols
 
   # ============================================================
