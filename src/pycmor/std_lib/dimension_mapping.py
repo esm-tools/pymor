@@ -85,7 +85,7 @@ class DimensionMapper:
         # Vertical coordinates - atmosphere
         "model_level": [
             r"^alev(el)?s?$",
-            r"^(model_)?level(_\w+)?$",
+            r"^(model_)?levels?(_\w+)?$",
             r"^lev$",
         ],
         # Vertical coordinates - height
@@ -204,6 +204,21 @@ class DimensionMapper:
             values = coord.values
             if len(values) == 0:
                 return None
+
+            # Integer index sequence (e.g. OIFS ``model_levels`` = 1..137,
+            # or any 0..N-1 model-level numbering): treat as model_level
+            # before the lat/lon range checks pick it up because the small
+            # integers fit inside the longitude (0..360) window. Without
+            # this guard the OIFS atmospheric model-level dim ends up
+            # renamed to ``longitude`` in the output, which trips cf §2.4
+            # dim-order on every variable on alevel.
+            if (
+                np.issubdtype(values.dtype, np.integer)
+                or np.all(np.equal(np.mod(values, 1), 0))
+            ) and len(values) > 1:
+                diffs = np.diff(values.astype(float))
+                if np.all(diffs == 1) and float(values[0]) in (0.0, 1.0):
+                    return "model_level"
 
             # Check for latitude (-90 to 90)
             if np.all(values >= -90) and np.all(values <= 90):
