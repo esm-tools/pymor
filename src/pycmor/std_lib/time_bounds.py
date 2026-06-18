@@ -99,13 +99,25 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
     # ``time_method=instantaneous``) would crash in ``_create_mean_bounds``,
     # and even if they didn't, manufacturing bnds for a time-invariant field
     # is wrong — the file shouldn't carry time_bnds at all. Skip silently.
+    #
+    # Yearly files are a real exception: a 1-year LPJ-GUESS or FESOM yearly
+    # output has exactly one stamp per file but is NOT fx-like. It needs
+    # proper (year_start, next_year_start) bnds so wcrp TIME001 can verify
+    # the midpoint. Detect via approx_interval or rule.data_request_variable
+    # .frequency and let the call fall through to _create_mean_bounds, where
+    # the yearly branch builds them.
     if len(time_values) < 2 and time_method != "instantaneous":
+        if not _looks_yearly(rule, approx_interval):
+            logger.info(
+                f"  {len(time_values)} time point(s) with method='{time_method}'; "
+                "treating as fx-like, no bounds created"
+            )
+            _force_canonical_time_encoding(ds, time_label)
+            return ds
         logger.info(
             f"  {len(time_values)} time point(s) with method='{time_method}'; "
-            "treating as fx-like, no bounds created"
+            "yearly frequency detected, building year-snapped bounds"
         )
-        _force_canonical_time_encoding(ds, time_label)
-        return ds
 
     # If the source already shipped time_bnds (e.g. FESOM daily files), don't
     # recompute them, but still realign time = midpoint(bnds) so the wcrp
@@ -142,13 +154,27 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
         bounds_data = np.column_stack([time_values, time_values])
         new_time_values = None
     else:
-        bounds_data = _create_mean_bounds(time_values, approx_interval)
+        bounds_data = _create_mean_bounds(time_values, approx_interval, rule=rule)
         # CF/CMIP and wcrp TIME001 require coord == midpoint(bnds). Source
         # files often write fixed-day-of-month timestamps (e.g. always the
         # 16th at 12:00) that are off by 1-2 days for non-31-day months.
         # Replace time with the bnds midpoint so the check passes. Skipped
         # for instantaneous time (the point IS the value).
         new_time_values = _midpoint_bounds(bounds_data)
+
+    # IMPORTANT ordering: swap the time coord to the midpoint FIRST, then
+    # attach time_bnds. xarray reindexes on assign_coords; if we attach a
+    # bnds DataArray whose ``time`` axis is the midpoint while ds still
+    # holds the original (off-midpoint) time, every bnds entry silently
+    # becomes NaN. Daily / monthly paths only get away with the reverse
+    # ordering because their source stamps happen to already sit at the
+    # midpoint (FESOM daily at noon, monthly at the 16th roughly the
+    # month-midpoint). Yearly broadcast stamps are at Jul 1 but the
+    # year-snapped midpoint lands at Jul 2 12:00, so the mismatch is
+    # visible. Fix it for everyone.
+    if new_time_values is not None:
+        new_time = time_var.copy(data=new_time_values)
+        ds = ds.assign_coords({time_label: new_time})
 
     bounds = xr.DataArray(
         data=bounds_data,
@@ -173,12 +199,6 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
     )
 
     ds = ds.assign_coords({time_bounds_label: bounds})
-
-    if new_time_values is not None:
-        # Preserve attrs/encoding from the original time coord while
-        # swapping in the midpoint-aligned values.
-        new_time = time_var.copy(data=new_time_values)
-        ds = ds.assign_coords({time_label: new_time})
 
     if "bounds" not in ds[time_label].attrs:
         ds[time_label].attrs["bounds"] = time_bounds_label
@@ -253,7 +273,7 @@ def _midpoint_bounds(bounds_data):
     )
 
 
-def _create_mean_bounds(time_values, approx_interval):
+def _create_mean_bounds(time_values, approx_interval, rule=None):
     """Create bounds for mean time method.
 
     Parameters
@@ -262,13 +282,24 @@ def _create_mean_bounds(time_values, approx_interval):
         Array of time coordinate values.
     approx_interval : float or None
         Approximate interval in days from the CMIP table.
+    rule : Rule or None
+        Optional rule, only consulted for the single-time-point yearly path
+        where we can't infer cadence from ``np.diff`` and have to fall back
+        on ``rule.data_request_variable.frequency`` / ``rule.frequency``.
 
     Returns
     -------
     np.ndarray
         Array of shape (n, 2) with start/end bounds per time point.
     """
+    # Single-stamp yearly files (LPJ-GUESS one-year output, FESOM 1-year
+    # chunks) need bnds even though np.diff returns empty. The top-level
+    # ``time_bounds`` already gated this with _looks_yearly, so trust the
+    # signal and snap to (year_start, next_year_start).
     if len(time_values) < 2:
+        if _looks_yearly(rule, approx_interval):
+            logger.info("  single-stamp yearly data, using year-start bounds")
+            return _create_yearly_bounds(time_values)
         raise ValueError("Cannot create mean time bounds: need at least 2 time points")
 
     # For numpy datetime64 we can cast directly; cftime objects need
@@ -307,6 +338,22 @@ def _create_mean_bounds(time_values, approx_interval):
     if data_looks_daily and not approx_disagrees_daily:
         logger.info("  detected daily data, using day-start bounds")
         return _create_daily_bounds(time_values)
+
+    # Yearly data: snap each stamp's bnds to (Jan 1, next Jan 1). LPJ-GUESS
+    # yearly broadcast writes mid-year (Jul 1) stamps; FESOM yearly chunks
+    # can land anywhere in the year. Either way, the canonical CMIP yearly
+    # bnds span the calendar year and the midpoint is ~Jul 2. Without this,
+    # wcrp TIME001 expects midpoint = (Jan 1, next Jan 1) / 2 but the file
+    # ships the raw stamp, off by however far the stamp is from Jul 2.
+    # 360_day calendars also fall in this band hence the [360, 370] range.
+    data_looks_yearly = 360 <= data_freq_days <= 370
+    approx_disagrees_yearly = (
+        approx_interval is not None
+        and not (360 <= approx_interval <= 370)
+    )
+    if data_looks_yearly and not approx_disagrees_yearly:
+        logger.info("  detected yearly data, using year-start bounds")
+        return _create_yearly_bounds(time_values)
 
     # Default: consecutive time points as bounds
     time_diff = np.median(np.diff(time_values))
@@ -380,3 +427,63 @@ def _create_daily_bounds(time_values):
         next_day_start = day_start + one_day
         bounds_data.append([day_start, next_day_start])
     return np.array(bounds_data, dtype=object)
+
+
+def _create_yearly_bounds(time_values):
+    """Create yearly bounds as (year_start, next_year_start).
+
+    Snaps the per-cell bnds to Jan 1 of the same year and Jan 1 of the next
+    year, regardless of where the input timestamp lies within the year.
+    LPJ-GUESS yearly broadcast writes mid-year (Jul 1) stamps, FESOM yearly
+    chunks can land anywhere — neither is the canonical CMIP yearly cell
+    boundary. wcrp TIME001 builds its expected midpoint from (Jan 1, next
+    Jan 1) using the FREQ_INC mapping; without these snapped bnds the time
+    coordinate is off by however far the source stamp lies from Jul 2.
+    Handles both numpy ``datetime64`` and ``cftime`` object arrays.
+    """
+    if np.issubdtype(time_values.dtype, np.datetime64):
+        starts = time_values.astype("datetime64[Y]").astype("datetime64[ns]")
+        # ``datetime64[Y] + 1`` is "next Jan 1" exactly.
+        nexts = (time_values.astype("datetime64[Y]") + np.timedelta64(1, "Y")).astype(
+            "datetime64[ns]"
+        )
+        return np.column_stack([starts, nexts])
+
+    bounds_data = []
+    for time_val in time_values:
+        year_start = time_val.replace(
+            month=1, day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+        next_year_start = year_start.replace(year=time_val.year + 1)
+        bounds_data.append([year_start, next_year_start])
+    return np.array(bounds_data, dtype=object)
+
+
+def _looks_yearly(rule, approx_interval):
+    """Heuristic: does this rule describe a yearly (or decadal) variable?
+
+    Used by the single-time-point branch of ``time_bounds`` and by the
+    cadence-blind branch of ``_create_mean_bounds`` to decide whether to
+    snap bnds to whole calendar years. Three signals, any of them is
+    sufficient:
+
+    * ``approx_interval`` in the [360, 370] day band (covers 365 standard,
+      360 for 360_day calendars, and 365.25 julian-ish edge cases).
+    * ``rule.data_request_variable.frequency`` is one of ``yr``, ``yrPt``,
+      ``dec``.
+    * ``rule.frequency`` (the rule-level convenience alias) is one of the
+      same set.
+    """
+    if approx_interval is not None:
+        try:
+            if 360 <= float(approx_interval) <= 370:
+                return True
+        except (TypeError, ValueError):
+            pass
+    yearly_freqs = ("yr", "yrPt", "dec")
+    drv = getattr(rule, "data_request_variable", None) if rule is not None else None
+    if drv is not None and getattr(drv, "frequency", None) in yearly_freqs:
+        return True
+    if rule is not None and getattr(rule, "frequency", None) in yearly_freqs:
+        return True
+    return False
