@@ -501,4 +501,14 @@ def get_encoding_with_chunks(
 
         encoding[var] = var_encoding
 
+    # CF §2.5.1 / §7.1: coordinate variables (lat, lon, time, lev, plev, ...)
+    # and bounds aux variables (time_bnds, lat_bnds, ...) must not carry
+    # _FillValue. xarray's default CF encoder otherwise emits a NaN fill on
+    # every float coord, which trips cf §7.1 ("The Boundary variables
+    # 'time_bnds' should not have the attributes: ['_FillValue']"). Mirror
+    # the matching loop in _encoding_from_dask_chunks so both the
+    # dask-aligned and the trigger_compute-eager save paths suppress it.
+    for cname in ds.coords:
+        encoding.setdefault(str(cname), {})["_FillValue"] = None
+
     return encoding
