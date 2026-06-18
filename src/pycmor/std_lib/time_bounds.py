@@ -67,6 +67,22 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
     approx_interval = getattr(rule, "approx_interval", None)
     time_method = getattr(rule, "time_method", None) or ds.attrs.get("time_method", "mean")
 
+    # Auto-detect tpt (time:point) variants from the data request's cell_methods.
+    # wcrp_cmip7 TIME001 reads cell_methods directly: if it contains "time: point",
+    # use_midpoint=False and the expected time is the filename start, not the bnds
+    # midpoint. Without this override, a default-mean rule on a tpt yearly LUT
+    # compound (e.g. land.cLitterLut.tpt-u-hxy-multi.yr.glb) builds year-snap
+    # bnds and writes time at year-midpoint, tripping TIME001 with "expected
+    # -182.0 (year_start in days since year_mid epoch), got 0.5 (mid-year)".
+    if time_method == "mean":
+        drv = getattr(rule, "data_request_variable", None)
+        cm = (getattr(drv, "cell_methods", "") or "").lower() if drv else ""
+        if "time: point" in cm:
+            time_method = "instantaneous"
+            logger.info(
+                "  cell_methods has 'time: point'; overriding time_method to instantaneous"
+            )
+
     logger.info(f"  time label: {time_label}, approx_interval: {approx_interval} days")
     logger.info(f"  time method: {time_method}")
 
@@ -159,8 +175,22 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
     logger.info(f"  {len(time_values)} points from {time_values[0]} to {time_values[-1]}")
 
     if time_method == "instantaneous":
-        bounds_data = np.column_stack([time_values, time_values])
-        new_time_values = None
+        # tpt yearly LUT compounds (e.g. land.cLitterLut.tpt-u-hxy-multi.yr.glb)
+        # carry cell_methods "... time: point" and ship one stamp per file.
+        # wcrp TIME001 sets use_midpoint=False when cell_methods says
+        # "time: point" and compares the actual time to the filename start.
+        # Build year-snapped bnds (so the bnds span the period the file
+        # represents) and pin time to the bnds start, not midpoint.
+        if _looks_yearly(rule, approx_interval) and len(time_values) >= 1:
+            bounds_data = _create_mean_bounds(time_values, approx_interval, rule=rule)
+            new_time_values = bounds_data[:, 0]
+            logger.info(
+                "  yearly + instantaneous (tpt): bnds = year-snap, "
+                "time = period_start"
+            )
+        else:
+            bounds_data = np.column_stack([time_values, time_values])
+            new_time_values = None
     else:
         bounds_data = _create_mean_bounds(time_values, approx_interval, rule=rule)
         # CF/CMIP and wcrp TIME001 require coord == midpoint(bnds). Source

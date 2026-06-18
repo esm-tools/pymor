@@ -2038,6 +2038,26 @@ def _save_dataset_impl(da: xr.DataArray, rule):
     if time_label and time_label in da.variables:
         _force_canonical_time_encoding(da, time_label)
 
+    # cli71 fix: ensure time_bnds is present on the dataset before either
+    # save path runs. The std_lib.set_time_bounds wrapper builds bnds when
+    # the payload is a Dataset, but when the upstream pipeline carried a
+    # DataArray (DefaultPipeline after get_variable/timeavg), the wrapper
+    # has to drop the bnds aux (xarray refuses a `bnds` dim on a payload
+    # DataArray) and the parent coord arrives bare. The resample-group
+    # save path re-runs set_time_bounds per group, but the
+    # native-timespan path does not — so a FESOM yearly rule that lands
+    # on native-timespan (whichever way the non-deterministic
+    # file_timespan vs approx_interval comparison falls today) ships a
+    # bnds-free file and trips wcrp TIME003.
+    if time_label and time_label in da.variables and f"{time_label}_bnds" not in da.variables:
+        try:
+            from .time_bounds import time_bounds as _re_set_time_bounds
+            da = _re_set_time_bounds(da, rule)
+        except Exception as _exc:
+            logger.warning(
+                f"save_dataset: could not re-attach time_bnds: {_exc}"
+            )
+
     if not has_time_axis(da):
         filepath = create_filepath(da, rule)
         # Calculate chunking encoding

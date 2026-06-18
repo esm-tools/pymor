@@ -539,7 +539,18 @@ class CMIP7DataRequestVariable(DataRequestVariable):
         def _is_sentinel(v):
             return isinstance(v, str) and v.strip().startswith("::")
 
-        return {k: v for k, v in attrs.items() if v is not None and v != "" and not _is_sentinel(v)}
+        # cell_measures="" is the CMIP7 canonical value for scalar variables
+        # without spatial cell-measures (siextent, sivol, siarea, sisnmass,
+        # mass-int compounds, ...). wcrp ATTR001 requires the attr to be
+        # present even when empty — drop the empty-string filter only for
+        # cell_measures; the other empty-string fields stay dropped so an
+        # accidental blank standard_name/long_name doesn't get written.
+        return {
+            k: v for k, v in attrs.items()
+            if v is not None
+            and (v != "" or k == "cell_measures")
+            and not _is_sentinel(v)
+        }
 
     @property
     def cell_measures(self) -> str:
