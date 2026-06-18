@@ -145,6 +145,14 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
                     )
         if "bounds" not in ds[time_label].attrs:
             ds[time_label].attrs["bounds"] = time_bounds_label
+        # CF §7.1: time_bnds must NOT carry boundary-related attrs of its
+        # own (long_name, units, standard_name, calendar, axis, ...).
+        # They inherit from the parent coord at read time. The newly-built
+        # bnds path strips these to ``attrs={}``; the existing-bnds path
+        # (e.g. LPJ-GUESS daily where the source ships time_bnds with a
+        # stale long_name) needs the same cleanup so cf §7.1 doesn't
+        # report "non matching boundary related attributes: ['long_name']".
+        _strip_bnds_inheritable_attrs(ds[time_bounds_label])
         _force_canonical_time_encoding(ds, time_label)
         return ds
 
@@ -207,6 +215,34 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
 
     logger.info(f"  set {time_bounds_label}{bounds.shape}, " f"range: {bounds.values[0][0]} to {bounds.values[-1][-1]}")
     return ds
+
+
+def _strip_bnds_inheritable_attrs(bnds_var):
+    """Drop attrs that bounds variables MUST inherit from the parent coord
+    per CF §7.1, rather than declare themselves. Mirrors the empty-attrs
+    construction on the freshly-built bnds path so the existing-bnds
+    path (passed through from a source file, e.g. LPJ-GUESS daily) ends
+    up with the same surface.
+
+    The CF spec forbids bnds vars from carrying their own boundary-
+    related attrs; if any are present, cf §7.1 flags a mismatch against
+    the parent coord. Stripping them is the canonical fix.
+    """
+    for attr in (
+        "long_name",
+        "standard_name",
+        "units",
+        "calendar",
+        "axis",
+        "positive",
+        "leap_month",
+        "leap_year",
+        "month_lengths",
+        "climatology",
+        "bounds",
+        "comment",
+    ):
+        bnds_var.attrs.pop(attr, None)
 
 
 def _force_canonical_time_encoding(ds, time_label):
