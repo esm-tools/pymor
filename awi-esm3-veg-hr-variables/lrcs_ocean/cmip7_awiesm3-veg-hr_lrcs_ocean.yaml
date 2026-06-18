@@ -284,6 +284,28 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
       - pycmor.std_lib.qc.run_compliance_checker
 
+  # As nan_to_zero_pipeline but with a scale_by_constant step after the
+  # NaN replacement, for variables whose source unit differs from the
+  # CMIP target by a scalar factor (e.g. vsfcorr: m s-1 psu * 1.025
+  # -> kg m-2 s-1). Rule must set scale_factor + scaled_units.
+  - name: nan_to_zero_scale_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script://$PYCMOR_HOME/examples/custom_steps.py:nan_to_zero
+      - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.set_time_bounds
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
+
   # Scale by constant then vertically integrate (hfx_int_day, hfy_int_day)
   - name: scale_and_integrate_pipeline
     steps:
@@ -547,15 +569,23 @@ rules:
   # relaxsalt stream — the source file is all _FillValue. We replace
   # NaN with 0 to comply with the CMIP convention. If SSS restoring is
   # ever enabled (`surf_relax_s != 0`), real values pass through.
+  #
+  # Unit conversion: source is `m s-1 psu` (velocity × salinity-as-
+  # per-mille); registry wants `kg m-2 s-1` (mass flux). The conversion
+  # is m/s × g/kg × ρ₀ (1025 kg/m³) = 1.025 kg/m²/s. The 1e-3 prefix on
+  # psu cancels the 1000 g/kg in seawater density. nan_to_zero_scale_pipeline
+  # adds scale_by_constant after nan_to_zero so the multiplication runs on
+  # the now-zeroed array.
   - name: vsfcorr
     inputs:
       - path: *dp
         pattern: relaxsalt\.fesom\.\d{4}\.nc
     compound_name: ocean.vsfcorr.tavg-u-hxy-sea.mon.glb
     model_variable: relaxsalt
-    model_unit: "kg m-2 s-1"
+    scale_factor: 1.025
+    scaled_units: "kg m-2 s-1"
     pipelines:
-      - nan_to_zero_pipeline
+      - nan_to_zero_scale_pipeline
 
   # ============================================================
   # Daily fields

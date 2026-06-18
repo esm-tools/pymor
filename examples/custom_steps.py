@@ -4744,6 +4744,14 @@ def compute_hfbasin_tripyview(data, rule):
         "units": "degrees_north",
         "axis": "Y",
     })
+    # wcrp ATTR001 requires the basin sector axis to declare
+    # standard_name=region. Pycmor's set_coordinates step doesn't know
+    # about the basin coord since it's not a spatiotemporal axis; attach
+    # the CMIP/CF attrs here at construction.
+    hfbasin["basin"].attrs.update({
+        "standard_name": "region",
+        "long_name": "Region Selection",
+    })
     return hfbasin.to_dataset()
 
 
@@ -4915,6 +4923,12 @@ def compute_sltbasin_tripyview(data, rule):
         "long_name": "Latitude",
         "units": "degrees_north",
         "axis": "Y",
+    })
+    # wcrp ATTR001 requires the basin sector axis to declare
+    # standard_name=region (see compute_hfbasin_tripyview for context).
+    sltbasin["basin"].attrs.update({
+        "standard_name": "region",
+        "long_name": "Region Selection",
     })
     return sltbasin.to_dataset()
 

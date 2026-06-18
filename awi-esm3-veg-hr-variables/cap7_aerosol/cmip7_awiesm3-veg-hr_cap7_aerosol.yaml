@@ -109,36 +109,36 @@ rules:
   # od550aer dropped: MACv2-SP represents only anthropogenic simple-plume AOD,
   # not total AOD as CMIP7 requires. No prognostic/other aerosol in this config.
 
-  # cfc11: global-mean mole fraction from input4MIPs annual GHG forcing file
-  # cfc11 (ppt) -> mol/mol via scale_factor=1e-12; annual -> monthly by ffill
+  # cfc11: global-mean mole fraction from input4MIPs annual GHG forcing file.
+  # CMIP7 registry says units='1E-12' (file values are in ppt, label is the
+  # scaling factor); annual -> monthly by ffill in the pipeline.
   - name: cfc11_mon
     inputs:
       - path: *ghg
         pattern: cfc11_input4MIPs_GHGConcentrations_CMIP_CR-CMIP-1-0-0_gm_1750-2022\.nc
     compound_name: atmosChem.cfc11.tavg-u-hm-air.mon.glb
     model_variable: cfc11
-    scale_factor: 1.0e-12
-    scaled_units: "mol mol-1"
+    scale_factor: 1.0
+    scaled_units: "1E-12"
     skip_input_year_filter: true
     pipelines:
       - ghg_scalar_pipeline
 
-  # cfc12: global-mean mole fraction from input4MIPs annual GHG forcing file
-  # cfc12 (ppt) -> mol/mol via scale_factor=1e-12; annual -> monthly by ffill
+  # cfc12: same shape as cfc11 (ppt -> file labelled 1E-12).
   - name: cfc12_mon
     inputs:
       - path: *ghg
         pattern: cfc12_input4MIPs_GHGConcentrations_CMIP_CR-CMIP-1-0-0_gm_1750-2022\.nc
     compound_name: atmosChem.cfc12.tavg-u-hm-air.mon.glb
     model_variable: cfc12
-    scale_factor: 1.0e-12
-    scaled_units: "mol mol-1"
+    scale_factor: 1.0
+    scaled_units: "1E-12"
     skip_input_year_filter: true
     pipelines:
       - ghg_scalar_pipeline
 
-  # ch4: global-mean mole fraction from input4MIPs annual GHG forcing file
-  # ch4 (ppb) -> mol/mol via scale_factor=1e-9; annual -> monthly by ffill
+  # ch4: global-mean mole fraction from input4MIPs annual GHG forcing file.
+  # CMIP7 registry says units='1E-09' (file values are in ppb).
   # Note: AWI-ESM3-VEG-HR uses well-mixed prescribed CH4 (no spatial variation).
   # CMIP7 guidance: "if CH4 is spatially uniform, omit 3D field, report global mean instead."
   - name: ch4_mon
@@ -147,24 +147,21 @@ rules:
         pattern: ch4_input4MIPs_GHGConcentrations_CMIP_CR-CMIP-1-0-0_gm_1750-2022\.nc
     compound_name: atmosChem.ch4.tavg-u-hm-air.mon.glb
     model_variable: ch4
-    scale_factor: 1.0e-9
-    scaled_units: "mol mol-1"
+    scale_factor: 1.0
+    scaled_units: "1E-09"
     skip_input_year_filter: true
     pipelines:
       - ghg_scalar_pipeline
 
-  # n2o: global-mean mole fraction from input4MIPs annual GHG forcing file
-  # n2o (ppb) -> mol/mol via scale_factor=1e-9; annual -> monthly by ffill
-  # Note: AWI-ESM3-VEG-HR uses well-mixed prescribed N2O (no spatial variation).
-  # CMIP7 guidance: "if N2O is spatially uniform, omit 3D field, report global mean instead."
+  # n2o: same shape as ch4 (ppb -> file labelled 1E-09).
   - name: n2o_mon
     inputs:
       - path: *ghg
         pattern: n2o_input4MIPs_GHGConcentrations_CMIP_CR-CMIP-1-0-0_gm_1750-2022\.nc
     compound_name: atmosChem.n2o.tavg-u-hm-air.mon.glb
     model_variable: n2o
-    scale_factor: 1.0e-9
-    scaled_units: "mol mol-1"
+    scale_factor: 1.0
+    scaled_units: "1E-09"
     skip_input_year_filter: true
     pipelines:
       - ghg_scalar_pipeline
