@@ -97,6 +97,7 @@ class DimensionMapper:
         "time": [
             r"^time\d*$",
             r"^t$",
+            r"^time_counter$",
         ],
     }
 
@@ -466,9 +467,30 @@ class DimensionMapper:
             if source_dim != cmip_dim:
                 rename_dict[source_dim] = cmip_dim
                 logger.info(f"  Renaming: {source_dim} → {cmip_dim}")
+                # Also rename the matching `{source}_bnds` aux variable if
+                # present. xr.Dataset.rename({src: tgt}) only renames the
+                # dim and its index coord; a separately-named bounds aux
+                # (e.g. `time_counter_bnds` from LPJ-GUESS / NEMO-style
+                # output) is left under its old name, which then trips
+                # cf §7.1 (orphan bnds) and wcrp TIME003 (no `time` var).
+                src_bnds = f"{source_dim}_bnds"
+                tgt_bnds = f"{cmip_dim}_bnds"
+                if src_bnds in ds.variables and tgt_bnds not in ds.variables:
+                    rename_dict[src_bnds] = tgt_bnds
+                    logger.info(f"  Renaming bnds: {src_bnds} → {tgt_bnds}")
 
         if rename_dict:
             ds = ds.rename(rename_dict)
+            # Fix up the `bounds` attr pointer on the renamed coord so it
+            # references the renamed bnds aux, not the old name.
+            for source_dim, cmip_dim in mapping.items():
+                if source_dim == cmip_dim or cmip_dim not in ds.variables:
+                    continue
+                coord_attrs = ds[cmip_dim].attrs
+                old_bnds = f"{source_dim}_bnds"
+                new_bnds = f"{cmip_dim}_bnds"
+                if coord_attrs.get("bounds") == old_bnds and new_bnds in ds.variables:
+                    coord_attrs["bounds"] = new_bnds
             logger.info(f"Renamed {len(rename_dict)} dimensions")
         else:
             logger.info("No dimension renaming needed")

@@ -298,6 +298,19 @@ def _force_canonical_time_encoding(ds, time_label):
             enc["units"] = derived
 
     enc["dtype"] = "float64"
+    # cf §3.3 / §5.1 / wcrp ATTR001: parent time coord MUST carry
+    # standard_name='time' and axis='T'. Some sources (FESOM monthly via
+    # timeavg) drop these when the time coord is rebuilt; restore them
+    # unconditionally so the checker is happy. long_name is advisory but
+    # cf §3.3 flags its absence on the time coord at HIGH; keep it set.
+    coord.attrs.setdefault("standard_name", "time")
+    coord.attrs.setdefault("long_name", "time")
+    coord.attrs.setdefault("axis", "T")
+    # cf §7.1 forbids _FillValue (and any other non-bounds attr) on the
+    # time coord itself, but xarray's default encoder ALWAYS emits a
+    # _FillValue for float dtypes unless explicitly suppressed. Set None
+    # in encoding to disable it.
+    enc["_FillValue"] = None
 
     bnds_label = f"{time_label}_bnds"
     if bnds_label in ds.variables:
@@ -307,6 +320,11 @@ def _force_canonical_time_encoding(ds, time_label):
         if "units" in enc:
             b_enc["units"] = enc["units"]
         b_enc["dtype"] = "float64"
+        # Same _FillValue suppression as the parent coord: cf §7.1
+        # explicitly bans `_FillValue` on bounds variables ("The Boundary
+        # variables 'time_bnds' should not have the attributes:
+        # ['_FillValue']"). xarray adds it by default for float dtype.
+        b_enc["_FillValue"] = None
         # time_bnds inherits the parent coord's units/calendar at write time;
         # keep its own attrs empty (cf §7.1).
         ds[bnds_label].attrs.pop("units", None)
