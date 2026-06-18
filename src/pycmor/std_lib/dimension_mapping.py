@@ -461,6 +461,19 @@ class DimensionMapper:
             ds_mapped = mapper.apply_mapping(ds, {'latitude': 'lat', 'longitude': 'lon'})
         """
         logger.info("Applying dimension mapping")
+        # CMIP convention: the on-disk time-axis variable is ALWAYS named
+        # "time", regardless of which CMOR axis ID (time / time1 / time2 /
+        # time3) the data request points at. The numeric suffix only drives
+        # the cell_methods string ("time: point" vs "time: mean") inside
+        # CMOR; it is NOT a separate dim name. wcrp_cmip7 TIME003 and
+        # ATTR001 hardcode "time", so a tpt-style file shipped with dim
+        # name "time1" trips them ("Missing 'time' variable") even though
+        # the data request asks for axis time1. Collapse here so the file
+        # writes "time".
+        mapping = {
+            src: ("time" if tgt in ("time1", "time2", "time3") else tgt)
+            for src, tgt in mapping.items()
+        }
         rename_dict = {}
 
         for source_dim, cmip_dim in mapping.items():
