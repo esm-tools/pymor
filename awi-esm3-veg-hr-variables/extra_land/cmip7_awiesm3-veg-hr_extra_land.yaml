@@ -167,7 +167,7 @@ rules:
     inputs:
       - path: *ldp
         pattern: "*/run1/lai_monthly.out"
-    compound_name: land.lai.tavg-u-hxy-lnd.day.glb
+    compound_name: land.lai.tavg-u-hxy-lnd.mon.glb
     model_variable: lai
     source_units: "m2 m-2"
     pipelines:
