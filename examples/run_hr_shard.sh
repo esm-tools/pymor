@@ -75,6 +75,17 @@ shard_basename=$(basename "$shard_yaml" .yaml)
 source ~/loadconda.sh
 conda activate pycmor_py312
 
+# Refresh esgvoc CV cache on this compute node before pycmor / esgvoc
+# imports. SLURM nodes can hold an older snapshot than the one used to
+# draft rules locally. cli69 showed 28 HIGH findings (14 ATTR004 +
+# 14 FILE001) for the `30s-90s` region term that IS in upstream
+# cmip7@1.2.6 but was missing on the workers. Each `esgvoc use` is
+# idempotent and roughly a second when already current. Soft-fail so a
+# briefly-down registry doesn't abort the run. The HIGH finding
+# reappearing is itself the signal that the refresh didn't take.
+esgvoc use universe@latest 2>/dev/null || echo "esgvoc universe refresh failed (continuing with current cache)"
+esgvoc use cmip7@latest 2>/dev/null || echo "esgvoc cmip7 refresh failed (continuing with current cache)"
+
 cd /work/ab0246/a270092/software/pycmor
 export PYCMOR_HOME=/work/ab0246/a270092/software/pycmor
 

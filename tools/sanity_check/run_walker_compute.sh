@@ -27,6 +27,16 @@ set -e
 source ~/loadconda.sh
 conda activate pycmor_py312
 
+# Refresh esgvoc CV cache on this compute node before the walker
+# imports esgvoc. A stale CV snapshot on the worker emits spurious
+# HIGH ATTR004 / FILE001 findings even when the term IS in the
+# upstream registry (cli69 30s-90s region case). Each `esgvoc use` is
+# idempotent and roughly a second when already current. Soft-fail so
+# an offline registry doesn't abort the walk; stale-cache findings
+# are the signal that the refresh didn't take.
+esgvoc use universe@latest 2>/dev/null || echo "esgvoc universe refresh failed (continuing with current cache)"
+esgvoc use cmip7@latest 2>/dev/null || echo "esgvoc cmip7 refresh failed (continuing with current cache)"
+
 # BLOSC threads for fast zstd decompression; BLAS/OMP threads pinned to
 # 1 per worker so the 64 cores go to multiprocessing, not nested BLAS.
 export BLOSC_NTHREADS=4
