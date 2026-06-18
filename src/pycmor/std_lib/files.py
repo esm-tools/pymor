@@ -58,6 +58,10 @@ from .chunking import (
 )
 from .dataset_helpers import get_time_label, has_time_axis
 from .global_attributes import _collect_external_cell_measures
+from .time_bounds import (
+    _force_canonical_time_encoding,
+    canonicalize_time_in_encoding_dict,
+)
 
 import dask
 
@@ -1534,6 +1538,13 @@ def _save_dataset_with_native_timespan(
         datasets[i] = _ensure_lat_lon_bounds_and_external_vars(ds, rule)
         ds = datasets[i]
 
+        # Vector B (cli69): force canonical time encoding regardless of upstream
+        # pipeline state. Idempotent — re-running on already-canonical encoding
+        # is a no-op. Catches FESOM ocean rules whose chosen file_timespan path
+        # bypasses the resample-group code path that recomputes time_bounds.
+        if not is_fx and time_label in ds.variables:
+            _force_canonical_time_encoding(ds, time_label)
+
         paths.append(create_filepath(ds, rule))
 
     # Calculate chunking/compression encoding
@@ -1545,6 +1556,15 @@ def _save_dataset_with_native_timespan(
         chunk_encoding = _encoding_from_dask_chunks(datasets[0], rule)
     else:
         chunk_encoding = _calculate_netcdf_chunks(datasets[0], rule)
+
+    # Vector B (cli69): also patch the explicit encoding dict that gets passed
+    # to xr.save_mfdataset — it overrides ds[time_label].encoding for the
+    # named time variable, so the dataset-level force above is not enough
+    # on its own. Safe when there's no time coord (no-op for fx / ofx).
+    if not is_fx and time_label in datasets[0].variables:
+        enc_dict = chunk_encoding if isinstance(chunk_encoding, dict) else {}
+        canonicalize_time_in_encoding_dict(enc_dict, time_label, ds=datasets[0])
+        chunk_encoding = enc_dict
 
     # Default scheduler is "synchronous" to be safe with HDF5 thread-safety;
     # configurable per-rule (netcdf_write_scheduler) for write benchmarks
@@ -1897,9 +1917,17 @@ def _save_dataset_impl(da: xr.DataArray, rule):
         ds_temp = _ensure_lat_lon_bounds_and_external_vars(ds_temp, rule)
         chunk_encoding = _calculate_netcdf_chunks(ds_temp, rule)
         # Merge time encoding with chunk encoding
-        final_encoding = {time_label: time_encoding}
+        final_encoding = {time_label: dict(time_encoding)}
         if chunk_encoding:
             final_encoding.update(chunk_encoding)
+        # Vector B (cli69): force canonical time encoding even for the scalar
+        # time path (a one-point time coord still has calendar / units / dtype
+        # that need to round-trip CMIP-clean).
+        if time_label in ds_temp.variables:
+            _force_canonical_time_encoding(ds_temp, time_label)
+            canonicalize_time_in_encoding_dict(
+                final_encoding, time_label, ds=ds_temp
+            )
         return _atomic_to_netcdf(
             ds_temp,
             filepath,
@@ -2002,6 +2030,14 @@ def _save_dataset_impl(da: xr.DataArray, rule):
     for c in list(da.coords):
         da[c].encoding["_FillValue"] = None
 
+    # Vector B (cli69): force canonical time encoding on the dataset before
+    # branching to native-timespan or resample-group save paths. Both downstream
+    # paths then inherit the override on ds[time_label].encoding (and patch
+    # their per-write encoding dicts separately via
+    # ``canonicalize_time_in_encoding_dict``). Idempotent.
+    if time_label and time_label in da.variables:
+        _force_canonical_time_encoding(da, time_label)
+
     if not has_time_axis(da):
         filepath = create_filepath(da, rule)
         # Calculate chunking encoding
@@ -2095,6 +2131,12 @@ def _save_dataset_impl(da: xr.DataArray, rule):
                     group_ds[_c].encoding["_FillValue"] = None
                 # CMIP7 cchecker ATTR001: ensure lat/lon bounds on regular grids
                 group_ds = _ensure_lat_lon_bounds_and_external_vars(group_ds, rule)
+                # Vector B (cli69): force canonical time encoding on every group
+                # dataset before save. Idempotent; covers the case where the
+                # upstream pipeline already ran set_time_bounds (no-op) and the
+                # case where a custom pipeline skipped it.
+                if time_label in group_ds.variables:
+                    _force_canonical_time_encoding(group_ds, time_label)
                 datasets.append(group_ds)
             # Calculate chunking encoding — align with dask chunks for streaming writes
             is_dask = any(_is_dask_backed(ds) for ds in datasets)
@@ -2123,6 +2165,15 @@ def _save_dataset_impl(da: xr.DataArray, rule):
                         if time_label in _ds.variables:
                             _ds[time_label].attrs.pop("units", None)
                             _ds[time_label].encoding["units"] = _units
+            # Vector B (cli69): final_encoding[time] gets passed straight to
+            # xr.save_mfdataset and wins over ds[time_label].encoding for any
+            # key it carries. Force canonical calendar / units / dtype here so
+            # nothing the upstream pipeline did can leak a non-canonical value
+            # onto disk (and so future writes that build final_encoding the
+            # same way inherit the override for free). Idempotent.
+            canonicalize_time_in_encoding_dict(
+                final_encoding, time_label, ds=datasets[0]
+            )
             # See the parallel-mode HLG-pickling note above the other
             # save_mfdataset call site. Same Fix #3 worker-compute path
             # applied via the shared helper.

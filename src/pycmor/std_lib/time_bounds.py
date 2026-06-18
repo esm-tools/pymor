@@ -217,12 +217,20 @@ def _force_canonical_time_encoding(ds, time_label):
       date after 1582-10-15).
     - units: rewrite ``seconds since`` to ``days since`` (CMIP convention;
       xarray re-encodes the same cftime objects at the new unit, no data
-      mutation needed). Leaves the reference date unchanged.
+      mutation needed). Leaves the reference date unchanged. Also strips
+      fractional seconds and ISO ``T``/``Z`` separators from the reference
+      date so the CMIP grammar ``days since YYYY-M-D( HH:MM:SS)?`` accepts
+      it (wcrp_cmip7 ATTR004 / cchecker units-regex). When the source has
+      no units string at all, derives a date-only ``days since YYYY-MM-DD``
+      from the first time value so xarray's default encoder doesn't invent
+      a ``.000000`` fractional-seconds reference.
     - dtype: force ``float64`` (CMIP cmor-tables specify ``type=double`` for
       time; FESOM/XIOS sometimes ships ``int64`` and writes seconds, which
       then trips wcrp_cmip7 VAR005 ``time dtype int64 (expected float)``).
     - Propagate the same encoding to ``time_bnds`` so its units / dtype /
       calendar match.
+
+    Idempotent: re-calling on already-canonical state is a no-op.
     """
     if time_label not in ds.variables:
         return
@@ -233,12 +241,25 @@ def _force_canonical_time_encoding(ds, time_label):
     cal_attr = coord.attrs.get("calendar")
     if (cal_enc in (None, "standard", "gregorian")) and (cal_attr in (None, "standard", "gregorian")):
         enc["calendar"] = "proleptic_gregorian"
-        coord.attrs.pop("calendar", None)
+    # Always strip a stale attrs["calendar"]: xarray's CF encoder refuses to
+    # write encoding["calendar"] if attrs already carries the key, and a
+    # non-canonical value there would also leak straight onto disk regardless
+    # of what encoding says.
+    coord.attrs.pop("calendar", None)
 
     units = enc.get("units") or coord.attrs.get("units")
-    if isinstance(units, str) and units.startswith("seconds since"):
-        enc["units"] = "days since" + units[len("seconds since"):]
+    if isinstance(units, str):
+        units = _canonicalize_time_units_str(units)
+        enc["units"] = units
         coord.attrs.pop("units", None)
+    else:
+        # No units set anywhere: derive a date-only epoch from the first
+        # time value. Otherwise xarray's default CF encoder will mint a
+        # ``days since YYYY-MM-DD HH:MM:SS.000000`` reference at write time,
+        # which trips the wcrp_cmip7 / cchecker units regex.
+        derived = _derive_date_only_units(coord)
+        if derived:
+            enc["units"] = derived
 
     enc["dtype"] = "float64"
 
@@ -254,6 +275,154 @@ def _force_canonical_time_encoding(ds, time_label):
         # keep its own attrs empty (cf §7.1).
         ds[bnds_label].attrs.pop("units", None)
         ds[bnds_label].attrs.pop("calendar", None)
+
+
+def _derive_date_only_units(time_coord):
+    """Return a CMIP-canonical ``days since YYYY-MM-DD`` derived from the
+    first value of ``time_coord``. Returns ``None`` if the coord is empty
+    or the value cannot be coerced into a date.
+    """
+    try:
+        v = time_coord.values
+    except Exception:
+        return None
+    if v is None or getattr(v, "size", len(v) if hasattr(v, "__len__") else 0) == 0:
+        return None
+    first = v[0] if hasattr(v, "__getitem__") else v
+    # cftime objects expose year/month/day attributes directly.
+    try:
+        return f"days since {first.year:04d}-{first.month:02d}-{first.day:02d}"
+    except AttributeError:
+        pass
+    # numpy datetime64 or python datetime: format via pandas for portability.
+    try:
+        import pandas as pd
+        ts = pd.Timestamp(str(first))
+        return f"days since {ts:%Y-%m-%d}"
+    except Exception:
+        return None
+
+
+def _canonicalize_time_units_str(units):
+    """Rewrite a ``time:units`` string to the CMIP-canonical form:
+
+    - ``seconds since ...`` -> ``days since ...``
+    - strip fractional seconds from the reference date
+    - strip ISO ``T`` separator and trailing ``Z`` / ``z``
+    - collapse any reference-date time component (``HH:MM:SS``) to date-only
+
+    Returns the cleaned string. Safe to call repeatedly: already-canonical
+    inputs round-trip unchanged.
+
+    The date-only collapse is load-bearing: xarray's CF encoder
+    ``encode_cf_datetime`` reformats any ``days since YYYY-M-D HH:MM:SS``
+    units string with an ISO ``T`` separator on write (``days since
+    YYYY-M-DTHH:MM:SS``), which the wcrp_cmip7 ATTR004 / cchecker units
+    regex ``days since YYYY-M-D( HH:MM:SS)?`` rejects. Reducing the
+    reference to date-only preserves absolute time (the encoded values
+    are recomputed against the new epoch) and dodges the ``T`` rewrite.
+    """
+    if not isinstance(units, str):
+        return units
+    if units.startswith("seconds since"):
+        units = "days since" + units[len("seconds since"):]
+    parts = units.split(" ", 2)
+    # parts[0]="days", parts[1]="since", parts[2]=<reference-date-and-time>
+    if len(parts) >= 3:
+        ref = parts[2]
+        # ISO `T` between date and clock-time -> single space; drop trailing Z.
+        ref = ref.replace("T", " ").rstrip("Z").rstrip("z")
+        # Date-only: keep just the first whitespace-separated token. This
+        # also drops fractional seconds for free, and avoids xarray
+        # rewriting `HH:MM:SS` back to `THH:MM:SS` at encode time.
+        ref = ref.split(" ", 1)[0]
+        units = f"{parts[0]} {parts[1]} {ref}"
+    return units
+
+
+def canonicalize_time_in_encoding_dict(encoding, time_label, ds=None):
+    """Force canonical time encoding into the per-variable ``encoding`` dict
+    that gets passed to ``xr.Dataset.to_netcdf`` / ``xr.save_mfdataset``.
+
+    When pycmor builds a ``final_encoding`` dict and passes it to the writer,
+    that dict overrides whatever ``ds[time_label].encoding`` says, so
+    ``_force_canonical_time_encoding`` on the dataset alone is not enough.
+    This helper patches the dict so:
+
+    - ``time`` carries ``calendar='proleptic_gregorian'`` (wcrp_cmip7 TIME003a)
+    - ``time:units`` matches ``days since YYYY-M-D( HH:MM:SS)?`` (no
+      ``seconds since``, no fractional seconds, no ISO ``T``, no trailing ``Z``)
+    - ``time:dtype = float64`` (wcrp_cmip7 VAR005)
+    - ``time_bnds`` inherits the same calendar / units / dtype
+
+    Idempotent. ``ds`` is optional and only used to discover the source
+    units / calendar when the encoding dict doesn't already carry them.
+
+    Parameters
+    ----------
+    encoding : dict
+        Per-variable encoding dict (``{var_name: {key: value, ...}, ...}``).
+        Mutated in place; also returned for chaining.
+    time_label : str
+        Name of the time coordinate, e.g. ``"time"`` or ``"time1"``.
+    ds : xr.Dataset, optional
+        The dataset being written. Used as a fallback source for the
+        current ``units`` / ``calendar`` when the encoding dict doesn't
+        already carry them.
+
+    Returns
+    -------
+    dict
+        The (mutated) encoding dict.
+    """
+    if not isinstance(encoding, dict):
+        return encoding
+    t_enc = encoding.setdefault(time_label, {})
+
+    # Calendar: promote any "standard"/"gregorian"/None to proleptic_gregorian.
+    cal = t_enc.get("calendar")
+    if cal is None and ds is not None and time_label in ds.variables:
+        cal = (
+            ds[time_label].encoding.get("calendar")
+            or ds[time_label].attrs.get("calendar")
+        )
+    if cal in (None, "standard", "gregorian"):
+        t_enc["calendar"] = "proleptic_gregorian"
+    else:
+        t_enc["calendar"] = cal
+
+    # Units: pull current units from the encoding dict, then the dataset,
+    # then rewrite to canonical "days since ..." with no fractional seconds.
+    units = t_enc.get("units")
+    if units is None and ds is not None and time_label in ds.variables:
+        units = (
+            ds[time_label].encoding.get("units")
+            or ds[time_label].attrs.get("units")
+        )
+    if isinstance(units, str):
+        t_enc["units"] = _canonicalize_time_units_str(units)
+    elif ds is not None and time_label in ds.variables:
+        derived = _derive_date_only_units(ds[time_label])
+        if derived:
+            t_enc["units"] = derived
+
+    # Dtype: force float64 (CMIP cmor-tables: time is type=double).
+    t_enc["dtype"] = "float64"
+
+    # Propagate to time_bnds if present in the encoding dict or the dataset.
+    bnds_label = f"{time_label}_bnds"
+    has_bnds = bnds_label in encoding or (
+        ds is not None and bnds_label in ds.variables
+    )
+    if has_bnds:
+        b_enc = encoding.setdefault(bnds_label, {})
+        if "calendar" in t_enc:
+            b_enc["calendar"] = t_enc["calendar"]
+        if "units" in t_enc:
+            b_enc["units"] = t_enc["units"]
+        b_enc["dtype"] = "float64"
+
+    return encoding
 
 
 def _midpoint_bounds(bounds_data):
