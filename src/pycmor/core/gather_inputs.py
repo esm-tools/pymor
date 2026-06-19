@@ -464,10 +464,26 @@ def load_mfdataset(data, rule_spec):
         logger.info(f"  * {f}")
     _check_compatible_schemas(all_files, rule_spec)
     mf_ds = xr.open_mfdataset(all_files, **open_kwargs)
-    # Rename non-standard time dimension if specified in rule (e.g., OpenIFS uses different names)
+    # Rename non-standard time dimension if specified in rule (e.g., OpenIFS uses different names).
+    # If unspecified, auto-detect the XIOS/NEMO ``time_counter`` convention so
+    # downstream steps (timeavg, set_time_bounds, custom compute_X) get a
+    # ``time`` dim without each rule needing to set time_dimname explicitly.
+    # OpenIFS-XIOS 1hr/3hr/6hr files all ship time_counter; without auto-rename
+    # the data-level year filter below skips them, and arithmetic with a
+    # renamed secondary input drops time entirely.
     time_dimname = rule_spec.get("time_dimname")
+    if not time_dimname or time_dimname not in mf_ds.dims:
+        for cand in ("time_counter", "time_centered"):
+            if cand in mf_ds.dims and "time" not in mf_ds.dims:
+                time_dimname = cand
+                break
     if time_dimname and time_dimname in mf_ds.dims and "time" not in mf_ds.dims:
         mf_ds = mf_ds.rename({time_dimname: "time"})
+        # Companion bnds variable
+        for bnds_old, bnds_new in ((f"{time_dimname}_bounds", "time_bounds"),
+                                   (f"{time_dimname}_bnds", "time_bnds")):
+            if bnds_old in mf_ds.variables and bnds_new not in mf_ds.variables:
+                mf_ds = mf_ds.rename({bnds_old: bnds_new})
 
     # Data-level year filter (boundary-spill fix).
     # XIOS per-year input files at 3hr / day cadence include a single

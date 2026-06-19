@@ -2433,8 +2433,25 @@ def _load_secondary_mf_cached(path, pattern, variable_name, year_start, year_end
                 f"year range {year_start}–{year_end}"
             )
     ds = xr.open_mfdataset(files, use_cftime=True)
+    # Resolve the time-axis dim name. Explicit rule.time_dimname wins;
+    # otherwise auto-detect the XIOS/NEMO ``time_counter`` convention
+    # (FESOM, OpenIFS-XIOS files all ship time_counter). Without this
+    # auto-detect, secondary inputs would lose their time coord on the
+    # drop_vars line below — primary × secondary arithmetic then
+    # collapses time to size 0 via broadcasting (cli72 sfcWind 30s-90s
+    # ended up with `time: 0` for exactly this reason).
+    if not time_dimname or time_dimname not in ds.dims:
+        for cand in ("time_counter", "time_centered"):
+            if cand in ds.dims and "time" not in ds.dims:
+                time_dimname = cand
+                break
     if time_dimname and time_dimname in ds.dims and "time" not in ds.dims:
         ds = ds.rename({time_dimname: "time"})
+        # Companion bnds variable
+        bnds_old = f"{time_dimname}_bounds"
+        bnds_new = "time_bounds"
+        if bnds_old in ds.variables and bnds_new not in ds.variables:
+            ds = ds.rename({bnds_old: bnds_new})
     for _drop_var in ["time_counter", "time_centered", "time_counter_bounds", "time_centered_bounds"]:
         if _drop_var in ds.coords and _drop_var != "time":
             ds = ds.drop_vars(_drop_var, errors="ignore")
@@ -2535,6 +2552,11 @@ def _load_secondary_mf_uncached(rule, path_key, pattern_key, variable_key):
             )
     ds = xr.open_mfdataset(files, use_cftime=True)
     time_dimname = rule.get("time_dimname")
+    if not time_dimname or time_dimname not in ds.dims:
+        for cand in ("time_counter", "time_centered"):
+            if cand in ds.dims and "time" not in ds.dims:
+                time_dimname = cand
+                break
     if time_dimname and time_dimname in ds.dims and "time" not in ds.dims:
         ds = ds.rename({time_dimname: "time"})
     # Drop residual XIOS time variables that conflict with renamed 'time'
