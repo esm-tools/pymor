@@ -489,11 +489,18 @@ rules:
     model_variable: 10v
     lazy_write: true
 
+  # OIFS XIOS only emits sp at 1hr as ``atmos_1h_sfc_sp`` with
+  # operation="average" (time_centered stamps at HH:30). The CMIP7
+  # registry has both tpt-u-hxy-u.1hr.glb and tavg-u-hxy-u.1hr.glb for
+  # ps; producing tpt would require an ``atmos_1h_pt_sp`` source which
+  # the XIOS config doesn't declare. Use the tavg compound to match the
+  # source's actual time-averaging convention. (3hr / 6hr ps stay tpt
+  # via the ps_3hrPt / ps_6hr rules which DO have an instant source.)
   - name: ps_1hr
     inputs:
       - path: *dp
         pattern: atmos_1h_sfc_sp_.*\.nc
-    compound_name: atmos.ps.tpt-u-hxy-u.1hr.glb
+    compound_name: atmos.ps.tavg-u-hxy-u.1hr.glb
     model_variable: sp
     lazy_write: true
 

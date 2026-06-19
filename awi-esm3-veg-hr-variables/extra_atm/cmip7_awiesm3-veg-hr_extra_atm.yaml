@@ -226,14 +226,25 @@ rules:
     pipelines:
       - southern_hemisphere_pipeline
 
-  - name: ps_1hr_south30
-    inputs:
-      - path: *dp
-        pattern: atmos_1h_sfc_sp_.*\.nc
-    compound_name: atmos.ps.tpt-u-hxy-u.1hr.30S-90S
-    model_variable: sp
-    pipelines:
-      - southern_hemisphere_pipeline
+  # SOURCE MISMATCH (mirrors ts_3hr above):
+  # CMIP7 registry only has ``atmos.ps.tpt-u-hxy-u.1hr.30S-90S`` for
+  # the 30S-90S region (no tavg variant exists at 1hr regional).
+  # OIFS XIOS doesn't emit a 1h instant sp source — only
+  # ``atmos_1h_sfc_sp`` (operation="average", time_centered at HH:30).
+  # Producing ``tpt`` from averaged data mislabels the cell_methods.
+  # The unbranded ps_1hr rule was switched to ``tavg`` (the glb
+  # compound exists in both forms); the south30 rule has no such
+  # escape and is disabled until the XIOS config emits a 1h instant
+  # sp field.
+  # TODO: add ``atmos_1h_pt_sp`` to the OIFS XIOS file_def and rerun.
+  #- name: ps_1hr_south30
+  #  inputs:
+  #    - path: *dp
+  #      pattern: atmos_1h_sfc_sp_.*\.nc
+  #  compound_name: atmos.ps.tpt-u-hxy-u.1hr.30S-90S
+  #  model_variable: sp
+  #  pipelines:
+  #    - southern_hemisphere_pipeline
 
   - name: rlds_1hr_south30
     inputs:
@@ -283,12 +294,25 @@ rules:
       - hurs_pipeline
 
   # ts 3hr instantaneous (skin temperature)
-  - name: ts_3hr
-    inputs:
-      - path: *dp
-        pattern: atmos_1h_ts_ts_.*\.nc
-    compound_name: atmos.ts.tpt-u-hxy-u.3hr.glb
-    model_variable: ts
+  #
+  # SOURCE MISMATCH: CMIP7 registry only carries
+  # ``atmos.ts.tpt-u-hxy-u.3hr.glb`` (instantaneous), no ``tavg`` 3hr
+  # variant. OIFS XIOS does NOT emit an ``atmos_3h_pt_ts`` instant
+  # source; only ``atmos_1h_ts_ts`` exists (operation="average",
+  # time_centered at HH:30). Using that as ``tpt`` mislabels averaged
+  # data as instantaneous and ships the wrong cell_methods on disk.
+  # Until ``atmos_3h_pt_ts`` is added to the XIOS file_def, this rule
+  # cannot produce a CMIP7-correct output.
+  # TODO: add a 3h instant ts field_group to the OIFS XIOS config at
+  # /home/a/a270092/esm_tools/namelists/oifs/48r1/xios/cmip7/file_def_oifs_cmip7_spinup.xml.j2
+  # and rerun the affected piControl years. For now the rule is
+  # disabled by commenting; uncomment once the source exists.
+  #- name: ts_3hr
+  #  inputs:
+  #    - path: *dp
+  #      pattern: atmos_1h_ts_ts_.*\.nc
+  #  compound_name: atmos.ts.tpt-u-hxy-u.3hr.glb
+  #  model_variable: ts
 
   # ============================================================
   # Part 4: Daily fields

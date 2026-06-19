@@ -320,6 +320,23 @@ def timeavg(da: xr.DataArray, rule):
     # attach the frequency_str to rule, it is referenced when creating file name
     rule.frequency_str = frequency_str
     time_method = _get_time_method(drv.frequency)
+    # CMIP6 marked instantaneous frequencies with a "Pt" suffix (3hrPt,
+    # 6hrPt, monPt, ...) so _get_time_method's regex worked. CMIP7
+    # dropped the suffix — frequency is just "3hr"/"6hr"/"mon" and the
+    # signal lives in cell_methods ("time: point" vs "time: mean").
+    # Without this override, every CMIP7 tpt-* sub-daily / monthly rule
+    # is treated as MEAN here, which (a) runs .mean() instead of .first()
+    # on the resample and (b) applies the +interval*0.5 midpoint shift
+    # to instants. Net effect: stamps move +3h for 6hr / +1.5h for 3hr
+    # / +0.5h for 1hr, with cell_methods on disk still saying "time:
+    # point" — wrong values AND mismatched metadata.
+    cm = (getattr(drv, "cell_methods", "") or "").lower()
+    if "time: point" in cm and time_method != "INSTANTANEOUS":
+        logger.info(
+            f"  cell_methods has 'time: point'; overriding time_method "
+            f"({time_method} -> INSTANTANEOUS) for CMIP7 tpt rule"
+        )
+        time_method = "INSTANTANEOUS"
     rule.time_method = time_method
     # FESOM yearly files and concat'd hemispheric selects can yield a
     # non-monotonic time index, which breaks xr.resample. Sort once if needed.
