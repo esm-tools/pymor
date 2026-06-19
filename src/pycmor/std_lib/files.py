@@ -603,6 +603,59 @@ def _ensure_lat_lon_bounds_impl(ds, rule=None):
                 ds[bname] = new_b
             ds[bname].encoding["dtype"] = "float64"
             ds[bname].encoding["_FillValue"] = None
+
+    # cf §7.1 + dateline normalisation for longitude.
+    #
+    # FESOM unstructured triangles crossing the dateline ship vertices on
+    # BOTH branches (e.g. (179, -179, -180)) while FESOM's computed
+    # element centroid stores ``lon`` in just one branch. wcrp/cf §7.1
+    # then sees centroid outside the [min, max] vertex bbox even though
+    # the geometry is correct on the sphere. The cli72 / cli73 "1814
+    # point(s) lie outside lon_bnds" finding on difmxylo / tauuo / tauvo
+    # / sistressave is exactly this — dateline-crossing triangles, not
+    # float-precision drift (both lat and lon are already float64; lat
+    # passes because it doesn't wrap).
+    #
+    # Fix: shift each vertex into the 360° window centred on the
+    # centroid. This is identity-on-the-sphere; vertices stay near the
+    # canonical range (a few touch 181° or -181° at the dateline, which
+    # CF doesn't forbid), and the bbox now contains the centroid by
+    # construction. Vectorised so the 6.2M-elem 3D files don't churn
+    # Python.
+    for name in ("lon", "longitude"):
+        if name not in ds.variables:
+            continue
+        bname = f"{name}_bnds"
+        if bname not in ds.variables:
+            continue
+        coord = ds[name]
+        bnds = ds[bname]
+        if coord.ndim != 1 or bnds.ndim != 2 or bnds.shape[0] != coord.size:
+            continue
+        try:
+            cv = np.asarray(coord.values, dtype=np.float64)
+            bv = np.asarray(bnds.values, dtype=np.float64)
+            shifted = bv - 360.0 * np.round((bv - cv[:, np.newaxis]) / 360.0)
+            if not np.array_equal(shifted, bv):
+                logger.info(
+                    f"  → dateline normalise: shifted {int((shifted != bv).any(axis=1).sum())} "
+                    f"of {bv.shape[0]} {bname} rows into the 360-window of the centroid"
+                )
+                new_b = xr.DataArray(
+                    shifted,
+                    dims=bnds.dims,
+                    attrs=dict(bnds.attrs),
+                )
+                new_b.encoding = dict(bnds.encoding)
+                new_b.encoding["dtype"] = "float64"
+                new_b.encoding["_FillValue"] = None
+                ds[bname] = new_b
+        except Exception as exc:
+            logger.warning(
+                f"  → dateline normalise on {bname} failed: {exc}; "
+                f"leaving bnds unchanged"
+            )
+
     return ds
 
 
