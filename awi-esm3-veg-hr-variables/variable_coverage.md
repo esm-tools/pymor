@@ -208,7 +208,7 @@
 | `atmos.prw.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
 | `atmos.ps.tavg-u-hxy-u.day.glb` | ✅ |  | cap7 core |
 | `atmos.ps.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
-| `atmos.ps.tpt-u-hxy-u.1hr.30S-90S` | ✅ |  | extra |
+| `atmos.ps.tpt-u-hxy-u.1hr.30S-90S` | ❌ | production gap: OIFS XIOS emits ``atmos_1h_sfc_sp`` (averaged), no ``atmos_1h_pt_sp`` instant source. CMIP7 asks for ``time: point`` to preserve sub-hourly pressure-wave variability (storms, gravity waves over the Southern Ocean); shipping a 1-hour average mislabeled as instant defeats the scientific purpose of the variable. Production runs already underway; adding the XIOS field would require a model restart. Skipped honestly rather than mislabel. | extra |
 | `atmos.ps.tpt-u-hxy-u.1hr.glb` | ✅ |  | cap7 |
 | `atmos.ps.tpt-u-hxy-u.3hr.glb` | ✅ |  | veg |
 | `atmos.ps.tpt-u-hxy-u.6hr.glb` | ✅ |  | cap7 |
@@ -327,7 +327,7 @@
 | `atmos.ts.tavg-u-hxy-lnd.day.glb` | ❌ | Only 1hr/3hr/6hr/day/mon frequency implemented | veg |
 | `atmos.ts.tavg-u-hxy-u.1hr.glb` | ✅ |  | cap7 |
 | `atmos.ts.tavg-u-hxy-u.mon.glb` | ✅ |  | cap7 core |
-| `atmos.ts.tpt-u-hxy-u.3hr.glb` | ✅ |  | extra |
+| `atmos.ts.tpt-u-hxy-u.3hr.glb` | ❌ | production gap: OIFS XIOS emits ``atmos_1h_ts_ts`` (averaged), no ``atmos_3h_pt_ts`` instant source. CMIP7 asks for ``time: point`` to capture diurnal-cycle peaks; sampling a 1-hour average every 3 hours would smooth the daytime maximum that the variable was meant to record. Production runs already underway; adding the XIOS field would require a model restart. Skipped honestly rather than mislabel. | extra |
 | `atmos.ts.tpt-u-hxy-u.6hr.glb` | ✅ |  | cap7 |
 | `atmos.ua.tavg-p19-hxy-air.day.glb` | ✅ |  | cap7 core |
 | `atmos.ua.tavg-p19-hxy-air.mon.glb` | ✅ |  | cap7 core |
@@ -669,7 +669,7 @@
 | `ocean.agessc.tavg-ol-hxy-sea.mon.glb` | ❌ | Age tracer not enabled in current config (use_age_tracer=.false.) | lrcs |
 | `ocean.areacello.ti-u-hxy-u.fx.glb` | ✅ |  | cap7 core |
 | `ocean.basin.ti-u-hxy-u.fx.glb` | ✅ |  | cap7 core |
-| `ocean.bigthetao.tavg-ol-hm-sea.mon.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | lrcs |
+| `ocean.bigthetao.tavg-u-hm-sea.mon.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | lrcs |
 | `ocean.bigthetao.tavg-ol-hxy-sea.dec.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | lrcs |
 | `ocean.bigthetao.tavg-ol-hxy-sea.mon.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | cap7 core |
 | `ocean.chcint.tavg-op4-hxy-sea.mon.glb` | ❌ | FESOM uses potential temperature, not conservative temperature | lrcs |
@@ -780,7 +780,7 @@
 | `ocean.sltbasin.tavg-u-hyb-sea.mon.glb` | ❌ | Requires basin masks | lrcs |
 | `ocean.sltovgyre.tavg-u-hyb-sea.mon.glb` | ❌ | Requires basin masks + gyre/overturning decomposition | lrcs |
 | `ocean.sltovovrt.tavg-u-hyb-sea.mon.glb` | ❌ | Requires basin masks + gyre/overturning decomposition | lrcs |
-| `ocean.so.tavg-ol-hm-sea.mon.glb` | ✅ |  | lrcs |
+| `ocean.so.tavg-u-hm-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.so.tavg-ol-hxy-sea.dec.glb` | ✅ |  | lrcs |
 | `ocean.so.tavg-ol-hxy-sea.mon.glb` | ✅ |  | cap7 core |
 | `ocean.sob.tavg-u-hxy-sea.mon.glb` | ✅ |  | lrcs |
@@ -798,7 +798,7 @@
 | `ocean.tauvo.tavg-u-hxy-sea.3hr.glb` | ✅ |  | cap7 |
 | `ocean.tauvo.tavg-u-hxy-sea.dec.glb` | ✅ |  | lrcs |
 | `ocean.tauvo.tavg-u-hxy-sea.mon.glb` | ✅ |  | cap7 core |
-| `ocean.thetao.tavg-ol-hm-sea.mon.glb` | ✅ |  | lrcs |
+| `ocean.thetao.tavg-u-hm-sea.mon.glb` | ✅ |  | lrcs |
 | `ocean.thetao.tavg-ol-hxy-sea.dec.glb` | ✅ |  | lrcs |
 | `ocean.thetao.tavg-ol-hxy-sea.mon.glb` | ✅ |  | cap7 core |
 | `ocean.thetao.tavg-op20bar-hxy-sea.day.glb` | ❌ | Only dec/mon frequency implemented | lrcs |
