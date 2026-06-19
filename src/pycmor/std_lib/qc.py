@@ -158,10 +158,42 @@ def _run_cchecker(binary: str, tests: Iterable[str], criteria: str,
     return proc.returncode, (proc.stderr or proc.stdout or "")
 
 
+def _clean_cmip7repack_orphans(files: list[Path]) -> None:
+    """Remove ``<file>_cmip7repack`` intermediates next to each input.
+    cmip7repack writes the rechunked output to that suffix and then
+    renames it over the original. If the previous job was killed (SLURM
+    walltime, OOM, ...) between "successfully created" and the rename,
+    the partial intermediate stays on disk forever — corrupted (HDF
+    error on open) and taking GB per file on large 3D atm fields.
+    Sweep before and after each cmip7repack run so the next pass doesn't
+    inherit zombies and the current pass doesn't leave them."""
+    for fp in files:
+        orphan = fp.with_suffix(fp.suffix + "_cmip7repack")
+        if orphan.exists():
+            try:
+                size = orphan.stat().st_size
+                orphan.unlink()
+                logger.info(
+                    f"qc: removed stale cmip7repack orphan {orphan.name} "
+                    f"({size / 1024 / 1024:.0f} MB)"
+                )
+            except Exception as exc:
+                logger.warning(
+                    f"qc: could not remove cmip7repack orphan {orphan.name}: {exc}"
+                )
+
+
 def _run_cmip7repack(binary: str, files: list[Path]) -> None:
     """In-place ``cmip7repack -o`` over each file. Best-effort: per-file
     failures are logged but do not raise, so a single bad file doesn't
-    block the rest of the QC pass."""
+    block the rest of the QC pass.
+
+    Sweeps stale ``_cmip7repack`` intermediates before AND after each
+    invocation so a job that times out mid-repack doesn't leave 30 GB
+    of corrupted zombies on /scratch (cli72 observed pfull/cl_day
+    daily files at 137 levels — each repack takes well over an hour,
+    and 3-hour SLURM walltimes kill them mid-rename)."""
+    _clean_cmip7repack_orphans(files)
     for fp in files:
         cmd = [binary, "-o", str(fp)]
         logger.info(f"qc: running {' '.join(cmd)}")
@@ -171,6 +203,7 @@ def _run_cmip7repack(binary: str, files: list[Path]) -> None:
                 f"qc: cmip7repack rc={proc.returncode} on {fp.name}\n"
                 f"  stderr: {(proc.stderr or proc.stdout or '').strip()}"
             )
+    _clean_cmip7repack_orphans(files)
 
 
 def _strip_leading_underscore_attrs(files: list[Path]) -> None:
