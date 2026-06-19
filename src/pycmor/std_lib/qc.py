@@ -62,13 +62,19 @@ def _rule_files(rule) -> list[Path]:
     if not cmor_var:
         return []
     # CMIP7 compound_name format: <realm>.<var>.<branding>.<frequency>.<region>
-    # Including the frequency in the prefix is necessary to disambiguate
-    # two rules that share the same cmor_variable + branding_suffix but
-    # differ in frequency (e.g. siconc mon vs siconc day).
+    # Include branding + frequency + region in the prefix so two rules
+    # that share cmor_variable + branding + frequency but DIFFER in
+    # region (e.g. rlds_1hr_south30 vs rlds_1hr glb) don't pick up each
+    # other's files. The DRS filename layout is
+    # <var>_<branding>_<freq>_<region>_<grid>_..., so anchoring on
+    # ``..._<region>_`` is sufficient. Without this the south30 rule's
+    # qc strip + cchecker race against the glb rule's concurrent
+    # cmip7repack on the glb file and the sidecar records stale
+    # pre-strip findings (cli72 §2.3 _QuantizeBitGroom* on rlds_1hr_glb).
     compound = getattr(rule, "compound_name", "") or ""
     if compound.count(".") >= 4:
         parts = compound.split(".")
-        prefix = f"{cmor_var}_{parts[2]}_{parts[3]}_"
+        prefix = f"{cmor_var}_{parts[2]}_{parts[3]}_{parts[4]}_"
     else:
         prefix = f"{cmor_var}_"
     matches: list[Path] = []
