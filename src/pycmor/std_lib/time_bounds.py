@@ -174,23 +174,53 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
 
     logger.info(f"  {len(time_values)} points from {time_values[0]} to {time_values[-1]}")
 
-    if time_method == "instantaneous":
-        # tpt yearly LUT compounds (e.g. land.cLitterLut.tpt-u-hxy-multi.yr.glb)
-        # carry cell_methods "... time: point" and ship one stamp per file.
-        # wcrp TIME001 sets use_midpoint=False when cell_methods says
-        # "time: point" and compares the actual time to the filename start.
-        # Build year-snapped bnds (so the bnds span the period the file
-        # represents) and pin time to the bnds start, not midpoint.
-        if _looks_yearly(rule, approx_interval) and len(time_values) >= 1:
+    # wcrp_cmip7 TIME001 uses two signals to decide whether the file's
+    # time stamps should be at the period midpoint or the period start:
+    #
+    #   use_midpoint = (not instantaneous) and (freq in AVERAGE_CORRECTION_FREQ)
+    #   instantaneous = "time: point" in cell_methods  OR  freq NOT in AVG list
+    #
+    # AVG list (from cc-plugin-wcrp time_constants.py):
+    #   {"day", "mon", "monPt", "yr", "yrPt", "1hrCM", "sem"}
+    #
+    # So three groups want time = period_start (not midpoint):
+    #   1) any rule with cell_methods "time: point" (tpt-style)
+    #   2) any rule with a non-AVG frequency (dec, 3hr, 6hr, 1hr, ...)
+    #      even if cell_methods says "time: mean"
+    #   3) the union of the two: a tpt-style on a non-AVG freq
+    #
+    # Mirror that here so set_time_bounds writes what TIME001 expects.
+    drv = getattr(rule, "data_request_variable", None)
+    freq = (getattr(drv, "frequency", "") or "").strip() if drv else ""
+    _WCRP_AVG_FREQS = {"day", "mon", "monPt", "yr", "yrPt", "1hrCM", "sem"}
+    wcrp_treats_as_instantaneous = (
+        time_method == "instantaneous"
+        or (freq and freq not in _WCRP_AVG_FREQS)
+    )
+
+    if wcrp_treats_as_instantaneous and len(time_values) >= 1:
+        # Build period bnds via _create_mean_bounds (it snaps to
+        # frequency boundaries for yearly via the dedicated helper, and
+        # for monthly / decadal / hourly via approx_interval) and pin
+        # time to bnds[:, 0] = period_start.
+        try:
             bounds_data = _create_mean_bounds(time_values, approx_interval, rule=rule)
             new_time_values = bounds_data[:, 0]
             logger.info(
-                "  yearly + instantaneous (tpt): bnds = year-snap, "
-                "time = period_start"
+                f"  freq={freq!r} method={time_method!r}: wcrp treats as instantaneous; "
+                "bnds = period-snap, time = period_start"
             )
-        else:
+        except Exception as exc:
+            logger.warning(
+                f"  could not build period-snap bnds ({exc}); "
+                f"falling back to zero-width bnds"
+            )
             bounds_data = np.column_stack([time_values, time_values])
             new_time_values = None
+    elif time_method == "instantaneous":
+        # Fallback for genuinely zero-length tpt arrays.
+        bounds_data = np.column_stack([time_values, time_values])
+        new_time_values = None
     else:
         bounds_data = _create_mean_bounds(time_values, approx_interval, rule=rule)
         # CF/CMIP and wcrp TIME001 require coord == midpoint(bnds). Source

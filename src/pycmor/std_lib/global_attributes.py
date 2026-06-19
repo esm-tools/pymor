@@ -665,11 +665,14 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         return tokens[3] if tokens else None
 
     def get_region(self):
-        # CMIP7 region CV uses lowercase identifiers (e.g. `glb`, `nh`, `sh`);
-        # compound_name historically carried uppercase (`GLB`).
+        # CMIP7 region CV preserves case from the compound: simple codes
+        # are lowercase (glb, nh, sh, ...) but latitude-band tokens stay
+        # uppercase (30S-90S, 30N-90N, ...). The data-request corpus
+        # carries the canonical case; lower-casing trips wcrp FILE001
+        # and ATTR004 region CV checks for the uppercase tokens.
         parts = self._compound_parts()
         region = parts[4] if parts else self.rule_dict.get("region", "glb")
-        return region.lower() if isinstance(region, str) else region
+        return region
 
     def get_drs_specs(self):
         return self.rule_dict.get("drs_specs", "MIP-DRS7")
