@@ -1107,7 +1107,46 @@ def _encoding_from_dask_chunks(ds, rule):
         da = ds[var]
         if da.chunks is not None:
             # Use the max chunk size per dimension (chunks may be uneven at boundaries)
-            var_encoding["chunksizes"] = tuple(max(c) for c in da.chunks)
+            chunksizes = tuple(max(c) for c in da.chunks)
+            # wcrp FILE004d requires each data-variable chunk to be at least
+            # 4 MiB uncompressed (a CMIP7 storage convention; smaller chunks
+            # mean too many chunks → high metadata overhead). Dask-aligned
+            # chunks on FESOM unstructured high-res grids (e.g. sfx, (12,
+            # 18724)) end up at ~1.8 MiB and trip the check. cmip7repack is
+            # supposed to fix this post-hoc but on 2D high-res fields it
+            # re-uses the same shape — see cli71 sidecars. Enforce the
+            # floor here by enlarging the LAST (rightmost, typically
+            # horizontal) dim until the product crosses 4 MiB, capped at
+            # the dim size. Other dims are left alone so the time-axis
+            # chunking pycmor picked earlier is preserved.
+            try:
+                FOUR_MIB = 4 * 1024 * 1024
+                dim_names = list(da.dims)
+                dim_sizes = [ds.sizes[d] for d in dim_names]
+                wordsize = da.dtype.itemsize
+                from math import prod as _prod
+                cur_bytes = _prod(chunksizes) * wordsize
+                if cur_bytes < FOUR_MIB and len(chunksizes) > 0:
+                    chunksizes = list(chunksizes)
+                    # Grow the last dim's chunk until the chunk is >= 4 MiB
+                    # (or we hit the full dim size).
+                    last_idx = len(chunksizes) - 1
+                    other_bytes = _prod(chunksizes[:-1]) * wordsize if last_idx > 0 else wordsize
+                    needed_last = -(-FOUR_MIB // max(1, other_bytes))  # ceil-div
+                    new_last = max(chunksizes[-1], min(dim_sizes[-1], needed_last))
+                    if new_last != chunksizes[-1]:
+                        logger.info(
+                            f"chunk-floor: var {var!r} dask chunk "
+                            f"{tuple(chunksizes)} = {cur_bytes} B < 4 MiB; "
+                            f"growing {dim_names[-1]} {chunksizes[-1]} -> {new_last}"
+                        )
+                        chunksizes[-1] = new_last
+                    chunksizes = tuple(chunksizes)
+            except Exception as _exc:
+                logger.warning(
+                    f"chunk-floor: could not enforce 4 MiB minimum for {var!r}: {_exc}"
+                )
+            var_encoding["chunksizes"] = chunksizes
         if enable_compression:
             if compression_codec == "zlib":
                 var_encoding["zlib"] = True
