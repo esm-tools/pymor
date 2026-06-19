@@ -65,6 +65,29 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
         )
         attrs.pop(k, None)
 
+    # When cell_measures was specifically the ``--MODEL`` placeholder,
+    # substitute the realm default. ``--MODEL`` means "model-specific
+    # area; fill in your model's value", and the on-disk convention is:
+    #   ocean / seaIce / landIce      -> "area: areacello"
+    #   atmos / aerosol / land / atmosChem -> "area: areacella"
+    # Without this substitution wcrp ATTR001 reports cell_measures
+    # missing on variables whose data request used the placeholder
+    # (cli72: siu, siv, sidmasstranx, sistrxdtop and similar). Rules
+    # may still override via rule-level cell_measures attr if a
+    # different area variable applies (e.g. siitdconc → areacello).
+    if "cell_measures" in _placeholders and "cell_measures" not in attrs:
+        drv = rule.data_request_variable
+        realm = (getattr(drv, "modeling_realm", "") or "").lower().split()
+        first_realm = realm[0] if realm else ""
+        ocean_like = {"ocean", "seaice", "landice", "ocnbgchem"}
+        atmos_like = {"atmos", "aerosol", "land", "atmoschem"}
+        if first_realm in ocean_like:
+            attrs["cell_measures"] = "area: areacello"
+        elif first_realm in atmos_like:
+            attrs["cell_measures"] = "area: areacella"
+        # If realm is unrecognised, leave cell_measures absent so the
+        # downstream check surfaces it rather than mislabel.
+
     # CF §3.1 / UDUNITS: practical salinity unit "psu" is not UDUNITS-
     # recognised. The CMIP convention since CMIP6 is to spell it as a
     # dimensionless scaling factor; CMIP7 registry standardises on
@@ -92,12 +115,21 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
 
     # CF §3.1.2 (CF 1.11): variables on an absolute-temperature scale
     # should declare ``units_metadata`` so consumers know the value is
-    # measured-temperature, not a temperature difference.
+    # measured-temperature, not a temperature difference. The CF
+    # standard_names with "_temperature" cover the absolute scale; the
+    # earlier ``sn.endswith("temperature")`` test missed compound forms
+    # like ``sea_water_potential_temperature_at_sea_floor`` (tob),
+    # ``sea_surface_temperature``, ``sea_water_conservative_temperature``.
     sn = (da.attrs.get("standard_name") or "").lower()
     units = (da.attrs.get("units") or "").strip()
+    is_temperature_sn = (
+        "_temperature" in sn
+        or sn.endswith("temperature")
+        or sn.startswith("temperature_")
+    )
     is_abs_temp = (
-        units in {"K", "degK", "kelvin", "Kelvin"}
-        or ("temperature" in sn and sn.endswith("temperature"))
+        units in {"K", "degK", "kelvin", "Kelvin", "degC", "Celsius"}
+        or is_temperature_sn
     ) and "difference" not in sn and "anomaly" not in sn
     if is_abs_temp and "units_metadata" not in da.attrs:
         da.attrs["units_metadata"] = "temperature: on_scale"
