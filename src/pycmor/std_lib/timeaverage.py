@@ -366,7 +366,13 @@ def timeavg(da: xr.DataArray, rule):
         _flox_engine = "numpy"
     _resample_kw = {"engine": _flox_engine}
     if time_method == "INSTANTANEOUS":
-        ds = da.resample(time=frequency_str).first(**_resample_kw)
+        # xarray's DataArrayResample.first() does not accept the flox
+        # ``engine`` kwarg (no flox aggregator path for the "pick first
+        # element per group" reduction). Before the cmip7 cell_methods
+        # override added in 6c0a3c59, every CMIP7 tpt rule fell through
+        # to MEAN because CMIP6's Pt suffix was dropped; that masked the
+        # latent TypeError. Call .first() without the engine kwarg.
+        ds = da.resample(time=frequency_str).first()
     elif time_method == "MEAN":
         ds = da.resample(time=frequency_str).mean(**_resample_kw)
         # CMIP spec: time coordinate of MEAN-averaged data sits at the midpoint

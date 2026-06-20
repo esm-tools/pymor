@@ -146,6 +146,26 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
         if time_method != "instantaneous" and len(time_values) >= 1:
             existing_bnds = ds[time_bounds_label].values
             if existing_bnds.ndim == 2 and existing_bnds.shape[1] == 2:
+                # OIFS-XIOS sub-daily tavg ships bnds straddling the time
+                # stamp ((t-dt/2, t+dt/2)) rather than period-aligned
+                # ((t-dt, t)). The midpoint convention is preserved on its
+                # face but the whole cell is shifted forward by dt/2, so
+                # wcrp TIME001 sees t[0] = filename_start + dt/2 instead of
+                # the canonical filename_start (point-style) or
+                # filename_start + dt/2 (midpoint-style anchored on the hour
+                # grid). Shift bnds back by dt/2 to land on the canonical
+                # hour grid, then realign time to the new midpoint.
+                drv = getattr(rule, "data_request_variable", None)
+                freq = (getattr(drv, "frequency", "") or "").strip() if drv else ""
+                if freq in ("1hr", "3hr", "6hr") and _bnds_centered_on_time(
+                    existing_bnds, time_values
+                ):
+                    existing_bnds = _shift_bnds_half_step_backward(existing_bnds)
+                    ds[time_bounds_label].data[:] = existing_bnds
+                    logger.info(
+                        f"  shifted {time_bounds_label} back by dt/2 (OIFS-XIOS "
+                        f"centered-bnds convention -> CMIP period-aligned)"
+                    )
                 try:
                     new_time_values = _midpoint_bounds(existing_bnds)
                 except Exception as exc:
@@ -554,6 +574,55 @@ def _midpoint_bounds(bounds_data):
         [b0 + (b1 - b0) / 2 for b0, b1 in bounds_data],
         dtype=object,
     )
+
+
+def _bnds_centered_on_time(bounds_data, time_values):
+    """Detect the OIFS-XIOS sub-daily tavg layout where each row of bnds
+    straddles its time stamp: ``bnds[i] = (t[i] - dt/2, t[i] + dt/2)``.
+
+    Returns True only when both halves match to within numerical noise.
+    The canonical CMIP layout has ``bnds[i] = (t[i] - dt, t[i])`` (period
+    ending at the stamp) with midpoint at ``t[i] - dt/2``, so the test
+    against the first row is enough to distinguish.
+    """
+    if len(time_values) < 1 or bounds_data.shape != (len(time_values), 2):
+        return False
+    b0, b1 = bounds_data[0, 0], bounds_data[0, 1]
+    t0 = time_values[0]
+    try:
+        first_half = t0 - b0
+        second_half = b1 - t0
+    except Exception:
+        return False
+    if np.issubdtype(bounds_data.dtype, np.datetime64):
+        # Tolerate up to 1 minute drift either way.
+        tol = np.timedelta64(60, "s")
+        return abs(first_half - second_half) < tol and first_half > np.timedelta64(0, "s")
+    # cftime path: compare via total_seconds.
+    try:
+        d = first_half.total_seconds() - second_half.total_seconds()
+    except Exception:
+        return False
+    return abs(d) < 60.0 and first_half.total_seconds() > 0
+
+
+def _shift_bnds_half_step_backward(bounds_data):
+    """Shift every row of (n, 2) bnds back by half its own width.
+
+    For OIFS-XIOS sub-daily tavg files: source ships
+    ``bnds[i] = (t-dt/2, t+dt/2)``; shifting back by dt/2 lands on
+    ``(t-dt, t)``, the canonical CMIP period-aligned layout. The new
+    midpoint is ``t - dt/2``.
+    """
+    if np.issubdtype(bounds_data.dtype, np.datetime64):
+        half = (bounds_data[:, 1] - bounds_data[:, 0]) / 2
+        return np.column_stack([bounds_data[:, 0] - half, bounds_data[:, 1] - half])
+    out = np.empty_like(bounds_data, dtype=object)
+    for i, (b0, b1) in enumerate(bounds_data):
+        half = (b1 - b0) / 2
+        out[i, 0] = b0 - half
+        out[i, 1] = b1 - half
+    return out
 
 
 def _create_mean_bounds(time_values, approx_interval, rule=None):

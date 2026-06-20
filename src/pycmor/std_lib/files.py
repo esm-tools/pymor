@@ -1280,24 +1280,25 @@ def _filename_time_range(ds, rule) -> str:
     frequency_str = rule.data_request_variable.frequency
     if frequency_str in ("yr", "yrPt", "dec"):
         # Yearly / decadal frequency. The wcrp TIME003 filename regex only
-        # accepts 6- or 8-digit tokens (``\d{6}|\d{8}``), so the legacy
-        # ``YYYY-YYYY`` 4-digit form was silently flagged as "no time range
-        # token found". Use the 8-digit day-precision token spanning Jan 1
-        # of the start year to Dec 31 of the end year — that's the canonical
-        # CMIP DRS expansion for yearly files and what wcrp can parse.
-        return f"{start.year:04d}0101-{end.year:04d}1231"
+        # accepts 6- or 8-digit tokens (``\d{6}|\d{8}``), so the canonical
+        # 4-digit ``YYYY-YYYY`` form is silently flagged as "no time range
+        # token found". Expand to 6-digit month precision spanning Jan to
+        # Dec of the covered years; this is the minimum expansion that
+        # fits the regex without fabricating day-precision we do not have.
+        # Drop when cc-plugin-wcrp#46 lands (adds 4-digit support).
+        return f"{start.year:04d}01-{end.year:04d}12"
     if frequency_str in ("mon", "monC", "monPt"):
         return f"{start:%Y%m}-{end:%Y%m}"
     if frequency_str == "day":
         return f"{start:%Y%m%d}-{end:%Y%m%d}"
-    if frequency_str in ("6hr", "3hr", "1hr", "6hrPt", "3hrPt", "1hrPt", "1hrCM"):
-        _start = start.round("1min")
-        _end = end.round("1min")
-        return f"{_start:%Y%m%d%H%M}-{_end:%Y%m%d%H%M}"
-    if frequency_str == "subhrPt":
-        _start = start.round("1s")
-        _end = end.round("1s")
-        return f"{_start:%Y%m%d%H%M%S}-{_end:%Y%m%d%H%M%S}"
+    if frequency_str in ("6hr", "3hr", "1hr", "6hrPt", "3hrPt", "1hrPt", "1hrCM", "subhrPt"):
+        # We always split sub-daily output yearly, so the file covers
+        # Jan 1 to Dec 31 of one year. Clamp to 8-digit day-precision
+        # token that the current wcrp regex accepts (\d{6}|\d{8}); this
+        # keeps the day-precision info we genuinely have and sidesteps
+        # cc-plugin-wcrp#46 (which would let us emit the finer
+        # YYYYMMDDhhmm form).
+        return f"{start.year:04d}0101-{end.year:04d}1231"
     if frequency_str == "fx":
         return ""
     else:
