@@ -1546,16 +1546,20 @@ def _save_dataset_with_native_timespan(
     if is_fx:
         # fx / ofx variables are time-invariant. CMIP convention is to write
         # no time coord and no time_bnds at all. The source FESOM/XIOS file
-        # ships a singleton time dim (so the model can emit the field once);
-        # squeeze it out here and drop the bnds so cf §7.1 doesn't compare
-        # time vs time_bnds attrs on a file that has no business carrying
-        # either, and so wcrp ATTR004 doesn't flag the inherited
-        # ``seconds since`` units string.
-        if time_label in da.dims and da.sizes.get(time_label, 0) <= 1:
+        # ships a singleton time dim (so the model can emit the field once)
+        # or, for files like atm_remapped_1m_lsm_<year>.nc, ships repeated
+        # monthly copies of the same time-invariant field. In both cases the
+        # saved file should carry no time coord, so collapse to the first
+        # slice unconditionally rather than only when ``time.size <= 1``.
+        # Use ``drop_vars`` instead of ``reset_coords`` to remove the time
+        # and time_bnds coords: ``reset_coords`` refuses to drop an indexed
+        # dim coord, while ``drop_vars`` removes both the variable and its
+        # index in one step.
+        if time_label in da.dims:
             da = da.isel({time_label: 0}, drop=True)
         for stale in (time_label, f"{time_label}_bnds", f"{time_label}_bounds"):
             if stale in getattr(da, "coords", {}):
-                da = da.reset_coords(stale, drop=True)
+                da = da.drop_vars(stale)
         datasets = [da]
     else:
         datasets = split_data_timespan(da, rule)

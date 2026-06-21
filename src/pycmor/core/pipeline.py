@@ -59,7 +59,24 @@ class Pipeline:
             collapse_steps = os.environ.get("PYCMOR_PREFECT_COLLAPSE", "1") in ("1", "true", "True", "yes")
         self._collapse_steps = bool(collapse_steps)
         if cache_policy is None:
-            self._cache_policy = TASK_SOURCE + INPUTS
+            # ``script://`` step loader creates a synthetic module called
+            # "script" (see core.utils.get_function_from_script). Anything
+            # the script defines, including ``@functools.lru_cache``
+            # wrappers used as helpers, carries ``__module__ == "script"``.
+            # Prefect's INPUTS cache policy pickles every task argument
+            # (the Rule + bound steps), and pickle fails to serialise
+            # those wrappers because "script" isn't a re-importable module
+            # name. Detect script-loaded steps and downgrade to NO_CACHE
+            # for the whole pipeline; INPUTS hashing is the only thing
+            # that touches the wrapper, and disabling it costs nothing
+            # because pycmor runs each pipeline once per process.
+            _has_script_step = any(
+                getattr(s, "__module__", "") == "script" for s in self._steps
+            )
+            if _has_script_step:
+                self._cache_policy = NO_CACHE
+            else:
+                self._cache_policy = TASK_SOURCE + INPUTS
             self._prefect_cache_kwargs["cache_policy"] = self._cache_policy
 
         if cache_expiration is None:

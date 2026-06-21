@@ -86,6 +86,20 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
     logger.info(f"  time label: {time_label}, approx_interval: {approx_interval} days")
     logger.info(f"  time method: {time_method}")
 
+    # fx / ofx variables are time-invariant. The saved file will have no
+    # time coord at all (collapsed to scalar in the fx save branch). Don't
+    # build time_bnds for them: doing so trips the wcrp_treats_as_instant
+    # branch below (because "fx" is not in _WCRP_AVG_FREQS), which builds
+    # period-snap bnds against the source's multi-month time dim. The
+    # save path then can't reset_coords the resulting indexed dim coord.
+    drv_freq = ""
+    drv = getattr(rule, "data_request_variable", None)
+    if drv is not None:
+        drv_freq = (getattr(drv, "frequency", "") or "").strip()
+    if drv_freq in ("fx", "ofx"):
+        logger.info(f"  freq={drv_freq!r}: skipping bnds creation for time-invariant variable")
+        return ds
+
     # If the source carries a non-canonical XIOS-style ``<time>_bounds``
     # (FESOM convention) but not the CMIP-canonical ``<time>_bnds``,
     # rename it now so the rest of the function (and downstream tools)

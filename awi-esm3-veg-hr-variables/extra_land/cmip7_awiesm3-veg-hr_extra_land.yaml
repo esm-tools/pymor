@@ -9,7 +9,7 @@ general:
   name: "awiesm3-cmip7-extra-land"
   cmor_version: "CMIP7"
   mip: "CMIP"
-  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.3/metadata.json"
+  CMIP7_DReq_metadata: "/home/a/a270092/.cache/pycmor/cmip7_metadata/v1.2.2.4/metadata.json"
 
 pycmor:
   enable_output_subdirs: true
@@ -220,7 +220,7 @@ rules:
     inputs:
       - path: *dp
         pattern: atmos_1h_sfc_2t_.*\.nc
-    compound_name: land.tas.tavg-h2m-hxy-u.1hr.30S-90S
+    compound_name: atmos.tas.tavg-h2m-hxy-u.1hr.30S-90S
     model_variable: 2t
     pipelines:
       - southern_hemisphere_pipeline
