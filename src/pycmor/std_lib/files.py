@@ -1560,6 +1560,11 @@ def _save_dataset_with_native_timespan(
         for stale in (time_label, f"{time_label}_bnds", f"{time_label}_bounds"):
             if stale in getattr(da, "coords", {}):
                 da = da.drop_vars(stale)
+        # The fx dataset no longer has a time dim; xr.save_mfdataset
+        # rejects ``unlimited_dims={'time'}`` against a dim that does
+        # not exist on the dataset. Strip the kwarg here so the saved
+        # file ships with no time-related dim declarations.
+        extra_kwargs.pop("unlimited_dims", None)
         datasets = [da]
     else:
         datasets = split_data_timespan(da, rule)
