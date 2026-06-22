@@ -5640,11 +5640,15 @@ def load_lpjguess_monthly_depth(data, rule):
     )
     ds = da.to_dataset()
 
-    # Add depth bounds
+    # Add depth bounds. CF §7.1: bounds variables MUST NOT carry
+    # boundary-related attrs of their own (long_name, units, standard_name,
+    # axis, positive, ...). They inherit those from the parent coord at
+    # read time. Setting them here trips cf §7.1 with "non matching
+    # boundary related attributes: ['long_name']" against sdepth.
     ds["sdepth_bnds"] = xr.DataArray(
         sdepth_bnds,
         dims=["sdepth", "bnds"],
-        attrs={"long_name": "depth layer boundaries", "units": "m"},
+        attrs={},
     )
     ds["sdepth"].attrs = {
         "axis": "Z",

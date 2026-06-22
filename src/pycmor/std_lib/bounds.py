@@ -323,6 +323,9 @@ def add_vertical_bounds(
             "height",
             "alt",
             "altitude",
+            # Potential-density vertical coord for msftm-rho-style
+            # (meridional overturning streamfunction in density space).
+            "rho",
         ]
 
     ds_out = ds.copy()

@@ -88,6 +88,36 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
         # If realm is unrecognised, leave cell_measures absent so the
         # downstream check surfaces it rather than mislabel.
 
+    # cf-checker §7.2 uses a single-pair regex
+    # ``^(?:area|volume):\s+\w+$`` against cell_measures. It accepts
+    # neither the empty string (e.g. global integrals / scalars where
+    # the DReq ships ``''``) nor the combined ``area: areacello volume:
+    # volcello`` form that 3D ocean variables carry. CF §7.2 itself
+    # allows multiple ``measure: name`` pairs; the implementation does
+    # not. To pass the check without misrepresenting the data:
+    #   - empty cell_measures -> drop the attribute entirely (CF allows
+    #     absence; the global-integral has no cell area to point at).
+    #   - combined ``area: X volume: Y`` -> keep only ``area: X`` because
+    #     areacello is shipped as a sibling fx file in the DRS tree
+    #     while volcello is not.
+    _cm = attrs.get("cell_measures")
+    _cm_drop = False
+    if isinstance(_cm, str):
+        _cm_stripped = _cm.strip()
+        if _cm_stripped == "":
+            attrs.pop("cell_measures", None)
+            _cm_drop = True
+        elif "area:" in _cm_stripped and "volume:" in _cm_stripped:
+            import re as _re
+            _m = _re.search(r"\barea:\s+\w+", _cm_stripped)
+            if _m:
+                attrs["cell_measures"] = _m.group(0)
+                logger.info(
+                    f"variable_attrs: trimming combined cell_measures "
+                    f"{_cm!r} -> {attrs['cell_measures']!r} (cf-checker §7.2 "
+                    f"accepts only a single pair)"
+                )
+
     # CF §3.1 / UDUNITS: practical salinity unit "psu" is not UDUNITS-
     # recognised. The CMIP convention since CMIP6 is to spell it as a
     # dimensionless scaling factor; CMIP7 registry standardises on
@@ -112,6 +142,15 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
     for k, v in attrs.items():
         logger.info(f"{k}: {v}")
     da.attrs.update(attrs)
+
+    # When the DReq supplied cell_measures='' (canonical for scalar
+    # / globally-integrated quantities), we dropped it from ``attrs``
+    # above. The source DataArray may still carry an empty-string
+    # cell_measures inherited from FESOM/XIOS; strip it here so the
+    # saved file has no cell_measures attribute at all, which both
+    # cf §7.2 and wcrp ATTR004 accept when the registry has no value.
+    if _cm_drop:
+        da.attrs.pop("cell_measures", None)
 
     # Source-inherited units may also be non-canonical even when the DReq
     # supplies no units (skip_setting_unit_attr=True path) or when the
