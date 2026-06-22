@@ -113,6 +113,25 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
         logger.info(f"{k}: {v}")
     da.attrs.update(attrs)
 
+    # Source-inherited units may also be non-canonical even when the DReq
+    # supplies no units (skip_setting_unit_attr=True path) or when the
+    # substitution above was bypassed. Normalise the on-disk units string
+    # in place so the registry literal-compare passes. FESOM salt fields
+    # ship ``units = "1e-3"`` (XIOS default); CMIP7 registry expects the
+    # ``1E-03`` form. Same applies to ``psu`` strings that survived the
+    # source path.
+    _on_disk_units = da.attrs.get("units")
+    if isinstance(_on_disk_units, str):
+        import re as _re
+        _normalized = _on_disk_units
+        _normalized = _re.sub(r"\bpsu\b", "1E-03", _normalized)
+        _normalized = _re.sub(r"\b1[eE]-0?(\d)\b", lambda m: f"1E-0{m.group(1)}", _normalized)
+        if _normalized != _on_disk_units:
+            logger.info(
+                f"variable_attrs: canonicalising units {_on_disk_units!r} -> {_normalized!r}"
+            )
+            da.attrs["units"] = _normalized
+
     # CF §3.1.2 (CF 1.11): variables on an absolute-temperature scale
     # should declare ``units_metadata`` so consumers know the value is
     # measured-temperature, not a temperature difference. The CF
