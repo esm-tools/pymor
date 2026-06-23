@@ -34,9 +34,9 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_msftmz
-      - pycmor.std_lib.add_vertical_bounds
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.set_time_bounds
+      - pycmor.std_lib.add_vertical_bounds
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -184,9 +184,9 @@ pipelines:
       - pycmor.std_lib.generic.get_variable
       - script://$PYCMOR_HOME/examples/custom_steps.py:vertical_integrate
       - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
-      - pycmor.std_lib.add_vertical_bounds
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.set_time_bounds
+      - pycmor.std_lib.add_vertical_bounds
       - pycmor.std_lib.units.handle_unit_conversion
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
@@ -371,9 +371,9 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_msftm_density
-      - pycmor.std_lib.add_vertical_bounds
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.set_time_bounds
+      - pycmor.std_lib.add_vertical_bounds
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -388,9 +388,9 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_msftmmpa_depth
-      - pycmor.std_lib.add_vertical_bounds
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.set_time_bounds
+      - pycmor.std_lib.add_vertical_bounds
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates
@@ -405,9 +405,9 @@ pipelines:
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - script://$PYCMOR_HOME/examples/custom_steps.py:compute_msftmmpa_density
-      - pycmor.std_lib.add_vertical_bounds
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.set_time_bounds
+      - pycmor.std_lib.add_vertical_bounds
       - pycmor.std_lib.attributes.set_global
       - pycmor.std_lib.attributes.set_variable
       - pycmor.std_lib.attributes.set_coordinates

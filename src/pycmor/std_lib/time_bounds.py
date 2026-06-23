@@ -195,14 +195,15 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
                     )
         if "bounds" not in ds[time_label].attrs:
             ds[time_label].attrs["bounds"] = time_bounds_label
-        # CF §7.1: time_bnds must NOT carry boundary-related attrs of its
-        # own (long_name, units, standard_name, calendar, axis, ...).
-        # They inherit from the parent coord at read time. The newly-built
-        # bnds path strips these to ``attrs={}``; the existing-bnds path
-        # (e.g. LPJ-GUESS daily where the source ships time_bnds with a
-        # stale long_name) needs the same cleanup so cf §7.1 doesn't
-        # report "non matching boundary related attributes: ['long_name']".
+        # Strip stale source-side bnds attrs (LPJ-GUESS daily ships
+        # time_bnds with a long_name that doesn't match the parent),
+        # then re-attach long_name to MATCH the parent. cf §7.1 wants
+        # bnds attrs to match parent (mismatch is the failure); cf §3.3
+        # wants every aux-coord variable to carry a long_name.
         _strip_bnds_inheritable_attrs(ds[time_bounds_label])
+        _parent_long_name = ds[time_label].attrs.get("long_name")
+        if _parent_long_name:
+            ds[time_bounds_label].attrs["long_name"] = _parent_long_name
         _force_canonical_time_encoding(ds, time_label)
         return ds
 
@@ -278,26 +279,29 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
         new_time = time_var.copy(data=new_time_values)
         ds = ds.assign_coords({time_label: new_time})
 
+    # cf §7.1 wants bnds attrs to MATCH the parent coord's attrs (mismatch
+    # is the actual failure). cf §3.3 wants every aux-coord variable to
+    # carry at least a long_name. The combination requires time_bnds to
+    # carry the same long_name as parent time. Reading from the parent
+    # rather than hard-coding makes the bnds track any later parent
+    # changes. Note: the previous "strip everything" approach satisfied
+    # §7.1 alone but tripped §3.3 because time_bnds becomes an aux-coord
+    # of any data var that references it via ``coordinates``.
+    _bnds_attrs = {}
+    _parent_long_name = ds[time_label].attrs.get("long_name") if time_label in ds.variables else None
+    if _parent_long_name:
+        _bnds_attrs["long_name"] = _parent_long_name
     bounds = xr.DataArray(
         data=bounds_data,
         dims=(time_label, bounds_dim_label),
         coords={
             time_label: new_time_values if new_time_values is not None else time_values,
-            # Give the bnds aux a long_name so CF §3.3 doesn't flag it
-            # as a meta-data-less coord variable. Without this xarray
-            # writes ``int64 bnds(bnds) ;`` with no attrs, which the
-            # checker reports against every file that has time_bnds.
             bounds_dim_label: xr.DataArray(
                 [0, 1], dims=(bounds_dim_label,),
                 attrs={"long_name": "bounds index"},
             ),
         },
-        # CF §7.1: bounds variables MUST NOT carry boundary-related attrs of
-        # their own (long_name, units, standard_name, calendar, axis, ...).
-        # They inherit those from the parent coord at read time. Setting a
-        # long_name here trips wcrp_cmip7 §7.1 with a "non matching
-        # boundary related attributes: ['long_name']" finding.
-        attrs={},
+        attrs=_bnds_attrs,
     )
 
     ds = ds.assign_coords({time_bounds_label: bounds})
