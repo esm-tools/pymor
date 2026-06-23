@@ -433,8 +433,6 @@ pipelines:
 
 inherit:
   # Write-perf defaults rolled out from HR atm core bench:
-  netcdf_compression_codec: blosc_zstd
-  netcdf_compression_level: 3
   netcdf_write_scheduler: synchronous
   # Serialise save_dataset across the tier: cli62 lrcs_ocean_gr_1
   # wedged with 8 parallel saves stuck at heartbeat #17 fighting the

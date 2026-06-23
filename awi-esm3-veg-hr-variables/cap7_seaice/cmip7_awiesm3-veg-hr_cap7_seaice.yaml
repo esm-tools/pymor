@@ -80,8 +80,6 @@ inherit:
   # already.
   throttle_group: cap7_seaice_serial
   # Write-perf defaults rolled out from HR atm core bench:
-  netcdf_compression_codec: blosc_zstd
-  netcdf_compression_level: 3
   netcdf_write_scheduler: synchronous
   data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
   source_id: AWI-ESM3-4-2-veg-HR

@@ -58,8 +58,6 @@ rules:
     compound_name: atmos.ua.tpt-p7h-hxy-air.6hr.glb
     model_variable: ua
     lazy_write: true
-    netcdf_compression_codec: blosc_zstd
-    netcdf_compression_level: 3
     netcdf_write_scheduler: threads
     netcdf_quantize_mode: null
     pipelines:

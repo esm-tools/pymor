@@ -47,8 +47,6 @@ pipelines:
       - pycmor.std_lib.qc.run_compliance_checker
 
 inherit:
-  netcdf_compression_codec: blosc_zstd
-  netcdf_compression_level: 3
   netcdf_write_scheduler: threads
   data_path: &dp /work/bb1469/a270089/runtime/awiesm3-v3.4.2/AWI-ESM3-VEG-HR-CMIP7-piControl/outdata/oifs
   source_id: AWI-ESM3-4-2-veg-HR
