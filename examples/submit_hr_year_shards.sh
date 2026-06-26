@@ -127,6 +127,15 @@ export SHARD_DRS
 # was an 8× throughput regression and didn't fix the actual root cause
 # (per-rule worker OOM, addressed by MEM_PER_WORKER bump). Per-pipeline
 # throttle_group still applies via the yaml-level annotation.
+# Per-array SLURM concurrency cap. Levante DKRZ enforces MaxJobs=20 per
+# user-account association. With 17 tier arrays totaling ~60 shards, a
+# single big array can monopolise all 20 slots and force smaller arrays
+# (lrcs_land, etc.) to pend indefinitely under AssocMaxJobsLimit; the
+# scheduler then cancels them as CANCELLED+ (cli91 lost lrcs_land_1 that
+# way). Capping each array at 4 concurrent tasks spreads the burst
+# across tiers so no single array starves the others. Override via env
+# ``ARRAY_MAX_CONCURRENT`` for tuning.
+ARRAY_MAX_CONCURRENT=${ARRAY_MAX_CONCURRENT:-4}
 
 submitted=()
 for yaml in "$YAMLS_DIR"/*.yaml; do
@@ -235,6 +244,23 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
   # gather driver-pileup OOM, but cli35 flipped extra_atm to fix3=off,
   # which removes that pile-up entirely. No need for the override now.
   tier_workers="$N_WORKERS"
+  tier_mem_per_worker="$MEM_PER_WORKER"
+
+  # lrcs_ocean: 2 workers × 96GB instead of 4 × 48GB. The msftmz rule
+  # uses tripyview's calc_zmoc which calls data.load() on the full HR
+  # FESOM w field — it materialises into one worker, peak hits ~50 GB,
+  # tripping the 48GB-per-worker dask cap (cli76/79/80/82/88/90 all
+  # crashed). Total dask = 2×96 = 192 GB still fits the 256 GB cgroup
+  # with room for OS + tmpfs. The lrcs_ocean_serial:1 throttle below
+  # means only one rule runs at a time anyway, so 4 vs 2 workers
+  # buys nothing on the non-msftmz rules (verified: shards 2/3 finish
+  # in the same wall-time across cli82/88/90 default vs fat configs).
+  case "$short_tier" in
+    lrcs_ocean)
+      tier_workers=2
+      tier_mem_per_worker=96GB
+      ;;
+  esac
 
   # Malloc allocator: jemalloc on all tiers.
   #
@@ -319,12 +345,20 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
     tier_outsub="${short_tier}/cmorized"
   fi
 
+  # Cap concurrency for this array. If num_shards <= cap, no cap needed
+  # (--array=1-1%1 is equivalent to --array=1-1 but printing the %1
+  # makes the log noisier; keep it bare when not capping).
+  if [ "$num_shards" -gt "$ARRAY_MAX_CONCURRENT" ]; then
+    array_spec="1-${num_shards}%${ARRAY_MAX_CONCURRENT}"
+  else
+    array_spec="1-${num_shards}"
+  fi
   jid=$(sbatch --parsable \
-        --array=1-"$num_shards" \
+        --array="$array_spec" \
         -J "$jobname" \
         --time="$tier_walltime" \
         $MEM_FLAG \
-        --export=ALL,CGROUP_GB=$tier_cgroup,SHARD_FIX3=$FIX3,N_WORKERS=$tier_workers,SHARD_JEMALLOC=$tier_jemalloc,SHARD_DRS=$SHARD_DRS,PYCMOR_THROTTLE_CAPS=$tier_throttle_caps \
+        --export=ALL,CGROUP_GB=$tier_cgroup,SHARD_FIX3=$FIX3,N_WORKERS=$tier_workers,MEM_PER_WORKER=$tier_mem_per_worker,SHARD_JEMALLOC=$tier_jemalloc,SHARD_DRS=$SHARD_DRS,PYCMOR_THROTTLE_CAPS=$tier_throttle_caps \
         "$HERE/run_hr_shard.sh" \
         "$shards_dir" "$RUN_ABS" "$YEAR" "$tier_outsub" 2>&1) \
     || { echo "sbatch failed for $short_tier"; continue; }
