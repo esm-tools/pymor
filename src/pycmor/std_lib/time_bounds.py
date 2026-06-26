@@ -616,6 +616,12 @@ def _bnds_centered_on_time(bounds_data, time_values):
         # Tolerate up to 1 minute drift either way.
         tol = np.timedelta64(60, "s")
         return abs(first_half - second_half) < tol and first_half > np.timedelta64(0, "s")
+    if np.issubdtype(bounds_data.dtype, np.floating):
+        # FESOM/XIOS time_bnds often ship without a units attribute, so
+        # xarray leaves them as float ``days since ...``. Compare the
+        # halves directly in days; tolerance 1 minute = 1/1440 day.
+        tol_days = 1.0 / 1440.0
+        return abs(first_half - second_half) < tol_days and first_half > 0
     # cftime path: compare via total_seconds.
     try:
         d = first_half.total_seconds() - second_half.total_seconds()
@@ -632,7 +638,7 @@ def _shift_bnds_half_step_backward(bounds_data):
     ``(t-dt, t)``, the canonical CMIP period-aligned layout. The new
     midpoint is ``t - dt/2``.
     """
-    if np.issubdtype(bounds_data.dtype, np.datetime64):
+    if np.issubdtype(bounds_data.dtype, np.datetime64) or np.issubdtype(bounds_data.dtype, np.floating):
         half = (bounds_data[:, 1] - bounds_data[:, 0]) / 2
         return np.column_stack([bounds_data[:, 0] - half, bounds_data[:, 1] - half])
     out = np.empty_like(bounds_data, dtype=object)
