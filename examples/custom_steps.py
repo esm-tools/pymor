@@ -4463,8 +4463,13 @@ def compute_msftmz(data, rule):
     nz = first.sizes[_zdim]
     ntime = first.sizes["time"] if has_time else 1
 
-    # Match target nz=nz from tripyview; use interface depths from mesh
-    lev = np.asarray(mesh.zlev[:nz])  # negative-down, in metres
+    # Match target nz=nz from tripyview; use interface depths from mesh.
+    # FESOM mesh ships zlev as negative-down. CMIP convention with
+    # ``positive=down`` requires positive depth values, increasing with
+    # depth (wcrp VAR005 monotonicity + VAR012 bounds-value consistency
+    # both trip otherwise). Flip the sign here so the on-disk coord is
+    # 0, 5, 10, ..., 6250 instead of 0, -5, -10, ..., -6250.
+    lev = -np.asarray(mesh.zlev[:nz])  # positive-down (CMIP convention), in metres
 
     out = np.full((ntime, nz, 3, lat_centers.size), np.nan, dtype=np.float64)
     for j, name in enumerate(_CMIP_BASIN_NAMES):
@@ -5143,7 +5148,10 @@ def _align_zmoc_to_cmip(per_basin, mesh, time_coord_source):
         raise ValueError(f"zmoc has no vertical dim (dims={first.dims})")
     nz = first.sizes[zdim]
     ntime = first.sizes["time"] if has_time else 1
-    lev = np.asarray(mesh.zlev[:nz])
+    # Flip sign to positive-down (CMIP convention). See compute_msftmz for
+    # the rationale (wcrp VAR005 + VAR012 trip on negative depths under
+    # ``positive=down``).
+    lev = -np.asarray(mesh.zlev[:nz])
 
     dlat = 1.0
     lat_centers = np.arange(-90.0, 90.0 + dlat, dlat)
