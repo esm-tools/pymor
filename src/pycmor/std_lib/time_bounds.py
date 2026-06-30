@@ -195,19 +195,25 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
     #   use_midpoint = (not instantaneous) and (freq in AVERAGE_CORRECTION_FREQ)
     #   instantaneous = "time: point" in cell_methods  OR  freq NOT in AVG list
     #
-    # AVG list (from cc-plugin-wcrp time_constants.py):
-    #   {"day", "mon", "monPt", "yr", "yrPt", "1hrCM", "sem"}
+    # AVG list (from cc-plugin-wcrp time_constants.py) AS OF cc-plugin-wcrp#52:
+    #   {"day", "mon", "monPt", "yr", "yrPt", "1hrCM", "sem",
+    #    "1hr", "3hr", "6hr"}
     #
-    # So three groups want time = period_start (not midpoint):
+    # Pre-#52 the sub-daily frequencies were excluded, so the original
+    # comment ("non-AVG frequency (dec, 3hr, 6hr, 1hr, ...) even if
+    # cell_methods says 'time: mean'") is now stale: with the wcrp
+    # plugin upgraded (commit beb00ce on master, merged 2026-06-25)
+    # sub-daily tavg files DO want use_midpoint=True. Mirror that.
+    #
+    # Two groups want time = period_start (not midpoint):
     #   1) any rule with cell_methods "time: point" (tpt-style)
-    #   2) any rule with a non-AVG frequency (dec, 3hr, 6hr, 1hr, ...)
-    #      even if cell_methods says "time: mean"
-    #   3) the union of the two: a tpt-style on a non-AVG freq
-    #
-    # Mirror that here so set_time_bounds writes what TIME001 expects.
+    #   2) any rule with a non-AVG frequency (dec only at this point)
     drv = getattr(rule, "data_request_variable", None)
     freq = (getattr(drv, "frequency", "") or "").strip() if drv else ""
-    _WCRP_AVG_FREQS = {"day", "mon", "monPt", "yr", "yrPt", "1hrCM", "sem"}
+    _WCRP_AVG_FREQS = {
+        "day", "mon", "monPt", "yr", "yrPt", "1hrCM", "sem",
+        "1hr", "3hr", "6hr",
+    }
     wcrp_treats_as_instantaneous = (
         time_method == "instantaneous"
         or (freq and freq not in _WCRP_AVG_FREQS)
