@@ -119,6 +119,20 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
         logger.info("  skipping bounds creation for climatology data")
         return ds
 
+    # CMIP7 output requirements: time_bnds MUST NOT be written for
+    # instantaneous (tpt / ``cell_methods = "time: point"``) variables.
+    # CMIP6 had the same convention. CF allows bounds on instantaneous
+    # data but CMIP explicitly forbids them. Drop any source-supplied
+    # bnds and clear the parent's ``bounds`` attr. DKRZ review, 2026-06-30.
+    if time_method == "instantaneous":
+        logger.info("  skipping bounds creation for instantaneous (tpt) data")
+        if time_bounds_label in ds.variables:
+            ds = ds.drop_vars(time_bounds_label)
+        if "bounds" in ds[time_label].attrs:
+            del ds[time_label].attrs["bounds"]
+        _force_canonical_time_encoding(ds, time_label)
+        return ds
+
     time_var = ds[time_label]
     time_values = time_var.values
 
@@ -277,15 +291,16 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
     _parent_long_name = ds[time_label].attrs.get("long_name") if time_label in ds.variables else None
     if _parent_long_name:
         _bnds_attrs["long_name"] = _parent_long_name
+    # No index/coord variable on the ``bnds`` dim: files historically
+    # carried an ``int64 bnds(bnds)`` helper with ``long_name = "bounds
+    # index"`` to give cf §3.3 something to point at, but that's unusual
+    # for CMIP output (DKRZ review, 2026-06-30) and adds no value.
+    # Downstream tools treat ``bnds`` as an anonymous size-2 dim.
     bounds = xr.DataArray(
         data=bounds_data,
         dims=(time_label, bounds_dim_label),
         coords={
             time_label: new_time_values if new_time_values is not None else time_values,
-            bounds_dim_label: xr.DataArray(
-                [0, 1], dims=(bounds_dim_label,),
-                attrs={"long_name": "bounds index"},
-            ),
         },
         attrs=_bnds_attrs,
     )

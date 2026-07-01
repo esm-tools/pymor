@@ -75,8 +75,6 @@ class CMIP7GlobalAttributes(GlobalAttributes):
             "experiment_id",
             "forcing_index",
             "frequency",
-            "further_info_url",
-            "grid",
             "grid_label",
             "history",
             "horizontal_label",
@@ -93,12 +91,7 @@ class CMIP7GlobalAttributes(GlobalAttributes):
             "realization_index",
             "realm",
             "region",
-            "source",
             "source_id",
-            "source_type",
-            "sub_experiment",
-            "sub_experiment_id",
-            "table_id",
             "temporal_label",
             "title",
             "tracking_id",
@@ -106,6 +99,20 @@ class CMIP7GlobalAttributes(GlobalAttributes):
             "variant_label",
             "vertical_label",
         ]
+        # CMIP7 Appendix 2 (Global_Attributes) eliminated the following
+        # CMIP6 global attributes. They are "not forbidden" per the doc
+        # but no longer part of the official CMIP7 standard; we drop them
+        # rather than emit spec-stale metadata:
+        #   branch_method, comment, contact, further_info_url, grid,
+        #   source_type, sub_experiment, sub_experiment_id, table_id
+        # Also dropped: ``source`` — required in CMIP6, now optional in
+        # CMIP7. Our previous value was ``"<source_id> <realm>"`` which
+        # duplicated source_id without adding information. Users who want
+        # a CMIP6-style full-component description can override in the
+        # recipe.
+        # sub_experiment_id is still used internally by subdir_path() to
+        # extend the DRS member_id when non-"none"; the removal here only
+        # affects the on-disk attribute set, not the DRS path.
 
     def global_attributes(self) -> dict:
         """Generate all required global attributes for CMIP7"""
@@ -1030,14 +1037,33 @@ class CMIP6GlobalAttributes(GlobalAttributes):
         )
 
 
+def _sanitize_attr_value(v):
+    """Replace non-ASCII dashes with ASCII hyphen in string attrs.
+
+    HDF5 / older libhdf5 builds can mis-encode em-dash (U+2014, "—"),
+    en-dash (U+2013, "–"), and figure-dash (U+2012) in attribute strings
+    when the writer's locale disagrees with the reader's. Substitute
+    them here so downstream tools reading with a stricter encoding
+    (e.g. panoply, ncview on older platforms) don't trip.
+    DKRZ review, 2026-06-30.
+    """
+    if not isinstance(v, str):
+        return v
+    return v.translate(str.maketrans({"—": "-", "–": "-", "‒": "-"}))
+
+
 def set_global_attributes(ds, rule):
     """Set global attributes for the dataset"""
     if isinstance(ds, xr.DataArray):
         ds = ds.to_dataset()
     global_attrs = rule.ga.global_attributes()
     # Filter out None values -- xarray accepts them in memory but
-    # netCDF serialization rejects non-string/non-numeric attributes
-    global_attrs = {k: v for k, v in global_attrs.items() if v is not None}
+    # netCDF serialization rejects non-string/non-numeric attributes.
+    # Also sanitize non-ASCII dashes in string values.
+    global_attrs = {
+        k: _sanitize_attr_value(v)
+        for k, v in global_attrs.items() if v is not None
+    }
     ds.attrs.update(global_attrs)
     return ds
 

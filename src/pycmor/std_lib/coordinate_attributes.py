@@ -292,18 +292,17 @@ def _set_coordinates_attribute(ds: xr.Dataset, rule: Rule) -> None:
     logger.info("[Coordinate Attributes] Setting 'coordinates' attribute on data variables")
 
     for var_name in ds.data_vars:
-        # Get all coordinates used by this variable
-        var_coords = []
-
-        # Get dimension coordinates
-        for dim in ds[var_name].dims:
-            if dim in ds.coords:
-                var_coords.append(dim)
-
-        # Get non-dimension coordinates (auxiliary coordinates)
-        for coord_name in ds.coords:
-            if coord_name not in var_coords and coord_name in ds[var_name].coords:
-                var_coords.append(coord_name)
+        # Only list AUXILIARY coordinates (non-dim coords). CF explicitly
+        # says the ``coordinates`` attribute is for auxiliary coordinate
+        # variables; dim coords are implicit and listing them is legal
+        # but redundant per the CMIP/DKRZ style guide (Martin Schupfner
+        # review, 2026-06-30).
+        var_dims = set(ds[var_name].dims)
+        var_coords = [
+            coord_name
+            for coord_name in ds[var_name].coords
+            if coord_name not in var_dims
+        ]
 
         if var_coords:
             # Create coordinates attribute string
@@ -312,6 +311,11 @@ def _set_coordinates_attribute(ds: xr.Dataset, rule: Rule) -> None:
             ds[var_name].encoding.pop("coordinates", None)
             ds[var_name].attrs["coordinates"] = coords_str
             logger.info(f"  → {var_name}: coordinates = '{coords_str}'")
+        else:
+            # No auxiliary coords: drop any inherited ``coordinates`` attr
+            # from source rather than emit an incorrect list.
+            ds[var_name].attrs.pop("coordinates", None)
+            ds[var_name].encoding.pop("coordinates", None)
 
 
 # Alias for consistency with other modules

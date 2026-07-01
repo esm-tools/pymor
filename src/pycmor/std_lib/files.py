@@ -1278,27 +1278,22 @@ def _filename_time_range(ds, rule) -> str:
     end = pd.Timestamp(str(ds[time_label].data[-1]))
     # frequency_str = rule.get("frequency_str")
     frequency_str = rule.data_request_variable.frequency
+    # CMIP7 Appendix 1 (Global_Attributes) mandates specific precisions
+    # for filename time labels per frequency. Emit spec-compliant tokens;
+    # earlier revs clamped everything to 6/8-digit to fit the pre-#46
+    # wcrp TIME003 regex, but that was spec-violating per DKRZ review
+    # (Martin Schupfner, 2026-06-30). cc-plugin-wcrp#46 must land before
+    # sub-daily/subhourly files pass the checker.
     if frequency_str in ("yr", "yrPt", "dec"):
-        # Yearly / decadal frequency. The wcrp TIME003 filename regex only
-        # accepts 6- or 8-digit tokens (``\d{6}|\d{8}``), so the canonical
-        # 4-digit ``YYYY-YYYY`` form is silently flagged as "no time range
-        # token found". Expand to 6-digit month precision spanning Jan to
-        # Dec of the covered years; this is the minimum expansion that
-        # fits the regex without fabricating day-precision we do not have.
-        # Drop when cc-plugin-wcrp#46 lands (adds 4-digit support).
-        return f"{start.year:04d}01-{end.year:04d}12"
+        return f"{start.year:04d}-{end.year:04d}"                    # YYYY
     if frequency_str in ("mon", "monC", "monPt"):
-        return f"{start:%Y%m}-{end:%Y%m}"
+        return f"{start:%Y%m}-{end:%Y%m}"                            # YYYYMM
     if frequency_str == "day":
-        return f"{start:%Y%m%d}-{end:%Y%m%d}"
-    if frequency_str in ("6hr", "3hr", "1hr", "6hrPt", "3hrPt", "1hrPt", "1hrCM", "subhrPt"):
-        # We always split sub-daily output yearly, so the file covers
-        # Jan 1 to Dec 31 of one year. Clamp to 8-digit day-precision
-        # token that the current wcrp regex accepts (\d{6}|\d{8}); this
-        # keeps the day-precision info we genuinely have and sidesteps
-        # cc-plugin-wcrp#46 (which would let us emit the finer
-        # YYYYMMDDhhmm form).
-        return f"{start.year:04d}0101-{end.year:04d}1231"
+        return f"{start:%Y%m%d}-{end:%Y%m%d}"                        # YYYYMMDD
+    if frequency_str in ("6hr", "3hr", "1hr", "6hrPt", "3hrPt", "1hrPt", "1hrCM"):
+        return f"{start:%Y%m%d%H%M}-{end:%Y%m%d%H%M}"                # YYYYMMDDhhmm
+    if frequency_str in ("subhr", "subhrPt"):
+        return f"{start:%Y%m%d%H%M%S}-{end:%Y%m%d%H%M%S}"            # YYYYMMDDhhmmss
     if frequency_str == "fx":
         return ""
     else:
