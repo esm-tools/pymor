@@ -9,12 +9,64 @@ based on the time method (mean, instantaneous, or climatology) and the
 data's temporal frequency.
 """
 
+import json as _json
+from importlib.resources import files as _pkg_files
+
 import numpy as np
 import xarray as xr
 
 from ..core.logging import logger
 from ..core.rule import Rule
 from .dataset_helpers import get_time_label
+
+
+def _load_temporal_shape_to_must_have_bounds():
+    """Build a mapping from CMIP7 ``temporal_shape`` (as reported by the
+    data request variable) to the ``must_have_bounds`` field of the
+    corresponding time axis in the vendored ``CMIP7_coordinate.json``.
+
+    The DReq's ``temporal_shape`` values (``time-intv``, ``time-point``,
+    ``time-fxc``, ``climatology``, ``diurnal-cycle``, ``None``) correspond
+    to axis entries (``time`` / ``time1`` / ``timefxc`` / etc.) in the
+    coordinate JSON. Only ``time-point`` maps to an axis with
+    ``must_have_bounds="no"`` (namely ``time1``); everything else wants
+    bounds. Vendored from WCRP-CMIP/cmip7-cmor-tables (main branch,
+    cmor_version 3.15).
+    """
+    try:
+        _path = _pkg_files("pycmor.data.cmip7").joinpath("CMIP7_coordinate.json")
+        _tbl = _json.loads(_path.read_text())
+    except Exception as exc:  # pragma: no cover - vendored file always present
+        logger.warning(f"could not load CMIP7_coordinate.json: {exc}; defaulting to must_have_bounds=yes")
+        return {}
+    axis_entry = _tbl.get("axis_entry", {})
+    # Direct axis lookup by out_name for temporal_shape mapping. We consult
+    # the JSON so downstream table updates propagate without code changes.
+    _map = {
+        "time-intv": axis_entry.get("time", {}).get("must_have_bounds", "yes"),
+        "time-point": axis_entry.get("time1", {}).get("must_have_bounds", "no"),
+        "time-fxc": axis_entry.get("timefxc", {}).get("must_have_bounds", "yes"),
+        "climatology": "yes",
+        "diurnal-cycle": "yes",
+    }
+    return _map
+
+
+_TEMPORAL_SHAPE_TO_MHB = _load_temporal_shape_to_must_have_bounds()
+
+
+def _axis_must_have_bounds(rule: Rule) -> bool:
+    """Return True if the axis for this rule's variable requires bounds
+    per CMIP7_coordinate.json (via the DReq's ``temporal_shape``).
+    Defaults to True on any lookup failure so we err on the side of
+    preserving bnds.
+    """
+    drv = getattr(rule, "data_request_variable", None)
+    tshape = (getattr(drv, "temporal_shape", None) or "").strip() if drv else ""
+    if not tshape or tshape.lower() == "none":
+        return True
+    val = _TEMPORAL_SHAPE_TO_MHB.get(tshape, "yes")
+    return val != "no"
 
 
 def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
@@ -119,19 +171,16 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
         logger.info("  skipping bounds creation for climatology data")
         return ds
 
-    # CMIP7 output requirements: time_bnds MUST NOT be written for
-    # instantaneous (tpt / ``cell_methods = "time: point"``) variables.
-    # CMIP6 had the same convention. CF allows bounds on instantaneous
-    # data but CMIP explicitly forbids them. Drop any source-supplied
-    # bnds and clear the parent's ``bounds`` attr. DKRZ review, 2026-06-30.
-    if time_method == "instantaneous":
-        logger.info("  skipping bounds creation for instantaneous (tpt) data")
-        if time_bounds_label in ds.variables:
-            ds = ds.drop_vars(time_bounds_label)
-        if "bounds" in ds[time_label].attrs:
-            del ds[time_label].attrs["bounds"]
-        _force_canonical_time_encoding(ds, time_label)
-        return ds
+    # NOTE: instantaneous (tpt / ``cell_methods = "time: point"``)
+    # variables still go through the full flow below so the wcrp_treats_
+    # as_instantaneous branch can realign time to period_start. The
+    # actual decision to WRITE time_bnds happens at the end of this
+    # function via _axis_must_have_bounds(rule): if the CMIP7 axis for
+    # this variable's temporal_shape has ``must_have_bounds="no"`` (only
+    # time1 for now), the freshly-built bnds are dropped just before
+    # return. Skipping the flow entirely (as f7cbcda2 did) also skipped
+    # the time realignment, which broke LPJ-GUESS LUT yearly tpt files
+    # by leaving them at mid-year midpoints instead of period_start.
 
     time_var = ds[time_label]
     time_values = time_var.values
@@ -313,6 +362,22 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
     _force_canonical_time_encoding(ds, time_label)
 
     logger.info(f"  set {time_bounds_label}{bounds.shape}, " f"range: {bounds.values[0][0]} to {bounds.values[-1][-1]}")
+
+    # If the CMIP7 axis for this variable has must_have_bounds="no"
+    # (i.e. time1 for temporal_shape="time-point"), drop the freshly-built
+    # bnds and clear the parent's ``bounds`` attribute now. Keeping the
+    # flow up to here means time got realigned to period_start via the
+    # wcrp_treats_as_instantaneous branch; only the on-disk bnds are
+    # elided. See _axis_must_have_bounds docstring.
+    if not _axis_must_have_bounds(rule):
+        logger.info(
+            f"  temporal_shape maps to axis with must_have_bounds='no'; "
+            f"dropping {time_bounds_label} after time realignment"
+        )
+        if time_bounds_label in ds.variables:
+            ds = ds.drop_vars(time_bounds_label)
+        ds[time_label].attrs.pop("bounds", None)
+
     return ds
 
 
