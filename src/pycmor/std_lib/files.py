@@ -1274,19 +1274,19 @@ def _filename_time_range(ds, rule) -> str:
     time_label = get_time_label(ds)
     if is_scalar(ds[time_label]):
         return ""
-    # Filename token describes COVERAGE, not the stored timestamps. For a
-    # canonical tavg 1hr file the timestamps are midpoints (HH:30) but
-    # the coverage runs edge-to-edge (00:00 through 24:00). Use the
-    # time_bnds first-lower and last-upper edges when present so the
-    # token reads ``185101010000-185201010000`` rather than
-    # ``185101010030-185112312330``. cli95 tripped wcrp TIME003 exactly
-    # because f7cbcda2 built the token from the midpoint timestamp
-    # instead of the coverage boundary (DKRZ review, 2026-06-30).
+    # Filename token describes COVERAGE, mirrored to the checker's
+    # ``_coverage_from_time``: start = ``bnds[0, 0]`` (left edge of first
+    # period) and end = ``bnds[-1, 0]`` (LEFT edge of LAST period, i.e.
+    # the last period's own start). Using ``bnds[-1, 1]`` (right edge)
+    # slides the token one period beyond the data and trips TIME003 with
+    # "Data ends at (1851, 12), earlier than filename end 185201." on
+    # monthly files (cli96, 522 findings). tpt files that carry no bnds
+    # fall back to time stamps at both ends.
     bounds_var = ds[time_label].attrs.get("bounds")
     if bounds_var and bounds_var in ds.variables:
         _bnds = ds[bounds_var]
         start = pd.Timestamp(str(_bnds.data[0, 0]))
-        end = pd.Timestamp(str(_bnds.data[-1, 1]))
+        end = pd.Timestamp(str(_bnds.data[-1, 0]))
     else:
         # tpt / instantaneous files have no bnds; the timestamp IS the
         # coverage point.
