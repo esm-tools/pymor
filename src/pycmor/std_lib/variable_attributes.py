@@ -29,15 +29,18 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
     missing_value = rule._pycmor_cfg("xarray_default_dataarray_attrs_missing_value")
     attrs = rule.data_request_variable.attrs.copy()  # avoid modifying original
 
-    # Flag variables (CF flag-type) must not carry missing_value/_FillValue.
+    # Flag variables (CF flag-type) are integer-valued, so the float
+    # default (1e20) does not round-trip through int32. wcrp ATTR001 still
+    # demands both missing_value and _FillValue on every variable, so pick
+    # the netCDF integer default (NC_FILL_INT = -2147483647) instead of
+    # skipping. Basin/siline flag values sit well inside that range.
     is_flag = ("flag_values" in attrs) or ("flag_meanings" in attrs) \
         or ("flag_values" in da.attrs) or ("flag_meanings" in da.attrs)
 
-    # Set missing value in attrs if not present (skip flag variables)
-    if not is_flag:
-        for attr in ["missing_value", "_FillValue"]:
-            if attrs.get(attr) is None:
-                attrs[attr] = missing_value
+    _fill = -2147483647 if is_flag else missing_value
+    for attr in ["missing_value", "_FillValue"]:
+        if attrs.get(attr) is None:
+            attrs[attr] = _fill
 
     skip_setting_unit_attr = rule._pycmor_cfg("xarray_default_dataarray_processing_skip_unit_attr_from_drv")
     if skip_setting_unit_attr:

@@ -488,14 +488,17 @@ def get_encoding_with_chunks(
 
         # CF forbids _FillValue on bounds variables. Respect an explicit None
         # already set upstream, and skip any *_bnds / *_bounds variable.
-        # Flag variables (with flag_values/flag_meanings) also get no _FillValue,
-        # since 1e20 cannot round-trip through int32.
+        # Flag variables (with flag_values/flag_meanings) are integer, so 1e20
+        # cannot round-trip; use NC_FILL_INT instead. wcrp ATTR001 requires
+        # the attribute on every variable including flag variables.
         _sentinel = object()
         _pre = ds[var].encoding.get("_FillValue", _sentinel)
         _is_bounds = str(var).endswith(("_bnds", "_bounds"))
         _is_flag = ("flag_values" in ds[var].attrs) or ("flag_meanings" in ds[var].attrs)
-        if _pre is None or _is_bounds or _is_flag:
+        if _pre is None or _is_bounds:
             var_encoding["_FillValue"] = None
+        elif _is_flag:
+            var_encoding["_FillValue"] = np.int32(-2147483647)
         else:
             var_encoding["_FillValue"] = 1.0e20
 
