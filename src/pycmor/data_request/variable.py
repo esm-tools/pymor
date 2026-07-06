@@ -641,6 +641,10 @@ class CMIP7DataRequestVariable(DataRequestVariable):
         return self._positive
 
     @property
+    def spatial_shape(self) -> str:
+        return self._spatial_shape
+
+    @property
     def standard_name(self) -> str:
         return self._standard_name
 
@@ -668,6 +672,18 @@ class CMIP7DataRequestVariable(DataRequestVariable):
     def region(self) -> Optional[str]:
         """CMIP7 region code (e.g., 'GLB', '30S-90S')."""
         return self._region
+
+    @property
+    def temporal_shape(self) -> str:
+        """CMIP7 temporal shape (``time-intv``, ``time-point``, ``time-fxc``,
+        ``climatology``, ``diurnal-cycle``, or ``None``). Consumed by
+        ``std_lib.time_bounds._axis_must_have_bounds`` to decide whether
+        to keep or drop time_bnds at the end of the pipeline. Without
+        this getter that lookup silently defaulted to keeping bnds and
+        every tpt (time-point) file tripped wcrp TIME001 because the
+        filename token derived from bnds while the actual stamp did not.
+        """
+        return self._temporal_shape
 
     @property
     def typ(self) -> type:
