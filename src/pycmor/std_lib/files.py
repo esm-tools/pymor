@@ -1274,31 +1274,19 @@ def _filename_time_range(ds, rule) -> str:
     time_label = get_time_label(ds)
     if is_scalar(ds[time_label]):
         return ""
-    # Filename token describes COVERAGE, mirrored to the checker's
-    # ``_coverage_from_time``: start = ``bnds[0, 0]`` (left edge of first
-    # period) and end = ``bnds[-1, 0]`` (LEFT edge of LAST period, i.e.
-    # the last period's own start). Using ``bnds[-1, 1]`` (right edge)
-    # slides the token one period beyond the data and trips TIME003 with
-    # "Data ends at (1851, 12), earlier than filename end 185201." on
-    # monthly files (cli96, 522 findings). tpt files that carry no bnds
-    # fall back to time stamps at both ends.
-    bounds_var = ds[time_label].attrs.get("bounds")
-    if bounds_var and bounds_var in ds.variables:
-        _bnds = ds[bounds_var]
-        start = pd.Timestamp(str(_bnds.data[0, 0]))
-        end = pd.Timestamp(str(_bnds.data[-1, 0]))
-    else:
-        # tpt / instantaneous files have no bnds; the timestamp IS the
-        # coverage point.
-        start = pd.Timestamp(str(ds[time_label].data[0]))
-        end = pd.Timestamp(str(ds[time_label].data[-1]))
+    # Filename token is built from the ``time`` coordinate values (not
+    # from ``time_bnds``) per CMIP7 Appendix 1 and CMOR practice. Earlier
+    # revs derived it from bnds edges: bnds[-1, 1] slid one period past
+    # coverage (cli96 522 TIME003 findings), bnds[-1, 0] matched the
+    # pre-#62 checker convention but shipped ``..2300`` for 1hr tavg
+    # where Appendix 1 (Martin Schupfner, 2026-07-06) and cc-plugin-wcrp
+    # #62 (sol1105) both want the midpoint stamp ``..2330``. Use the
+    # stamp directly: ``strftime`` truncates to the frequency's precision
+    # (mon: %Y%m, day: %Y%m%d, 1hr: %Y%m%d%H%M, ...), which lines up with
+    # canonical midpointed tavg and canonical instantaneous tpt files.
+    start = pd.Timestamp(str(ds[time_label].data[0]))
+    end = pd.Timestamp(str(ds[time_label].data[-1]))
     frequency_str = rule.data_request_variable.frequency
-    # CMIP7 Appendix 1 (Global_Attributes) mandates specific precisions
-    # for filename time labels per frequency. Emit spec-compliant tokens;
-    # earlier revs clamped everything to 6/8-digit to fit the pre-#46
-    # wcrp TIME003 regex, but that was spec-violating per DKRZ review
-    # (Martin Schupfner, 2026-06-30). cc-plugin-wcrp#46 must land before
-    # sub-daily/subhourly files pass the checker.
     if frequency_str in ("yr", "yrPt", "dec"):
         return f"{start.year:04d}-{end.year:04d}"                    # YYYY
     if frequency_str in ("mon", "monC", "monPt"):
