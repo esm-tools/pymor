@@ -8,8 +8,6 @@ pipeline. In the Python ecosystem, `xarray` is the workhorse for this—but one
 of the simplest-sounding tasks, figuring out the frequency of a time
 coordinate, often breaks in practice.
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/esm-tools/pymor/HEAD?labpath=blog%2Finfer_frequency.ipynb)
-
 ---
 
 ## The Problem: Three Ways `xarray.infer_freq()` Returns `None`
@@ -70,71 +68,29 @@ print(infer_frequency(times))       # 'M'
 
 ## The Fix: `pycmor.core.infer_freq`
 
-The approach is straightforward:
+Rather than requiring perfectly regular, standard-calendar timestamps,
+`infer_frequency` works from the actual shape of the data:
 
-- Compute **deltas between all consecutive time points**.
-- Take the **median delta** — this smooths over gaps, duplicates, and small
+- **Compute deltas** between all consecutive time points.
+- **Take the median delta** — this smooths over gaps, duplicates, and small
   misalignments without rejecting the whole series.
-- Convert all timestamps (including `cftime`) to a comparable numerical format
-  before doing any arithmetic.
+- **Convert all timestamps** (including `cftime`) to a comparable numerical
+  format before doing any arithmetic.
 
-This makes the function resilient to the three failure modes above, across any
-calendar.
-
----
-
-## Rich Diagnostics Instead of Silent Failure
-
-Pass `return_metadata=True` to get a `FrequencyResult` object instead of a
-plain string. This is the most important difference from `xarray.infer_freq`:
-instead of a silent `None`, you get a structured explanation of what was found
-and why it may be imperfect.
-
-```python
-from pycmor.core.infer_freq import infer_frequency
-
-times = ["2000-01-01", "2000-02-01", "2000-02-28", "2000-04-01"]
-
-result = infer_frequency(times, return_metadata=True, strict=True)
-# strict=True raises instead of returning None when frequency cannot be determined
-```
-
-```python
-FrequencyResult(
-  frequency='M',
-  delta_days=27.0,
-  step=1,
-  is_exact=False,
-  status='irregular'
-)
-```
-
-**What each field means:**
-
-| Field | Description |
-|-------|-------------|
-| `frequency` | Inferred frequency string (`'D'`, `'M'`, `'MS'`, etc.) |
-| `delta_days` | Median spacing between time steps, in days |
-| `step` | Multiplier (e.g. `step=3` with `frequency='M'` means quarterly) |
-| `is_exact` | `True` only if every spacing is identical |
-| `status` | `'valid'`, `'missing_steps'`, `'irregular'`, or `'too_short'` |
-
-**How to interpret `status`:**
-
-- `valid` + `is_exact=True` → safe for resampling and analysis
-- `missing_steps` → gaps present; consider filling before analysis
-- `irregular` → underlying frequency detectable but spacing is inconsistent
-- `too_short` → fewer than two points; cannot determine frequency
+The result is a function that handles all three failure modes above, across any
+calendar — and instead of a silent `None`, it returns an actionable answer.
 
 ---
 
 ## End-to-End: Detecting Issues After File Concatenation
 
-This is where diagnostics pay off in practice. Combining NetCDF files from
-different sources is one of the most common sources of subtle time-axis
-corruption—overlapping chunks, a missing month, misaligned calendars.
-`infer_frequency` gives you a single call to catch all of it before it
-propagates into your analysis.
+Combining NetCDF files from different sources is one of the most common sources
+of subtle time-axis corruption — overlapping chunks, a missing month,
+misaligned calendars. This is where a silent `None` from `xarray.infer_freq`
+is most dangerous: you don't know if your data is clean until something
+downstream breaks.
+
+`infer_frequency` gives you a single call to catch all of it upfront:
 
 ```python
 import numpy as np
@@ -191,6 +147,51 @@ def load_and_validate(paths):
 
 ---
 
+## Rich Diagnostics Instead of Silent Failure
+
+Every `return_metadata=True` call returns a `FrequencyResult` object. Here is
+what each field tells you:
+
+```python
+from pycmor.core.infer_freq import infer_frequency
+
+times = ["2000-01-01", "2000-02-01", "2000-02-28", "2000-04-01"]
+
+result = infer_frequency(times, return_metadata=True, strict=True)
+# strict=True tightens classification: it re-checks spacing and expected step
+# count, flipping status to 'irregular' or 'missing_steps' (and is_exact=False)
+# whenever those checks fail — it never raises on its own.
+```
+
+```python
+FrequencyResult(
+  frequency='M',
+  delta_days=27.0,
+  step=1,
+  is_exact=False,
+  status='irregular'
+)
+```
+
+| Field | Description |
+|-------|-------------|
+| `frequency` | Inferred frequency string (`'D'`, `'M'`, `'MS'`, etc.) |
+| `delta_days` | Median spacing between time steps, in days |
+| `step` | Multiplier (e.g. `step=3` with `frequency='M'` means quarterly) |
+| `is_exact` | `True` only if every spacing is identical |
+| `status` | `'valid'`, `'irregular'`, `'missing_steps'`, `'no_match'`, `'too_short'`, or `'invalid_input: ...'` |
+
+**How to interpret `status`:**
+
+- `valid` + `is_exact=True` → safe for resampling and analysis
+- `irregular` → underlying frequency detectable but spacing is inconsistent
+- `missing_steps` → gaps present; consider filling before analysis
+- `no_match` → no frequency could be matched, even with relaxed tolerance
+- `too_short` → fewer than two points; cannot determine frequency
+- `invalid_input: ...` → timestamps couldn't be converted (message has details)
+
+---
+
 ## Takeaway
 
 `pycmor.core.infer_freq` addresses the three concrete ways `xarray.infer_freq`
@@ -204,12 +205,14 @@ The diagnostics turn a silent `None` into an actionable signal. Insert one call
 after loading or concatenating files and you have an early-warning system for
 the most common class of time-axis corruption.
 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/esm-tools/pycmor/HEAD?labpath=blog%2Finfer_frequency.ipynb)
+
 ---
 
 ## Project Repository
 
-- GitHub: [esm-tools/pymor](https://github.com/esm-tools/pymor)
-- PyPI: [py-cmor](https://pypi.org/project/py-cmor/)
+- GitHub: [esm-tools/pycmor](https://github.com/esm-tools/pycmor)
+- PyPI: [pycmor](https://pypi.org/project/pycmor/)
 
 ---
 
