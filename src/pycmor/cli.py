@@ -472,7 +472,7 @@ def populate_cache(files: List):
 @click.option(
     "--version",
     "-v",
-    default="v1.2.2.2",
+    default="v1.2.2.5",
     help="CMIP7 data request version to test against",
     show_default=True,
 )

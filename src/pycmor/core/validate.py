@@ -265,7 +265,7 @@ GENERAL_SCHEMA = {
             },
             "CMIP7_DReq_version": {
                 "type": "string",
-                "required": False,  # Optional: defaults to "v1.2.2.2"
+                "required": False,  # Optional: defaults to "v1.2.2.5"
             },
         },
     },

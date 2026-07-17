@@ -418,7 +418,7 @@ class CMORizer:
             general:
                 cmor_version: CMIP7
                 CMIP7_DReq_metadata: /path/to/metadata.json  # optional
-                CMIP7_DReq_version: v1.2.2.2  # optional
+                CMIP7_DReq_version: v1.2.2.5  # optional
                 cmip7_experiments_file: /path/to/experiments.json  # optional
         """
         from .resource_locator import MetadataLocator
