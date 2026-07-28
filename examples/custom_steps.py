@@ -2510,8 +2510,14 @@ def _load_secondary_mf(rule, path_key, pattern_key, variable_key):
     if path is None or pattern is None:
         raise ValueError(f"Rule must specify '{path_key}' and '{pattern_key}'")
     var_name = rule.get(variable_key)
-    year_start = rule.get("year_start")
-    year_end = rule.get("year_end")
+    # Fall back to the repoint-injected ``year:`` (inherit block) when the
+    # CLI ``--year-start/--year-end`` overrides are absent. Secondary
+    # ``*_pattern`` regexes stay broad in the yamls by design; without
+    # this fallback a bare ``pycmor process`` (no CLI year args, e.g. the
+    # run_hr_yaml.sh path) opened every year on disk — cli51-style year
+    # mixing across ~50 secondary loads.
+    year_start = rule.get("year_start", rule.get("year"))
+    year_end = rule.get("year_end", rule.get("year"))
     skip_filter = bool(rule.get("skip_input_year_filter", False))
     time_dimname = rule.get("time_dimname")
     da = _load_secondary_mf_cached(
@@ -2538,8 +2544,9 @@ def _load_secondary_mf_uncached(rule, path_key, pattern_key, variable_key):
     files = sorted(_os.path.join(path, f) for f in _os.listdir(path) if regex.fullmatch(f))
     if not files:
         raise FileNotFoundError(f"No files matching regex {pattern!r} in {path}")
-    year_start = rule.get("year_start")
-    year_end = rule.get("year_end")
+    # Same ``year:`` fallback as _load_secondary_mf (see comment there).
+    year_start = rule.get("year_start", rule.get("year"))
+    year_end = rule.get("year_end", rule.get("year"))
     skip_filter = rule.get("skip_input_year_filter", False)
     if year_start is not None and year_end is not None and not skip_filter:
         from pycmor.core.gather_inputs import filter_files_by_year_range
