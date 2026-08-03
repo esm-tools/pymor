@@ -118,10 +118,20 @@ export PYCMOR_PREFECT_COLLAPSE=${PYCMOR_PREFECT_COLLAPSE:-1}
 # SHARD_DRS=on enables the CMIP DRS sub-tree under each shard's OUTDIR
 # (pycmor.enable_output_subdirs). When on, the per-tier "<tier>/cmorized"
 # OUTSUB prefix is dropped so all tiers land in one shared DRS root.
-# Off by default; downstream tools that consume per-tier flat layouts
-# can keep using the historical structure.
-SHARD_DRS=${SHARD_DRS:-off}
+#
+# ON by default since 2026-08-03. The DRS tree is what ESGF publication
+# needs, and three wcrp checks (FILE001, PATH001, PATH002) validate the
+# directory path against each file's global attributes — a flat per-tier
+# layout fails all three on every file. A colleague's first run tripped
+# 1626 spurious HIGH findings (542 files x 3) from exactly this, and a
+# cli104 submission nearly repeated it. Set SHARD_DRS=off explicitly if
+# you need the historical flat per-tier layout for a downstream tool.
+SHARD_DRS=${SHARD_DRS:-on}
 export SHARD_DRS
+if [ "$SHARD_DRS" != "on" ]; then
+  echo "WARNING: SHARD_DRS=$SHARD_DRS — output will NOT use the CMIP DRS tree."
+  echo "         Expect FILE001/PATH001/PATH002 HIGH findings on every file."
+fi
 # No global PYCMOR_MAX_IN_FLIGHT — cli7 (May 9) ran 77-rule core_atm
 # clean in 1h25 with the default (n_workers × tpw). cli22's throttle=2
 # was an 8× throughput regression and didn't fix the actual root cause

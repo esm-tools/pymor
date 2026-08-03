@@ -61,6 +61,8 @@ Arguments:
 
 That submits one SLURM array per tier (~17 arrays). Monitor with `squeue --me`. Output lands at `<workdir>/cmorized/MIP-DRS7/CMIP7/...`.
 
+The submit log echoes `drs=on` for every tier. If it says `drs=off`, stop and resubmit with `SHARD_DRS=on`: the flat per-tier layout fails the FILE001, PATH001 and PATH002 checks on every single file, which looks like a catastrophic QC result but is purely a directory-layout artefact.
+
 ## 6. Aggregate QC
 
 Every `.nc` gets a sibling `qc_*.json` with wcrp + cf-checker findings. Count HIGH findings and see the top offenders:
@@ -98,7 +100,8 @@ where `<N>` is the shard index within that tier (from the submit log).
 
 - SLURM account is `ab0246` (project-specific; ask your PI if you need a different one).
 - Never single-node for TCo319 grid data. The driver needs multi-node memory on `compute` partition (default `--mem=0` for full-node memory).
-- Some HIGH findings are checker-side (cc-plugin-wcrp `develop` pending PRs #62, #63), not rule bugs. Cross-check against `pycmor_hr_shard_*.log` if a finding looks upstream-ish.
+- A HIGH finding is not automatically a rule bug. Several classes are checker-side and get fixed upstream in cc-plugin-wcrp; keep the local checkout on a recent `develop` before concluding your data is wrong.
+- Findings that hit every file at once usually point at one systematic cause, not hundreds of separate problems. FILE001/PATH001/PATH002 across the whole run means the DRS layout (see step 5), not bad metadata.
 - GPG signing on commits uses key `D763C0EA86718612` when unlocked; do not add `--no-gpg-sign`.
 
 ## Where to look for help
