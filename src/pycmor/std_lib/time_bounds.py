@@ -354,7 +354,22 @@ def time_bounds(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
         attrs=_bnds_attrs,
     )
 
+    # ``bounds`` carries its own bare ``time`` coord built from raw values,
+    # so it has no ``encoding``. ``assign_coords`` propagates that bare coord
+    # over the dataset's own and wipes ``units``/``calendar``, after which
+    # _force_canonical_time_encoding below sees no units and falls back to
+    # deriving a date-only epoch from the first timestamp. That produced a
+    # different epoch per file (monthly ``days since 1851-01-16``, daily
+    # ``days since 1851-01-01``, yearly ``days since 1851-07-02``) even
+    # though every input ships ``seconds since 1850-01-01``. Carry the
+    # encoding across the assignment so the source epoch survives.
+    _saved_time_enc = dict(ds[time_label].encoding) if time_label in ds.variables else {}
+
     ds = ds.assign_coords({time_bounds_label: bounds})
+
+    if _saved_time_enc:
+        for _k, _v in _saved_time_enc.items():
+            ds[time_label].encoding.setdefault(_k, _v)
 
     if "bounds" not in ds[time_label].attrs:
         ds[time_label].attrs["bounds"] = time_bounds_label
