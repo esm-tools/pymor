@@ -974,6 +974,24 @@ def broadcast_forcing_year_to_monthly(data, rule):
     # (proleptic_gregorian) because piControl model years can be outside
     # the datetime64[ns] range (1678-2262) — e.g. AWI-ESM3 spinup at 1587.
     import cftime
+
+    # Keep the forcing file's own time epoch. ``expand_dims`` builds the new
+    # axis from a bare array, so the source ``encoding`` is dropped and the
+    # save path later derives a per-file epoch from the first timestamp
+    # (``days since 1851-01-16`` for these monthly files) instead. The
+    # input4MIPs GHG files already ship ``days since 1850-01-01``, matching
+    # OIFS and FESOM, so carrying it through keeps the whole dataset on one
+    # time reference.
+    _src_enc = {}
+    try:
+        if time_name in getattr(data, "coords", {}):
+            for _k in ("units", "calendar"):
+                _v = data[time_name].encoding.get(_k)
+                if _v:
+                    _src_enc[_k] = _v
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.debug(f"broadcast_forcing: could not read source time encoding: {exc}")
+
     new_times = np.array(
         [
             cftime.DatetimeProlepticGregorian(year_i, m, 16, 12, 0, 0)
@@ -981,6 +999,14 @@ def broadcast_forcing_year_to_monthly(data, rule):
         ]
     )
     result = sliced.expand_dims({time_name: new_times})
+
+    try:
+        if _src_enc and time_name in getattr(result, "coords", {}):
+            for _k, _v in _src_enc.items():
+                result[time_name].encoding.setdefault(_k, _v)
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.debug(f"broadcast_forcing: could not restore source time encoding: {exc}")
+
     return result
 
 
@@ -2983,6 +3009,67 @@ def slice_to_rule_year_range(data, rule):
     return result
 
 
+def _lpjguess_time_epoch(base_path):
+    """Derive a CMIP time epoch from the LPJ-GUESS outdata layout.
+
+    LPJ-GUESS writes plain-text ``.out`` files, so unlike OIFS and FESOM
+    there is no ``time:units`` anywhere in the source to carry forward.
+    The loaders below build the time axis from scratch, leaving the coord
+    with no ``encoding``; pycmor's save path then derives an epoch from
+    each file's own first timestamp, which lands on a different date per
+    frequency (monthly ``days since 1851-01-16``, and so on) and leaves
+    the dataset with no single time reference.
+
+    The run layout does record the start date: outdata subdirectories are
+    named ``YYYYMMDD-YYYYMMDD`` over the period they cover, so the
+    earliest start is the experiment's first output date. For the
+    AWI-ESM3-veg-HR piControl that is ``18500101``, which matches the
+    ``seconds since 1850-01-01`` epoch OIFS and FESOM already ship, so
+    every component ends up agreeing without anything being hard-coded.
+
+    Returns a ``days since YYYY-MM-DD`` string, or None if the layout does
+    not match (in which case callers leave the encoding alone and the
+    existing behaviour applies).
+    """
+    import pathlib as _pathlib
+    import re as _re
+
+    try:
+        starts = []
+        for child in _pathlib.Path(base_path).iterdir():
+            if not child.is_dir():
+                continue
+            m = _re.fullmatch(r"(\d{4})(\d{2})(\d{2})-\d{8}", child.name)
+            if m:
+                starts.append(tuple(int(g) for g in m.groups()))
+        if not starts:
+            return None
+        y, mo, d = min(starts)
+        return f"days since {y:04d}-{mo:02d}-{d:02d}"
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.debug(f"could not derive LPJ-GUESS time epoch from {base_path}: {exc}")
+        return None
+
+
+def _stamp_lpjguess_time_epoch(obj, base_path):
+    """Set the derived epoch on ``obj``'s time coord encoding, in place.
+
+    No-op when the epoch cannot be derived or the object has no time
+    coord. Uses ``setdefault`` so a real epoch already present wins.
+    """
+    units = _lpjguess_time_epoch(base_path)
+    if not units:
+        return obj
+    try:
+        if "time" in getattr(obj, "coords", {}):
+            obj["time"].encoding.setdefault("units", units)
+            obj["time"].encoding.setdefault("calendar", "proleptic_gregorian")
+            logger.info(f"LPJ-GUESS: stamped time epoch {units!r} from outdata layout")
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.debug(f"could not stamp LPJ-GUESS time epoch: {exc}")
+    return obj
+
+
 def load_lpjguess_monthly(data, rule):
     """
     Load LPJ-GUESS monthly .out files into an xarray Dataset.
@@ -3107,7 +3194,7 @@ def load_lpjguess_monthly(data, rule):
     da.attrs["units"] = rule.get("source_units", "kg m-2 s-1")
 
     ds = da.to_dataset()
-    return ds
+    return _stamp_lpjguess_time_epoch(ds, base_path)
 
 
 def compute_fire_emission(data, rule):
@@ -3240,7 +3327,7 @@ def load_lpjguess_yearly(data, rule):
     source_units = rule.get("source_units")
     if source_units:
         da.attrs["units"] = source_units
-    return da.to_dataset()
+    return _stamp_lpjguess_time_epoch(da.to_dataset(), base_path)
 
 
 def clip_small_negatives(data, rule):
@@ -3391,7 +3478,7 @@ def load_lpjguess_yearly_lut(data, rule):
     source_units = rule.get("source_units")
     if source_units:
         da.attrs["units"] = source_units
-    return da.to_dataset()
+    return _stamp_lpjguess_time_epoch(da.to_dataset(), base_path)
 
 
 def load_lpjguess_monthly_lut(data, rule):
@@ -3477,7 +3564,7 @@ def load_lpjguess_monthly_lut(data, rule):
     source_units = rule.get("source_units")
     if source_units:
         da.attrs["units"] = source_units
-    return da.to_dataset()
+    return _stamp_lpjguess_time_epoch(da.to_dataset(), base_path)
 
 
 # ============================================================
@@ -5677,7 +5764,7 @@ def load_lpjguess_monthly_depth(data, rule):
     if source_units:
         ds[model_variable].attrs["units"] = source_units
 
-    return ds
+    return _stamp_lpjguess_time_epoch(ds, base_path)
 
 
 def load_lpjguess_monthly_pool(data, rule):
@@ -5780,7 +5867,7 @@ def load_lpjguess_monthly_pool(data, rule):
     if source_units:
         ds[model_variable].attrs["units"] = source_units
 
-    return ds
+    return _stamp_lpjguess_time_epoch(ds, base_path)
 
 
 def clip_negative_to_zero(data, rule):
