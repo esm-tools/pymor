@@ -241,13 +241,24 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
       ;;
   esac
 
-  # All tiers run on the global WALLTIME (default 3h).
+  # All tiers run on the global WALLTIME (default 3h) unless overridden.
   # lrcs_seaice was previously 6h because cli30 lrcs_seaice_3 TIMEOUTed at
   # 3h — but that was pre-jemalloc when fragmentation drove the slow path.
   # Since cli35+ (jemalloc on), the slowest lrcs_seaice shard runs:
   #   cli35 _2: 1:08:52   cli36 _2: 1:12:04   (well under 3h)
   # No tier-specific override needed.
+  #
+  # extra_atm needs 6h at minimum. The heavy 3D plev rules (cl_day,
+  # pfull_day, hus_3hr) each take 50-70 min to save under zlib+shuffle,
+  # and 18 rules per shard through a serial-throttled chain adds up.
+  # cli82 TIMEOUT@3h; cli102 barely finished at 2:56; cli108 lost its
+  # last 2 rules at the 3h walltime cap. Bump per-tier to 6h so it
+  # completes even under Lustre contention, without forcing a global
+  # WALLTIME override.
   tier_walltime="$WALLTIME"
+  case "$short_tier" in
+    extra_atm) tier_walltime=06:00:00 ;;
+  esac
 
   # Per-tier dask worker count. All tiers use the global N_WORKERS (4).
   # The earlier extra_atm=3 override was a fix for the Fix #3 eager-
