@@ -2278,11 +2278,33 @@ def _save_dataset_impl(da: xr.DataArray, rule):
                 # xarray normalizes reference datetimes to ISO with `T`, which violates the
                 # cchecker regex `days since YYYY-M-D( HH:MM:SS)?`. Use a date-only epoch
                 # to stay within the accepted grammar while preserving absolute time.
-                try:
-                    _t0 = pd.Timestamp(str(_ref.values[0]))
-                    _units = f"days since {_t0:%Y-%m-%d}"
-                except Exception:
-                    _units = None
+                # Prefer an epoch that is already canonical: the rule-level
+                # ``time_units`` override (issue #215) first, then whatever the
+                # coord carries, and only fall back to deriving one from the
+                # first timestamp when neither is available. Deriving
+                # unconditionally is what produced a different epoch per file
+                # (monthly ``days since 1851-01-16``, daily ``1851-01-01``,
+                # yearly ``1851-07-02``, decadal ``1855-01-01``) even though
+                # every input ships ``seconds since 1850-01-01`` and upstream
+                # steps preserve it. A dataset with no single time reference
+                # cannot express CMIP7's ``branch_time_in_child``, which is
+                # defined as being in "the time units and time model of the
+                # child".
+                _units = time_encoding.get("units")
+                if not _units:
+                    _existing = _ref.encoding.get("units") or _ref.attrs.get("units")
+                    if isinstance(_existing, str) and _existing.startswith("days since"):
+                        _units = _existing
+                if not _units:
+                    try:
+                        _t0 = pd.Timestamp(str(_ref.values[0]))
+                        _units = f"days since {_t0:%Y-%m-%d}"
+                    except Exception:
+                        _units = None
+                # Strip fractional seconds / ISO separators so the result stays
+                # inside the cchecker grammar ``days since YYYY-M-D( HH:MM:SS)?``.
+                if isinstance(_units, str):
+                    _units = _units.split(".")[0].replace("T", " ").strip()
                 if _units:
                     final_encoding[time_label]["units"] = _units
                     for _ds in datasets:
