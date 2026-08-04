@@ -410,8 +410,23 @@ class CMIP7GlobalAttributes(GlobalAttributes):
             # CMIP7 uses 'description' field
             return exp_data.get("description", experiment_id)
 
-        # Fallback to user-provided or experiment_id
-        return self.rule_dict.get("experiment", experiment_id)
+        # An explicit rule-level value wins over the registry.
+        user = self.rule_dict.get("experiment")
+        if user:
+            return user
+
+        # ``self.cv`` is not populated with the CMIP7 experiment collection in
+        # normal runs, so the branch above rarely fires and we used to fall
+        # back to the bare experiment_id ("piControl"). wcrp ATTR007b compares
+        # this attribute against the registry's description and flagged every
+        # file: 536 MEDIUM findings on a single cli108 year. Resolve it from
+        # esgvoc the same way the parent attributes do.
+        term = self._cv_experiment_term()
+        description = getattr(term, "description", None) if term else None
+        if description:
+            return description
+
+        return experiment_id
 
     def get_activity_id(self):
         """
