@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=pycmor-hr-shard
 #SBATCH --partition=compute
-#SBATCH --account=ba0989
+#SBATCH --account=ab0246
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=128
@@ -229,8 +229,12 @@ echo "=== node $(hostname), $(nproc) cores allocated, $(free -g | awk '/^Mem:/{p
 # Inactivity watchdog: scancel this job if the SLURM log file's mtime
 # stalls. cli60 cap7_aerosol toz_mon hung the shard for 2h after 4/5
 # rules had already saved — Prefect/Dask cluster wedge with no output.
-# Default 1800s (30 min); set WEDGE_TIMEOUT_SEC=0 to disable.
-WEDGE_TIMEOUT_SEC="${WEDGE_TIMEOUT_SEC:-1800}"
+# Default 5400s (90 min): the older 1800s default caught 3D plev saves
+# mid-write (cli104 lost 2 shards). zlib+shuffle silent-save windows on
+# cl_day/pfull_day/hurs_3hr routinely hit 50-70 min. 90 min covers those
+# without letting a genuine wedge burn the full 8h walltime. Override
+# via WEDGE_TIMEOUT_SEC=<seconds>; set 0 to disable.
+WEDGE_TIMEOUT_SEC="${WEDGE_TIMEOUT_SEC:-5400}"
 if [ "$WEDGE_TIMEOUT_SEC" -gt 0 ] && [ -n "${SLURM_JOB_ID:-}" ]; then
   WEDGE_LOG_FILE="/work/ab0246/a270092/software/pycmor/pycmor_hr_shard_${SLURM_JOB_NAME:-shard}_${SLURM_ARRAY_JOB_ID:-$SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID:-1}.log"
   WEDGE_TARGET_JOB="${SLURM_ARRAY_JOB_ID:+${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}}"
