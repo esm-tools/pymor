@@ -66,6 +66,8 @@ class CMIP7GlobalAttributes(GlobalAttributes):
             "Conventions",
             "activity_id",
             "area_label",
+            "branch_time_in_child",
+            "branch_time_in_parent",
             "branded_variable",
             "branding_suffix",
             "creation_date",
@@ -85,7 +87,12 @@ class CMIP7GlobalAttributes(GlobalAttributes):
             "license_id",
             "mip_era",
             "nominal_resolution",
+            "parent_activity_id",
             "parent_experiment_id",
+            "parent_mip_era",
+            "parent_source_id",
+            "parent_time_units",
+            "parent_variant_label",
             "physics_index",
             "product",
             "realization_index",
@@ -114,12 +121,45 @@ class CMIP7GlobalAttributes(GlobalAttributes):
         # extend the DRS member_id when non-"none"; the removal here only
         # affects the on-disk attribute set, not the DRS path.
 
+    #: Attributes the CMIP7 guidance marks "conditionally required", with the
+    #: condition "Parent experiment exists". Written only when the CV gives
+    #: this experiment a parent; omitted entirely otherwise, since an empty
+    #: or zero value would assert a branch that never happened.
+    _PARENT_CONDITIONAL_ATTRS = (
+        "branch_time_in_child",
+        "branch_time_in_parent",
+        "parent_activity_id",
+        "parent_experiment_id",
+        "parent_mip_era",
+        "parent_source_id",
+        "parent_time_units",
+        "parent_variant_label",
+    )
+
     def global_attributes(self) -> dict:
         """Generate all required global attributes for CMIP7"""
+        from ..core.logging import logger
+
         d = {}
+        has_parent = self.has_parent_experiment()
         for key in self.required_global_attributes:
             func = getattr(self, f"get_{key}")
-            d[key] = func()
+            value = func()
+            if key in self._PARENT_CONDITIONAL_ATTRS:
+                if not has_parent:
+                    continue
+                # A parent exists but this attribute was not supplied.
+                # parent_time_units and branch_time_in_parent cannot be
+                # derived, so warn rather than write a placeholder.
+                if value is None or value == "":
+                    logger.warning(
+                        f"global_attributes: {key!r} is required because "
+                        f"{self.rule_dict.get('experiment_id')!r} has parent "
+                        f"{self.get_parent_experiment_id()!r}, but no value was "
+                        f"supplied; set it in the recipe."
+                    )
+                    continue
+            d[key] = value
         return d
 
     def subdir_path(self) -> str:
@@ -686,6 +726,114 @@ class CMIP7GlobalAttributes(GlobalAttributes):
 
     def get_license_id(self):
         return self.rule_dict.get("license_id", "CC-BY-4.0")
+
+    def _cv_experiment_term(self):
+        """Return this experiment's CMIP7 CV term, or None.
+
+        Cached on the instance; the CV lookup walks the whole experiment
+        collection and several parent getters need the same term.
+        """
+        if hasattr(self, "_experiment_term_cache"):
+            return self._experiment_term_cache
+        term = None
+        experiment_id = self.rule_dict.get("experiment_id")
+        if experiment_id:
+            try:
+                from esgvoc.api.projects import get_all_terms_in_collection
+
+                for t in get_all_terms_in_collection("cmip7", "experiment"):
+                    if getattr(t, "drs_name", None) == experiment_id:
+                        term = t
+                        break
+            except Exception:
+                term = None
+        self._experiment_term_cache = term
+        return term
+
+    def has_parent_experiment(self) -> bool:
+        """True when the CMIP7 CV assigns this experiment a parent.
+
+        The parent/branch global attributes are "conditionally required"
+        per the CMIP7 Global Attributes guidance, with the condition given
+        as "Parent experiment exists". The CV is what decides that: the
+        ``experiment`` term for ``piControl`` carries ``parent_experiment:
+        "picontrol-spinup"``, while ``piControl-spinup`` itself carries
+        ``parent_experiment: null`` and so terminates the chain.
+        """
+        return bool(self.get_parent_experiment_id())
+
+    def get_parent_activity_id(self):
+        """Activity of the parent experiment, from the CV unless overridden."""
+        user = self.rule_dict.get("parent_activity_id")
+        if user:
+            return user
+        term = self._cv_experiment_term()
+        parent_activity = getattr(term, "parent_activity", None) if term else None
+        if parent_activity is not None:
+            drs = getattr(parent_activity, "drs_name", None)
+            if drs:
+                return drs
+            # CV stores the bare id ("cmip"); DRS form is upper-case.
+            if isinstance(parent_activity, str) and parent_activity:
+                return parent_activity.upper()
+        return ""
+
+    def get_parent_mip_era(self):
+        """MIP era of the parent run.
+
+        Defaults to this run's own ``mip_era``: a parent from an earlier
+        era is possible but rare, so it has to be set explicitly.
+        """
+        return self.rule_dict.get("parent_mip_era") or self.get_mip_era()
+
+    def get_parent_source_id(self):
+        """Model that produced the parent run, normally the same model."""
+        return self.rule_dict.get("parent_source_id") or self.get_source_id()
+
+    def get_parent_variant_label(self):
+        """Variant label of the parent run.
+
+        Defaults to this run's own ``variant_label``. That is right for a
+        straight continuation off a single unbranched parent; set it
+        explicitly if the parent used a different variant.
+        """
+        return self.rule_dict.get("parent_variant_label") or self.get_variant_label()
+
+    def get_parent_time_units(self):
+        """Time units as recorded in the parent run.
+
+        Cannot be derived: it is a property of the parent simulation's own
+        time axis, which this run has no access to. Must be supplied in
+        the recipe when the experiment has a parent, e.g.
+        ``parent_time_units: "days since 1350-01-01"``.
+        """
+        return self.rule_dict.get("parent_time_units") or ""
+
+    def get_branch_time_in_parent(self):
+        """Branch time expressed in the parent's time units and time model.
+
+        Cannot be derived; supply ``branch_time_in_parent`` in the recipe
+        alongside ``parent_time_units``.
+        """
+        value = self.rule_dict.get("branch_time_in_parent")
+        if value is None or value == "":
+            return None
+        return float(value)
+
+    def get_branch_time_in_child(self):
+        """Branch time expressed in this run's time units and time model.
+
+        Defaults to 0.0, which is correct whenever the child begins at the
+        branch point (the usual case, and true for piControl off its
+        spinup). This is only meaningful because the pipeline now carries
+        one time epoch for the whole dataset; see the note in
+        ``std_lib.timeaverage.timeavg`` about the per-file epochs that
+        previously made a bare 0.0 ambiguous.
+        """
+        value = self.rule_dict.get("branch_time_in_child", 0.0)
+        if value is None or value == "":
+            return None
+        return float(value)
 
     def get_parent_experiment_id(self):
         # CMIP7 experiment CV assigns each experiment its parent; the CMIP6

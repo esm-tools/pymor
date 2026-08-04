@@ -321,8 +321,8 @@ thkcello, masscello).
 | **obvfsq** | `ocean.obvfsq.tavg-ol-hxy-sea.mon.glb` | ✅ | DefaultPipeline | direct from `N2.fesom` |
 | **tos_ga** | `ocean.tos.tavg-u-hm-sea.mon.glb` | ✅ | DefaultPipeline | from `thetaoga.fesom` |
 | **sos_ga** | `ocean.sos.tavg-u-hm-sea.mon.glb` | ✅ | DefaultPipeline | from `soga.fesom` |
-| **thetao_ga** | `ocean.thetao.tavg-ol-hm-sea.mon.glb` | ✅ | DefaultPipeline | scalar `thetaoga.fesom` |
-| **so_ga** | `ocean.so.tavg-ol-hm-sea.mon.glb` | ✅ | DefaultPipeline | scalar `soga.fesom` |
+| **thetao_ga** | `ocean.thetao.tavg-u-hm-sea.mon.glb` | ✅ | DefaultPipeline | scalar `thetaoga.fesom` |
+| **so_ga** | `ocean.so.tavg-u-hm-sea.mon.glb` | ✅ | DefaultPipeline | scalar `soga.fesom` |
 | **masso** | `ocean.masso.tavg-u-hm-sea.mon.glb` | ✅ | `scale_pipeline` | volo × rho_0 |
 | **volo** | `ocean.volo.tavg-u-hm-sea.mon.glb` | ✅ | DefaultPipeline | direct from `volo.fesom` |
 | **mlotst** (day) | `ocean.mlotst.tavg-u-hxy-sea.day.glb` | ✅ | DefaultPipeline | needs daily MLD3 in namelist.io |

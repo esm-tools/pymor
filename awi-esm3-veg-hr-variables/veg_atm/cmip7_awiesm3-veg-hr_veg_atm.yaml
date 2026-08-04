@@ -56,6 +56,11 @@ inherit:
   institution: "Alfred Wegener Institute for Polar and Marine Research"
   experiment_id: piControl
   variant_label: r1i1p1f1
+  # Parent/branch metadata: piControl branches from piControl-spinup
+  # (CMIP7 experiment CV). The spinup ran 330 years on its own calendar
+  # starting 1350-01-01, so the branch at its end is 1680-01-01.
+  parent_time_units: "days since 1350-01-01"
+  branch_time_in_parent: 120522.0
   grid_label: g122
   grid: "OpenIFS TCo319 reduced Gaussian (~25 km)"
   nominal_resolution: "25 km"
