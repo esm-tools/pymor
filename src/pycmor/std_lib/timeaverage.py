@@ -177,22 +177,29 @@ def timeavg(da: xr.DataArray, rule):
     """Preserve the source time epoch across :func:`_timeavg_impl`.
 
     ``xr.DataArray.resample`` builds a fresh time index and drops its
-    ``encoding``, so ``units``/``calendar`` are gone by the time
-    ``std_lib.time_bounds._force_canonical_time_encoding`` runs. That
-    function then takes its documented "source has no units" fallback and
-    derives a date-only epoch from the first timestamp, which differs per
-    file: monthly output landed on ``days since 1851-01-16``, daily on
-    ``days since 1851-01-01``, yearly on ``days since 1851-07-02``,
-    decadal on ``days since 1855-01-01``. The inputs carry no such
-    spread; OIFS and FESOM both ship ``seconds since 1850-01-01``.
+    ``encoding``, so ``units``/``calendar`` would otherwise be gone as
+    soon as averaging happens. Capture them before the resample and
+    restore them afterwards, using ``setdefault`` so anything deliberately
+    set downstream still wins.
 
-    A per-file epoch is not wrong on its own (cftime decodes each file
-    correctly) but it leaves the dataset with no single time reference,
-    which CMIP7 assumes when it defines ``branch_time_in_child`` as being
-    in "the time units and time model of the child".
+    This is the first half of keeping one time epoch across the dataset.
+    The second half is in ``std_lib.time_bounds.time_bounds``, where
+    assigning the ``time_bnds`` coord would otherwise clear the encoding
+    again. Neither fix works alone: without this one there is nothing for
+    ``time_bounds`` to preserve, and without that one the value restored
+    here is wiped before it reaches disk.
 
-    Capture the epoch before the resample and restore it afterwards. Uses
-    ``setdefault`` so anything deliberately set downstream still wins.
+    Why it matters: with the epoch lost,
+    ``time_bounds._force_canonical_time_encoding`` takes its documented
+    "source has no units" fallback and derives a date-only epoch from the
+    first timestamp, which differs per file (monthly ``days since
+    1851-01-16``, daily ``days since 1851-01-01``, yearly ``days since
+    1851-07-02``). The inputs carry no such spread; OIFS and FESOM both
+    ship ``seconds since 1850-01-01``. A per-file epoch is not wrong on
+    its own, cftime decodes each file correctly, but it leaves the dataset
+    with no single time reference, which CMIP7 assumes when it defines
+    ``branch_time_in_child`` as being in "the time units and time model of
+    the child".
     """
     _src_enc = {}
     try:
