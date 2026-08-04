@@ -174,6 +174,50 @@ def _frequency_from_approx_interval(interval: str):
 
 
 def timeavg(da: xr.DataArray, rule):
+    """Preserve the source time epoch across :func:`_timeavg_impl`.
+
+    ``xr.DataArray.resample`` builds a fresh time index and drops its
+    ``encoding``, so ``units``/``calendar`` are gone by the time
+    ``std_lib.time_bounds._force_canonical_time_encoding`` runs. That
+    function then takes its documented "source has no units" fallback and
+    derives a date-only epoch from the first timestamp, which differs per
+    file: monthly output landed on ``days since 1851-01-16``, daily on
+    ``days since 1851-01-01``, yearly on ``days since 1851-07-02``,
+    decadal on ``days since 1855-01-01``. The inputs carry no such
+    spread; OIFS and FESOM both ship ``seconds since 1850-01-01``.
+
+    A per-file epoch is not wrong on its own (cftime decodes each file
+    correctly) but it leaves the dataset with no single time reference,
+    which CMIP7 assumes when it defines ``branch_time_in_child`` as being
+    in "the time units and time model of the child".
+
+    Capture the epoch before the resample and restore it afterwards. Uses
+    ``setdefault`` so anything deliberately set downstream still wins.
+    """
+    _src_enc = {}
+    try:
+        if "time" in getattr(da, "coords", {}):
+            for _k in ("units", "calendar"):
+                _v = da["time"].encoding.get(_k)
+                if _v:
+                    _src_enc[_k] = _v
+    except Exception as _exc:  # pragma: no cover - defensive
+        logger.debug(f"timeavg: could not read source time encoding: {_exc}")
+
+    out = _timeavg_impl(da, rule)
+
+    try:
+        if _src_enc and "time" in getattr(out, "coords", {}):
+            for _k, _v in _src_enc.items():
+                out["time"].encoding.setdefault(_k, _v)
+            logger.debug(f"timeavg: restored source time encoding {_src_enc}")
+    except Exception as _exc:  # pragma: no cover - defensive
+        logger.debug(f"timeavg: could not restore source time encoding: {_exc}")
+
+    return out
+
+
+def _timeavg_impl(da: xr.DataArray, rule):
     """
     Time averages data with respect to time-method (mean/climatology/instant.)
 
