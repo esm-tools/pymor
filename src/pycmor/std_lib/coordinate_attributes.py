@@ -8,6 +8,7 @@ ensure proper interpretation by xarray and other CF-aware tools.
 The time coordinate is handled separately in files.py during the save operation.
 """
 
+import json
 from pathlib import Path
 from typing import Dict, Optional, Union
 
@@ -93,6 +94,83 @@ def _get_coordinate_metadata(coord_name: str) -> Optional[Dict[str, str]]:
         return COORDINATE_METADATA[coord_lower].copy()
 
     return None
+
+
+def _load_axis_entries() -> Dict[str, Dict[str, str]]:
+    """Load ``axis_entry`` from the vendored CMIP7 coordinate table."""
+    path = Path(__file__).parent.parent / "data" / "cmip7" / "CMIP7_coordinate.json"
+    try:
+        with open(path, "r") as f:
+            return json.load(f).get("axis_entry", {}) or {}
+    except Exception as exc:
+        logger.warning(f"could not load CMIP7_coordinate.json: {exc}; no scalar coordinates will be added")
+        return {}
+
+
+AXIS_ENTRIES = _load_axis_entries()
+
+
+def add_scalar_coordinates(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
+    """Attach the scalar coordinates the data request asks for.
+
+    CMIP7 variables carry their scalar coordinate in the DReq ``dimensions``
+    tuple: ``tas`` is ``(longitude, latitude, time, height2m)`` and
+    ``sfcWind`` is ``(..., height10m)``. Those entries are not real
+    dimensions of the array, they are single-valued coordinates that the
+    file has to declare and reference from the data variable's
+    ``coordinates`` attribute, e.g.::
+
+        double height ;
+            height:units = "m" ;
+            height:axis = "Z" ;
+            height:positive = "up" ;
+            height:standard_name = "height" ;
+        float sfcWind(time, cell) ;
+            sfcWind:coordinates = "height lat lon" ;
+
+    pycmor emitted neither, so a 10 m wind and a 2 m temperature were
+    indistinguishable on disk. The QC does not catch this yet (there are
+    no coordinate checks beyond time/lat/lon/lev), but it is required by
+    the spec and was raised in the DKRZ review of the cli108 output.
+
+    Values come from the vendored ``CMIP7_coordinate.json``: an entry with
+    a non-empty ``value`` is scalar. Entries without one (``sdepth`` and
+    other real vertical axes) are left alone, they are dimensions rather
+    than scalars and are handled elsewhere.
+    """
+    drv = getattr(rule, "data_request_variable", None)
+    dims = tuple(getattr(drv, "dimensions", ()) or ()) if drv else ()
+    if not dims:
+        return ds
+
+    for dim in dims:
+        entry = AXIS_ENTRIES.get(dim)
+        if not entry:
+            continue
+        raw_value = str(entry.get("value", "") or "").strip()
+        if not raw_value:
+            # Not a scalar coordinate (e.g. sdepth); leave to the vertical path.
+            continue
+        out_name = entry.get("out_name") or dim
+        if out_name in ds.variables or out_name in ds.coords:
+            continue
+        try:
+            value = float(raw_value)
+        except ValueError:
+            logger.warning(f"  scalar coordinate {dim!r} has non-numeric value {raw_value!r}; skipping")
+            continue
+
+        attrs = {}
+        for key in ("standard_name", "long_name", "units", "axis", "positive"):
+            val = entry.get(key)
+            if val:
+                attrs[key] = val
+        ds = ds.assign_coords({out_name: xr.DataArray(value, attrs=attrs)})
+        ds[out_name].encoding["dtype"] = "float64"
+        ds[out_name].encoding["_FillValue"] = None
+        logger.info(f"  added scalar coordinate {out_name!r} = {value} {attrs.get('units', '')} (from {dim!r})")
+
+    return ds
 
 
 def _should_skip_coordinate(coord_name: str, rule: Rule) -> bool:
@@ -195,6 +273,10 @@ def set_coordinate_attributes(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -
         return original_array if input_was_dataarray else ds
 
     logger.info("[Coordinate Attributes] Setting CF-compliant metadata")
+
+    # Attach DReq-mandated scalar coordinates (height2m/height10m/...)
+    # before the attribute pass so they pick up metadata like any other.
+    ds = add_scalar_coordinates(ds, rule)
 
     coords_processed = 0
     coords_skipped = 0
