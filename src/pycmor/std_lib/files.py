@@ -44,6 +44,7 @@ import threading
 import time
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import xarray as xr
 from xarray.core.utils import is_scalar
@@ -833,6 +834,76 @@ def _trim_malloc_arenas():
         logger.debug(f"_trim_malloc_arenas: {type(exc).__name__}: {exc}")
 
 
+def _add_cf_quantization_metadata(ds, rule):
+    """Declare lossy quantization the way CF 1.12 section 8.4 requires.
+
+    netCDF-C writes its own ``_QuantizeBitGroomNumberOfSignificantDigits``
+    marker when quantization is enabled, but that is a library artefact,
+    not CF metadata. CF 1.12 wants provenance instead:
+
+    - a *quantization container variable* carrying string ``algorithm``
+      and ``implementation`` attributes,
+    - a string ``quantization`` attribute on each quantized variable
+      naming that container,
+    - an integer ``quantization_nsd`` on each quantized variable
+      (``quantization_nsb`` instead, for the ``bitround`` algorithm).
+
+    NSD must satisfy 1 <= NSD <= 7 for float and <= 15 for double; a value
+    outside that range is skipped rather than written invalid.
+
+    Raised in the DKRZ review of cli108: we shipped the netCDF-C marker
+    alone, so the files did not say which algorithm produced them.
+    """
+    quantize_mode = "BitGroom"
+    if hasattr(rule, "netcdf_quantize_mode"):
+        quantize_mode = rule.netcdf_quantize_mode
+    if not quantize_mode:
+        return ds
+    nsd = getattr(rule, "netcdf_significant_digits", 5)
+    if not nsd:
+        return ds
+
+    algorithm = str(quantize_mode).lower()
+    is_nsb = algorithm == "bitround"
+    attr_name = "quantization_nsb" if is_nsb else "quantization_nsd"
+
+    container = "quantization_info"
+    if container not in ds.variables:
+        try:
+            import netCDF4 as _nc4
+            impl = f"netCDF-C version {_nc4.__netcdf4libversion__}"
+        except Exception:
+            impl = "netCDF-C"
+        # Plain data variable, NOT a coordinate: assign_coords would make
+        # xarray list the container in every variable's ``coordinates``
+        # attribute (and in the global one), which is wrong. The container
+        # is just a metadata holder.
+        ds[container] = xr.DataArray(np.int8(0), attrs={"algorithm": algorithm, "implementation": impl})
+        ds[container].encoding["dtype"] = "int8"
+        ds[container].encoding["_FillValue"] = None
+
+    for var in ds.data_vars:
+        da = ds[var]
+        if str(var) == container or da.dtype.kind != "f":
+            continue
+        name = str(var)
+        if name.endswith(("_bnds", "_bounds")) or name.startswith("bounds_"):
+            continue
+        limit = 7 if da.dtype.itemsize <= 4 else 15
+        if is_nsb:
+            limit = 23 if da.dtype.itemsize <= 4 else 52
+        if not (1 <= int(nsd) <= limit):
+            logger.warning(
+                f"  {attr_name}={nsd} out of CF range 1..{limit} for {name!r} "
+                f"({da.dtype}); not declaring quantization metadata"
+            )
+            continue
+        da.attrs["quantization"] = container
+        da.attrs[attr_name] = np.int32(int(nsd))
+
+    return ds
+
+
 def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
     """Wrapper around ``to_netcdf`` that:
 
@@ -867,6 +938,37 @@ def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
     See: dask/distributed#780, pydata/xarray#4406, dask/dask#10238,
     FORENSIC_lrcs_seaice_failure.md §"Fix #3", PLAN_save_dataset_reliability.md.
     """
+    # cf Appendix A: ``coordinates`` is a data-variable attribute and must
+    # not appear as a global. xarray emits one whenever a *coordinate* is
+    # not referenced by any data variable, which is always true of
+    # time_bnds, so every file carried ``:coordinates = "time_bnds"`` and
+    # the cf-checker reported it as an error (DKRZ cli108 review).
+    #
+    # Setting ``encoding["coordinates"] = None`` is the usual advice and
+    # does NOT work; verified directly against xarray:
+    #
+    #   baseline                    global coordinates attr: True
+    #   ds.encoding["coordinates"]=None                      True
+    #   v.encoding["coordinates"]=None                       True
+    #   ds.reset_coords(...)                                 False
+    #
+    # Demoting the bounds to plain data variables is what actually
+    # suppresses it, and is also the CF-correct shape: a bounds variable
+    # is reached through ``time:bounds``, it is not itself a coordinate.
+    # Done here because this is the single choke point every write passes
+    # through; several upstream fixups return fresh objects and would drop
+    # anything set earlier.
+    try:
+        if hasattr(ds_or_da, "coords"):
+            _bnds = [
+                c for c in ds_or_da.coords
+                if str(c).endswith(("_bnds", "_bounds")) or str(c).startswith("bounds_")
+            ]
+            if _bnds:
+                ds_or_da = ds_or_da.reset_coords(_bnds)
+    except Exception as _exc:  # pragma: no cover - defensive
+        logger.debug(f"could not demote bounds coords before write: {_exc}")
+
     # Identify rule for GRAPH_METRIC log records. Best effort — uses the
     # DataArray's .name attribute, or first data_var for a Dataset.
     try:
@@ -1634,6 +1736,15 @@ def _save_dataset_with_native_timespan(
             # Drop stale per-variable `coordinates` encoding (post-rename fixup)
             for _v in ds.data_vars:
                 ds[_v].encoding.pop("coordinates", None)
+            # cf Appendix A: ``coordinates`` is a data-variable attribute
+            # and must not appear as a global. xarray emits one whenever a
+            # coord (here time_bnds) is not referenced by any data variable,
+            # which the cf-checker reports as an error. Setting it to None
+            # on the dataset encoding suppresses that without touching the
+            # per-variable attributes. Raised in the DKRZ cli108 review.
+            ds.encoding["coordinates"] = None
+            # CF 1.12 section 8.4: declare the quantization algorithm.
+            ds = _add_cf_quantization_metadata(ds, rule)
             # CF: coordinate variables must not have _FillValue
             for _c in list(ds.coords):
                 ds[_c].encoding["_FillValue"] = None
@@ -1697,6 +1808,23 @@ def _save_mfdataset_worker_or_sync(datasets, paths, enc, extra_kwargs,
     results via ``xr.save_mfdataset``. Falls back to the legacy
     ``compute=False`` + synchronous-scheduler path when no Client is
     active or the worker path fails."""
+    # cf Appendix A: demote bounds coords to plain data variables so xarray
+    # does not emit a global ``coordinates`` attribute. See the longer note
+    # in ``_safe_to_netcdf``; the same treatment is needed here because the
+    # grouped path writes via ``xr.save_mfdataset`` and never reaches that
+    # function.
+    try:
+        _demoted = []
+        for _ds in datasets:
+            _bnds = [
+                c for c in getattr(_ds, "coords", ())
+                if str(c).endswith(("_bnds", "_bounds")) or str(c).startswith("bounds_")
+            ]
+            _demoted.append(_ds.reset_coords(_bnds) if _bnds else _ds)
+        datasets = _demoted
+    except Exception as _exc:  # pragma: no cover - defensive
+        logger.debug(f"could not demote bounds coords before save_mfdataset: {_exc}")
+
     # Identify the batch for GRAPH_METRIC logging. Use the first dataset's
     # data var name as the rule id, plus the total count of datasets.
     try:
@@ -2251,6 +2379,12 @@ def _save_dataset_impl(da: xr.DataArray, rule):
                     group_ds[time_label].attrs.setdefault("units_metadata", "leap_seconds: none")
                 for _v in group_ds.data_vars:
                     group_ds[_v].encoding.pop("coordinates", None)
+                # cf Appendix A: suppress the dataset-level ``coordinates``
+                # global that xarray adds for unreferenced coords (see the
+                # matching comment in the native-timespan path).
+                group_ds.encoding["coordinates"] = None
+                # CF 1.12 section 8.4: declare the quantization algorithm.
+                group_ds = _add_cf_quantization_metadata(group_ds, rule)
                 for _c in list(group_ds.coords):
                     group_ds[_c].encoding["_FillValue"] = None
                 # CMIP7 cchecker ATTR001: ensure lat/lon bounds on regular grids
