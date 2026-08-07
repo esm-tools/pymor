@@ -154,11 +154,28 @@ def add_scalar_coordinates(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
         out_name = entry.get("out_name") or dim
         if out_name in ds.variables or out_name in ds.coords:
             continue
-        try:
-            value = float(raw_value)
-        except ValueError:
-            logger.warning(f"  scalar coordinate {dim!r} has non-numeric value {raw_value!r}; skipping")
-            continue
+
+        # CMIP7 has two kinds of scalar coordinate. Numeric ones carry a
+        # float ``value`` (height2m = 2.0, sdepth10cm = 5.0). Character
+        # ones carry a string ``value`` and describe which tile or area
+        # type the variable applies to (typetree = "trees",
+        # typec3crop = "crops_of_c3_plant_functional_types"), with
+        # ``out_name`` usually "type". Both must be written and listed in
+        # the data variable's ``coordinates`` attribute; without the
+        # character ones a per-tile variable does not say which tile it is.
+        #
+        # Entries with a ``requested`` list and no ``value`` (basin,
+        # landuse, vegtype) are multi-label *dimensions*, not scalars, and
+        # are deliberately left alone here.
+        is_character = str(entry.get("type", "")).strip().lower() == "character"
+        if is_character:
+            value = raw_value
+        else:
+            try:
+                value = float(raw_value)
+            except ValueError:
+                logger.warning(f"  scalar coordinate {dim!r} has non-numeric value {raw_value!r}; skipping")
+                continue
 
         attrs = {}
         for key in ("standard_name", "long_name", "units", "axis", "positive"):
@@ -166,9 +183,15 @@ def add_scalar_coordinates(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
             if val:
                 attrs[key] = val
         ds = ds.assign_coords({out_name: xr.DataArray(value, attrs=attrs)})
-        ds[out_name].encoding["dtype"] = "float64"
-        ds[out_name].encoding["_FillValue"] = None
-        logger.info(f"  added scalar coordinate {out_name!r} = {value} {attrs.get('units', '')} (from {dim!r})")
+        if is_character:
+            # Leave dtype to xarray so it writes a proper char/string
+            # variable; forcing float64 here would corrupt it.
+            ds[out_name].encoding["_FillValue"] = None
+            logger.info(f"  added scalar coordinate {out_name!r} = {value!r} (from {dim!r})")
+        else:
+            ds[out_name].encoding["dtype"] = "float64"
+            ds[out_name].encoding["_FillValue"] = None
+            logger.info(f"  added scalar coordinate {out_name!r} = {value} {attrs.get('units', '')} (from {dim!r})")
 
     return ds
 

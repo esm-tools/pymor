@@ -966,6 +966,12 @@ def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
             ]
             if _bnds:
                 ds_or_da = ds_or_da.reset_coords(_bnds)
+            # cf 7.1: a bounds variable carries no attributes of its own.
+            # xarray would give it a ``coordinates`` listing any scalar coord
+            # in the dataset (e.g. the tile ``type``); suppress that.
+            for _b in _bnds:
+                if _b in getattr(ds_or_da, "variables", {}):
+                    ds_or_da[_b].encoding["coordinates"] = None
     except Exception as _exc:  # pragma: no cover - defensive
         logger.debug(f"could not demote bounds coords before write: {_exc}")
 
@@ -1820,7 +1826,12 @@ def _save_mfdataset_worker_or_sync(datasets, paths, enc, extra_kwargs,
                 c for c in getattr(_ds, "coords", ())
                 if str(c).endswith(("_bnds", "_bounds")) or str(c).startswith("bounds_")
             ]
-            _demoted.append(_ds.reset_coords(_bnds) if _bnds else _ds)
+            _d = _ds.reset_coords(_bnds) if _bnds else _ds
+            # cf 7.1: bounds variables carry no attributes of their own.
+            for _b in _bnds:
+                if _b in getattr(_d, "variables", {}):
+                    _d[_b].encoding["coordinates"] = None
+            _demoted.append(_d)
         datasets = _demoted
     except Exception as _exc:  # pragma: no cover - defensive
         logger.debug(f"could not demote bounds coords before save_mfdataset: {_exc}")
