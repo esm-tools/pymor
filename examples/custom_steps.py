@@ -700,6 +700,41 @@ def integrate_over_hemisphere(data, rule):
     return result
 
 
+def compute_ice_volume_per_area(data, rule):
+    """Sea-ice volume per unit area from daily thickness and concentration.
+
+    ``m_ice`` ("sea-ice mass per area", in metres, so really volume per unit
+    area) is the natural input for sivol, but the HR piControl run only writes
+    it monthly. The daily sivol rules were therefore reading the monthly
+    ``sivoln``/``sivols`` scalars and spreading 12 values across a daily axis:
+    cli108 published 335 timesteps carrying 12 distinct values and 323 NaNs.
+
+    ``h_ice`` ("ice thickness over ice-covered fraction") and ``a_ice`` are
+    both daily, and ``m_ice = h_ice * a_ice`` by construction, so the daily
+    field can be rebuilt from output that already exists.
+
+    The approximation: both inputs are daily means, so this product drops the
+    sub-daily covariance between thickness and concentration,
+    ``mean(h) * mean(a) != mean(h * a)``. Measured against FESOM's own
+    per-timestep ``sivoln`` diagnostic for 1586 (87600 samples resampled to
+    daily), the reconstruction runs +0.094% high on average, 0.107% at worst,
+    correlation 1.000000. A daily ``m_ice`` stream removes the approximation
+    entirely and is wired up in esm_tools for runs started after that lands
+    (see REACTIVATE_AFTER_XIOS_FIX.md).
+
+    Primary input (``data``) is h_ice. Rule attributes:
+      - aice_path, aice_pattern, aice_variable: the daily a_ice source
+    """
+    a_ice = _load_secondary_mf(rule, "aice_path", "aice_pattern", "aice_variable")
+    result = data * a_ice
+    result.attrs = dict(data.attrs)
+    # Volume per unit area, so metres; integrate_over_hemisphere multiplies by
+    # cell_area to reach m3.
+    result.attrs["units"] = "m"
+    result.name = data.name
+    return result
+
+
 # ============================================================
 # Melt pond steps
 # ============================================================

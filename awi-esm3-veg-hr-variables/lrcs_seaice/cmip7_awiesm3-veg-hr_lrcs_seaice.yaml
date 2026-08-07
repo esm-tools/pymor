@@ -494,6 +494,30 @@ pipelines:
       - pycmor.std_lib.files.save_dataset
       - pycmor.std_lib.qc.run_compliance_checker
 
+  # Hemisphere integral of a volume-per-area field rebuilt from daily
+  # thickness × concentration. Only sivol at day frequency uses it: m_ice is
+  # monthly-only in this run, so h_ice × a_ice stands in for it. The unit
+  # chain is h_ice·a_ice [m] × cell_area [m²] = m³, converted to `1e3 km3`.
+  - name: ice_volume_hemisphere_pipeline
+    throttle_group: lrcs_seaice_serial
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script://$PYCMOR_HOME/examples/custom_steps.py:compute_ice_volume_per_area
+      - script://$PYCMOR_HOME/examples/custom_steps.py:integrate_over_hemisphere
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.set_time_bounds
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
+
   # Hemisphere-integral pipeline that ALSO applies a constant scaling
   # after integration. Used by sisnmass (m_snow [m] × cell_area [m²] ×
   # rho_snow [kg/m³] = kg). The unit chain is:
@@ -798,33 +822,52 @@ rules:
 
   # --- Stress tensor derived (mEVP: sgm11, sgm12, sgm22) ---
 
-  - name: sistressave
-    inputs:
-      - path: *dp
-        pattern: sgm11\.fesom\.\d{4}\.nc
-    compound_name: seaIce.sistressave.tpt-u-hxy-si.mon.glb
-    model_variable: sgm11
-    sgm22_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
-    sgm22_pattern: sgm22\.fesom\.\d{4}\.nc
-    aice_path: *dp
-    aice_pattern: a_ice\.fesom\.\d{4}\.nc
-    pipelines:
-      - sistressave_pipeline
-
-  - name: sistressmax
-    inputs:
-      - path: *dp
-        pattern: sgm11\.fesom\.\d{4}\.nc
-    compound_name: seaIce.sistressmax.tpt-u-hxy-si.mon.glb
-    model_variable: sgm11
-    sgm22_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
-    sgm22_pattern: sgm22\.fesom\.\d{4}\.nc
-    sgm12_path: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/fesom
-    sgm12_pattern: sgm12\.fesom\.\d{4}\.nc
-    aice_path: *dp
-    aice_pattern: a_ice\.fesom\.\d{4}\.nc
-    pipelines:
-      - sistressmax_pipeline
+  # DEACTIVATED — no instantaneous stress tensor in this run.
+  #
+  # Both DReq entries are branded tpt-u-hxy-si and ask for "an instantaneous
+  # value at the center of the month". FESOM writes sgm11/sgm12/sgm22 as
+  # monthly means (12 records, cell_methods "time: mean"), so publishing these
+  # meant labelling a monthly mean as a snapshot. For sistressmax it is worse
+  # than a labelling problem: the invariant is
+  # sqrt(((sgm11-sgm22)/2)^2 + sgm12^2), a nonlinear function of the
+  # components, so deriving it from monthly means is not even the monthly mean
+  # of the invariant.
+  #
+  # Nothing in the existing output fixes this. Per-timestep stress output is
+  # the only route to a genuine snapshot and sgm11 alone is ~206 MB for 12
+  # records, so roughly 1.5 TB/year/component — not viable at HR.
+  #
+  # Instantaneous streams (sgm11_inst / sgm12_inst / sgm22_inst) are wired up
+  # in esm_tools for runs started after that lands; see
+  # REACTIVATE_AFTER_XIOS_FIX.md for how to bring these two rules back.
+  #
+  # - name: sistressave
+  #   inputs:
+  #     - path: *dp
+  #       pattern: sgm11_inst\.fesom\.\d{4}\.nc
+  #   compound_name: seaIce.sistressave.tpt-u-hxy-si.mon.glb
+  #   model_variable: sgm11
+  #   sgm22_path: *dp
+  #   sgm22_pattern: sgm22_inst\.fesom\.\d{4}\.nc
+  #   aice_path: *dp
+  #   aice_pattern: a_ice\.fesom\.\d{4}\.nc
+  #   pipelines:
+  #     - sistressave_pipeline
+  #
+  # - name: sistressmax
+  #   inputs:
+  #     - path: *dp
+  #       pattern: sgm11_inst\.fesom\.\d{4}\.nc
+  #   compound_name: seaIce.sistressmax.tpt-u-hxy-si.mon.glb
+  #   model_variable: sgm11
+  #   sgm22_path: *dp
+  #   sgm22_pattern: sgm22_inst\.fesom\.\d{4}\.nc
+  #   sgm12_path: *dp
+  #   sgm12_pattern: sgm12_inst\.fesom\.\d{4}\.nc
+  #   aice_path: *dp
+  #   aice_pattern: a_ice\.fesom\.\d{4}\.nc
+  #   pipelines:
+  #     - sistressmax_pipeline
 
   # ============================================================
   # SImon — cross-realm (ocean seaIce) freshwater/salt fluxes
@@ -1194,23 +1237,48 @@ rules:
     cell_measures: ""
     model_variable: sivols
 
-  # Daily sivol: using ldiag_cmor scalar files (same as monthly); if daily scalar output not available,
-  # enable daily m_ice in namelist.io and switch to m_ice + hemisphere_integral_pipeline
+  # Daily sivol, rebuilt from the gridded daily fields.
+  #
+  # These used to read the ldiag_cmor scalars sivoln/sivols, same as the
+  # monthly rules above. Those scalars are monthly in this run, so cli108
+  # published a 335-step daily axis carrying 12 distinct values and 323 NaNs.
+  # m_ice would be the right input but is monthly-only too; h_ice and a_ice
+  # are both daily and m_ice = h_ice * a_ice, so the daily field is
+  # reconstructible from output that already exists. Both inputs are daily
+  # means, so the product drops the sub-daily thickness/concentration
+  # covariance: measured against FESOM's per-timestep sivoln for 1586 it runs
+  # +0.094% high on average, 0.107% at worst, correlation 1.000000. A daily
+  # m_ice stream is wired up in esm_tools and removes the approximation for
+  # later runs; see REACTIVATE_AFTER_XIOS_FIX.md.
   - name: sivol_north_day
     inputs:
       - path: *dp
-        pattern: sivoln\.fesom\.\d{4}\.nc
+        pattern: h_ice\.fesom\.\d{4}\.nc
     compound_name: seaIce.sivol.tavg-u-hm-u.day.nh
     cell_measures: ""
-    model_variable: sivoln
+    model_variable: h_ice
+    model_unit: "m3"
+    hemisphere: "N"
+    aice_path: *dp
+    aice_pattern: a_ice\.fesom\.\d{4}\.nc
+    aice_variable: a_ice
+    pipelines:
+      - ice_volume_hemisphere_pipeline
 
   - name: sivol_south_day
     inputs:
       - path: *dp
-        pattern: sivols\.fesom\.\d{4}\.nc
+        pattern: h_ice\.fesom\.\d{4}\.nc
     compound_name: seaIce.sivol.tavg-u-hm-u.day.sh
     cell_measures: ""
-    model_variable: sivols
+    model_variable: h_ice
+    model_unit: "m3"
+    hemisphere: "S"
+    aice_path: *dp
+    aice_pattern: a_ice\.fesom\.\d{4}\.nc
+    aice_variable: a_ice
+    pipelines:
+      - ice_volume_hemisphere_pipeline
 
   # ============================================================
   # SImon — atmosphere-grid variables (from OpenIFS output)
@@ -1452,4 +1520,3 @@ rules:
     scaled_units: "kg"
     pipelines:
       - hemisphere_integral_scale_pipeline
-
