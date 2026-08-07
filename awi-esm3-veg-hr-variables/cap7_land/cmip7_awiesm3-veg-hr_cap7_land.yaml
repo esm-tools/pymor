@@ -679,13 +679,23 @@ rules:
     compound_name: land.mrso.tavg-u-hxy-lnd.day.glb
     model_variable: mrso
 
-  # mrsol daily d10cm: timeavg 3hr XIOS output to daily
-  - name: mrsol_day_10cm
-    inputs:
-      - path: *dp
-        pattern: atmos_3h_land_mrsol_.*\.nc
-    compound_name: land.mrsol.tavg-d10cm-hxy-lnd.day.glb
-    model_variable: mrsol
+  # DEACTIVATED 2026-08-07. Wrong depth, not just wrong metadata.
+  # This read atmos_3h_land_mrsol, but that XIOS stream carries the 100cm
+  # field (swvl1*0.07+swvl2*0.21+swvl3*0.72) while this rule labels its
+  # output d10cm. Confirmed on cli108: day d10cm mean 72.6 kg m-2 against
+  # 6.9 for the genuinely-10cm monthly rule, a 10.5x ratio matching the
+  # 1.00m/0.10m depth ratio.
+  #
+  # Cannot be repointed with this run's output: the only real 10cm field
+  # written is monthly, so no daily 10cm data exists. The esm_tools XIOS
+  # file_def now defines atmos_day_land_mrsol10_avg for exactly this entry;
+  # re-enable against that stream once a run produces it.
+  # - name: mrsol_day_10cm
+  #   inputs:
+  #     - path: *dp
+  #       pattern: atmos_day_land_mrsol10_avg_mrsol_.*\.nc
+  #   compound_name: land.mrsol.tavg-d10cm-hxy-lnd.day.glb
+  #   model_variable: mrsol
 
   # tslsi daily: timeavg 3hr XIOS skt to daily
   - name: tslsi_day
