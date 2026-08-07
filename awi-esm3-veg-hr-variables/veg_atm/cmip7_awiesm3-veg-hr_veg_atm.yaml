@@ -238,6 +238,12 @@ rules:
   # These use fire_emission_pipeline to apply species-specific
   # emission factors to total fire carbon flux (fFireAll).
   # Emission factors from Andreae (2019) Table 1 for savanna/grassland.
+  #
+  # fFireAll vs fFireNat: the CMIP7 DReq gives no description for the
+  # emibb* entries, so which one "biomass burning" means is a modeller's
+  # call. Confirmed as fFireAll (2026-08-07): the emissions are meant to
+  # be everything the model burns, land-use fires included, not natural
+  # fires alone. Do not repoint these to fFireNat_monthly.out.
   # ============================================================
 
   - name: emibbbc_mon
