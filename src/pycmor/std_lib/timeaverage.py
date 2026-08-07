@@ -388,6 +388,21 @@ def _timeavg_impl(da: xr.DataArray, rule):
             f"({time_method} -> INSTANTANEOUS) for CMIP7 tpt rule"
         )
         time_method = "INSTANTANEOUS"
+    # Same story for the daily-extremum brandings (tmax-/tmin-). The DReq
+    # asks for ``time: maximum`` / ``time: minimum``; without this the rule
+    # falls through to MEAN and emits a daily mean under a max/min label.
+    # Feed these from a sub-daily source: the extremum is only as good as
+    # the sampling, so an hourly input gives an hourly-resolution extremum.
+    # (IFS can do better via its mx2t/mn2t accumulators, which track every
+    # model timestep, but with output_step_freq=1h XIOS only ever sees
+    # hourly samples anyway, and for LR the model timestep *is* hourly so
+    # the two coincide.)
+    elif "time: maximum" in cm and time_method != "MAXIMUM":
+        logger.info(f"  cell_methods has 'time: maximum'; overriding time_method ({time_method} -> MAXIMUM)")
+        time_method = "MAXIMUM"
+    elif "time: minimum" in cm and time_method != "MINIMUM":
+        logger.info(f"  cell_methods has 'time: minimum'; overriding time_method ({time_method} -> MINIMUM)")
+        time_method = "MINIMUM"
     rule.time_method = time_method
     # FESOM yearly files and concat'd hemispheric selects can yield a
     # non-monotonic time index, which breaks xr.resample. Sort once if needed.
@@ -424,6 +439,20 @@ def _timeavg_impl(da: xr.DataArray, rule):
         # to MEAN because CMIP6's Pt suffix was dropped; that masked the
         # latent TypeError. Call .first() without the engine kwarg.
         ds = da.resample(time=frequency_str).first()
+    elif time_method in ("MAXIMUM", "MINIMUM"):
+        # Daily (or other interval) extremum. Like MEAN this describes an
+        # interval rather than an instant, so the stamp is placed at the
+        # interval midpoint below by falling through to the same offset
+        # handling.
+        _red = "max" if time_method == "MAXIMUM" else "min"
+        ds = getattr(da.resample(time=frequency_str), _red)(**_resample_kw)
+        offset = rule.get("adjust_timestamp", "mid")
+        offset_presets = {"first": 0, "start": 0, "last": 1, "end": 1, "mid": 0.5}
+        _off = offset_presets.get(offset, 0.5) if isinstance(offset, str) else float(offset)
+        if _off:
+            ds = ds.assign_coords(
+                time=ds.time + pd.to_timedelta(float(approx_interval) * _off, unit="D")
+            )
     elif time_method == "MEAN":
         ds = da.resample(time=frequency_str).mean(**_resample_kw)
         # CMIP spec: time coordinate of MEAN-averaged data sits at the midpoint

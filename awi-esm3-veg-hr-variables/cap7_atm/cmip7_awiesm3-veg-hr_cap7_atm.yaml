@@ -378,25 +378,41 @@ rules:
       - snc_pipeline
 
   - name: hurs_day_max
+    # Daily extremum must come from sub-daily data: RH computed from the
+    # DAILY MEAN 2t/2d erases the diurnal cycle before the max/min is taken,
+    # so the old atm_remapped_1d_* inputs gave a daily-mean RH under a
+    # max/min label (DKRZ-review-adjacent audit, 2026-08). Hourly is the
+    # best available: with output_step_freq=1h XIOS only ever sees hourly
+    # samples for HR, and for LR the model timestep is hourly, so the
+    # hourly extremum is exact there. timeavg picks max/min off the DReq
+    # cell_methods.
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_2t_.*\.nc
+        pattern: atmos_1h_sfc_2t_.*\.nc
     compound_name: atmos.hurs.tmax-h2m-hxy-u.day.glb
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atm_remapped_1d_2d_.*\.nc
+    second_input_pattern: atmos_1h_sfc_2d_.*\.nc
     second_variable: 2d
     pipelines:
       - hurs_pipeline
 
   - name: hurs_day_min
+    # Daily extremum must come from sub-daily data: RH computed from the
+    # DAILY MEAN 2t/2d erases the diurnal cycle before the max/min is taken,
+    # so the old atm_remapped_1d_* inputs gave a daily-mean RH under a
+    # max/min label (DKRZ-review-adjacent audit, 2026-08). Hourly is the
+    # best available: with output_step_freq=1h XIOS only ever sees hourly
+    # samples for HR, and for LR the model timestep is hourly, so the
+    # hourly extremum is exact there. timeavg picks max/min off the DReq
+    # cell_methods.
     inputs:
       - path: *dp
-        pattern: atm_remapped_1d_2t_.*\.nc
+        pattern: atmos_1h_sfc_2t_.*\.nc
     compound_name: atmos.hurs.tmin-h2m-hxy-u.day.glb
     model_variable: 2t
     second_input_path: *dp
-    second_input_pattern: atm_remapped_1d_2d_.*\.nc
+    second_input_pattern: atmos_1h_sfc_2d_.*\.nc
     second_variable: 2d
     pipelines:
       - hurs_pipeline
