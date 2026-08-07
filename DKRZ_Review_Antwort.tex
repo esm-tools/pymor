@@ -1,0 +1,259 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[ngerman]{babel}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,urlcolor=blue!60!black,linkcolor=black]{hyperref}
+\usepackage{parskip}
+\usepackage{enumitem}
+\setlist{nosep,leftmargin=*}
+
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\ok}{\textcolor{green!45!black}{\textbf{erledigt}}}
+\newcommand{\offen}{\textcolor{orange!75!black}{\textbf{offen}}}
+\newcommand{\upstream}{\textcolor{blue!60!black}{\textbf{upstream}}}
+
+\title{AWI-ESM3-4-2-veg-HR, CMIP7 piControl\\[2mm]
+\large Antwort auf das DKRZ-Review von cli108\\ und Ergebnisse der anschlie\ss enden eigenen Nachsuche}
+\author{Jan Streffing, AWI}
+\date{8. August 2026}
+
+\begin{document}
+\maketitle
+
+\section{Kurzfassung}
+
+Das Review bezog sich auf \code{cli108} (Version \code{v20260804}). Alle Punkte sind
+bearbeitet. Der Verifikationslauf \code{cli109} ist durch, 528 QC-Reports:
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+& \textbf{cli108} & \textbf{cli109} \\
+\midrule
+HIGH   & 1   & 1 \\
+MEDIUM & 758 & 220 \\
+TIME001 / TIME003 & \multicolumn{2}{c}{0 in cli109} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Das verbleibende HIGH ist \code{basin} und stammt aus einer Regression in
+\code{cc-plugin-wcrp} (\#66), nicht aus unseren Daten.
+
+Neben den Review-Punkten haben wir eine eigene Suche nach Quelle-gegen-DReq-Fehlern
+gemacht. Anlass war \code{mrsol}: dort zeigte sich, dass ein einzelner Ausgabestrom
+mehrere DReq-Eintr\"age gleichzeitig falsch bedienen kann und \emph{kein} QC-Check das
+findet. Diese Suche hat sieben weitere Punkte gefunden, darunter zwei mit falschen
+Werten und einen, bei dem eine Datei gar nicht mehr lesbar war.
+
+Umfang seit dem letzten Commit vor dem Review (\code{b42279a2}): 9 Commits,
+10 Dateien, +915 / -321 Zeilen.
+
+\section{Teil 1: Antwort auf die Review-Punkte}
+
+\subsection*{1hr, \code{hfls}: \code{lon\_bnds}/\code{lat\_bnds} fehlen, keine \code{time}-Variable}
+\ok\ Das war kein Metadatenfehler. Der Shard lief in die SLURM-Walltime, und ein
+abgebrochener Schreibvorgang hinterl\"asst eine Header-only-Datei statt eines Fehlers.
+Der Tier \code{extra\_atm} hat jetzt 6\,h. \code{cli109}: 8760 Zeitschritte,
+\code{lat\_bnds} und \code{lon\_bnds} vorhanden.
+
+Der Fehlermodus ist unangenehm, weil er lautlos ist. Wir haben deshalb auch
+\code{cap7\_atm} vorsorglich auf 6\,h gesetzt, nachdem dort der Input um Faktor 26
+gewachsen ist (siehe \code{hurs} in Teil 2).
+
+\subsection*{1hr, \code{hfls}: \code{\_QuantizeBitGroomNumberOfSignificantDigits}}
+\ok\ Danke f\"ur den Hinweis auf CF 1.12. Umgesetzt wie in der Konvention:
+ein Container \code{quantization\_info} mit \code{algorithm = "bitgroom"} und
+\code{implementation = "netCDF-C version 4.9.3-development"}, dazu pro Variable
+\code{quantization = "quantization\_info"} und \code{quantization\_nsd = 5}.
+Das f\"uhrende Unterstrich-Attribut wird jetzt entfernt, das verstie\ss\ ohnehin
+gegen CF \S2.3.
+
+\subsection*{1hr, \code{rsus}: Repacking-Checks}
+\offen, bewusst. Wir folgen Ihrem Vorschlag und lassen das vor der Publikation
+durch \code{cmip7-repack} laufen.
+
+\subsection*{3hr, \code{mrsol}: erster Zeitschritt (01:30) fehlt}
+\ok, aber die Ursache lag tiefer, und der Hinweis war deshalb sehr n\"utzlich.
+
+Ein einziger 3-st\"undiger XIOS-Stream (\code{operation="instant"}, Feld: oberster
+Meter) bediente drei DReq-Eintr\"age, die sich sowohl in der Tiefe als auch in der
+temporal shape unterscheiden. Zwei Folgen:
+
+\begin{itemize}
+\item \code{tavg-d100cm} bekam instantane Samples und konnte damit kein Mittel sein.
+      Das war der von Ihnen gesehene fehlende erste Zeitschritt.
+\item Beide \code{d10cm}-Eintr\"age lasen still das 100-cm-Feld, publizierten also
+      1\,m Bodenfeuchte unter einem 10-cm-Label.
+\end{itemize}
+
+Der Tiefenfehler ist an cli108 belegbar: 3hr \code{d10cm} hatte ein Mittel von
+72{,}6 kg\,m$^{-2}$ gegen 6{,}9 bei der echten 10-cm-Monatsregel, Verh\"altnis
+10{,}5 und damit genau das Tiefenverh\"altnis 1{,}00\,m / 0{,}10\,m. Das sind falsche
+Werte, kein Metadatenproblem, und kein QC-Check schl\"agt an.
+
+Die drei Regeln sind vorerst deaktiviert. In \code{esm\_tools} sind drei getrennte
+Streams erg\"anzt (100\,cm gemittelt, 10\,cm instantan, 10\,cm t\"aglich gemittelt),
+sodass k\"unftige L\"aufe inklusive LR sie reaktivieren k\"onnen.
+
+\subsection*{Allgemein: fehlende scalar coordinates}
+\ok\ Sie hatten recht, die fehlten durchg\"angig. Wir lesen jetzt
+\code{CMIP7\_coordinate.json} und schreiben beide Sorten:
+
+\begin{itemize}
+\item numerisch mit \code{value}: \code{height2m}, \code{height10m}, \code{sdepth10cm}, \dots
+\item character: \code{typetree}, \code{typec3crop} und weitere Tile-/Area-Typen,
+      \code{out\_name} meist \code{type}
+\end{itemize}
+
+Beide werden in \code{coordinates} der Datenvariable referenziert.
+\code{cli109}, \code{sfcWind}: \code{coordinates = "time lat lon height"}.
+
+\subsection*{Allgemein: globales Attribut \code{experiment}}
+\ok\ Enth\"alt jetzt die CV-Beschreibung, \"uber \code{esgvoc} aufgel\"ost, statt
+noch einmal die \code{experiment\_id}.
+
+\subsection*{Allgemein: CF-Checker, \code{coordinates} als globales Attribut}
+\ok\ Entfernt. Eine Warnung f\"ur andere Gruppen mit demselben Problem: der
+naheliegende Weg \code{ds.encoding["coordinates"] = None} auf Dataset-Ebene wirkt
+\emph{nicht}. Wir haben das empirisch gepr\"uft, xarray schreibt das Attribut
+trotzdem. Nur \code{reset\_coords} auf den Bounds-Koordinaten hilft. Auf
+\emph{Variablen}-Ebene funktioniert \code{encoding["coordinates"] = None} dagegen
+sehr wohl, was die Sache verwirrend macht.
+
+\subsection*{Allgemein: TIME001 squareness bei tavg}
+\ok\ In \code{cli109} null Treffer, ebenso TIME003. Der Rest kam aus den
+inzwischen gemergten Upstream-PRs plus unserer Korrektur des Dateinamen-Tokens auf
+\code{time[0]}/\code{time[-1]} nach CMIP7 Appendix 1.
+
+\section{Teil 2: Eigene Nachsuche}
+
+Ein Stream, der mehrere DReq-Eintr\"age bedient, kann diese gleichzeitig falsch
+bedienen, und QC sieht davon nichts. Wir haben deshalb systematisch die Quelle jeder
+Regel gegen ihren \code{compound\_name} gepr\"uft. Sieben Befunde, alle verifiziert:
+
+\begin{enumerate}
+\item \textbf{18 \code{*Lut}-Regeln ohne \code{landuse}-Achse.} Publiziert wurde nur
+die Spalte \code{psl}. Die DReq-Dimensionen sind
+\code{longitude latitude landuse time}. Alle vier Kacheln standen in den
+Quelldateien, es war reine Loader-Arbeit. Jetzt 4 Werte in DReq-Reihenfolge.
+
+\item \textbf{\code{landCoverFrac} ohne \code{vegtype}-Achse.} Die 44 PFT-Spalten
+wurden zu einem Skalar aufsummiert. Jetzt 7 Werte. Die Zuordnung stammt aus den
+Instruktionsdateien des Laufs selbst (\code{global.ins}, \code{arctic.ins},
+\code{wetlandpfts.ins}, \code{crop\_n.ins}, \code{landcover.ins}), nicht aus den
+PFT-K\"urzeln. Nicht zuordenbare Spalten l\"osen jetzt einen Fehler aus, statt still
+wegzufallen. \code{CLM}, \code{pCLM}, \code{pmoss} und \code{Bare\_soil} haben keine
+Entsprechung auf der \code{vegtype}-Achse und fehlen daher, was im
+\code{comment} der Variable steht.
+
+\item \textbf{\code{mrsolLut} las die ganze Bodens\"aule} unter \code{d10cm}-Label.
+Die passende 0--10-cm-Ausgabe lag ungenutzt daneben. Umgestellt. Gleiche Fehlerklasse
+wie bei \code{mrsol}.
+
+\item \textbf{\code{sivol} t\"aglich: 12 Monatswerte auf 335 Tagesschritte},
+davon 323 NaN. Die richtige Eingangsgr\"o\ss e \code{m\_ice} liegt nur monatlich vor,
+\code{h\_ice} und \code{a\_ice} aber t\"aglich, und \code{m\_ice = h\_ice} $\cdot$
+\code{a\_ice}. Wir rekonstruieren das Tagesfeld daraus.
+
+Die N\"aherung ist gemessen, nicht gesch\"atzt: in einem Testlauf schreibt FESOM
+\code{sivoln} jeden Modellzeitschritt (87\,600 Samples), das ist FESOMs eigene
+Eisvolumen-Diagnostik. Gegen die Rekonstruktion:
+
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+$10^3$\,km$^3$ & min & max & Mittel \\
+\midrule
+FESOM \code{sivoln}, auf Tage gemittelt & 10{,}911 & 29{,}497 & 20{,}585 \\
+Rekonstruktion \code{h\_ice} $\cdot$ \code{a\_ice} & 10{,}921 & 29{,}524 & 20{,}605 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Abweichung im Mittel $+0{,}094\,\%$, maximal $0{,}107\,\%$, Korrelation
+$1{,}000000$. Der Rest ist die sub-t\"agliche Kovarianz zwischen Dicke und
+Konzentration, die das Produkt zweier Tagesmittel verliert. \code{cli109}:
+365 Zeitschritte, keine NaN. Ein t\"aglicher \code{m\_ice}-Stream ist in
+\code{esm\_tools} erg\"anzt und macht die N\"aherung f\"ur sp\"atere L\"aufe
+\"uberfl\"ussig.
+
+\item \textbf{\code{sistressave} und \code{sistressmax}: Monatsmittel als \code{tpt}
+gelabelt.} Beide DReq-Eintr\"age wollen einen Momentanwert zur Monatsmitte, FESOM
+schreibt \code{sgm11}/\code{sgm12}/\code{sgm22} als Monatsmittel. Bei
+\code{sistressmax} ist es mehr als ein Labelproblem: die Invariante
+$\sqrt{((\sigma_{11}-\sigma_{22})/2)^2 + \sigma_{12}^2}$ ist nichtlinear in den
+Komponenten, aus Monatsmitteln berechnet ist sie nicht einmal das Monatsmittel der
+Invariante. Ausgabe pro Zeitschritt w\"are der einzige Weg und ist bei HR mit
+grob 1{,}5\,TB pro Jahr und Komponente nicht machbar. Beide Regeln deaktiviert,
+instantane Streams in \code{esm\_tools} erg\"anzt.
+
+\item \textbf{\code{hurs} Tagesmaximum und -minimum aus Tagesmitteln.} Es fehlte
+schlicht eine max/min-Reduktion. Die gibt es jetzt, gespeist aus Stundenwerten.
+Das ist eine N\"aherung gegen\"uber Extrema auf Modellzeitschritt-Ebene, aber
+konsistent mit dem, was viele CMIP7-Modelle liefern werden.
+
+\item \textbf{\code{emibb*}: \code{fFireAll} oder \code{fFireNat}?} Die DReq gibt
+keine Beschreibung. Dom\"anenentscheidung, best\"atigt als \code{fFireAll}
+inklusive Landnutzungsfeuer. Das bisherige Verhalten war richtig, dokumentiert,
+damit die Frage nicht wieder aufkommt.
+\end{enumerate}
+
+\subsection*{Nebenbefund: QC meldet eine unlesbare Datei als sauber}
+
+Beim Bau der \code{landuse}-Achse haben wir die Labels zun\"achst als
+Python-Strings abgelegt. xarray schreibt daraus eine \code{NC\_STRING}-Variable, und
+die resultierende Datei lie\ss\ sich von netCDF-C \"uberhaupt nicht mehr \"offnen:
+\code{ncdump} und \code{netCDF4.Dataset} scheiterten beide mit
+\code{NetCDF: HDF error}, h5py meldete eine korrupte creation property list
+(\code{bad global heap collection signature}) auf dem vlen-Dataset.
+
+Der Compliance-Checker meldete dieselbe Datei mit \code{high=0 medium=0 low=0}.
+
+Wir schreiben die Achsen jetzt als \code{char sector(landuse, strlen)}, also so, wie
+CMOR es tut, gepr\"uft gegen publizierte MPI-ESM1-2-LR-Dateien. Das behebt es
+vollst\"andig. Der Hinweis k\"onnte f\"ur die QC allgemein interessant sein: eine
+Datei, die die Bibliothek nicht \"offnen kann, sollte kein sauberes Ergebnis
+bekommen.
+
+\section{Teil 3: Verbleibende Befunde in cli109}
+
+\begin{longtable}{rll}
+\toprule
+\textbf{Anzahl} & \textbf{Check} & \textbf{Einordnung} \\
+\midrule
+\endhead
+1   & \code{basin} HIGH   & \upstream, \code{cc-plugin-wcrp} \#66 \\
+162 & \code{ATTR004}      & Registry-Erwartung f\"ur \code{long\_name} / \code{cell\_methods} \\
+36  & \code{ATTR001}      & \code{cell\_measures} auf \code{areacella} und auf hemisph\"aren- \\
+    &                     & integrierten Skalaren, die keins haben \\
+17  & CF \S2.4            & Dimensionsreihenfolge \\
+5   & CF \S6.1            & Labels, \code{basin} \\
+\bottomrule
+\end{longtable}
+
+Bei \code{ATTR004} ist mindestens ein Teil upstream: f\"ur
+\code{seaIce.sivol.tavg-u-hm-u.day.sh} erwartet die Registry
+\code{"Sea-Ice Volume North"}, w\"ahrend die DReq-Tabelle
+\code{"Sea-Ice Volume South"} vorgibt. Denselben Befund gab es schon in cli108 bei
+\code{sivol\_south} und \code{sivol\_south\_day}. Wir gehen die Liste noch durch und
+melden, was upstream geh\"ort.
+
+\code{rsus} Repacking l\"auft wie besprochen vor der Publikation \"uber
+\code{cmip7-repack}.
+
+\section{Offene Frage an Sie}
+
+Nur \code{mrsol} wurde urspr\"unglich von Hand gepr\"uft, weil Ihr Review darauf
+zeigte. Unsere Nachsuche hat eine Stichprobe abgedeckt, nicht alles. Andere
+Variablen, die sich einen Stream \"uber mehrere DReq-Eintr\"age teilen, k\"onnten
+dieselbe Fehlerklasse haben, und sie ist f\"ur QC unsichtbar. Wir planen vor der
+Publikation einen Durchlauf, der f\"ur jede Regel \code{compound\_name} gegen
+\code{operation} und Felddefinition des gelesenen Streams pr\"uft. Falls es so etwas
+schon gibt oder bei DKRZ geplant ist, w\"are das gut zu wissen.
+
+\end{document}
