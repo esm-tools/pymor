@@ -265,12 +265,27 @@ rules:
     compound_name: land.tslsi.tpt-u-hxy-lsi.3hr.glb
     model_variable: tslsi
 
-  - name: mrsol_3hr_100cm
-    inputs:
-      - path: *dp
-        pattern: atmos_3h_land_mrsol_.*\.nc
-    compound_name: land.mrsol.tavg-d100cm-hxy-lnd.3hr.glb
-    model_variable: mrsol
+  # DEACTIVATED 2026-08-07. The DReq wants a genuine 3-hourly MEAN here
+  # (tavg-d100cm, temporal_shape time-intv), but the only 3h mrsol stream
+  # OIFS writes is `online_operation = "instant"`: one instantaneous
+  # sample per 3h window, stamped on the window boundary. A mean cannot
+  # be recovered from a single sample per window, and there is no
+  # higher-frequency mrsol output to average ourselves (only 3h and mon
+  # exist). Running it anyway produced instantaneous data labelled as an
+  # average, with every value shifted one interval and the final window
+  # dropped -- flagged in the DKRZ review of cli108.
+  #
+  # The sibling rule mrsol_3hr_10cm below is unaffected: the DReq entry it
+  # targets is tpt (time-point), which is what the source actually is.
+  #
+  # To re-enable, XIOS needs a 3h time-averaged mrsol stream; then restore
+  # this block unchanged.
+  # - name: mrsol_3hr_100cm
+  #   inputs:
+  #     - path: *dp
+  #       pattern: atmos_3h_land_mrsol_.*\.nc
+  #   compound_name: land.mrsol.tavg-d100cm-hxy-lnd.3hr.glb
+  #   model_variable: mrsol
 
   # 3hr instant mrsol at 10cm (reuse existing core_land mrsol field)
   - name: mrsol_3hr_10cm
