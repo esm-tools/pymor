@@ -578,7 +578,10 @@ rules:
   - name: mrsolLut_mon
     inputs:
       - path: *ldp
-        pattern: "*/run1/mrsoLut_monthly.out"
+        # d10cm branding: mrsosLut is the 0-10 cm tile column, mrsoLut is the
+        # whole soil column. Reading mrsoLut here published ~1 m soil moisture
+        # under a 10 cm label, the same class of error as the mrsol streams.
+        pattern: "*/run1/mrsosLut_monthly.out"
     compound_name: land.mrsolLut.tavg-d10cm-hxy-multi.mon.glb
     model_variable: psl
     source_units: "kg m-2"

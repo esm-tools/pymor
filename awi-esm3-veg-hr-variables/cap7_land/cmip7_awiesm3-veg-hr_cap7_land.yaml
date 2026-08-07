@@ -574,6 +574,11 @@ rules:
     compound_name: land.landCoverFrac.tavg-u-hxy-u.mon.glb
     model_variable: Total
     source_units: "%"
+    # DReq dimensions are "longitude latitude vegtype time": the 44 PFT columns
+    # have to be resolved onto the seven-value CMIP7 vegtype axis rather than
+    # summed to a single number. Opt-in because the same pipeline serves other
+    # PFT-format rules that do want the total.
+    pft_to_vegtype: true
     pipelines:
       - lpjg_monthly_pipeline
 

@@ -936,11 +936,7 @@ def broadcast_forcing_year_to_monthly(data, rule):
         (e.g. 1850 for CMIP piControl reference).
     """
     year = _resolve_year(rule)
-    forcing_year = (
-        rule.get("forcing_year")
-        if hasattr(rule, "get")
-        else getattr(rule, "forcing_year", None)
-    )
+    forcing_year = rule.get("forcing_year") if hasattr(rule, "get") else getattr(rule, "forcing_year", None)
     if year is None or forcing_year is None:
         raise ValueError(
             "broadcast_forcing_year_to_monthly requires both `year` (model "
@@ -957,8 +953,7 @@ def broadcast_forcing_year_to_monthly(data, rule):
             break
     if time_name is None:
         raise ValueError(
-            f"broadcast_forcing_year_to_monthly: no recognized time coord; "
-            f"got {list(getattr(data, 'coords', {}))}"
+            f"broadcast_forcing_year_to_monthly: no recognized time coord; " f"got {list(getattr(data, 'coords', {}))}"
         )
 
     sliced = data.sel({time_name: str(forcing_year_i)})
@@ -992,12 +987,7 @@ def broadcast_forcing_year_to_monthly(data, rule):
     except Exception as exc:  # pragma: no cover - defensive
         logger.debug(f"broadcast_forcing: could not read source time encoding: {exc}")
 
-    new_times = np.array(
-        [
-            cftime.DatetimeProlepticGregorian(year_i, m, 16, 12, 0, 0)
-            for m in range(1, 13)
-        ]
-    )
+    new_times = np.array([cftime.DatetimeProlepticGregorian(year_i, m, 16, 12, 0, 0) for m in range(1, 13)])
     result = sliced.expand_dims({time_name: new_times})
 
     try:
@@ -1306,9 +1296,7 @@ def compute_sispeed(data, rule):
       - second_input_pattern: regex matching the filenames
       - second_variable: variable name (default: auto-detect)
     """
-    v2 = _load_secondary_mf(
-        rule, "second_input_path", "second_input_pattern", "second_variable"
-    )
+    v2 = _load_secondary_mf(rule, "second_input_path", "second_input_pattern", "second_variable")
 
     result = np.sqrt(data**2 + v2**2)
     result.attrs = {
@@ -1573,9 +1561,7 @@ def _fesom_edge_width(mesh, data, horiz_dim_candidates=("nod2", "ncells", "ncol"
     """
     if "cell_area" not in mesh:
         return None
-    horiz_dim = next(
-        (d for d in data.dims if d in horiz_dim_candidates), None
-    )
+    horiz_dim = next((d for d in data.dims if d in horiz_dim_candidates), None)
     if horiz_dim is None:
         return None
     cell_area = mesh["cell_area"]
@@ -1622,23 +1608,17 @@ def average_w_interfaces_to_midpoints(data, rule):
     """
     grid_file = rule.get("grid_file")
     if grid_file is None:
-        raise ValueError(
-            "Rule must specify 'grid_file' for average_w_interfaces_to_midpoints"
-        )
+        raise ValueError("Rule must specify 'grid_file' for average_w_interfaces_to_midpoints")
 
     if not isinstance(data, xr.DataArray):
-        raise ValueError(
-            "average_w_interfaces_to_midpoints expects an xr.DataArray"
-        )
+        raise ValueError("average_w_interfaces_to_midpoints expects an xr.DataArray")
 
     vertical_dim = next(
         (d for d in ("nz", "nz1", "lev", "depth", "olevel") if d in data.dims),
         None,
     )
     if vertical_dim is None:
-        raise ValueError(
-            f"No vertical dimension found in data dims={list(data.dims)}"
-        )
+        raise ValueError(f"No vertical dimension found in data dims={list(data.dims)}")
 
     mesh = xr.open_dataset(grid_file)
     if "depth" not in mesh:
@@ -1651,8 +1631,7 @@ def average_w_interfaces_to_midpoints(data, rule):
     nz_data = data.sizes[vertical_dim]
     if nz_data != n_midpoints:
         raise ValueError(
-            f"Expected vertical size {n_midpoints} (FESOM cell layers, "
-            f"matches mesh 'depth'); got {nz_data}"
+            f"Expected vertical size {n_midpoints} (FESOM cell layers, " f"matches mesh 'depth'); got {nz_data}"
         )
 
     # Pad the deepest interface with zero (bottom BC: w=0 at seabed),
@@ -1661,9 +1640,7 @@ def average_w_interfaces_to_midpoints(data, rule):
     lower = xr.concat(
         [
             data.isel({vertical_dim: slice(1, None)}),
-            xr.zeros_like(data.isel({vertical_dim: 0})).expand_dims(
-                {vertical_dim: 1}
-            ),
+            xr.zeros_like(data.isel({vertical_dim: 0})).expand_dims({vertical_dim: 1}),
         ],
         dim=vertical_dim,
     )
@@ -1687,19 +1664,21 @@ def average_w_interfaces_to_midpoints(data, rule):
         n_keep = 1 + int(np.argmin(diffs > 0)) if diffs[0] > 0 else 1 + int(np.argmin(diffs < 0))
         result = result.isel({vertical_dim: slice(0, n_keep)})
         midpoint_depth = midpoint_depth[:n_keep]
-    result = result.assign_coords({
-        vertical_dim: xr.DataArray(
-            midpoint_depth,
-            dims=(vertical_dim,),
-            attrs={
-                "long_name": "ocean depth",
-                "standard_name": "depth",
-                "units": "m",
-                "axis": "Z",
-                "positive": "down",
-            },
-        ),
-    })
+    result = result.assign_coords(
+        {
+            vertical_dim: xr.DataArray(
+                midpoint_depth,
+                dims=(vertical_dim,),
+                attrs={
+                    "long_name": "ocean depth",
+                    "standard_name": "depth",
+                    "units": "m",
+                    "axis": "Z",
+                    "positive": "down",
+                },
+            ),
+        }
+    )
     if vertical_dim != "nz1":
         result = result.rename({vertical_dim: "nz1"})
 
@@ -1999,9 +1978,7 @@ def compute_zostoga(data, rule):
     else:
         # Assume constant salinity of 35 psu for thermosteric-only
         salt = xr.full_like(data, 35.0)
-        logger.warning(
-            "No salt_path/salt_pattern specified, using constant S=35 for thermosteric computation"
-        )
+        logger.warning("No salt_path/salt_pattern specified, using constant S=35 for thermosteric computation")
 
     # Build thickness and area arrays
     nz = data.sizes[vertical_dim]
@@ -2198,14 +2175,9 @@ def vertical_integrate(
         if input_units:
             try:
                 ureg = pint.UnitRegistry()
-                thickness_units = (
-                    thickness.attrs.get("units")
-                    if hasattr(thickness, "attrs")
-                    else None
-                ) or "m"
-                new_units = (
-                    ureg.parse_expression(_udunits_to_pint(input_units))
-                    * ureg.parse_expression(_udunits_to_pint(thickness_units))
+                thickness_units = (thickness.attrs.get("units") if hasattr(thickness, "attrs") else None) or "m"
+                new_units = ureg.parse_expression(_udunits_to_pint(input_units)) * ureg.parse_expression(
+                    _udunits_to_pint(thickness_units)
                 )
                 integrated.attrs["units"] = f"{new_units.units:~}"
             except Exception as exc:
@@ -2425,8 +2397,7 @@ import functools as _functools
 
 
 @_functools.lru_cache(maxsize=16)
-def _load_secondary_mf_cached(path, pattern, variable_name, year_start, year_end,
-                              skip_filter, time_dimname):
+def _load_secondary_mf_cached(path, pattern, variable_name, year_start, year_end, skip_filter, time_dimname):
     """Inner cache for ``_load_secondary_mf``. Keyed on the resolved
     lookup tuple (not on the rule object, which isn't hashable). The
     returned DataArray must not be mutated by callers — wrap it with
@@ -2455,8 +2426,7 @@ def _load_secondary_mf_cached(path, pattern, variable_name, year_start, year_end
         files = filter_files_by_year_range(files, year_start, year_end)
         if not files:
             raise FileNotFoundError(
-                f"No files matching {pattern!r} in {path} fall within "
-                f"year range {year_start}–{year_end}"
+                f"No files matching {pattern!r} in {path} fall within " f"year range {year_start}–{year_end}"
             )
     ds = xr.open_mfdataset(files, use_cftime=True)
     # Resolve the time-axis dim name. Explicit rule.time_dimname wins;
@@ -2486,16 +2456,15 @@ def _load_secondary_mf_cached(path, pattern, variable_name, year_start, year_end
     else:
         _BOUNDS_SUFFIXES = ("_bounds", "_bnds", "_bounds_lat", "_bounds_lon")
         data_vars = [
-            v for v in ds.data_vars
+            v
+            for v in ds.data_vars
             if v not in ds.coords
             and not any(str(v).endswith(s) for s in _BOUNDS_SUFFIXES)
             and "axis_nbounds" not in ds[v].dims
             and "nvertex" not in ds[v].dims
         ]
         if not data_vars:
-            raise ValueError(
-                f"No data variables found in files matching {pattern!r} in {path}"
-            )
+            raise ValueError(f"No data variables found in files matching {pattern!r} in {path}")
         result = ds[data_vars[0]]
     return result
 
@@ -2547,8 +2516,13 @@ def _load_secondary_mf(rule, path_key, pattern_key, variable_key):
     skip_filter = bool(rule.get("skip_input_year_filter", False))
     time_dimname = rule.get("time_dimname")
     da = _load_secondary_mf_cached(
-        path, pattern, var_name,
-        year_start, year_end, skip_filter, time_dimname,
+        path,
+        pattern,
+        var_name,
+        year_start,
+        year_end,
+        skip_filter,
+        time_dimname,
     )
     # Shallow copy so callers can rename / drop / slice without
     # mutating the cache entry. dask graph stays shared with the
@@ -2580,8 +2554,7 @@ def _load_secondary_mf_uncached(rule, path_key, pattern_key, variable_key):
         files = filter_files_by_year_range(files, year_start, year_end)
         if not files:
             raise FileNotFoundError(
-                f"No files matching {pattern!r} in {path} fall within "
-                f"year range {year_start}–{year_end}"
+                f"No files matching {pattern!r} in {path} fall within " f"year range {year_start}–{year_end}"
             )
     ds = xr.open_mfdataset(files, use_cftime=True)
     time_dimname = rule.get("time_dimname")
@@ -2607,7 +2580,8 @@ def _load_secondary_mf_uncached(rule, path_key, pattern_key, variable_key):
         # arithmetic blows up with object-dtype broadcast errors.
         _BOUNDS_SUFFIXES = ("_bounds", "_bnds", "_bounds_lat", "_bounds_lon")
         data_vars = [
-            v for v in ds.data_vars
+            v
+            for v in ds.data_vars
             if v not in ds.coords
             and not any(str(v).endswith(s) for s in _BOUNDS_SUFFIXES)
             and "axis_nbounds" not in ds[v].dims
@@ -2980,8 +2954,11 @@ def slice_to_rule_year_range(data, rule):
     times = data[time_name].values
     # Convert each timestamp to a year integer. Accepts cftime, numpy
     # datetime64, and pandas Timestamp without forcing conversion.
-    years = np.fromiter((pd.Timestamp(t).year if hasattr(t, "year") is False else t.year
-                        for t in times), dtype=np.int64, count=len(times))
+    years = np.fromiter(
+        (pd.Timestamp(t).year if hasattr(t, "year") is False else t.year for t in times),
+        dtype=np.int64,
+        count=len(times),
+    )
 
     lo = year_start if year_start is not None else years.min()
     hi = year_end if year_end is not None else years.max()
@@ -3070,6 +3047,128 @@ def _stamp_lpjguess_time_epoch(obj, base_path):
     return obj
 
 
+# ------------------------------------------------------------------
+# LPJ-GUESS tile / PFT -> CMIP7 labelled-axis mappings
+# ------------------------------------------------------------------
+#
+# The CMIP7 ``landuse`` and ``vegtype`` axes are character axes: the value set
+# is fixed by ``CMIP7_coordinate.json`` (``requested``), so the model's own
+# categories have to be aggregated onto them. Both tables below are ordered as
+# the DReq lists them, because the written axis has to match ``requested``
+# element for element.
+
+# ``landuse``: LPJ-GUESS writes one column per land-use tile in every *Lut*
+# .out file, headed ``psl crp pst urb``. The four map one-to-one, so this is a
+# reordering, not an aggregation. Names confirmed against the LPJ-GUESS
+# ``landcover_string[]`` table.
+_LPJG_LANDUSE_COLUMNS = (
+    ("primary_and_secondary_land", "psl"),
+    ("pastures", "pst"),
+    ("crops", "crp"),
+    ("urban", "urb"),
+)
+
+# ``vegtype``: landCoverFrac_monthly.out carries one column per PFT (44 in this
+# configuration). The grouping below is taken from the run's own instruction
+# files rather than from the PFT acronyms:
+#   global.ins       tree/shrub/grass, broadleaved/needleleaved,
+#                    evergreen/summergreen, phenology "raingreen"
+#   arctic.ins       tallshrub/lowshrub/prostratedwarfshrub,
+#                    cushionforblichenmosstundra
+#   wetlandpfts.ins  peatland copies of the arctic shrubs, moss
+#   crop_n.ins       the CC* crop functional types
+#   landcover.ins    the pasture and urban grass tiles
+# "raingreen" (TrBR) is a deciduous phenology, hence broadleaf_deciduous.
+_LPJG_VEGTYPE_PFTS = (
+    ("broadleaf_deciduous_trees", ("TeBS", "IBS", "TrBR")),
+    ("broadleaf_evergreen_trees", ("TeBE", "TrBE", "TrIBE")),
+    ("needleleaf_deciduous_trees", ("BNS",)),
+    ("needleleaf_evergreen_tree", ("BNE", "BINE", "TeNE")),
+    (
+        "natural_grasses",
+        ("C3G", "C4G", "GRT", "C3G_pas", "C4G_pas", "C3G_urb", "C4G_urb", "WetGRS", "C3G_wet", "C4G_wet"),
+    ),
+    (
+        "crops",
+        (
+            "CC3ann",
+            "CC3per",
+            "CC3nfx",
+            "CC4ann",
+            "CC4per",
+            "CC3anni",
+            "CC3peri",
+            "CC3nfxi",
+            "CC4anni",
+            "CC4peri",
+            "CC3G_ic",
+            "CC4G_ic",
+        ),
+    ),
+    ("shrubs", ("HSE", "HSS", "LSE", "LSS", "EPDS", "SPDS", "pLSE", "pLSS")),
+)
+
+# Columns with no counterpart on the CMIP7 vegtype axis. CLM and pCLM are the
+# cushion-forb/lichen/moss tundra type, pmoss is peat moss, and Bare_soil is
+# not vegetation at all. Excluding them is why the sum over vegtype is less
+# than the land fraction of the cell; the note goes into the variable comment.
+_LPJG_VEGTYPE_UNMAPPED = ("CLM", "pCLM", "pmoss", "Bare_soil")
+
+_LPJG_VEGTYPE_COMMENT = (
+    "Aggregated from the 44 LPJ-GUESS plant functional types onto the CMIP7 "
+    "vegtype axis. The cushion-forb/lichen/moss tundra types (CLM, pCLM), peat "
+    "moss (pmoss) and bare soil have no counterpart among the seven requested "
+    "vegtype values and are omitted, so the sum over vegtype is smaller than "
+    "the land fraction of the grid cell."
+)
+
+
+def _attach_label_axis(da, dim, out_name, labels, long_name):
+    """Give a labelled (character) axis its CMIP/CF coordinate attributes.
+
+    pycmor's ``set_coordinates`` step only knows about spatiotemporal axes, so
+    a character axis built here has to carry its own ``standard_name`` and
+    ``long_name`` or wcrp ATTR001 flags it (same reason the basin axis attaches
+    them at construction, cf. ``compute_hfbasin_tripyview``).
+
+    The labels are stored as fixed-width bytes so that xarray writes a
+    ``char(dim, string<n>)`` array, close to the ``char(dim, strlen)`` CMOR
+    emits. Leaving them as Python strings makes xarray write an NC_STRING
+    variable instead, and the resulting file could not be opened by netCDF-C at
+    all: ncdump and ``netCDF4.Dataset`` both failed with "NetCDF: HDF error",
+    h5py reporting a corrupt creation property list on the vlen dataset ("bad
+    global heap collection signature"). The compliance checker still reported
+    that file clean, so this is not something QC would catch.
+
+    ``out_name`` is ``sector`` for every labelled axis, which is what CMOR
+    writes: published CMIP6 files carry ``char sector(landuse, strlen)`` and
+    ``char sector(type, strlen)`` (checked against MPI-ESM1-2-LR gppLut and
+    landCoverFrac). Naming the variable after its own dimension instead costs a
+    cf-checker §5 warning, "shares the same name as one of its dimensions".
+    """
+    values = np.array([str(label) for label in labels], dtype="S")
+    da = da.assign_coords({out_name: (dim, values)})
+    da[out_name].attrs.update({"standard_name": "area_type", "long_name": long_name})
+    da[out_name].encoding["_FillValue"] = None
+    return da
+
+
+def _lut_column_map(df_columns, rule):
+    """Return ``[(label, column)]`` for the landuse axis, checked against the file.
+
+    ``rule.model_variable`` stays honoured as an escape hatch: setting it to a
+    single tile column keeps the old single-tile behaviour for a rule that
+    genuinely wants one.
+    """
+    missing = [c for _, c in _LPJG_LANDUSE_COLUMNS if c not in df_columns]
+    if missing:
+        raise ValueError(
+            f"LPJ-GUESS Lut loader: land-use tile column(s) {missing} absent from the "
+            f".out file for rule {getattr(rule, 'name', '?')}; found {sorted(df_columns)}"
+        )
+    return list(_LPJG_LANDUSE_COLUMNS)
+
+
 def load_lpjguess_monthly(data, rule):
     """
     Load LPJ-GUESS monthly .out files into an xarray Dataset.
@@ -3120,11 +3219,35 @@ def load_lpjguess_monthly(data, rule):
         if df_all.empty:
             raise ValueError(f"LPJ-GUESS loader: no rows in [{_lo}, {_hi}] for rule {getattr(rule, 'name', '?')}")
 
-
     # Detect PFT-breakdown format: has 'Mth' column instead of Jan..Dec.
     # Sum all non-coordinate columns to produce a per-cell/per-month total.
     is_pft_format = "Mth" in df_all.columns and "Jan" not in df_all.columns
-    if is_pft_format:
+    # Opt-in per rule: landCoverFrac wants the PFTs resolved onto the CMIP7
+    # vegtype axis, every other PFT-format rule still wants the plain total.
+    to_vegtype = is_pft_format and bool(rule.get("pft_to_vegtype", False))
+    vegtype_map = None
+    if to_vegtype:
+        coord_cols = {"Lon", "Lat", "Year", "Mth"}
+        present = set(df_all.columns) - coord_cols
+        vegtype_map = [(label, [c for c in cols if c in present]) for label, cols in _LPJG_VEGTYPE_PFTS]
+        empty = [label for label, cols in vegtype_map if not cols]
+        if empty:
+            raise ValueError(
+                f"LPJ-GUESS vegtype mapping: no source PFT column for {empty} in the .out "
+                f"file for rule {getattr(rule, 'name', '?')}; found {sorted(present)}"
+            )
+        # Anything the tables do not account for is a PFT set change in the
+        # instruction files, and silently dropping it would understate the
+        # published cover fractions.
+        accounted = {c for _, cols in _LPJG_VEGTYPE_PFTS for c in cols}
+        accounted.update(_LPJG_VEGTYPE_UNMAPPED)
+        unknown = sorted(present - accounted)
+        if unknown:
+            raise ValueError(
+                f"LPJ-GUESS vegtype mapping: unclassified PFT column(s) {unknown}. Add them "
+                "to _LPJG_VEGTYPE_PFTS or _LPJG_VEGTYPE_UNMAPPED in custom_steps.py."
+            )
+    elif is_pft_format:
         coord_cols = {"Lon", "Lat", "Year", "Mth"}
         pft_cols = [c for c in df_all.columns if c not in coord_cols]
         df_all["_total"] = df_all[pft_cols].sum(axis=1)
@@ -3148,7 +3271,10 @@ def load_lpjguess_monthly(data, rule):
 
     # Allocate output array
     n_times = len(times)
-    values = np.full((n_times, ncells), np.nan, dtype=np.float64)
+    if to_vegtype:
+        values = np.full((n_times, len(vegtype_map), ncells), np.nan, dtype=np.float64)
+    else:
+        values = np.full((n_times, ncells), np.nan, dtype=np.float64)
 
     # Vectorized cell-index lookup via pandas merge. The earlier
     # df_all.iterrows() Python loop held the GIL for several minutes
@@ -3160,9 +3286,7 @@ def load_lpjguess_monthly(data, rule):
     # minutes to seconds; the GIL is held only inside numpy C code.
     coords_df_with_idx = coords_df.copy()
     coords_df_with_idx["_cell_idx"] = np.arange(len(coords_df_with_idx))
-    df_merged = df_all.merge(
-        coords_df_with_idx[["Lon", "Lat", "_cell_idx"]], on=["Lon", "Lat"], how="left"
-    )
+    df_merged = df_all.merge(coords_df_with_idx[["Lon", "Lat", "_cell_idx"]], on=["Lon", "Lat"], how="left")
     cell_idx_arr = df_merged["_cell_idx"].values
     valid = ~np.isnan(cell_idx_arr)
     cell_idx_int = cell_idx_arr[valid].astype(np.int64)
@@ -3170,7 +3294,12 @@ def load_lpjguess_monthly(data, rule):
 
     # Fill values — Jan..Dec columns ARE the monthly data for all LPJ-GUESS .out files
     model_variable = rule.get("model_variable", "Total")
-    if is_pft_format:
+    if to_vegtype:
+        m_idx = df_merged["Mth"].values[valid].astype(np.int64) - 1
+        t_idx_arr = yr_idx_arr * 12 + m_idx
+        for vi, (_, cols) in enumerate(vegtype_map):
+            values[t_idx_arr, vi, cell_idx_int] = df_merged[cols].sum(axis=1).values[valid]
+    elif is_pft_format:
         m_idx = df_merged["Mth"].values[valid].astype(np.int64) - 1
         t_idx_arr = yr_idx_arr * 12 + m_idx
         values[t_idx_arr, cell_idx_int] = df_merged["_total"].values[valid]
@@ -3183,7 +3312,7 @@ def load_lpjguess_monthly(data, rule):
     # Create xarray Dataset
     da = xr.DataArray(
         values,
-        dims=["time", "ncells"],
+        dims=["time", "vegtype", "ncells"] if to_vegtype else ["time", "ncells"],
         coords={
             "time": times,
             "lon": ("ncells", lon_vals),
@@ -3191,6 +3320,15 @@ def load_lpjguess_monthly(data, rule):
         },
         name=model_variable,
     )
+    if to_vegtype:
+        da = _attach_label_axis(
+            da,
+            "vegtype",
+            "sector",
+            [label for label, _ in vegtype_map],
+            "Vegetation or Land Cover Type",
+        )
+        da.attrs["comment"] = _LPJG_VEGTYPE_COMMENT
     da.attrs["units"] = rule.get("source_units", "kg m-2 s-1")
 
     ds = da.to_dataset()
@@ -3309,9 +3447,7 @@ def load_lpjguess_yearly(data, rule):
     # heartbeat (cf. load_lpjguess_monthly for the full rationale).
     coords_df_with_idx = coords_df.copy()
     coords_df_with_idx["_cell_idx"] = np.arange(len(coords_df_with_idx))
-    df_merged = df_all.merge(
-        coords_df_with_idx[["Lon", "Lat", "_cell_idx"]], on=["Lon", "Lat"], how="left"
-    )
+    df_merged = df_all.merge(coords_df_with_idx[["Lon", "Lat", "_cell_idx"]], on=["Lon", "Lat"], how="left")
     cell_idx_arr = df_merged["_cell_idx"].values
     valid = ~np.isnan(cell_idx_arr)
     cell_idx_int = cell_idx_arr[valid].astype(np.int64)
@@ -3384,11 +3520,7 @@ def broadcast_yearly_to_monthly(data, rule):
     da = data[var_name]
 
     years = [int(t.year) for t in da.time.values]
-    new_times = [
-        cftime.DatetimeProlepticGregorian(yr, m, 15)
-        for yr in years
-        for m in range(1, 13)
-    ]
+    new_times = [cftime.DatetimeProlepticGregorian(yr, m, 15) for yr in years for m in range(1, 13)]
     new_values = np.repeat(da.values, 12, axis=0)
 
     new_coords = {"time": new_times}
@@ -3397,7 +3529,11 @@ def broadcast_yearly_to_monthly(data, rule):
             new_coords[coord_name] = da.coords[coord_name]
 
     new_da = xr.DataArray(
-        new_values, dims=da.dims, coords=new_coords, name=var_name, attrs=da.attrs,
+        new_values,
+        dims=da.dims,
+        coords=new_coords,
+        name=var_name,
+        attrs=da.attrs,
     )
     return new_da.to_dataset()
 
@@ -3455,26 +3591,27 @@ def load_lpjguess_yearly_lut(data, rule):
     times = [cftime.DatetimeProlepticGregorian(int(yr), 7, 1) for yr in years]
 
     model_variable = rule.get("model_variable", "psl")
-    values = np.full((len(times), ncells), np.nan, dtype=np.float64)
+    lu_map = _lut_column_map(df_all.columns, rule)
+    values = np.full((len(times), len(lu_map), ncells), np.nan, dtype=np.float64)
 
     # Vectorized cell + year indexing (cf. load_lpjguess_monthly for rationale).
     coords_df_with_idx = coords_df.copy()
     coords_df_with_idx["_cell_idx"] = np.arange(len(coords_df_with_idx))
-    df_merged = df_all.merge(
-        coords_df_with_idx[["Lon", "Lat", "_cell_idx"]], on=["Lon", "Lat"], how="left"
-    )
+    df_merged = df_all.merge(coords_df_with_idx[["Lon", "Lat", "_cell_idx"]], on=["Lon", "Lat"], how="left")
     cell_idx_arr = df_merged["_cell_idx"].values
     valid = ~np.isnan(cell_idx_arr)
     cell_idx_int = cell_idx_arr[valid].astype(np.int64)
     yr_idx_arr = np.searchsorted(years, df_merged["Year"].values[valid])
-    values[yr_idx_arr, cell_idx_int] = df_merged[model_variable].values[valid]
+    for li, (_, column) in enumerate(lu_map):
+        values[yr_idx_arr, li, cell_idx_int] = df_merged[column].values[valid]
 
     da = xr.DataArray(
         values,
-        dims=["time", "ncells"],
+        dims=["time", "landuse", "ncells"],
         coords={"time": times, "lon": ("ncells", lon_vals), "lat": ("ncells", lat_vals)},
         name=model_variable,
     )
+    da = _attach_label_axis(da, "landuse", "sector", [label for label, _ in lu_map], "Land use type")
     source_units = rule.get("source_units")
     if source_units:
         da.attrs["units"] = source_units
@@ -3538,29 +3675,30 @@ def load_lpjguess_monthly_lut(data, rule):
             times.append(cftime.DatetimeProlepticGregorian(int(yr), m, 15))
 
     model_variable = rule.get("model_variable", "psl")
+    lu_map = _lut_column_map(df_all.columns, rule)
     n_times = len(times)
-    values = np.full((n_times, ncells), np.nan, dtype=np.float64)
+    values = np.full((n_times, len(lu_map), ncells), np.nan, dtype=np.float64)
 
     # Vectorized cell + (year, month) indexing (cf. load_lpjguess_monthly for rationale).
     coords_df_with_idx = coords_df.copy()
     coords_df_with_idx["_cell_idx"] = np.arange(len(coords_df_with_idx))
-    df_merged = df_all.merge(
-        coords_df_with_idx[["Lon", "Lat", "_cell_idx"]], on=["Lon", "Lat"], how="left"
-    )
+    df_merged = df_all.merge(coords_df_with_idx[["Lon", "Lat", "_cell_idx"]], on=["Lon", "Lat"], how="left")
     cell_idx_arr = df_merged["_cell_idx"].values
     valid = ~np.isnan(cell_idx_arr)
     cell_idx_int = cell_idx_arr[valid].astype(np.int64)
     yr_idx_arr = np.searchsorted(years, df_merged["Year"].values[valid])
     m_idx_arr = df_merged["Mth"].values[valid].astype(np.int64) - 1
     t_idx_arr = yr_idx_arr * 12 + m_idx_arr
-    values[t_idx_arr, cell_idx_int] = df_merged[model_variable].values[valid]
+    for li, (_, column) in enumerate(lu_map):
+        values[t_idx_arr, li, cell_idx_int] = df_merged[column].values[valid]
 
     da = xr.DataArray(
         values,
-        dims=["time", "ncells"],
+        dims=["time", "landuse", "ncells"],
         coords={"time": times, "lon": ("ncells", lon_vals), "lat": ("ncells", lat_vals)},
         name=model_variable,
     )
+    da = _attach_label_axis(da, "landuse", "sector", [label for label, _ in lu_map], "Land use type")
     source_units = rule.get("source_units")
     if source_units:
         da.attrs["units"] = source_units
@@ -4028,9 +4166,7 @@ def regrid_oifs_to_fesom(data, rule):
     def _to_xyz(lon_deg, lat_deg):
         lon = np.radians(lon_deg)
         lat = np.radians(lat_deg)
-        return np.stack([np.cos(lat) * np.cos(lon),
-                         np.cos(lat) * np.sin(lon),
-                         np.sin(lat)], axis=-1)
+        return np.stack([np.cos(lat) * np.cos(lon), np.cos(lat) * np.sin(lon), np.sin(lat)], axis=-1)
 
     inds = None
     if cache_dir:
@@ -4051,8 +4187,7 @@ def regrid_oifs_to_fesom(data, rule):
     # rather than ``time``; accept any of the conventional names so callers
     # don't have to declare ``time_dimname:`` for every regrid rule.
     time_dim = next(
-        (n for n in ("time", "time_counter", "time_centered", "valid_time", "t")
-         if n in data.dims),
+        (n for n in ("time", "time_counter", "time_centered", "valid_time", "t") if n in data.dims),
         None,
     )
     # Identify the source spatial dimension (the one we're gathering along).
@@ -4097,10 +4232,12 @@ def regrid_oifs_to_fesom(data, rule):
     # this, external tools (ushow, Panoply, ncview) can't render the
     # field, and per-file sanity-check maps fall back to the
     # _find_sibling_latlon workaround.
-    result = result.assign_coords({
-        "lat": (node_dim, fesom_lat),
-        "lon": (node_dim, fesom_lon),
-    })
+    result = result.assign_coords(
+        {
+            "lat": (node_dim, fesom_lat),
+            "lon": (node_dim, fesom_lon),
+        }
+    )
     # Drop OIFS auxiliary time coords. XIOS files carry ``time_centered`` /
     # ``time_instant`` (plus their *_bounds twins) alongside the renamed
     # ``time`` (== old time_counter). Both reference dim ``time`` but with
@@ -4108,9 +4245,14 @@ def regrid_oifs_to_fesom(data, rule):
     # walks all coords sharing the dim and trips on the apparent duplicate
     # index. The legacy materialise-via-.values path implicitly dropped
     # them; the lazy-isel path preserves them, so we drop explicitly.
-    for aux in ("time_centered", "time_instant",
-                "time_centered_bounds", "time_instant_bounds",
-                "time_counter_bounds", "time_bounds"):
+    for aux in (
+        "time_centered",
+        "time_instant",
+        "time_centered_bounds",
+        "time_instant_bounds",
+        "time_counter_bounds",
+        "time_bounds",
+    ):
         if aux in result.coords or aux in getattr(result, "variables", {}):
             result = result.drop_vars(aux, errors="ignore")
     return result
@@ -4190,8 +4332,7 @@ def regrid_regular_to_fesom(data, rule):
     # ``time_counter`` etc.) so the step doesn't silently broadcast against the
     # source grid when the rule omits ``time_dimname:``.
     time_dim = next(
-        (n for n in ("time", "time_counter", "time_centered", "valid_time", "t")
-         if n in data.dims),
+        (n for n in ("time", "time_counter", "time_centered", "valid_time", "t") if n in data.dims),
         None,
     )
     if time_dim is None:
@@ -4681,16 +4822,16 @@ def _build_tripyview_mdiag(mesh, mesh_diag_path):
     et_f = raw["edge_face_links"].values
     edge_tri = np.where(np.isfinite(et_f), et_f, 0).astype(np.int64) - 1
     raw.close()
-    return xr.Dataset({
-        "edge_x":     (("n2", "edg_n"),
-                       np.stack([mesh.n_x[edges_arr[0]], mesh.n_x[edges_arr[1]]])),
-        "edge_y":     (("n2", "edg_n"),
-                       np.stack([mesh.n_y[edges_arr[0]], mesh.n_y[edges_arr[1]]])),
-        "edge_dx_lr": (("n2", "edg_n"), np.stack([ecdx[0], ecdx[2]])),
-        "edge_dy_lr": (("n2", "edg_n"), np.stack([ecdx[1], ecdx[3]])),
-        "edge_tri":   (("n2", "edg_n"), edge_tri),
-        "edges":      (("n2", "edg_n"), edges_arr),
-    })
+    return xr.Dataset(
+        {
+            "edge_x": (("n2", "edg_n"), np.stack([mesh.n_x[edges_arr[0]], mesh.n_x[edges_arr[1]]])),
+            "edge_y": (("n2", "edg_n"), np.stack([mesh.n_y[edges_arr[0]], mesh.n_y[edges_arr[1]]])),
+            "edge_dx_lr": (("n2", "edg_n"), np.stack([ecdx[0], ecdx[2]])),
+            "edge_dy_lr": (("n2", "edg_n"), np.stack([ecdx[1], ecdx[3]])),
+            "edge_tri": (("n2", "edg_n"), edge_tri),
+            "edges": (("n2", "edg_n"), edges_arr),
+        }
+    )
 
 
 def compute_hfbasin_tripyview(data, rule):
@@ -4770,8 +4911,8 @@ def compute_hfbasin_tripyview(data, rule):
     )
     basins = [
         ("atlantic_arctic_ocean", _shp.Reader(_os.path.join(shp_dir, "Atlantic_MOC.shp"))),
-        ("indian_pacific_ocean",  _shp.Reader(_os.path.join(shp_dir, "IndoPacific_MOC.shp"))),
-        ("global_ocean",          "global"),
+        ("indian_pacific_ocean", _shp.Reader(_os.path.join(shp_dir, "IndoPacific_MOC.shp"))),
+        ("global_ocean", "global"),
     ]
 
     # Loop over time explicitly: tripyview's sum_over_latbin indexes data via
@@ -4805,8 +4946,14 @@ def compute_hfbasin_tripyview(data, rule):
             packed = packed.drop_vars("nz1")
         for name, box in basins:
             out_list = _tpv.sub_transp.calc_mhflx_box_fast_lessmem(
-                mesh, packed, None, mdiag, [box], dlat=1.0,
-                do_info=False, do_load=True,
+                mesh,
+                packed,
+                None,
+                mdiag,
+                [box],
+                dlat=1.0,
+                do_info=False,
+                do_load=True,
             )
             out = out_list[0]
             if glob_lat is None and name == "global_ocean":
@@ -4843,7 +4990,8 @@ def compute_hfbasin_tripyview(data, rule):
 
     hfbasin = xr.DataArray(
         stacked,
-        dims=dims, coords=coords,
+        dims=dims,
+        coords=coords,
         name=rule.model_variable,
         attrs={
             "units": "W",
@@ -4851,28 +4999,32 @@ def compute_hfbasin_tripyview(data, rule):
             "long_name": "Northward Ocean Heat Transport",
             "cell_methods": "longitude: sum (comment: basin sum [along zig-zag grid path]) depth: sum time: mean",
             "comment": "Edge-crossing integration via tripyview "
-                       "(calc_mhflx_box_fast_lessmem). Replaces the broken "
-                       "per-element-area approximation; see "
-                       "tools/sanity_check/reports/hfbasin_research_plan.md.",
+            "(calc_mhflx_box_fast_lessmem). Replaces the broken "
+            "per-element-area approximation; see "
+            "tools/sanity_check/reports/hfbasin_research_plan.md.",
         },
     )
     # Attach CF attrs to the lat coord so the written file has a usable
     # coordinate variable (was previously a bare numeric coord — cli37
     # review: "flawed coordinate variable").
-    hfbasin["lat"].attrs.update({
-        "standard_name": "latitude",
-        "long_name": "Latitude",
-        "units": "degrees_north",
-        "axis": "Y",
-    })
+    hfbasin["lat"].attrs.update(
+        {
+            "standard_name": "latitude",
+            "long_name": "Latitude",
+            "units": "degrees_north",
+            "axis": "Y",
+        }
+    )
     # wcrp ATTR001 requires the basin sector axis to declare
     # standard_name=region. Pycmor's set_coordinates step doesn't know
     # about the basin coord since it's not a spatiotemporal axis; attach
     # the CMIP/CF attrs here at construction.
-    hfbasin["basin"].attrs.update({
-        "standard_name": "region",
-        "long_name": "Region Selection",
-    })
+    hfbasin["basin"].attrs.update(
+        {
+            "standard_name": "region",
+            "long_name": "Region Selection",
+        }
+    )
     return hfbasin.to_dataset()
 
 
@@ -4921,9 +5073,7 @@ def compute_sltbasin_tripyview(data, rule):
     grid_file = rule.get("grid_file") or _os.path.join(mesh_path, "mesh.nc")
     mesh_diag_path = _os.path.join(mesh_path, "fesom.mesh.diag.nc")
     if not _os.path.exists(mesh_diag_path):
-        raise FileNotFoundError(
-            f"compute_sltbasin_tripyview needs fesom.mesh.diag.nc at {mesh_diag_path}"
-        )
+        raise FileNotFoundError(f"compute_sltbasin_tripyview needs fesom.mesh.diag.nc at {mesh_diag_path}")
 
     mesh = _tpv.load_mesh_fesom2(mesh_path, do_pickle=True, do_info=False)
     mdiag = _build_tripyview_mdiag(mesh, mesh_diag_path)
@@ -4958,8 +5108,8 @@ def compute_sltbasin_tripyview(data, rule):
     )
     basins = [
         ("atlantic_arctic_ocean", _shp.Reader(_os.path.join(shp_dir, "Atlantic_MOC.shp"))),
-        ("indian_pacific_ocean",  _shp.Reader(_os.path.join(shp_dir, "IndoPacific_MOC.shp"))),
-        ("global_ocean",          "global"),
+        ("indian_pacific_ocean", _shp.Reader(_os.path.join(shp_dir, "IndoPacific_MOC.shp"))),
+        ("global_ocean", "global"),
     ]
 
     has_time = "time" in v_da.dims
@@ -4986,8 +5136,14 @@ def compute_sltbasin_tripyview(data, rule):
             packed = packed.drop_vars("nz1")
         for name, box in basins:
             out_list = _tpv.sub_transp.calc_mhflx_box_fast_lessmem(
-                mesh, packed, None, mdiag, [box], dlat=1.0,
-                do_info=False, do_load=True,
+                mesh,
+                packed,
+                None,
+                mdiag,
+                [box],
+                dlat=1.0,
+                do_info=False,
+                do_load=True,
             )
             out = out_list[0]
             if glob_lat is None and name == "global_ocean":
@@ -5001,7 +5157,7 @@ def compute_sltbasin_tripyview(data, rule):
     # Post-process: tripyview returned PW-as-if-heat. Convert to kg/s salt.
     # See docstring for the derivation: factor = -1e+12 / cp = -2.5974e+8.
     _CP = 3850.0
-    factor = -1e+12 / _CP
+    factor = -1e12 / _CP
 
     if has_time:
         stacked = np.full((ntime, 3, glob_lat.size), np.nan, dtype=np.float64)
@@ -5026,7 +5182,8 @@ def compute_sltbasin_tripyview(data, rule):
 
     sltbasin = xr.DataArray(
         stacked,
-        dims=dims, coords=coords,
+        dims=dims,
+        coords=coords,
         name=rule.model_variable,
         attrs={
             "units": "kg s-1",
@@ -5034,23 +5191,27 @@ def compute_sltbasin_tripyview(data, rule):
             "long_name": "Northward Ocean Salt Transport",
             "cell_methods": "longitude: sum (comment: basin sum [along zig-zag grid path]) depth: sum time: mean",
             "comment": "Edge-crossing integration via tripyview "
-                       "(calc_mhflx_box_fast_lessmem with vsalt/usalt). "
-                       "Replaces the broken per-element-area approximation; "
-                       "see tools/sanity_check/reports/hfbasin_research_plan.md.",
+            "(calc_mhflx_box_fast_lessmem with vsalt/usalt). "
+            "Replaces the broken per-element-area approximation; "
+            "see tools/sanity_check/reports/hfbasin_research_plan.md.",
         },
     )
-    sltbasin["lat"].attrs.update({
-        "standard_name": "latitude",
-        "long_name": "Latitude",
-        "units": "degrees_north",
-        "axis": "Y",
-    })
+    sltbasin["lat"].attrs.update(
+        {
+            "standard_name": "latitude",
+            "long_name": "Latitude",
+            "units": "degrees_north",
+            "axis": "Y",
+        }
+    )
     # wcrp ATTR001 requires the basin sector axis to declare
     # standard_name=region (see compute_hfbasin_tripyview for context).
-    sltbasin["basin"].attrs.update({
-        "standard_name": "region",
-        "long_name": "Region Selection",
-    })
+    sltbasin["basin"].attrs.update(
+        {
+            "standard_name": "region",
+            "long_name": "Region Selection",
+        }
+    )
     return sltbasin.to_dataset()
 
 
@@ -5412,7 +5573,7 @@ def _msftm_density_streamfunction(div_da, lat_nodes, basin_nodes):
 
     binned3_all = np.zeros((ntime, ndens_n, 3, nlat), dtype=np.float64)
     for t in range(ntime):
-        slab = (div_da.isel(time=t).values if has_time else div_da.values)  # (ndens, nod2)
+        slab = div_da.isel(time=t).values if has_time else div_da.values  # (ndens, nod2)
         slab_v = slab[:, valid]
         slab_v = np.where(np.isfinite(slab_v), slab_v, 0.0).astype(np.float64)
         binned = np.bincount(flat_idx, weights=slab_v.ravel(), minlength=ndens_n * nbins5)
@@ -5686,7 +5847,6 @@ def load_lpjguess_monthly_depth(data, rule):
         if df_all.empty:
             raise ValueError(f"LPJ-GUESS loader: no rows in [{_lo}, {_hi}] for rule {getattr(rule, 'name', '?')}")
 
-
     years = np.sort(df_all["Year"].unique())
 
     # Build cell index
@@ -5711,9 +5871,7 @@ def load_lpjguess_monthly_depth(data, rule):
     # long enough to break the dask LocalCluster heartbeat).
     coords_df_with_idx = coords_df.copy()
     coords_df_with_idx["_cell_idx"] = np.arange(len(coords_df_with_idx))
-    df_merged = df_all.merge(
-        coords_df_with_idx[["Lon", "Lat", "_cell_idx"]], on=["Lon", "Lat"], how="left"
-    )
+    df_merged = df_all.merge(coords_df_with_idx[["Lon", "Lat", "_cell_idx"]], on=["Lon", "Lat"], how="left")
     cell_idx_arr = df_merged["_cell_idx"].values
     valid = ~np.isnan(cell_idx_arr)
     cell_idx_int = cell_idx_arr[valid].astype(np.int64)
@@ -5809,7 +5967,6 @@ def load_lpjguess_monthly_pool(data, rule):
         if df_all.empty:
             raise ValueError(f"LPJ-GUESS loader: no rows in [{_lo}, {_hi}] for rule {getattr(rule, 'name', '?')}")
 
-
     years = np.sort(df_all["Year"].unique())
 
     coords_df = df_all[["Lon", "Lat"]].drop_duplicates()
@@ -5831,9 +5988,7 @@ def load_lpjguess_monthly_pool(data, rule):
     # (cf. load_lpjguess_monthly for rationale).
     coords_df_with_idx = coords_df.copy()
     coords_df_with_idx["_cell_idx"] = np.arange(len(coords_df_with_idx))
-    df_merged = df_all.merge(
-        coords_df_with_idx[["Lon", "Lat", "_cell_idx"]], on=["Lon", "Lat"], how="left"
-    )
+    df_merged = df_all.merge(coords_df_with_idx[["Lon", "Lat", "_cell_idx"]], on=["Lon", "Lat"], how="left")
     cell_idx_arr = df_merged["_cell_idx"].values
     valid = ~np.isnan(cell_idx_arr)
     cell_idx_int = cell_idx_arr[valid].astype(np.int64)

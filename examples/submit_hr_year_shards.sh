@@ -258,6 +258,13 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
   tier_walltime="$WALLTIME"
   case "$short_tier" in
     extra_atm) tier_walltime=06:00:00 ;;
+    # cap7_atm: hurs_day_max/min now read hourly 2t+2d (7.7 GB + 7.8 GB)
+    # instead of the daily means (596 MB), ~26x more input per rule, so the
+    # tier can no longer be assumed to fit the global 3h. Its slowest cli108
+    # shard was already 1h34. A timeout here truncates a write into a
+    # header-only file rather than erroring (cf. hfls in cli108), so the
+    # headroom is cheap insurance.
+    cap7_atm)  tier_walltime=06:00:00 ;;
   esac
 
   # Per-tier dask worker count. All tiers use the global N_WORKERS (4).

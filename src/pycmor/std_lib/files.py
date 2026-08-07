@@ -143,10 +143,7 @@ class _Heartbeat:
             while not self._stop.wait(self.interval):
                 n += 1
                 elapsed = time.monotonic() - self._t0
-                logger.info(
-                    f"  ⟳ {self.label} still running "
-                    f"(t={elapsed:.0f}s, heartbeat #{n})"
-                )
+                logger.info(f"  ⟳ {self.label} still running " f"(t={elapsed:.0f}s, heartbeat #{n})")
                 # Watchdog: poll watch_path size and detect stalls.
                 # watch_path may be a str (single file) or a callable that
                 # returns the current "bytes written so far" — useful for
@@ -186,9 +183,7 @@ class _Heartbeat:
                         self._stop.set()
                         return
 
-        self._th = threading.Thread(
-            target=_tick, name=f"hb-{self.label}", daemon=True
-        )
+        self._th = threading.Thread(target=_tick, name=f"hb-{self.label}", daemon=True)
         self._th.start()
         return self
 
@@ -309,10 +304,10 @@ def _strip_unportable_encoding(ds):
 
 
 _HORIZONTAL_COORD_ATTRS = {
-    "lat":       {"standard_name": "latitude",  "long_name": "latitude",  "units": "degrees_north", "axis": "Y"},
-    "latitude":  {"standard_name": "latitude",  "long_name": "latitude",  "units": "degrees_north", "axis": "Y"},
-    "lon":       {"standard_name": "longitude", "long_name": "longitude", "units": "degrees_east",  "axis": "X"},
-    "longitude": {"standard_name": "longitude", "long_name": "longitude", "units": "degrees_east",  "axis": "X"},
+    "lat": {"standard_name": "latitude", "long_name": "latitude", "units": "degrees_north", "axis": "Y"},
+    "latitude": {"standard_name": "latitude", "long_name": "latitude", "units": "degrees_north", "axis": "Y"},
+    "lon": {"standard_name": "longitude", "long_name": "longitude", "units": "degrees_east", "axis": "X"},
+    "longitude": {"standard_name": "longitude", "long_name": "longitude", "units": "degrees_east", "axis": "X"},
 }
 
 # Pairs where one is a renamed dim coord and the other is an auxiliary
@@ -517,9 +512,7 @@ def _ensure_lat_lon_bounds_impl(ds, rule=None):
             try:
                 coord_sizes = {ds[c].size for c in ("lat", "latitude", "lon", "longitude") if c in ds.variables}
                 has_mesh_bnds = any(
-                    v in mesh_probe.variables
-                    and mesh_probe[v].ndim == 2
-                    and mesh_probe[v].shape[0] in coord_sizes
+                    v in mesh_probe.variables and mesh_probe[v].ndim == 2 and mesh_probe[v].shape[0] in coord_sizes
                     for v in ("lat_bnds", "lon_bnds")
                 )
             finally:
@@ -652,10 +645,7 @@ def _ensure_lat_lon_bounds_impl(ds, rule=None):
                 new_b.encoding["_FillValue"] = None
                 ds[bname] = new_b
         except Exception as exc:
-            logger.warning(
-                f"  → dateline normalise on {bname} failed: {exc}; "
-                f"leaving bnds unchanged"
-            )
+            logger.warning(f"  → dateline normalise on {bname} failed: {exc}; " f"leaving bnds unchanged")
 
     return ds
 
@@ -686,10 +676,7 @@ def _attach_bounds_from_mesh(ds, rule, coord_names):
             mb = mesh[mesh_bname]
             coord = ds[name]
             if coord.size != mb.shape[0]:
-                logger.debug(
-                    f"  → Skipping mesh bounds for '{name}': size mismatch "
-                    f"{coord.size} vs {mb.shape[0]}"
-                )
+                logger.debug(f"  → Skipping mesh bounds for '{name}': size mismatch " f"{coord.size} vs {mb.shape[0]}")
                 continue
             # Verify values agree so we aren't pulling bounds from a different mesh.
             mesh_centers_name = "lat" if name in ("lat", "latitude") else "lon"
@@ -701,9 +688,7 @@ def _attach_bounds_from_mesh(ds, rule, coord_names):
                     rtol=0,
                     atol=1e-4,
                 ):
-                    logger.debug(
-                        f"  → Skipping mesh bounds for '{name}': centers disagree with mesh"
-                    )
+                    logger.debug(f"  → Skipping mesh bounds for '{name}': centers disagree with mesh")
                     continue
             # Rename the mesh vertex dim to match the variable's spatial dim.
             # CF §7.1: bounds variables must not carry their own attributes
@@ -823,11 +808,13 @@ def _trim_malloc_arenas():
     try:
         if _LIBC_TRIM is None:
             import ctypes
+
             libc = ctypes.CDLL("libc.so.6", use_errno=True)
             _LIBC_TRIM = libc.malloc_trim
             _LIBC_TRIM.argtypes = [ctypes.c_size_t]
             _LIBC_TRIM.restype = ctypes.c_int
         import gc
+
         gc.collect()
         _LIBC_TRIM(0)
     except Exception as exc:
@@ -871,6 +858,7 @@ def _add_cf_quantization_metadata(ds, rule):
     if container not in ds.variables:
         try:
             import netCDF4 as _nc4
+
             impl = f"netCDF-C version {_nc4.__netcdf4libversion__}"
         except Exception:
             impl = "netCDF-C"
@@ -961,8 +949,7 @@ def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
     try:
         if hasattr(ds_or_da, "coords"):
             _bnds = [
-                c for c in ds_or_da.coords
-                if str(c).endswith(("_bnds", "_bounds")) or str(c).startswith("bounds_")
+                c for c in ds_or_da.coords if str(c).endswith(("_bnds", "_bounds")) or str(c).startswith("bounds_")
             ]
             if _bnds:
                 ds_or_da = ds_or_da.reset_coords(_bnds)
@@ -1008,6 +995,7 @@ def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
     if use_worker_compute != "off":
         try:
             from dask.distributed import get_client
+
             client = get_client()
         except (ImportError, ValueError):
             client = None
@@ -1023,8 +1011,7 @@ def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
                 # regular to_netcdf path doesn't build a dask graph.
                 eager.to_netcdf(*args, **kwargs)
                 logger.info(
-                    f"GRAPH_RESULT rule={rule_id} backend=worker_compute "
-                    f"status=ok elapsed_s={time.time()-t0:.2f}"
+                    f"GRAPH_RESULT rule={rule_id} backend=worker_compute " f"status=ok elapsed_s={time.time()-t0:.2f}"
                 )
                 del eager
                 _trim_malloc_arenas()
@@ -1122,10 +1109,7 @@ def _tmpfs_staging_available(rule=None):
             free_gb = (st.f_bavail * st.f_frsize) / 1e9
         except OSError:
             _TMPFS_STAGING_CACHE["auto_ok"] = False
-            logger.warning(
-                f"tmpfs staging disabled: cannot statvfs({tmpdir!r}); "
-                f"falling back to direct writes."
-            )
+            logger.warning(f"tmpfs staging disabled: cannot statvfs({tmpdir!r}); " f"falling back to direct writes.")
             return False
         is_tmpfs_mount = _is_tmpfs(tmpdir)
         try:
@@ -1140,9 +1124,7 @@ def _tmpfs_staging_available(rule=None):
                 f"falling back to direct writes."
             )
         else:
-            logger.info(
-                f"tmpfs staging enabled: {tmpdir!r} tmpfs ({free_gb:.1f}GB free)."
-            )
+            logger.info(f"tmpfs staging enabled: {tmpdir!r} tmpfs ({free_gb:.1f}GB free).")
         _TMPFS_STAGING_CACHE["auto_ok"] = ok
     if not _TMPFS_STAGING_CACHE["auto_ok"]:
         return False
@@ -1192,9 +1174,7 @@ def _atomic_to_netcdf(ds_or_da, final_path, *args, rule=None, scheduler="synchro
         return _safe_to_netcdf(ds_or_da, final_path, *args, scheduler=scheduler, **kwargs)
 
     tmpdir = os.environ.get("PYCMOR_TMPFS_DIR", "/tmp")
-    fd, tmp_path = tempfile.mkstemp(
-        dir=tmpdir, prefix=os.path.basename(final_path) + ".", suffix=".tmp"
-    )
+    fd, tmp_path = tempfile.mkstemp(dir=tmpdir, prefix=os.path.basename(final_path) + ".", suffix=".tmp")
     os.close(fd)
     stage_path = final_path + ".tmp"
     try:
@@ -1238,6 +1218,26 @@ def _get_write_scheduler(rule):
         except Exception:
             val = None
     return val or "synchronous"
+
+
+def _apply_label_axis_encoding(ds, encoding):
+    """Name the string dimension of character coordinates ``strlen``.
+
+    Labelled axes (``landuse``, ``vegtype``, ...) are stored as fixed-width
+    bytes, which xarray already writes as a char array, but it auto-names the
+    trailing string dimension ``string<n>``. CMOR writes ``char sector(landuse,
+    strlen)`` and published CMIP6 files follow suit, so pin the name.
+
+    This has to go into the encoding dict handed to the writer: coordinate
+    ``.encoding`` set where the axis is built does not survive the intervening
+    pipeline steps. Restricted to 1-D coords so the 0-D character scalar
+    coordinates (``type = "vegetation"`` and friends) keep their scalar shape.
+    """
+    for cname in ds.coords:
+        coord = ds[cname]
+        if coord.dtype.kind == "S" and coord.ndim == 1:
+            encoding.setdefault(str(cname), {}).update({"dtype": "S1", "char_dim_name": "strlen"})
+    return encoding
 
 
 def _encoding_from_dask_chunks(ds, rule):
@@ -1286,6 +1286,7 @@ def _encoding_from_dask_chunks(ds, rule):
                 dim_sizes = [ds.sizes[d] for d in dim_names]
                 wordsize = da.dtype.itemsize
                 from math import prod as _prod
+
                 cur_bytes = _prod(chunksizes) * wordsize
                 if cur_bytes < FOUR_MIB and len(chunksizes) > 0:
                     chunksizes = list(chunksizes)
@@ -1304,9 +1305,7 @@ def _encoding_from_dask_chunks(ds, rule):
                         chunksizes[-1] = new_last
                     chunksizes = tuple(chunksizes)
             except Exception as _exc:
-                logger.warning(
-                    f"chunk-floor: could not enforce 4 MiB minimum for {var!r}: {_exc}"
-                )
+                logger.warning(f"chunk-floor: could not enforce 4 MiB minimum for {var!r}: {_exc}")
             var_encoding["chunksizes"] = chunksizes
         if enable_compression:
             if compression_codec == "zlib":
@@ -1324,16 +1323,8 @@ def _encoding_from_dask_chunks(ds, rule):
         # float data variables; skip integer flag/index vars (bit-exact)
         # and bounds/coord variables (CF requires exact values).
         _var_name = str(var)
-        _is_bounds_var = (
-            _var_name.endswith(("_bnds", "_bounds"))
-            or _var_name.startswith("bounds_")
-        )
-        if (
-            quantize_mode
-            and significant_digits
-            and da.dtype.kind == "f"
-            and not _is_bounds_var
-        ):
+        _is_bounds_var = _var_name.endswith(("_bnds", "_bounds")) or _var_name.startswith("bounds_")
+        if quantize_mode and significant_digits and da.dtype.kind == "f" and not _is_bounds_var:
             var_encoding["quantize_mode"] = quantize_mode
             var_encoding["significant_digits"] = int(significant_digits)
         # CF forbids _FillValue on bounds variables; respect explicit None and
@@ -1356,7 +1347,9 @@ def _encoding_from_dask_chunks(ds, rule):
     for cname in ds.coords:
         encoding.setdefault(str(cname), {})["_FillValue"] = None
 
-    logger.info(f"Using dask-aligned netCDF chunks: {encoding.get(list(ds.data_vars)[0], {}).get('chunksizes', 'none')}")
+    logger.info(
+        f"Using dask-aligned netCDF chunks: {encoding.get(list(ds.data_vars)[0], {}).get('chunksizes', 'none')}"
+    )
     return encoding
 
 
@@ -1396,15 +1389,15 @@ def _filename_time_range(ds, rule) -> str:
     end = pd.Timestamp(str(ds[time_label].data[-1]))
     frequency_str = rule.data_request_variable.frequency
     if frequency_str in ("yr", "yrPt", "dec"):
-        return f"{start.year:04d}-{end.year:04d}"                    # YYYY
+        return f"{start.year:04d}-{end.year:04d}"  # YYYY
     if frequency_str in ("mon", "monC", "monPt"):
-        return f"{start:%Y%m}-{end:%Y%m}"                            # YYYYMM
+        return f"{start:%Y%m}-{end:%Y%m}"  # YYYYMM
     if frequency_str == "day":
-        return f"{start:%Y%m%d}-{end:%Y%m%d}"                        # YYYYMMDD
+        return f"{start:%Y%m%d}-{end:%Y%m%d}"  # YYYYMMDD
     if frequency_str in ("6hr", "3hr", "1hr", "6hrPt", "3hrPt", "1hrPt", "1hrCM"):
-        return f"{start:%Y%m%d%H%M}-{end:%Y%m%d%H%M}"                # YYYYMMDDhhmm
+        return f"{start:%Y%m%d%H%M}-{end:%Y%m%d%H%M}"  # YYYYMMDDhhmm
     if frequency_str in ("subhr", "subhrPt"):
-        return f"{start:%Y%m%d%H%M%S}-{end:%Y%m%d%H%M%S}"            # YYYYMMDDhhmmss
+        return f"{start:%Y%m%d%H%M%S}-{end:%Y%m%d%H%M%S}"  # YYYYMMDDhhmmss
     if frequency_str == "fx":
         return ""
     else:
@@ -1648,7 +1641,7 @@ def _save_dataset_with_native_timespan(
 ):
     paths = []
     drv = rule.data_request_variable
-    is_fx = getattr(drv, 'frequency', None) in ("fx", "ofx")
+    is_fx = getattr(drv, "frequency", None) in ("fx", "ofx")
     if is_fx:
         # fx / ofx variables are time-invariant. CMIP convention is to write
         # no time coord and no time_bnds at all. The source FESOM/XIOS file
@@ -1777,6 +1770,7 @@ def _save_dataset_with_native_timespan(
         chunk_encoding = _encoding_from_dask_chunks(datasets[0], rule)
     else:
         chunk_encoding = _calculate_netcdf_chunks(datasets[0], rule)
+    _apply_label_axis_encoding(datasets[0], chunk_encoding)
 
     # Vector B (cli69): also patch the explicit encoding dict that gets passed
     # to xr.save_mfdataset — it overrides ds[time_label].encoding for the
@@ -1801,13 +1795,11 @@ def _save_dataset_with_native_timespan(
     # synchronous scheduler — that runs in-process and avoids serialization.
     _write_sched = _get_write_scheduler(rule)
     enc = chunk_encoding if chunk_encoding else None
-    _save_mfdataset_worker_or_sync(datasets, paths, enc, extra_kwargs,
-                                   is_dask, _write_sched)
+    _save_mfdataset_worker_or_sync(datasets, paths, enc, extra_kwargs, is_dask, _write_sched)
     return da
 
 
-def _save_mfdataset_worker_or_sync(datasets, paths, enc, extra_kwargs,
-                                   is_dask, scheduler):
+def _save_mfdataset_worker_or_sync(datasets, paths, enc, extra_kwargs, is_dask, scheduler):
     """Multi-file save with the same worker-side compute path as
     ``_safe_to_netcdf`` (Fix #3): compute the lazy datasets on the
     LocalCluster workers via ``Client.compute``, then write the eager
@@ -1823,7 +1815,8 @@ def _save_mfdataset_worker_or_sync(datasets, paths, enc, extra_kwargs,
         _demoted = []
         for _ds in datasets:
             _bnds = [
-                c for c in getattr(_ds, "coords", ())
+                c
+                for c in getattr(_ds, "coords", ())
                 if str(c).endswith(("_bnds", "_bounds")) or str(c).startswith("bounds_")
             ]
             _d = _ds.reset_coords(_bnds) if _bnds else _ds
@@ -1868,6 +1861,7 @@ def _save_mfdataset_worker_or_sync(datasets, paths, enc, extra_kwargs,
     if use_worker_compute != "off":
         try:
             from dask.distributed import get_client
+
             client = get_client()
         except (ImportError, ValueError):
             client = None
@@ -1880,11 +1874,9 @@ def _save_mfdataset_worker_or_sync(datasets, paths, enc, extra_kwargs,
             try:
                 # Compute each lazy dataset on workers; gather eagerly.
                 eager_datasets = list(client.compute(datasets, sync=True))
-                xr.save_mfdataset(eager_datasets, paths, encoding=enc,
-                                  **extra_kwargs)
+                xr.save_mfdataset(eager_datasets, paths, encoding=enc, **extra_kwargs)
                 logger.info(
-                    f"GRAPH_RESULT rule={rule_id} backend=worker_compute "
-                    f"status=ok elapsed_s={time.time()-t0:.2f}"
+                    f"GRAPH_RESULT rule={rule_id} backend=worker_compute " f"status=ok elapsed_s={time.time()-t0:.2f}"
                 )
                 del eager_datasets
                 _trim_malloc_arenas()
@@ -1905,9 +1897,7 @@ def _save_mfdataset_worker_or_sync(datasets, paths, enc, extra_kwargs,
         f"nodes={sum_keys} layers={sum_layers} bytes={sum_bytes} chunks={sum_chunks}"
     )
     t0 = time.time()
-    delayed = xr.save_mfdataset(
-        datasets, paths, encoding=enc, compute=False, **extra_kwargs
-    )
+    delayed = xr.save_mfdataset(datasets, paths, encoding=enc, compute=False, **extra_kwargs)
     with dask.config.set(scheduler=scheduler):
         delayed.compute()
     logger.info(f"GRAPH_RESULT rule={rule_id} backend=sync status=ok elapsed_s={time.time()-t0:.2f}")
@@ -2083,10 +2073,7 @@ def save_dataset(da: xr.DataArray, rule):
                     f"may continue to leak its slot until the SLURM job ends."
                 )
             else:
-                logger.error(
-                    f"save_dataset[{cmor_var}] timed out after "
-                    f"{max_retries + 1} attempts; giving up."
-                )
+                logger.error(f"save_dataset[{cmor_var}] timed out after " f"{max_retries + 1} attempts; giving up.")
                 raise
     # Should not reach here; the loop either returns or raises.
     if last_exc is not None:
@@ -2119,9 +2106,7 @@ def _save_dataset_impl(da: xr.DataArray, rule):
     # used ``standard``.
     if time_encoding.get("calendar") is None:
         cmor_ver = getattr(rule, "cmor_version", None)
-        time_encoding["calendar"] = (
-            "proleptic_gregorian" if cmor_ver == "CMIP7" else "standard"
-        )
+        time_encoding["calendar"] = "proleptic_gregorian" if cmor_ver == "CMIP7" else "standard"
     if not has_time_axis(da):
         filepath = create_filepath(da, rule)
         # Calculate chunking encoding
@@ -2168,9 +2153,7 @@ def _save_dataset_impl(da: xr.DataArray, rule):
         # that need to round-trip CMIP-clean).
         if time_label in ds_temp.variables:
             _force_canonical_time_encoding(ds_temp, time_label)
-            canonicalize_time_in_encoding_dict(
-                final_encoding, time_label, ds=ds_temp
-            )
+            canonicalize_time_in_encoding_dict(final_encoding, time_label, ds=ds_temp)
         return _atomic_to_netcdf(
             ds_temp,
             filepath,
@@ -2295,11 +2278,10 @@ def _save_dataset_impl(da: xr.DataArray, rule):
     if time_label and time_label in da.variables and f"{time_label}_bnds" not in da.variables:
         try:
             from .time_bounds import time_bounds as _re_set_time_bounds
+
             da = _re_set_time_bounds(da, rule)
         except Exception as _exc:
-            logger.warning(
-                f"save_dataset: could not re-attach time_bnds: {_exc}"
-            )
+            logger.warning(f"save_dataset: could not re-attach time_bnds: {_exc}")
 
     if not has_time_axis(da):
         filepath = create_filepath(da, rule)
@@ -2329,7 +2311,11 @@ def _save_dataset_impl(da: xr.DataArray, rule):
     default_file_timespan = rule._pycmor_cfg("file_timespan")
     file_timespan = getattr(rule, "file_timespan", default_file_timespan)
     drv = rule.data_request_variable
-    if file_timespan == "file_native" or getattr(drv, 'frequency', None) == "fx" or getattr(getattr(drv, 'table_header', None), 'approx_interval', None) is None:
+    if (
+        file_timespan == "file_native"
+        or getattr(drv, "frequency", None) == "fx"
+        or getattr(getattr(drv, "table_header", None), "approx_interval", None) is None
+    ):
         return _save_dataset_with_native_timespan(
             da,
             rule,
@@ -2371,6 +2357,7 @@ def _save_dataset_impl(da: xr.DataArray, rule):
                 if hasattr(group_ds, "data_vars"):
                     try:
                         from .time_bounds import time_bounds as _set_time_bounds
+
                         group_ds = _set_time_bounds(group_ds, rule)
                     except Exception as _exc:
                         logger.warning(f"could not re-attach time_bnds in save_dataset: {_exc}")
@@ -2413,6 +2400,7 @@ def _save_dataset_impl(da: xr.DataArray, rule):
                 chunk_encoding = _encoding_from_dask_chunks(datasets[0], rule)
             else:
                 chunk_encoding = _calculate_netcdf_chunks(datasets[0], rule)
+            _apply_label_axis_encoding(datasets[0], chunk_encoding)
             # Merge time encoding with chunk encoding
             final_encoding = {time_label: dict(time_encoding)}
             if chunk_encoding:
@@ -2462,13 +2450,10 @@ def _save_dataset_impl(da: xr.DataArray, rule):
             # nothing the upstream pipeline did can leak a non-canonical value
             # onto disk (and so future writes that build final_encoding the
             # same way inherit the override for free). Idempotent.
-            canonicalize_time_in_encoding_dict(
-                final_encoding, time_label, ds=datasets[0]
-            )
+            canonicalize_time_in_encoding_dict(final_encoding, time_label, ds=datasets[0])
             # See the parallel-mode HLG-pickling note above the other
             # save_mfdataset call site. Same Fix #3 worker-compute path
             # applied via the shared helper.
             _write_sched = _get_write_scheduler(rule)
-            _save_mfdataset_worker_or_sync(datasets, paths, final_encoding,
-                                           extra_kwargs, is_dask, _write_sched)
+            _save_mfdataset_worker_or_sync(datasets, paths, final_encoding, extra_kwargs, is_dask, _write_sched)
             return da
