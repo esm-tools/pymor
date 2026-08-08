@@ -3183,7 +3183,12 @@ def _attach_label_axis(da, dim, out_name, labels, long_name, standard_name="area
     """
     values = np.array([str(label) for label in labels], dtype="S")
     da = da.assign_coords({out_name: (dim, values)})
-    da[out_name].attrs.update({"standard_name": standard_name, "long_name": long_name})
+    attrs = {"long_name": long_name}
+    # Some CV entries have no standard_name (soilpools), and CMOR then writes
+    # long_name only.
+    if standard_name:
+        attrs["standard_name"] = standard_name
+    da[out_name].attrs.update(attrs)
     da[out_name].encoding["_FillValue"] = None
     return da
 
@@ -3347,7 +3352,10 @@ def load_lpjguess_monthly(data, rule):
     # Create xarray Dataset
     da = xr.DataArray(
         values,
-        dims=["time", "vegtype", "ncells"] if to_vegtype else ["time", "ncells"],
+        # CMIP7 CV out_name for the vegtype axis is "type", and for character
+        # coordinates the out_name is the dimension name (DKRZ review; published
+        # MPI-ESM1-2-LR Lmon.landCoverFrac has char sector(type, strlen)).
+        dims=["time", "type", "ncells"] if to_vegtype else ["time", "ncells"],
         coords={
             "time": times,
             "lon": ("ncells", lon_vals),
@@ -3358,7 +3366,7 @@ def load_lpjguess_monthly(data, rule):
     if to_vegtype:
         da = _attach_label_axis(
             da,
-            "vegtype",
+            "type",
             "sector",
             [label for label, _ in vegtype_map],
             "Vegetation or Land Cover Type",
@@ -6055,23 +6063,24 @@ def load_lpjguess_monthly_pool(data, rule):
 
     model_variable = rule.get("model_variable", "Total")
 
+    # Character axis: the CMIP7 CV entry ``soilpools`` has out_name "type", and
+    # for character coordinates the out_name becomes the *dimension* name while
+    # the coordinate variable is called "sector" (DKRZ review; confirmed against
+    # published MPI-ESM1-2-LR Emon.cSoilPools, char sector(type, strlen)).
+    # This previously wrote string soilCpool(soilCpool) with units
+    # "dimensionless", which was wrong on all three counts.
     da = xr.DataArray(
         values,
-        dims=["time", "soilCpool", "ncells"],
+        dims=["time", "type", "ncells"],
         coords={
             "time": times,
-            "soilCpool": _POOL_NAMES,
             "lon": ("ncells", lon_vals),
             "lat": ("ncells", lat_vals),
         },
         name=model_variable,
     )
+    da = _attach_label_axis(da, "type", "sector", _POOL_NAMES, "Soil Pools", standard_name=None)
     ds = da.to_dataset()
-
-    ds["soilCpool"].attrs = {
-        "long_name": "soil carbon pool",
-        "units": "1",
-    }
 
     source_units = rule.get("source_units")
     if source_units:

@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 from typing import Dict, Optional, Union
 
+import numpy as np
 import xarray as xr
 import yaml
 
@@ -169,7 +170,16 @@ def add_scalar_coordinates(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
         # are deliberately left alone here.
         is_character = str(entry.get("type", "")).strip().lower() == "character"
         if is_character:
-            value = raw_value
+            # Fixed-width bytes, so xarray writes ``char <name>(strlen)``, the
+            # form CMOR emits (checked against published MPI-ESM1-2-LR
+            # Lmon.treeFrac). A Python string here becomes an NC_STRING scalar
+            # instead, and in the full write path that produced files netCDF-C
+            # could not open at all: cli109 shipped cropFrac, shrubFrac,
+            # baresoilFrac, treeFrac and grassFrac with "NetCDF: HDF error",
+            # and the compliance checker reported those rules clean. This is
+            # also what the DKRZ review meant by "gefordert ist character",
+            # so it is a correctness issue, not only a convention one.
+            value = np.array(raw_value, dtype="S")
         else:
             try:
                 value = float(raw_value)
@@ -180,18 +190,140 @@ def add_scalar_coordinates(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
         attrs = {}
         for key in ("standard_name", "long_name", "units", "axis", "positive"):
             val = entry.get(key)
-            if val:
+            # CF/CMOR omit units on dimensionless label coordinates rather
+            # than writing something like "dimensionless" (DKRZ review).
+            if val and not (is_character and key == "units"):
                 attrs[key] = val
         ds = ds.assign_coords({out_name: xr.DataArray(value, attrs=attrs)})
         if is_character:
-            # Leave dtype to xarray so it writes a proper char/string
-            # variable; forcing float64 here would corrupt it.
             ds[out_name].encoding["_FillValue"] = None
-            logger.info(f"  added scalar coordinate {out_name!r} = {value!r} (from {dim!r})")
+            logger.info(f"  added scalar coordinate {out_name!r} = {raw_value!r} (from {dim!r})")
         else:
             ds[out_name].encoding["dtype"] = "float64"
             ds[out_name].encoding["_FillValue"] = None
             logger.info(f"  added scalar coordinate {out_name!r} = {value} {attrs.get('units', '')} (from {dim!r})")
+
+    return ds
+
+
+# CMOR names the coordinate variable of every labelled (character) axis
+# ``sector``, regardless of which axis it is, and uses the axis ``out_name``
+# for the *dimension*. Checked against published CMIP6 output: MPI-ESM1-2-LR
+# gppLut carries ``char sector(landuse, strlen)`` and landCoverFrac carries
+# ``char sector(type, strlen)``.
+LABEL_AXIS_VAR_NAME = "sector"
+LABEL_AXIS_STRLEN_DIM = "strlen"
+
+
+def normalize_label_axes(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
+    """Write labelled (character) axes the way CMOR does.
+
+    A labelled axis is a DReq dimension whose ``CMIP7_coordinate.json`` entry
+    has ``type: character`` and no scalar ``value``: ``landuse``, ``vegtype``,
+    ``soilpools``, ``basin``, ``oline``, ``siline``. Three things have to be
+    true of them and pycmor got all three wrong somewhere:
+
+    1. The *dimension* takes the axis ``out_name``, not the axis key. So
+       ``vegtype`` becomes ``type`` and ``soilpools`` becomes ``type``, while
+       ``landuse`` and ``basin`` happen to be their own out_name.
+    2. The *variable* is called ``sector`` and is a fixed-width
+       ``char(<dim>, strlen)`` array. Writing Python strings instead makes
+       xarray emit NC_STRING, which in at least one case produced a file
+       netCDF-C could not open at all while the compliance checker still
+       reported it clean.
+    3. Dimensionless axes carry no ``units`` attribute. ``units = "1"`` or
+       ``units = "dimensionless"`` is wrong, the attribute should be absent.
+
+    Raised in the DKRZ review of cli108 (Schupfner, 2026-08-08) for
+    ``cSoilPools``; the same treatment is required for every other labelled
+    axis, so this runs off the table rather than per-variable.
+
+    Idempotent: an axis already in CMOR form is left alone.
+    """
+    import numpy as np
+
+    drv = getattr(rule, "data_request_variable", None)
+    req_dims = tuple(getattr(drv, "dimensions", ()) or ()) if drv else ()
+
+    for axis_key in req_dims:
+        entry = AXIS_ENTRIES.get(axis_key)
+        if not entry:
+            continue
+        if str(entry.get("type", "")).strip().lower() != "character":
+            continue
+        # Scalar character coordinates (typetree = "trees", ...) carry a
+        # ``value`` and are handled by add_scalar_coordinates.
+        if str(entry.get("value", "") or "").strip():
+            continue
+
+        out_name = (entry.get("out_name") or axis_key).strip()
+
+        # Locate the dimension. Loaders name it after the axis key
+        # (``soilCpool``, ``vegtype``), after the out_name, or in the FESOM
+        # basin case after the CMIP name directly.
+        candidates = [axis_key, out_name, axis_key.lower(), axis_key.rstrip("s")]
+        dim = next((d for d in candidates if d in ds.dims), None)
+        if dim is None:
+            # Fall back to any 1-D string-valued coordinate, so a loader that
+            # picked its own name for either the dimension or the coordinate
+            # still gets fixed. Scan coords rather than dims: the two names do
+            # not have to agree.
+            want = len(entry.get("requested") or ()) or None
+            for cname, coord in ds.coords.items():
+                if coord.ndim != 1 or coord.dtype.kind not in ("U", "S", "O"):
+                    continue
+                cdim = coord.dims[0]
+                if want is not None and ds.sizes[cdim] != want:
+                    continue
+                dim = cdim
+                break
+        if dim is None:
+            logger.debug(f"  → labelled axis {axis_key!r} not present in this dataset")
+            continue
+
+        # The labels may sit on a coordinate named after the dimension, or on
+        # one already called ``sector``.
+        src = None
+        for cand in (LABEL_AXIS_VAR_NAME, dim, axis_key, out_name):
+            if cand in ds.coords and ds[cand].dims == (dim,):
+                src = cand
+                break
+        if src is None:
+            src = next(
+                (c for c, v in ds.coords.items() if v.dims == (dim,) and v.dtype.kind in ("U", "S", "O")),
+                None,
+            )
+        if src is None:
+            logger.warning(f"  → labelled axis {dim!r} has no label coordinate; leaving as is")
+            continue
+
+        labels = [v.decode() if isinstance(v, bytes) else str(v) for v in np.asarray(ds[src].values).ravel()]
+
+        # Drop the old coordinate before renaming the dimension, otherwise an
+        # index coordinate sharing the dimension's name follows it around.
+        ds = ds.drop_vars([src])
+        if dim != out_name:
+            if out_name in ds.dims:
+                logger.warning(f"  → cannot rename {dim!r} to {out_name!r}, already present")
+            else:
+                ds = ds.rename({dim: out_name})
+                logger.info(f"  → labelled axis dimension {dim!r} -> {out_name!r} (CMOR out_name)")
+
+        attrs = {}
+        for key in ("standard_name", "long_name"):
+            val = entry.get(key)
+            if val:
+                attrs[key] = val
+        # Deliberately no ``units``: the DReq entry is empty for every
+        # labelled axis and CF wants the attribute absent, not "1".
+        ds = ds.assign_coords({LABEL_AXIS_VAR_NAME: (out_name, np.array(labels, dtype="S"), attrs)})
+        ds[LABEL_AXIS_VAR_NAME].encoding.update(
+            {"dtype": "S1", "char_dim_name": LABEL_AXIS_STRLEN_DIM, "_FillValue": None}
+        )
+        logger.info(
+            f"  → labelled axis {out_name!r}: char {LABEL_AXIS_VAR_NAME}"
+            f"({out_name}, {LABEL_AXIS_STRLEN_DIM}) with {len(labels)} labels"
+        )
 
     return ds
 
@@ -301,6 +433,11 @@ def set_coordinate_attributes(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -
     # before the attribute pass so they pick up metadata like any other.
     ds = add_scalar_coordinates(ds, rule)
 
+    # Labelled (character) axes: dimension takes the out_name, variable is
+    # ``sector``, stored as char(dim, strlen), no units. Runs before the
+    # attribute pass so the result is treated like any other coordinate.
+    ds = normalize_label_axes(ds, rule)
+
     coords_processed = 0
     coords_skipped = 0
 
@@ -319,6 +456,21 @@ def set_coordinate_attributes(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -
             logger.debug(f"  → No metadata defined for '{coord_name}'")
             coords_skipped += 1
             continue
+
+        # ``axis`` declares a spatial direction and belongs only on a true CF
+        # coordinate variable, one whose single dimension is its own name. On
+        # an unstructured grid ``lat``/``lon`` hang off an index dimension
+        # (``lat(nod2)``), which points in no direction at all, and on a
+        # curvilinear grid they are 2-D. CMIP7_grids.json carries no ``axis``
+        # on its latitude/longitude entries for exactly this reason, and AWI's
+        # own published CMIP6 FESOM output has none either. Raised in the DKRZ
+        # review of cli108 (Schupfner, 2026-08-08); neither the WCRP plugin nor
+        # the CF checker catches it.
+        if "axis" in metadata and ds[coord_name].dims != (coord_name,):
+            metadata.pop("axis")
+            logger.debug(f"  → '{coord_name}' is not a coordinate variable; withholding axis attribute")
+        if ds[coord_name].dims != (coord_name,):
+            ds[coord_name].attrs.pop("axis", None)
 
         # Set attributes with validation
         logger.info(f"  → Setting attributes for '{coord_name}':")
@@ -403,11 +555,7 @@ def _set_coordinates_attribute(ds: xr.Dataset, rule: Rule) -> None:
         # but redundant per the CMIP/DKRZ style guide (Martin Schupfner
         # review, 2026-06-30).
         var_dims = set(ds[var_name].dims)
-        var_coords = [
-            coord_name
-            for coord_name in ds[var_name].coords
-            if coord_name not in var_dims
-        ]
+        var_coords = [coord_name for coord_name in ds[var_name].coords if coord_name not in var_dims]
 
         if var_coords:
             # Create coordinates attribute string

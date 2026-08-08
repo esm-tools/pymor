@@ -956,8 +956,14 @@ def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
             # cf 7.1: a bounds variable carries no attributes of its own.
             # xarray would give it a ``coordinates`` listing any scalar coord
             # in the dataset (e.g. the tile ``type``); suppress that.
-            for _b in _bnds:
-                if _b in getattr(ds_or_da, "variables", {}):
+            #
+            # Sweep every bounds variable, not just the ones that were
+            # coordinates a moment ago. On unstructured output lat_bnds and
+            # lon_bnds arrive as plain data variables, so the loop above never
+            # saw them and they shipped with coordinates = "lat lon" (DKRZ
+            # review of cli108, Schupfner 2026-08-08).
+            for _b in getattr(ds_or_da, "variables", {}):
+                if str(_b).endswith(("_bnds", "_bounds")) or str(_b).startswith("bounds_"):
                     ds_or_da[_b].encoding["coordinates"] = None
     except Exception as _exc:  # pragma: no cover - defensive
         logger.debug(f"could not demote bounds coords before write: {_exc}")
@@ -1230,12 +1236,16 @@ def _apply_label_axis_encoding(ds, encoding):
 
     This has to go into the encoding dict handed to the writer: coordinate
     ``.encoding`` set where the axis is built does not survive the intervening
-    pipeline steps. Restricted to 1-D coords so the 0-D character scalar
-    coordinates (``type = "vegetation"`` and friends) keep their scalar shape.
+    pipeline steps.
+
+    Applies to the 0-D character scalar coordinates too (``type = "trees"`` and
+    friends), which CMOR writes as ``char type(strlen)``. Those must not be
+    left as Python strings either: cli109 shipped five tile-fraction files that
+    netCDF-C could not open because the scalar went out as NC_STRING.
     """
     for cname in ds.coords:
         coord = ds[cname]
-        if coord.dtype.kind == "S" and coord.ndim == 1:
+        if coord.dtype.kind == "S" and coord.ndim <= 1:
             encoding.setdefault(str(cname), {}).update({"dtype": "S1", "char_dim_name": "strlen"})
     return encoding
 
@@ -1821,8 +1831,10 @@ def _save_mfdataset_worker_or_sync(datasets, paths, enc, extra_kwargs, is_dask, 
             ]
             _d = _ds.reset_coords(_bnds) if _bnds else _ds
             # cf 7.1: bounds variables carry no attributes of their own.
-            for _b in _bnds:
-                if _b in getattr(_d, "variables", {}):
+            # Sweep every bounds variable, including ones that were already
+            # data variables (lat_bnds/lon_bnds on unstructured output).
+            for _b in getattr(_d, "variables", {}):
+                if str(_b).endswith(("_bnds", "_bounds")) or str(_b).startswith("bounds_"):
                     _d[_b].encoding["coordinates"] = None
             _demoted.append(_d)
         datasets = _demoted
