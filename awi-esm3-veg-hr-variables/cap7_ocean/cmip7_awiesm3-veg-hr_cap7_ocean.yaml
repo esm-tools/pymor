@@ -243,6 +243,8 @@ rules:
   # hfx — 3D ocean heat X transport (requires ldiag_trflx=.true.)
   # FESOM outputs utemp = u * T [m/s * degC]; scale by rho_0 * cp = 1025 * 3996 ≈ 4.096e6 → W m-2.
   - name: hfx
+    grid_label: g132
+    grid: "FESOM 2.7 DARS unstructured mesh, element (triangle) centres (6229020 elements)"
     inputs:
       - path: *dp
         pattern: utemp\.fesom\.\d{4}\.nc
@@ -263,6 +265,8 @@ rules:
       - heat_transport_pipeline
 
   - name: hfxint
+    grid_label: g132
+    grid: "FESOM 2.7 DARS unstructured mesh, element (triangle) centres (6229020 elements)"
     inputs:
       - path: *dp
         pattern: utemp\.fesom\.\d{4}\.nc
@@ -278,6 +282,8 @@ rules:
       - heat_transport_pipeline
 
   - name: hfy
+    grid_label: g132
+    grid: "FESOM 2.7 DARS unstructured mesh, element (triangle) centres (6229020 elements)"
     inputs:
       - path: *dp
         pattern: vtemp\.fesom\.\d{4}\.nc
@@ -295,6 +301,8 @@ rules:
       - heat_transport_pipeline
 
   - name: hfyint
+    grid_label: g132
+    grid: "FESOM 2.7 DARS unstructured mesh, element (triangle) centres (6229020 elements)"
     inputs:
       - path: *dp
         pattern: vtemp\.fesom\.\d{4}\.nc

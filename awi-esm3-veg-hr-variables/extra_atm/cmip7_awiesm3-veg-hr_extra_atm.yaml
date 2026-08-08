@@ -140,7 +140,13 @@ inherit:
   # starting 1350-01-01, so the branch at its end is 1680-01-01.
   parent_time_units: "days since 1350-01-01"
   branch_time_in_parent: 120522.0
-  grid_label: g113
+  # grid_label follows the actual grid of each rule's source, not the tier.
+  # g122 OIFS TCo319 reduced Gaussian (421120 cells, incl. its land and
+  # 30S-90S subsets), g129 the 640x1296 regular regrid, g130 FESOM DARS
+  # nodes, g132 FESOM DARS elements. Rules whose source differs from this
+  # default carry their own grid_label. See
+  # Essential-Model-Documentation/AWI-ESM3-veg-HR-grids.md
+  grid_label: g122
   grid: "OpenIFS TCo319 reduced Gaussian (~25 km)"
   nominal_resolution: "25 km"
   time_dimname: time_counter

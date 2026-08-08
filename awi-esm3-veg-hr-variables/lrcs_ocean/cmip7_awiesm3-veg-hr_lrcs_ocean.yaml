@@ -887,6 +887,8 @@ rules:
 
   # difmxylo — momentum XY Laplacian diffusivity (Av from namelist.io)
   - name: difmxylo
+    grid_label: g132
+    grid: "FESOM 2.7 DARS unstructured mesh, element (triangle) centres (6229020 elements)"
     inputs:
       - path: *dp
         pattern: Av\.fesom\.\d{4}\.nc
@@ -925,6 +927,8 @@ rules:
     netcdf_tmpfs_staging: false
 
   - name: tauuo_dec
+    grid_label: g132
+    grid: "FESOM 2.7 DARS unstructured mesh, element (triangle) centres (6229020 elements)"
     inputs:
       - path: *dp
         pattern: tx_sur\.fesom\.\d{4}\.nc
@@ -932,6 +936,8 @@ rules:
     model_variable: tx_sur
 
   - name: tauvo_dec
+    grid_label: g132
+    grid: "FESOM 2.7 DARS unstructured mesh, element (triangle) centres (6229020 elements)"
     inputs:
       - path: *dp
         pattern: ty_sur\.fesom\.\d{4}\.nc

@@ -138,6 +138,8 @@ rules:
 
   # areacellr: same grid as atmosphere (no separate river model grid)
   - name: areacellr
+    grid_label: g129
+    grid: "OpenIFS TCo319 regridded to a regular 0.278 x 0.281 degree latitude-longitude grid (640 x 1296)"
     inputs:
       - path: *dp
         pattern: atm_remapped_1m_lsm_.*\.nc

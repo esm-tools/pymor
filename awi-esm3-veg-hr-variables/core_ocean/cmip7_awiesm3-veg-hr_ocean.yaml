@@ -302,6 +302,8 @@ rules:
     # MLD3 = Griffies 2016 (sigma_t=0.03 kg/m3) = CMIP-compliant mlotst
 
   - name: tauuo
+    grid_label: g132
+    grid: "FESOM 2.7 DARS unstructured mesh, element (triangle) centres (6229020 elements)"
     inputs:
       - path: *dp
         pattern: tx_sur\.fesom\.\d{4}\.nc
@@ -312,6 +314,8 @@ rules:
     # May still need elem→node interpolation pipeline step for consistency.
 
   - name: tauvo
+    grid_label: g132
+    grid: "FESOM 2.7 DARS unstructured mesh, element (triangle) centres (6229020 elements)"
     inputs:
       - path: *dp
         pattern: ty_sur\.fesom\.\d{4}\.nc

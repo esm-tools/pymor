@@ -1439,6 +1439,8 @@ rules:
 
   # Sea ice concentration on atmosphere grid: ci [1] → siconca [%]
   - name: siconca
+    grid_label: g129
+    grid: "OpenIFS TCo319 regridded to a regular 0.278 x 0.281 degree latitude-longitude grid (640 x 1296)"
     inputs:
       - path: *odp
         pattern: atm_remapped_1m_ci_.*\.nc
@@ -1451,6 +1453,8 @@ rules:
       - fraction_to_percent_pipeline
 
   - name: siconca_day
+    grid_label: g129
+    grid: "OpenIFS TCo319 regridded to a regular 0.278 x 0.281 degree latitude-longitude grid (640 x 1296)"
     inputs:
       - path: *odp
         pattern: atm_remapped_1d_ci_.*\.nc
