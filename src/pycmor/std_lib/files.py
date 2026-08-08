@@ -345,10 +345,24 @@ def _ensure_horizontal_coord_attrs(ds):
         ln = attrs.get("long_name")
         if isinstance(ln, str) and "vertical" in ln.lower():
             attrs.pop("long_name", None)
+        # CF §4: ``axis`` belongs on a genuine coordinate variable, one whose
+        # single dimension is its own name. On unstructured output lat and lon
+        # are auxiliary coordinates over a cell-index dimension (nod2, ncells,
+        # cell) and point in no grid direction at all, so declaring axis = Y/X
+        # there is wrong. Raised in the DKRZ review of cli108 (Schupfner,
+        # Teil 2): "axis: X/Y darf hier nicht stehen, da weder lat noch lon in
+        # X oder Y Richtung zeigen, nod2 ist ja nur eine Indexdimension."
+        # CMIP7_grids.json carries no axis attribute on latitude/longitude
+        # either. Regular lat(lat)/lon(lon) grids keep it.
+        var_dims = tuple(str(d) for d in ds[name].dims)
+        is_coordinate_variable = var_dims == (str(name),)
         # Apply CF essentials; skip axis/standard_name on the demoted aux
         # copy to avoid duplicate-axis findings.
         for k, v in expected.items():
             if name in demoted and k in ("axis", "standard_name"):
+                attrs.pop(k, None)
+                continue
+            if k == "axis" and not is_coordinate_variable:
                 attrs.pop(k, None)
                 continue
             attrs[k] = v
