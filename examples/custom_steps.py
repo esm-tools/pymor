@@ -3158,7 +3158,7 @@ _LPJG_VEGTYPE_COMMENT = (
 )
 
 
-def _attach_label_axis(da, dim, out_name, labels, long_name):
+def _attach_label_axis(da, dim, out_name, labels, long_name, standard_name="area_type"):
     """Give a labelled (character) axis its CMIP/CF coordinate attributes.
 
     pycmor's ``set_coordinates`` step only knows about spatiotemporal axes, so
@@ -3183,7 +3183,7 @@ def _attach_label_axis(da, dim, out_name, labels, long_name):
     """
     values = np.array([str(label) for label in labels], dtype="S")
     da = da.assign_coords({out_name: (dim, values)})
-    da[out_name].attrs.update({"standard_name": "area_type", "long_name": long_name})
+    da[out_name].attrs.update({"standard_name": standard_name, "long_name": long_name})
     da[out_name].encoding["_FillValue"] = None
     return da
 
@@ -4513,6 +4513,21 @@ _CMIP_BASIN_AGG = {
     "indian_pacific_ocean": (1, 2),  # pacific + indian
     "global_ocean": (0, 1, 2, 3, 4),  # all
 }
+
+
+def _label_values(names):
+    """Fixed-width bytes for a labelled axis, so xarray writes a char array.
+
+    Python strings make xarray emit an NC_STRING variable, and the CF checker
+    then reads the whole axis as one run-together string: cli109 reported
+    "'atlantic_arctic_oceanindian_pacific_oceanglobal_ocean' specified by
+    'basin' is not a valid region" on hfbasin and sltbasin. CMOR writes
+    ``char basin(basin, strlen)``; fixed-width bytes get us the same layout.
+    Worse failures are possible with NC_STRING, see ``_attach_label_axis``.
+    """
+    return np.array([str(n) for n in names], dtype="S")
+
+
 # Subdivided basins are only meaningful north of this; south of it only global_ocean
 # is reported. CMIP convention ~34°S.
 _BASIN_SOUTH_CUTOFF = -34.0
@@ -4766,7 +4781,7 @@ def compute_msftmz(data, rule):
         coords={
             "time": time_coord,
             "lev": lev,
-            "basin": list(_CMIP_BASIN_NAMES),
+            "sector": ("basin", _label_values(_CMIP_BASIN_NAMES)),
             "lat": lat_centers,
         },
         name=rule.model_variable,
@@ -4830,7 +4845,7 @@ def compute_hfbasin(data, rule):
         dims=("time", "basin", "lat"),
         coords={
             "time": vt["time"].values if "time" in vt.coords else np.arange(binned.shape[0]),
-            "basin": list(_CMIP_BASIN_NAMES),
+            "sector": ("basin", _label_values(_CMIP_BASIN_NAMES)),
             "lat": lat_centers,
         },
         name=rule.model_variable,
@@ -5017,10 +5032,10 @@ def compute_hfbasin_tripyview(data, rule):
                 stacked[bi, :] = mh.values
 
     if has_time:
-        coords = {"time": time_vals, "basin": basin_names, "lat": glob_lat}
+        coords = {"time": time_vals, "sector": ("basin", _label_values(basin_names)), "lat": glob_lat}
         dims = ("time", "basin", "lat")
     else:
-        coords = {"basin": basin_names, "lat": glob_lat}
+        coords = {"sector": ("basin", _label_values(basin_names)), "lat": glob_lat}
         dims = ("basin", "lat")
 
     hfbasin = xr.DataArray(
@@ -5054,10 +5069,10 @@ def compute_hfbasin_tripyview(data, rule):
     # standard_name=region. Pycmor's set_coordinates step doesn't know
     # about the basin coord since it's not a spatiotemporal axis; attach
     # the CMIP/CF attrs here at construction.
-    hfbasin["basin"].attrs.update(
+    hfbasin["sector"].attrs.update(
         {
             "standard_name": "region",
-            "long_name": "Region Selection",
+            "long_name": "Ocean Basin",
         }
     )
     return hfbasin.to_dataset()
@@ -5209,10 +5224,10 @@ def compute_sltbasin_tripyview(data, rule):
                 stacked[bi, :] = mh.values
 
     if has_time:
-        coords = {"time": time_vals, "basin": basin_names, "lat": glob_lat}
+        coords = {"time": time_vals, "sector": ("basin", _label_values(basin_names)), "lat": glob_lat}
         dims = ("time", "basin", "lat")
     else:
-        coords = {"basin": basin_names, "lat": glob_lat}
+        coords = {"sector": ("basin", _label_values(basin_names)), "lat": glob_lat}
         dims = ("basin", "lat")
 
     sltbasin = xr.DataArray(
@@ -5241,10 +5256,10 @@ def compute_sltbasin_tripyview(data, rule):
     )
     # wcrp ATTR001 requires the basin sector axis to declare
     # standard_name=region (see compute_hfbasin_tripyview for context).
-    sltbasin["basin"].attrs.update(
+    sltbasin["sector"].attrs.update(
         {
             "standard_name": "region",
-            "long_name": "Region Selection",
+            "long_name": "Ocean Basin",
         }
     )
     return sltbasin.to_dataset()
@@ -5294,7 +5309,7 @@ def compute_sltbasin(data, rule):
         dims=("time", "basin", "lat"),
         coords={
             "time": vs["time"].values if "time" in vs.coords else np.arange(binned.shape[0]),
-            "basin": list(_CMIP_BASIN_NAMES),
+            "sector": ("basin", _label_values(_CMIP_BASIN_NAMES)),
             "lat": lat_centers,
         },
         name=rule.model_variable,
@@ -5466,7 +5481,12 @@ def _align_zmoc_to_cmip(per_basin, mesh, time_coord_source):
     return xr.DataArray(
         out,
         dims=("time", "lev", "basin", "lat"),
-        coords={"time": time_coord, "lev": lev, "basin": list(_CMIP_BASIN_NAMES), "lat": lat_centers},
+        coords={
+            "time": time_coord,
+            "lev": lev,
+            "sector": ("basin", _label_values(_CMIP_BASIN_NAMES)),
+            "lat": lat_centers,
+        },
     )
 
 
@@ -5716,7 +5736,7 @@ def compute_msftm_density(data, rule):
         coords={
             "time": time_coord,
             "rho": rho_coord,
-            "basin": list(_CMIP_BASIN_NAMES),
+            "sector": ("basin", _label_values(_CMIP_BASIN_NAMES)),
             "lat": lat_centers,
         },
         name=rule.model_variable,
@@ -5772,7 +5792,7 @@ def compute_msftmmpa_density(data, rule):
         coords={
             "time": time_coord,
             "rho": rho_coord,
-            "basin": list(_CMIP_BASIN_NAMES),
+            "sector": ("basin", _label_values(_CMIP_BASIN_NAMES)),
             "lat": lat_centers,
         },
         name=rule.model_variable,
