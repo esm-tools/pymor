@@ -406,10 +406,64 @@ def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
     cell_measures (CF 1.11 §7.2) and refresh the ``coordinates`` attr."""
     ds = _drop_xios_aux_time_coords(ds)
     ds = _ensure_lat_lon_bounds_impl(ds, rule)
+    ds = _ensure_vertical_bounds(ds)
+    ds = _ensure_vertical_coord_attrs(ds)
     ds = _ensure_external_variables(ds)
     ds = _ensure_coordinates_attr(ds)
     ds = _ensure_horizontal_coord_attrs(ds)
     ds = _strip_unportable_encoding(ds)
+    return ds
+
+
+def _ensure_vertical_bounds(ds):
+    """Safety net: give the vertical coordinate its bounds.
+
+    ``add_vertical_bounds`` sits early in the pipeline, before
+    ``map_dimensions``, so it only ever sees the model's own coordinate name
+    (FESOM writes ``nz1``) and its auto-detect list does not cover those. By
+    the time the axis has been renamed to ``lev`` the step has long run, so
+    cli109 shipped the ocean 3-D variables with no level bounds at all even
+    though the ocean pipelines list the step.
+
+    ``depth_coord`` in CMIP7_coordinate.json is ``must_have_bounds: yes``,
+    which the DKRZ review pointed out ("depth_coord verlangt z.B. auch bounds,
+    die hier im File fehlen"). Run the same helper once more here, after the
+    rename, for whichever vertical coord actually made it into the file.
+    """
+    from .bounds import add_vertical_bounds
+
+    for name in ("lev", "olevel", "olevhalf", "depth"):
+        if name not in ds.variables:
+            continue
+        if ds[name].attrs.get("bounds") in ds.variables:
+            return ds
+        try:
+            return add_vertical_bounds(ds, vertical_coord_names=[name])
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning(f"could not add vertical bounds for {name!r}: {exc}")
+            return ds
+    return ds
+
+
+def _ensure_vertical_coord_attrs(ds):
+    """Let the CV win over the model's own attributes on the vertical axis.
+
+    ``set_coordinate_attributes`` only fills in attributes that are missing, so
+    whatever FESOM wrote survives: cli109 shipped ``lev:units = "meter"`` where
+    depth_coord says ``m``, the model's ``long_name`` instead of "ocean depth
+    coordinate", and a stray non-CF ``name = "nz"``. The DKRZ review asked us
+    to take these from CMIP7_coordinate.json.
+    """
+    from .coordinate_attributes import COORDINATE_METADATA
+
+    expected = COORDINATE_METADATA.get("lev")
+    if not expected or "lev" not in ds.variables:
+        return ds
+    attrs = ds["lev"].attrs
+    # ``name`` is a model-side leftover, not a CF attribute.
+    attrs.pop("name", None)
+    for key, value in expected.items():
+        attrs[key] = value
     return ds
 
 

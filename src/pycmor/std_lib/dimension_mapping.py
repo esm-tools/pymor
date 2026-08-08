@@ -213,10 +213,7 @@ class DimensionMapper:
             # this guard the OIFS atmospheric model-level dim ends up
             # renamed to ``longitude`` in the output, which trips cf §2.4
             # dim-order on every variable on alevel.
-            if (
-                np.issubdtype(values.dtype, np.integer)
-                or np.all(np.equal(np.mod(values, 1), 0))
-            ) and len(values) > 1:
+            if (np.issubdtype(values.dtype, np.integer) or np.all(np.equal(np.mod(values, 1), 0))) and len(values) > 1:
                 diffs = np.diff(values.astype(float))
                 if np.all(diffs == 1) and float(values[0]) in (0.0, 1.0):
                     return "model_level"
@@ -470,10 +467,7 @@ class DimensionMapper:
         # name "time1" trips them ("Missing 'time' variable") even though
         # the data request asks for axis time1. Collapse here so the file
         # writes "time".
-        mapping = {
-            src: ("time" if tgt in ("time1", "time2", "time3") else tgt)
-            for src, tgt in mapping.items()
-        }
+        mapping = {src: ("time" if tgt in ("time1", "time2", "time3") else tgt) for src, tgt in mapping.items()}
         rename_dict = {}
 
         for source_dim, cmip_dim in mapping.items():
@@ -765,6 +759,24 @@ class DimensionMapper:
         return mapping
 
 
+# Generic vertical-level placeholders in the data request and the concrete
+# out_name every matching CMIP7_coordinate.json entry uses. Resolved after the
+# DReq dimension match so the file carries the real coordinate name.
+#
+# Ocean only for now. ``alevel``/``alevhalf`` also resolve to out_name "lev",
+# but the concrete atmospheric options are parametric coordinates that need
+# formula_terms and their zfactor variables, and the OIFS model-level output
+# carries no hybrid A/B coefficients to build them from. Renaming those to
+# "lev" before that exists would hand them the ocean depth_coord metadata that
+# coordinate_metadata.yaml attaches to "lev" (standard_name depth, units m),
+# i.e. atmospheric model levels labelled as ocean depth in metres. They keep
+# the placeholder name until the atmosphere side is done.
+_GENERIC_LEVEL_OUT_NAME = {
+    "olevel": "lev",
+    "olevhalf": "lev",
+}
+
+
 def map_dimensions(ds: Union[xr.Dataset, xr.DataArray], rule) -> Union[xr.Dataset, xr.DataArray]:
     """
     Pipeline function to map dimensions from source to CMIP requirements
@@ -849,6 +861,18 @@ def map_dimensions(ds: Union[xr.Dataset, xr.DataArray], rule) -> Union[xr.Datase
             elif validation_mode == "warn":
                 logger.warning(error_msg)
             # ignore mode: do nothing
+
+        # ``olevel``/``alevel`` and their half-level siblings are generic
+        # level *placeholders* in the data request, not output names. The DReq
+        # lists them so a model can pick whichever concrete vertical
+        # coordinate it actually uses; every concrete option in
+        # CMIP7_coordinate.json carries out_name "lev". Writing the
+        # placeholder through to the file left us with olevel(olevel) and
+        # alevel(alevel), which the DKRZ review flagged (Schupfner, Teil 2):
+        # "olevel ist nur ein Platzhalter". It also meant add_vertical_bounds
+        # never fired, since it looks for lev/depth/plev and found neither,
+        # so the ocean levels shipped without the bounds depth_coord requires.
+        mapping = {src: _GENERIC_LEVEL_OUT_NAME.get(dst, dst) for src, dst in mapping.items()}
 
         # Apply mapping
         ds = mapper.apply_mapping(ds, mapping)
