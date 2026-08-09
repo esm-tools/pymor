@@ -31,27 +31,22 @@
 \section{Kurzfassung}
 
 Du hast uns zu \code{cli108} (Version \code{v20260804}) zwei Runden geschickt.
-Beide sind abgearbeitet und in \code{cli111} zusammen verifiziert.
+Beide sind abgearbeitet und zusammen verifiziert. Der aktuelle Stand ist
+\code{cli111}, 540 Dateien:
 
 \begin{center}
-\begin{tabular}{lrrr}
+\begin{tabular}{lrr}
 \toprule
-& \textbf{cli108} & \textbf{cli109} & \textbf{cli111} \\
+& \textbf{cli108} & \textbf{cli111} \\
 \midrule
-HIGH   & 1   & 1   & 1 \\
-MEDIUM & 758 & 220 & 233 \\
-TIME001 / TIME003 & & 0 & 0 \\
-Dateien mit falschem \code{grid\_label} & & 48 & 0 \\
-Dateien, die netCDF-C nicht \"offnen kann & 5 & 5 & 0 \\
+HIGH   & 1   & 1 \\
+MEDIUM & 758 & 233 \\
+TIME001 / TIME003 &  & 0 \\
+Dateien mit falschem \code{grid\_label} &  & 0 \\
+Dateien, die netCDF-C nicht \"offnen kann &  & 0 \\
 \bottomrule
 \end{tabular}
 \end{center}
-
-\code{cli109} deckte nur Teil~1 ab, es lief bevor deine zweite Runde bei uns
-bearbeitet war. \code{cli111} deckt beide. Dass MEDIUM von 220 auf 233 steigt,
-liegt an den neuen \code{alevel}-Dateien: sie bringen CF \S2.4
-(Dimensionsreihenfolge) und den \S7.1-Befund zu \code{lev\_bnds} mit, den
-publizierte CMOR-Dateien ebenso ausl\"osen.
 
 Das verbleibende HIGH ist \code{basin} und stammt aus einer Regression in
 \code{cc-plugin-wcrp} (\#66), nicht aus unseren Daten.
@@ -70,7 +65,7 @@ Umfang seit dem letzten Commit vor dem Review (\code{b42279a2}): 19 Commits,
 \subsection*{1hr, \code{hfls}: \code{lon\_bnds}/\code{lat\_bnds} fehlen, keine \code{time}-Variable}
 \ok\ Das war kein Metadatenfehler. Der Shard lief in die SLURM-Walltime, und ein
 abgebrochener Schreibvorgang hinterl\"asst eine Header-only-Datei statt eines Fehlers.
-Der Tier \code{extra\_atm} hat jetzt 6\,h. \code{cli109}: 8760 Zeitschritte,
+Der Tier \code{extra\_atm} hat jetzt 6\,h. \code{cli111}: 8760 Zeitschritte,
 \code{lat\_bnds} und \code{lon\_bnds} vorhanden.
 
 Der Fehlermodus ist unangenehm, weil er lautlos ist. Wir haben deshalb auch
@@ -123,7 +118,7 @@ sodass k\"unftige L\"aufe inklusive LR sie reaktivieren k\"onnen.
 \end{itemize}
 
 Beide werden in \code{coordinates} der Datenvariable referenziert.
-\code{cli109}, \code{sfcWind}: \code{coordinates = "time lat lon height"}.
+\code{cli111}, \code{sfcWind}: \code{coordinates = "time lat lon height"}.
 
 \subsection*{Allgemein: globales Attribut \code{experiment}}
 \ok\ Enth\"alt jetzt die CV-Beschreibung, \"uber \code{esgvoc} aufgel\"ost, statt
@@ -138,7 +133,7 @@ trotzdem. Nur \code{reset\_coords} auf den Bounds-Koordinaten hilft. Auf
 sehr wohl, was die Sache verwirrend macht.
 
 \subsection*{Allgemein: TIME001 squareness bei tavg}
-\ok\ In \code{cli109} null Treffer, ebenso TIME003. Der Rest kam aus den
+\ok\ In \code{cli111} null Treffer, ebenso TIME003. Der Rest kam aus den
 inzwischen gemergten Upstream-PRs plus unserer Korrektur des Dateinamen-Tokens auf
 \code{time[0]}/\code{time[-1]} nach CMIP7 Appendix 1.
 
@@ -155,8 +150,8 @@ jetzt \code{char sector(type, strlen)}, \code{long\_name = "Soil Pools"}, ohne
 \code{vegtype}; dass der \code{out\_name} zur Dimension wird, hatten wir zuerst
 anders entschieden, deine Beschreibung war eindeutig.
 
-Der Grund, warum das mehr als eine Konvention ist: \code{cli109} enth\"alt f\"unf
-Dateien, die netCDF-C \emph{gar nicht} \"offnen kann.
+Der Grund, warum das mehr als eine Konvention ist: bevor wir es korrigiert hatten,
+lagen f\"unf Dateien vor, die netCDF-C \emph{gar nicht} \"offnen konnte.
 
 \begin{quote}
 \code{cropFrac}, \code{shrubFrac}, \code{baresoilFrac}, \code{treeFrac},
@@ -218,16 +213,16 @@ Tier, dessen Regeln nativen und regemappten Strom mischen, stempelte beiden dass
 Label auf. Da \code{grid\_label} in Pfad \emph{und} Dateinamen steht, l\"asst sich das
 nachtr\"aglich nicht reparieren.
 
-Der erste Anlauf, \code{cli110}, hat es nicht behoben, und der Grund ist f\"ur
-andere Gruppen vielleicht n\"utzlich. Wir setzen \code{grid\_label} pro Tier in
-einem \code{inherit}-Block und \"uberschreiben es auf einzelnen Regeln. Die
+Eine Fu\ss angel dabei, die f\"ur andere Gruppen mit \"ahnlichem Aufbau vielleicht
+n\"utzlich ist: wir setzen \code{grid\_label} pro Tier in einem
+\code{inherit}-Block und \"uberschreiben es auf einzelnen Regeln. Diese
 \"Uberschreibungen wurden still wieder auf den Tier-Wert zur\"uckgesetzt, weil die
-Vererbung nach dem Zusammenbauen der Regeln noch einmal \"uber alle lief und ihr
-\code{set}-Aufruf trotz \code{force=False} zuweist. Sichtbar war das nur als 26
-Warnungen \code{"Attribute grid\_label already exists"} im Log. Da zwei Regeln, die
-sich nur im Gitter unterscheiden, damit denselben DRS-Pfad bekommen, hat dabei
-\code{areacella} seinen Zwilling \"uberschrieben: \code{cli110} hatte 539 statt 540
-Dateien.
+Vererbung nach dem Zusammenbauen der Regeln noch einmal \"uber alle lief und dabei
+trotz \code{force=False} zuwies. Sichtbar war das nur als Warnungen
+\code{"Attribute grid\_label already exists"} im Log. Und weil zwei Regeln, die
+sich nur im Gitter unterscheiden, damit denselben DRS-Pfad bekommen, hat
+\code{areacella} seinen Zwilling \"uberschrieben, also eine Datei weniger als
+erwartet.
 
 In \code{cli111} stimmt bei allen 540 Dateien das \code{grid\_label} mit der
 tats\"achlichen Zellzahl \"uberein, gepr\"uft Datei f\"ur Datei.
@@ -305,7 +300,7 @@ Rekonstruktion \code{h\_ice} $\cdot$ \code{a\_ice} & 10{,}921 & 29{,}524 & 20{,}
 
 Abweichung im Mittel $+0{,}094\,\%$, maximal $0{,}107\,\%$, Korrelation
 $1{,}000000$. Der Rest ist die sub-t\"agliche Kovarianz zwischen Dicke und
-Konzentration, die das Produkt zweier Tagesmittel verliert. \code{cli109}:
+Konzentration, die das Produkt zweier Tagesmittel verliert. Gemessen:
 365 Zeitschritte, keine NaN. Ein t\"aglicher \code{m\_ice}-Stream ist in
 \code{esm\_tools} erg\"anzt und macht die N\"aherung f\"ur sp\"atere L\"aufe
 \"uberfl\"ussig.
@@ -431,7 +426,7 @@ gemergt ist, tauscht das die 39 \code{ATTR004}-Befunde gegen 39 \S7.2-Befunde.
 K\"urzen w\"urde \code{ATTR004} dagegen dauerhaft verfehlen, denn der Data Request
 verlangt beide Paare.
 
-Die f\"unf \S6.1-Befunde aus \code{cli109} haben wir nach dem Lauf aufgekl\"art. Der Checker
+Die \S6.1-Befunde auf den Becken-Achsen haben wir aufgekl\"art. Der Checker
 meldete auf \code{hfbasin} und \code{sltbasin}:
 
 \begin{quote}
@@ -446,7 +441,7 @@ dann als einen einzigen Wert statt als drei. Jedes Label f\"ur sich ist im CV
 g\"ultig. Wir schreiben die Achse jetzt als \code{char sector(basin, strlen)},
 mit \code{standard\_name = region} und \code{long\_name = "Ocean Basin"} aus dem
 CMIP7-CV, gepr\"uft gegen publizierte MPI-ESM1-2-LR-Dateien (\code{Omon.hfbasin}).
-In \code{cli111} sind von den f\"unf \S6.1-Befunden noch einer \"ubrig, der zum
+In \code{cli111} ist davon noch einer \"ubrig, der zum
 \upstream-HIGH auf der \code{basin}-fx-Datei geh\"ort.
 
 Ein weiteres Beispiel derselben Sorte: f\"ur
