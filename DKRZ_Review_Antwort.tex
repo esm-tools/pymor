@@ -22,12 +22,21 @@
 \date{8. August 2026}
 
 \begin{document}
+% babel-ngerman macht " aktiv, was in Code-Beispielen zuschlaegt:
+% operation="instant" wurde als operation=ïnstant" gesetzt. Die Shorthands
+% werden erst bei \begin{document} scharfgeschaltet, also muss das hierhin.
+\shorthandoff{"}
 \maketitle
 
 \section{Kurzfassung}
 
-Das Review bezog sich auf \code{cli108} (Version \code{v20260804}). Alle Punkte sind
-bearbeitet. Der Verifikationslauf \code{cli109} ist durch, 528 QC-Reports:
+Sie haben uns zu \code{cli108} (Version \code{v20260804}) zwei Runden geschickt.
+Beide sind jetzt abgearbeitet. Der Verifikationslauf \code{cli109} deckt allerdings
+nur Teil~1 ab: er lief, bevor Ihre zweite Runde bei uns bearbeitet war. Die Punkte
+aus Teil~2 sind einzeln an echten Daten gepr\"uft, aber noch nicht in einem
+vollst\"andigen Lauf. Der folgt als \code{cli110}.
+
+\code{cli109}, 528 QC-Reports:
 
 \begin{center}
 \begin{tabular}{lrr}
@@ -50,10 +59,10 @@ mehrere DReq-Eintr\"age gleichzeitig falsch bedienen kann und \emph{kein} QC-Che
 findet. Diese Suche hat sieben weitere Punkte gefunden, darunter zwei mit falschen
 Werten und einen, bei dem eine Datei gar nicht mehr lesbar war.
 
-Umfang seit dem letzten Commit vor dem Review (\code{b42279a2}): 9 Commits,
-10 Dateien, +915 / -321 Zeilen.
+Umfang seit dem letzten Commit vor dem Review (\\code{b42279a2}): 16 Commits,
+22 Dateien, +2291 / -362 Zeilen.
 
-\section{Teil 1: Antwort auf die Review-Punkte}
+\section{Teil 1 Ihres Reviews: Antwort auf die Punkte}
 
 \subsection*{1hr, \code{hfls}: \code{lon\_bnds}/\code{lat\_bnds} fehlen, keine \code{time}-Variable}
 \ok\ Das war kein Metadatenfehler. Der Shard lief in die SLURM-Walltime, und ein
@@ -63,7 +72,7 @@ Der Tier \code{extra\_atm} hat jetzt 6\,h. \code{cli109}: 8760 Zeitschritte,
 
 Der Fehlermodus ist unangenehm, weil er lautlos ist. Wir haben deshalb auch
 \code{cap7\_atm} vorsorglich auf 6\,h gesetzt, nachdem dort der Input um Faktor 26
-gewachsen ist (siehe \code{hurs} in Teil 2).
+gewachsen ist (siehe \code{hurs} im Abschnitt zur eigenen Nachsuche).
 
 \subsection*{1hr, \code{hfls}: \code{\_QuantizeBitGroomNumberOfSignificantDigits}}
 \ok\ Danke f\"ur den Hinweis auf CF 1.12. Umgesetzt wie in der Konvention:
@@ -130,7 +139,110 @@ sehr wohl, was die Sache verwirrend macht.
 inzwischen gemergten Upstream-PRs plus unserer Korrektur des Dateinamen-Tokens auf
 \code{time[0]}/\code{time[-1]} nach CMIP7 Appendix 1.
 
-\section{Teil 2: Eigene Nachsuche}
+\section{Teil 2 Ihres Reviews: Antwort auf die Punkte}
+
+Alle vier Punkte sind umgesetzt und einzeln an echten Daten gepr\"uft. Sie sind
+noch nicht in \code{cli109} enthalten, das lief vorher.
+
+\subsection*{\code{string} statt \code{character} bei Koordinatenvariablen}
+\ok\ Und der Hinweis war wichtiger, als er aussah. Wir schreiben jetzt
+\code{char sector(<out\_name>, strlen)}, gepr\"uft gegen publizierte
+MPI-ESM1-2-LR-Dateien. \code{cSoilPools} war auf allen drei Punkten falsch und ist
+jetzt \code{char sector(type, strlen)}, \code{long\_name = "Soil Pools"}, ohne
+\code{units}. Bei \code{landCoverFrac} hei\ss t die Dimension jetzt \code{type} statt
+\code{vegtype}; dass der \code{out\_name} zur Dimension wird, hatten wir zuerst
+anders entschieden, Ihre Beschreibung war eindeutig.
+
+Der Grund, warum das mehr als eine Konvention ist: \code{cli109} enth\"alt f\"unf
+Dateien, die netCDF-C \emph{gar nicht} \"offnen kann.
+
+\begin{quote}
+\code{cropFrac}, \code{shrubFrac}, \code{baresoilFrac}, \code{treeFrac},
+\code{grassFrac} (yr) \\
+\code{RuntimeError: NetCDF: HDF error}
+\end{quote}
+
+Ihre skalare \code{type}-Koordinate ging als \code{NC\_STRING} raus, und h5py meldet
+eine korrupte creation property list auf dem vlen-Dataset. Der Compliance-Checker
+meldet dieselben Regeln mit \code{high=0 medium=0 low=0}. Wir hatten das zun\"achst
+isoliert nachgestellt und dabei \emph{keinen} Fehler gesehen; er tritt erst im
+vollst\"andigen Schreibpfad auf. Als Hinweis f\"ur die QC: eine Datei, welche die
+Bibliothek nicht \"offnen kann, sollte kein sauberes Ergebnis bekommen.
+
+\subsection*{\code{axis = X/Y} auf unstrukturierten Gittern}
+\ok\ Entfernt, und Sie haben die Begr\"undung schon geliefert: \code{nod2} ist eine
+Indexdimension. Wir setzen \code{axis} jetzt nur noch auf echten
+Koordinatenvariablen, deren einzige Dimension ihr eigener Name ist.
+\code{CMIP7\_grids.json} f\"uhrt bei \code{latitude}/\code{longitude} ebenfalls kein
+\code{axis}. Betroffen waren 437 von 540 Dateien. Das \code{coordinates}-Attribut auf
+\code{lat\_bnds}/\code{lon\_bnds} (274 Dateien) ist ebenfalls weg.
+
+\subsection*{\code{olevel} ist nur ein Platzhalter}
+\ok\ Aufgel\"ost zu \code{depth\_coord}, \code{out\_name} \code{lev}. Damit kamen
+gleich drei Dinge in Ordnung: der Name, die von \code{must\_have\_bounds: yes}
+verlangten \code{lev\_bnds}, und die Attribute. Letztere kamen bisher aus dem Modell
+(\code{units = "meter"}, ein Nicht-CF-Attribut \code{name = "nz"}); jetzt gewinnt das
+CV. Die fehlenden Bounds hatten eine eigene Ursache: der Bounds-Schritt l\"auft vor
+dem Umbenennen und kannte den FESOM-Namen \code{nz1} nicht.
+
+\subsection*{\code{alevel}: parametrische Koordinate mit \code{formula\_terms}}
+\ok\ Gew\"ahlt ist \code{alternate\_hybrid\_sigma}, \code{p = ap + b*ps}. Die Dateien
+enthalten jetzt \code{lev}, \code{lev\_bnds}, \code{ap}, \code{b}, \code{ap\_bnds},
+\code{b\_bnds}, \code{ps} und die \code{formula\_terms}.
+
+Die A/B-Koeffizienten stehen nicht im Modell-Output; sie kommen aus der
+ECMWF-Vertikaltabelle f\"ur L137, die zur Diskretisierung geh\"ort und mit den
+Modell-Inputdaten ausgeliefert wird. \code{ps} muss Gitter \emph{und} Zeitachse der
+Variablen teilen: das cmorisierte \code{ps} liegt auf dem regul\"aren Regrid und
+scheidet damit aus, also lesen wir den nativen 6-st\"undlichen Strom und mitteln ihn
+\"uber die Ausgabeintervalle.
+
+Zwei Fehler dabei sind uns nur aufgefallen, weil wir Feld f\"ur Feld gegen eine
+publizierte MPI-ESM-Datei verglichen haben, nicht weil QC etwas gesagt h\"atte:
+\code{lev} bekam zwischenzeitlich die Ozean-Metadaten (\code{standard\_name = depth},
+\code{units = m}) auf 137 Modelllevel, und \code{ap}/\code{b} wurden mit BitGroom auf
+5 signifikante Stellen quantisiert, also verlustbehaftet genau auf den Koeffizienten,
+aus denen die Vertikalachse rekonstruiert wird. Beides ist behoben, \code{ap} und
+\code{b} sind bitgenau gegen die Tabelle.
+
+\subsection*{Nebenbefund aus Ihrem Hinweis auf \code{CMIP7\_grids.json}: \code{grid\_label}}
+
+Beim Nachsehen ist uns aufgefallen, dass 161 Regeln ein \code{grid\_label} trugen,
+das ein anderes Gitter beschreibt, darunter 142 Dateien mit \code{g113}. Das ist ein
+regul\"ares 0{,}25-Grad-Gitter mit 1036800 Zellen und geh\"ort nicht uns.
+
+Ursache: \code{grid\_label} stand einmal pro Tier im \code{inherit}-Block, und ein
+Tier, dessen Regeln nativen und regemappten Strom mischen, stempelte beiden dasselbe
+Label auf. Da \code{grid\_label} in Pfad \emph{und} Dateinamen steht, l\"asst sich das
+nachtr\"aglich nicht reparieren, deshalb vor \code{cli110}.
+
+Alle vier Gitter, die wir tats\"achlich schreiben, waren bereits registriert:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Gitter} & \textbf{Zellen} & \textbf{Label} \\
+\midrule
+OIFS TCo319 reduziert gau\ss sch & 421120 & \code{g122} \\
+OIFS Regrid 640$\times$1296 & 829440 & \code{g129} \\
+FESOM DARS Knoten & 3146761 & \code{g130} \\
+FESOM DARS Elemente & 6229020 & \code{g132} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Zwei weitere Zellmengen sind echte Teilmengen des TCo319-Gitters (LPJ-GUESS-Landpunkte
+107132, Region 30S--90S 94572) und behalten \code{g122}. Beide hatten allerdings
+\"uberhaupt keine Zellgrenzen, waren also gar nicht als TCo319-Zellen ausgedr\"uckt;
+das ist jetzt korrigiert, 173 Dateien.
+
+Offen ist nur, welches \code{grid\_label} eine Datei tragen soll, die gar kein
+horizontales Gitter hat (globale Mittel, Becken-Schnitte, Profile; bei uns 36
+Dateien). CMIP6 hatte \code{gm}, im numerischen Schema finden wir keine Entsprechung,
+und \code{g999} hat eine leere Beschreibung. Falls Sie wissen, was hier vorgesehen
+ist, w\"are das die letzte offene Frage aus diesem Block.
+
+\section{Eigene Nachsuche (unabh\"angig von Ihrem Review)}
 
 Ein Stream, der mehrere DReq-Eintr\"age bedient, kann diese gleichzeitig falsch
 bedienen, und QC sieht davon nichts. Wir haben deshalb systematisch die Quelle jeder
@@ -220,7 +332,7 @@ vollst\"andig. Der Hinweis k\"onnte f\"ur die QC allgemein interessant sein: ein
 Datei, die die Bibliothek nicht \"offnen kann, sollte kein sauberes Ergebnis
 bekommen.
 
-\section{Teil 3: Verbleibende Befunde in cli109}
+\section{Verbleibende Befunde in cli109}
 
 \begin{longtable}{rll}
 \toprule
@@ -232,9 +344,26 @@ bekommen.
 36  & \code{ATTR001}      & \code{cell\_measures} auf \code{areacella} und auf hemisph\"aren- \\
     &                     & integrierten Skalaren, die keins haben \\
 17  & CF \S2.4            & Dimensionsreihenfolge \\
-5   & CF \S6.1            & Labels, \code{basin} \\
+5   & CF \S6.1            & Labels, \code{basin}, inzwischen behoben (s.\,u.) \\
 \bottomrule
 \end{longtable}
+
+Die f\"unf \S6.1-Befunde haben wir nach dem Lauf noch aufgekl\"art. Der Checker
+meldete auf \code{hfbasin} und \code{sltbasin}:
+
+\begin{quote}
+\code{6.1.1 'atlantic\_arctic\_oceanindian\_pacific\_oceanglobal\_ocean'
+specified by 'basin' is not a valid region}
+\end{quote}
+
+Die drei Labels laufen zu einem String zusammen. Das ist dieselbe Ursache wie
+beim \code{landuse}-Nebenbefund oben: die Koordinate enthielt Python-Strings,
+xarray schrieb eine \code{NC\_STRING}-Variable, und der Checker liest die Achse
+dann als einen einzigen Wert statt als drei. Jedes Label f\"ur sich ist im CV
+g\"ultig. Wir schreiben die Achse jetzt als \code{char sector(basin, strlen)},
+mit \code{standard\_name = region} und \code{long\_name = "Ocean Basin"} aus dem
+CMIP7-CV, gepr\"uft gegen publizierte MPI-ESM1-2-LR-Dateien (\code{Omon.hfbasin}).
+Die Verifikation \"uber die drei betroffenen Regeln kommt mit der n\"achsten Runde.
 
 Bei \code{ATTR004} ist mindestens ein Teil upstream: f\"ur
 \code{seaIce.sivol.tavg-u-hm-u.day.sh} erwartet die Registry
