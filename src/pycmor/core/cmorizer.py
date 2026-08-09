@@ -777,8 +777,25 @@ class CMORizer:
             rule._pymor_cfg = rule._pycmor_cfg  # For backward compatibility
 
     def _post_init_inherit_rules(self):
+        """Apply ``inherit:`` defaults to rules that do not set the key themselves.
+
+        ``inherit`` is documented as "added to all rules unless the rule
+        overrides", and ``from_dict`` already implements that with
+        ``{**inherit_cfg, **rule}``. This loop then ran over the finished rules
+        and called ``Rule.set``, whose ``force=False`` branch warns and assigns
+        anyway, so every per-rule override of an inherit key was silently
+        replaced by the tier default.
+
+        It was silent in effect but not in the logs: cli110 emitted 26
+        "Attribute grid_label already exists" warnings and shipped 48 files
+        whose grid_label named the wrong grid. Since grid_label is part of the
+        DRS path, two rules that differ only by grid then collide, and one
+        overwrites the other on disk (that is what happened to areacella).
+        """
         for rule_attr, rule_value in self._inherit_cfg.items():
             for rule in self.rules:
+                if hasattr(rule, rule_attr):
+                    continue
                 rule.set(rule_attr, rule_value)
 
     def validate(self):
@@ -1033,6 +1050,7 @@ class CMORizer:
             if v is None or str(v) == "None":
                 return default
             return int(v)
+
         n_workers = _int_or_default("dask_n_workers", 1)
         tpw = _int_or_default("dask_threads_per_worker", 1)
         max_in_flight = max(1, n_workers * tpw)
@@ -1049,9 +1067,7 @@ class CMORizer:
         # once on the driver process, hitting 87 GiB RSS and cascading
         # rule failures. See FORENSIC_lrcs_seaice_failure.md.
         throttle_caps = _resolve_throttle_caps(self._pymor_cfg)
-        logger.info(
-            f"Throttle caps (per-group rule submission limit): {throttle_caps or 'none'}"
-        )
+        logger.info(f"Throttle caps (per-group rule submission limit): {throttle_caps or 'none'}")
 
         def _rule_throttle_group(rule):
             # Rule-level annotation wins (per-rule override). Falls back
@@ -1121,10 +1137,7 @@ class CMORizer:
                 for r in batch:
                     g = _rule_throttle_group(r) or "_unthrottled"
                     group_summary[g] = group_summary.get(g, 0) + 1
-                logger.info(
-                    f"Batch {batch_i + 1}/{len(batches)} done "
-                    f"({len(batch)} rules; groups={group_summary})"
-                )
+                logger.info(f"Batch {batch_i + 1}/{len(batches)} done " f"({len(batch)} rules; groups={group_summary})")
             return rule_results
 
         logger.debug("...done!")
@@ -1187,6 +1200,7 @@ class CMORizer:
             if v is None or str(v) == "None":
                 return default
             return int(v)
+
         n_workers = _int_or_default("dask_n_workers", 1)
         tpw = _int_or_default("dask_threads_per_worker", 1)
         max_in_flight = max(1, n_workers * tpw)
@@ -1266,6 +1280,7 @@ class CMORizer:
         # leak refs (dask graph, xarray Datasets, blosc thread-pool buffers).
         try:
             import gc as _gc
+
             _gc.collect()
             __import__("ctypes").CDLL("libc.so.6").malloc_trim(0)
         except Exception:
@@ -1330,8 +1345,10 @@ class CMORizer:
         rule_name = getattr(rule, "name", "unnamed")
         for attempt in range(max_attempts):
             try:
-                logger.info(f"Starting to process rule {rule}"
-                            + (f" (attempt {attempt+1}/{max_attempts})" if attempt > 0 else ""))
+                logger.info(
+                    f"Starting to process rule {rule}"
+                    + (f" (attempt {attempt+1}/{max_attempts})" if attempt > 0 else "")
+                )
                 data = None
                 if not len(rule.pipelines) > 0:
                     logger.error("No pipeline defined, something is wrong!")

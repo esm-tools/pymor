@@ -183,6 +183,12 @@ rules:
   # identical to the core_atm copy (verified: sum/mean/min/max match to
   # f64 precision), so consumers can use whichever copy they encounter.
   - name: areacella
+    # Reads the remapped stream, so this is the 640x1296 regular grid, not the
+    # native mesh that core_atm's areacella covers. Both rules write the same
+    # DRS key and are only kept apart by grid_label; giving them the same one
+    # makes one silently overwrite the other, which is what happened in cli110.
+    grid_label: g129
+    grid: "OpenIFS TCo319 regridded to a regular 0.278 x 0.281 degree latitude-longitude grid (640 x 1296)"
     inputs:
       - path: *dp
         pattern: atm_remapped_1m_lsm_.*\.nc
