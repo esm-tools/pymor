@@ -95,7 +95,7 @@ def _finding_codes(name: str | None) -> set[str]:
         return set()
     codes: set[str] = set()
     if name.startswith("[") and "]" in name:
-        codes.add(name[1:name.index("]")])
+        codes.add(name[1 : name.index("]")])
     if "§" in name:
         for tok in name.split():
             if tok.startswith("§"):
@@ -147,8 +147,9 @@ def _summarize(report: dict, ignore: set[str] | None = None) -> dict:
     return {"totals": totals, "by_file": by_file}
 
 
-def _run_cchecker(binary: str, tests: Iterable[str], criteria: str,
-                  out_json: Path, files: list[Path]) -> tuple[int, str]:
+def _run_cchecker(
+    binary: str, tests: Iterable[str], criteria: str, out_json: Path, files: list[Path]
+) -> tuple[int, str]:
     cmd = [binary, "-f", "json_new", "-o", str(out_json), "-c", criteria]
     for t in tests:
         cmd += ["-t", t]
@@ -173,14 +174,9 @@ def _clean_cmip7repack_orphans(files: list[Path]) -> None:
             try:
                 size = orphan.stat().st_size
                 orphan.unlink()
-                logger.info(
-                    f"qc: removed stale cmip7repack orphan {orphan.name} "
-                    f"({size / 1024 / 1024:.0f} MB)"
-                )
+                logger.info(f"qc: removed stale cmip7repack orphan {orphan.name} " f"({size / 1024 / 1024:.0f} MB)")
             except Exception as exc:
-                logger.warning(
-                    f"qc: could not remove cmip7repack orphan {orphan.name}: {exc}"
-                )
+                logger.warning(f"qc: could not remove cmip7repack orphan {orphan.name}: {exc}")
 
 
 def _run_cmip7repack(binary: str, files: list[Path]) -> None:
@@ -232,10 +228,7 @@ def _strip_leading_underscore_attrs(files: list[Path]) -> None:
                             var.delncattr(attr)
                             stripped.append(f"{vname}:{attr}")
                 if stripped:
-                    logger.info(
-                        f"qc: stripped leading-_ attrs from {fp.name}: "
-                        f"{', '.join(stripped)}"
-                    )
+                    logger.info(f"qc: stripped leading-_ attrs from {fp.name}: " f"{', '.join(stripped)}")
         except Exception as exc:
             logger.warning(f"qc: leading-_ attr strip failed for {fp.name}: {exc}")
 
@@ -281,12 +274,25 @@ def run_compliance_checker(data, rule):
     criteria = getattr(rule, "qc_criteria", None) or "normal"
     ignore = set(getattr(rule, "qc_ignore_codes", None) or [])
     cmor_var = getattr(rule, "cmor_variable", "var")
-    # Sidecar filename uniquely identifies the rule. Prefer rule.name
-    # because two rules can share a cmor_variable but differ in
-    # frequency (e.g. siconc vs siconc_day) — using cmor_var alone
-    # would collide. table_id is unreliable across CMIP6 / CMIP7 so we
-    # don't include it.
-    rule_id = getattr(rule, "name", None) or cmor_var
+    # Sidecar filename must uniquely identify the rule, or one rule's report
+    # silently overwrites another's and its findings vanish from the run.
+    #
+    # rule.name is not enough. It collides two ways: a name can repeat across
+    # tier yamls (``evspsbl`` exists as seaIce, atmos and ocean; ``areacella``
+    # as native and regridded), and two rules can share name, realm and
+    # grid_label while differing only in branding (``sbl_mon`` on hxy-u
+    # against hxy-lnd). On the AWI-ESM3-veg-HR recipes that lost 8 of 540
+    # reports.
+    #
+    # compound_name plus grid_label is unique, because it is exactly the DRS
+    # identity of the output: no two rules may write the same path. Fall back
+    # to rule.name when there is no compound_name (CMIP6-style rules).
+    compound = getattr(rule, "compound_name", None)
+    grid_label = getattr(rule, "grid_label", None)
+    if compound:
+        rule_id = f"{compound}_{grid_label}" if grid_label else str(compound)
+    else:
+        rule_id = getattr(rule, "name", None) or cmor_var
     out_json = Path(rule.output_directory) / f"qc_{rule_id}.json"
     # Reflect the actual rule_id in the log header for grep-ability.
     table_id = rule_id
@@ -321,8 +327,6 @@ def run_compliance_checker(data, rule):
                 )
 
     if totals["high"] and getattr(rule, "qc_fail_on_mandatory", False):
-        raise QCFailure(
-            f"qc[{cmor_var}]: {totals['high']} Mandatory finding(s) — see {out_json}"
-        )
+        raise QCFailure(f"qc[{cmor_var}]: {totals['high']} Mandatory finding(s) — see {out_json}")
 
     return data
