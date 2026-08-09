@@ -84,22 +84,26 @@ gegen CF \S2.3.
 \ok\ \code{cmip7repack} l\"auft bei uns als fester Teil des Schreib-Workflows auf
 jeder Datei, nicht erst vor der Publikation, in \code{cli111} 542-mal.
 
-Die beiden konkreten Punkte sind damit weg:
+Alle drei gemeldeten Punkte sind damit weg:
 
 \begin{center}
-\begin{tabular}{lrr}
+\begin{tabular}{lll}
 \toprule
-& \textbf{gemeldet} & \textbf{\code{cli111}} \\
+\textbf{Befund} & \textbf{gemeldet} & \textbf{\code{cli111}} \\
 \midrule
 \code{time} & 18 Chunks & 1 \\
 \code{time\_bnds} & 8760 Chunks & 1 \\
+consolidated metadata & fehlte & 165725 B in einem Block \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-Gegengepr\"uft mit \code{cmip7repack -x} auf genau der Datei, die du zitiert
-hattest: \code{"not rechunking"} f\"ur \code{time}, \code{time\_bnds} und
-\code{rsus}, es bleibt also nichts zu tun.
+Gegengepr\"uft auf genau der Datei, die du zitiert hattest.
+\code{cmip7repack -x} meldet \code{"not rechunking"} f\"ur \code{time},
+\code{time\_bnds} und \code{rsus}, es bleibt also nichts zu rechunken. Und
+\code{h5stat -S} zeigt \code{File metadata: 165725 bytes}, genau die
+\code{metadata\_block\_size}, die \code{cmip7repack} f\"ur diese Datei berechnet
+und gesetzt hat, die Metadaten liegen also in einem Block.
 
 \subsection*{3hr, \code{mrsol}: erster Zeitschritt (01:30) fehlt}
 \ok, aber die Ursache lag tiefer, und der Hinweis war deshalb sehr n\"utzlich.
