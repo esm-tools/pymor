@@ -376,14 +376,61 @@ anderen. Die Daten sind davon nicht betroffen, sie liegen wegen unterschiedliche
 \code{realm}/\code{compound\_name} in verschiedenen Pfaden; die Zahlen oben sind
 aber eine leichte Untersch\"atzung.
 
-Die gr\"o\ss te Gruppe, \code{ATTR004} \code{long\_name}, ist gemischt. Ein Teil
-geh\"ort uns: \code{hfdsl} tr\"agt \code{"Ground heat flux at 3hr"} statt
-\code{"Downward Heat Flux at Land Surface"}. Ein Teil ist Wortlaut
-(\code{"sea water"} gegen \code{"seawater"}). Und ein Teil sieht nach einem
-Registry-Fehler aus: f\"ur \code{land.cVeg.tavg-u-hxy-shb.mon.glb}, also die
-Strauch-Kachel, erwartet die Registry \code{"Carbon Mass in Vegetation on Grass
-Tiles"}. Wir gehen die Liste durch und melden, was upstream geh\"ort, statt die
-Registry-Werte blind zu \"ubernehmen.
+Wir haben die \code{ATTR004}-Gruppen einzeln gegen den Data Request gehalten,
+statt sie pauschal uns zuzuschreiben. Das Ergebnis:
+
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Gruppe} & \textbf{Befunde} & \textbf{bei uns} & \textbf{Registry $\neq$ DReq} \\
+\midrule
+\code{long\_name}    & 112 & 1  & 107 (+4 ohne DReq-Eintrag) \\
+\code{cell\_measures} & 39 & 39 & 0 \\
+\code{cell\_methods}  & 10 & 0  & 10 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Bei \code{long\_name} schreiben wir also in 107 F\"allen genau den Wert, den der
+Data Request vorgibt, und die Registry erwartet einen anderen. Das Muster ist
+eindeutig, weil es die Branding-Variante ignoriert:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Variable} & \textbf{DReq und wir} & \textbf{Registry} \\
+\midrule
+\code{cVeg\_tavg-u-hxy-shb} & \dots on Shrub Tiles & \dots on Grass Tiles \\
+\code{cVeg\_tavg-u-hxy-u}   & Carbon Mass in Vegetation & \dots on Grass Tiles \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Jede \code{cVeg}-Kachel bekommt denselben \code{long\_name}. Dazu passt, dass
+\code{cVeg\_tavg-u-hxy-shb} in \code{WCRP-universe/known\_branded\_variable} gar
+nicht existiert (HTTP 404), der Checker also auf einen anderen Eintrag derselben
+Variablenwurzel zur\"uckf\"allt. Dasselbe bei \code{cell\_methods}: f\"ur unser
+\code{atmos.rlus.tavg-u-hxy-u} wird die Sea-Ice-Variante
+\code{"area: time: mean where sea\_ice (mask=siconca)"} erwartet, w\"ahrend der
+Eintrag \code{rlus\_tavg-u-hxy-u} upstream \code{"area: time: mean"} f\"uhrt, also
+genau unseren Wert.
+
+Das ist dieselbe Ursache wie in \code{ESGF/cc-plugin-wcrp\#53} (288 von 619
+CORDEX-Eintr\"agen zeigen auf nicht existierende branded variables), dort nur f\"ur
+CORDEX beschrieben. Falls hilfreich, stellen wir die Liste der betroffenen
+branded variables zusammen.
+
+Die 39 \code{cell\_measures} sind dagegen unsere: der Data Request verlangt bei
+3D-Ozeanvariablen \code{"area: areacello volume: volcello"}, wir hatten auf
+\code{"area: areacello"} gek\"urzt. Der Grund war, dass der cf-checker in \S7.2 nur
+ein einzelnes Paar akzeptiert, w\"ahrend CF 1.11 \S7.2 selbst mehrere erlaubt.
+
+Wir schreiben jetzt den DReq-Wert unver\"andert, weil das die Variante ist, die
+am Ende \emph{beide} Checks besteht: \code{ATTR004} verlangt sie schon heute, und
+\code{ioos/compliance-checker\#1323} macht \S7.2 mehrfachpaar-f\"ahig. Bis der PR
+gemergt ist, tauscht das die 39 \code{ATTR004}-Befunde gegen 39 \S7.2-Befunde.
+K\"urzen w\"urde \code{ATTR004} dagegen dauerhaft verfehlen, denn der Data Request
+verlangt beide Paare.
 
 Die f\"unf \S6.1-Befunde aus \code{cli109} haben wir nach dem Lauf aufgekl\"art. Der Checker
 meldete auf \code{hfbasin} und \code{sltbasin}:

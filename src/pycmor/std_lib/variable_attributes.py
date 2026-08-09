@@ -34,8 +34,12 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
     # demands both missing_value and _FillValue on every variable, so pick
     # the netCDF integer default (NC_FILL_INT = -2147483647) instead of
     # skipping. Basin/siline flag values sit well inside that range.
-    is_flag = ("flag_values" in attrs) or ("flag_meanings" in attrs) \
-        or ("flag_values" in da.attrs) or ("flag_meanings" in da.attrs)
+    is_flag = (
+        ("flag_values" in attrs)
+        or ("flag_meanings" in attrs)
+        or ("flag_values" in da.attrs)
+        or ("flag_meanings" in da.attrs)
+    )
 
     _fill = -2147483647 if is_flag else missing_value
     for attr in ["missing_value", "_FillValue"]:
@@ -57,10 +61,7 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
     # fields that the modelling group is expected to fill in. Writing
     # them verbatim fails the cf §7.2 cell_measures format check. Drop
     # them and let the rule override (if any) populate the real value.
-    _placeholders = {
-        k: v for k, v in attrs.items()
-        if isinstance(v, str) and v.startswith("--") and v[2:].isupper()
-    }
+    _placeholders = {k: v for k, v in attrs.items() if isinstance(v, str) and v.startswith("--") and v[2:].isupper()}
     for k in _placeholders:
         logger.warning(
             f"variable_attrs: dropping data-request placeholder "
@@ -92,34 +93,31 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
         # downstream check surfaces it rather than mislabel.
 
     # cf-checker §7.2 uses a single-pair regex
-    # ``^(?:area|volume):\s+\w+$`` against cell_measures. It accepts
-    # neither the empty string (e.g. global integrals / scalars where
-    # the DReq ships ``''``) nor the combined ``area: areacello volume:
-    # volcello`` form that 3D ocean variables carry. CF §7.2 itself
-    # allows multiple ``measure: name`` pairs; the implementation does
-    # not. To pass the check without misrepresenting the data:
-    #   - empty cell_measures -> drop the attribute entirely (CF allows
-    #     absence; the global-integral has no cell area to point at).
-    #   - combined ``area: X volume: Y`` -> keep only ``area: X`` because
-    #     areacello is shipped as a sibling fx file in the DRS tree
-    #     while volcello is not.
+    # ``^(?:area|volume):\s+\w+$`` against cell_measures, which accepts
+    # neither the empty string (global integrals / scalars, where the DReq
+    # ships ``''``) nor the combined ``area: areacello volume: volcello``
+    # form that 3D ocean variables carry.
+    #
+    #   - empty cell_measures -> drop the attribute entirely. CF allows
+    #     absence, and a global integral has no cell area to point at.
+    #
+    # The combined ``area: X volume: Y`` form used to be trimmed to ``area: X``
+    # for the same reason, on the grounds that volcello was not shipped as a
+    # sibling. Both halves of that have since stopped holding: volcello is now
+    # written (fx, mon and dec), and the trim cost 39 wcrp ATTR004 findings in
+    # cli111 because the data request asks for both pairs.
+    #
+    # The data request value is now written verbatim. This is the form that
+    # passes both checkers once the outstanding fix lands: wcrp ATTR004 wants
+    # it today, and ioos/compliance-checker#1323 makes cf §7.2 accept multiple
+    # pairs as CF 1.11 always allowed. Until that merges the combined form
+    # trades 39 ATTR004 findings for 39 cf §7.2 ones; trimming instead would
+    # fail ATTR004 permanently, since the DReq asks for both.
     _cm = attrs.get("cell_measures")
     _cm_drop = False
-    if isinstance(_cm, str):
-        _cm_stripped = _cm.strip()
-        if _cm_stripped == "":
-            attrs.pop("cell_measures", None)
-            _cm_drop = True
-        elif "area:" in _cm_stripped and "volume:" in _cm_stripped:
-            import re as _re
-            _m = _re.search(r"\barea:\s+\w+", _cm_stripped)
-            if _m:
-                attrs["cell_measures"] = _m.group(0)
-                logger.info(
-                    f"variable_attrs: trimming combined cell_measures "
-                    f"{_cm!r} -> {attrs['cell_measures']!r} (cf-checker §7.2 "
-                    f"accepts only a single pair)"
-                )
+    if isinstance(_cm, str) and _cm.strip() == "":
+        attrs.pop("cell_measures", None)
+        _cm_drop = True
 
     # CF §3.1 / UDUNITS: practical salinity unit "psu" is not UDUNITS-
     # recognised. The CMIP convention since CMIP6 is to spell it as a
@@ -134,11 +132,10 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
     _u = attrs.get("units")
     if isinstance(_u, str) and "psu" in _u:
         import re as _re
+
         _new_u = _re.sub(r"\bpsu\b", "1E-03", _u)
         if _new_u != _u:
-            logger.info(
-                f"variable_attrs: rewriting non-UDUNITS units {_u!r} -> {_new_u!r}"
-            )
+            logger.info(f"variable_attrs: rewriting non-UDUNITS units {_u!r} -> {_new_u!r}")
             attrs["units"] = _new_u
 
     logger.info("Setting the following attributes:")
@@ -165,13 +162,12 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
     _on_disk_units = da.attrs.get("units")
     if isinstance(_on_disk_units, str):
         import re as _re
+
         _normalized = _on_disk_units
         _normalized = _re.sub(r"\bpsu\b", "1E-03", _normalized)
         _normalized = _re.sub(r"\b1[eE]-0?(\d)\b", lambda m: f"1E-0{m.group(1)}", _normalized)
         if _normalized != _on_disk_units:
-            logger.info(
-                f"variable_attrs: canonicalising units {_on_disk_units!r} -> {_normalized!r}"
-            )
+            logger.info(f"variable_attrs: canonicalising units {_on_disk_units!r} -> {_normalized!r}")
             da.attrs["units"] = _normalized
 
     # CF §3.1.2 (CF 1.11): variables on an absolute-temperature scale
@@ -183,15 +179,12 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
     # ``sea_surface_temperature``, ``sea_water_conservative_temperature``.
     sn = (da.attrs.get("standard_name") or "").lower()
     units = (da.attrs.get("units") or "").strip()
-    is_temperature_sn = (
-        "_temperature" in sn
-        or sn.endswith("temperature")
-        or sn.startswith("temperature_")
-    )
+    is_temperature_sn = "_temperature" in sn or sn.endswith("temperature") or sn.startswith("temperature_")
     is_abs_temp = (
-        units in {"K", "degK", "kelvin", "Kelvin", "degC", "Celsius"}
-        or is_temperature_sn
-    ) and "difference" not in sn and "anomaly" not in sn
+        (units in {"K", "degK", "kelvin", "Kelvin", "degC", "Celsius"} or is_temperature_sn)
+        and "difference" not in sn
+        and "anomaly" not in sn
+    )
     if is_abs_temp and "units_metadata" not in da.attrs:
         da.attrs["units_metadata"] = "temperature: on_scale"
 
@@ -199,6 +192,7 @@ def set_variable_attrs(ds: Union[xr.Dataset, xr.DataArray], rule: Rule) -> Union
     # with matching dtype. xarray casts encoded _FillValue to the variable dtype; we must
     # match that manually for the attribute to avoid dtype-mismatch warnings.
     import numpy as np
+
     for k, v in attrs_for_encoding.items():
         if k == "_FillValue":
             da.encoding["_FillValue"] = v
