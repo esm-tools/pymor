@@ -81,8 +81,11 @@ Das f\"uhrende Unterstrich-Attribut wird jetzt entfernt, das verstie\ss\ ohnehin
 gegen CF \S2.3.
 
 \subsection*{1hr, \code{rsus}: Repacking-Checks}
-\ok\ \code{cmip7repack} l\"auft bei uns als fester Teil des Schreib-Workflows auf
-jeder Datei, nicht erst vor der Publikation, in \code{cli111} 542-mal.
+\ok\ Wie es bei uns l\"auft: nach dem Schreiben jeder Datei ruft pycmor
+\code{cmip7repack -o} in-place darauf auf, und erst danach l\"auft der
+Compliance-Check auf der repackten Datei. Das ist keine Sonderbehandlung f\"ur
+einzelne Variablen, sondern steht \"uber \code{qc\_repack} in jedem Tier; in
+\code{cli111} sind das 542 Aufrufe, einer pro Datei.
 
 Alle drei gemeldeten Punkte sind damit weg:
 
@@ -98,12 +101,11 @@ consolidated metadata & fehlte & 165725 B in einem Block \\
 \end{tabular}
 \end{center}
 
-Gegengepr\"uft auf genau der Datei, die du zitiert hattest.
+Gegengepr\"uft auf genau der Datei, die du zitiert hattest:
 \code{cmip7repack -x} meldet \code{"not rechunking"} f\"ur \code{time},
-\code{time\_bnds} und \code{rsus}, es bleibt also nichts zu rechunken. Und
-\code{h5stat -S} zeigt \code{File metadata: 165725 bytes}, genau die
-\code{metadata\_block\_size}, die \code{cmip7repack} f\"ur diese Datei berechnet
-und gesetzt hat, die Metadaten liegen also in einem Block.
+\code{time\_bnds} und \code{rsus}, es bleibt also nichts zu tun. Der
+\code{FILE004a}-Befund zur consolidated internal metadata taucht in keinem
+einzigen der \code{cli111}-QC-Reports mehr auf.
 
 \subsection*{3hr, \code{mrsol}: erster Zeitschritt (01:30) fehlt}
 \ok, aber die Ursache lag tiefer, und der Hinweis war deshalb sehr n\"utzlich.
