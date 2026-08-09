@@ -19,7 +19,7 @@
 \title{AWI-ESM3-4-2-veg-HR, CMIP7 piControl\\[2mm]
 \large Antwort auf das DKRZ-Review von cli108\\ und Ergebnisse der anschlie\ss enden eigenen Nachsuche}
 \author{Jan Streffing, AWI}
-\date{8. August 2026}
+\date{9. August 2026}
 
 \begin{document}
 % babel-ngerman macht " aktiv, was in Code-Beispielen zuschlaegt:
@@ -30,25 +30,28 @@
 
 \section{Kurzfassung}
 
-Sie haben uns zu \code{cli108} (Version \code{v20260804}) zwei Runden geschickt.
-Beide sind jetzt abgearbeitet. Der Verifikationslauf \code{cli109} deckt allerdings
-nur Teil~1 ab: er lief, bevor Ihre zweite Runde bei uns bearbeitet war. Die Punkte
-aus Teil~2 sind einzeln an echten Daten gepr\"uft, aber noch nicht in einem
-vollst\"andigen Lauf. Der folgt als \code{cli110}.
-
-\code{cli109}, 528 QC-Reports:
+Du hast uns zu \code{cli108} (Version \code{v20260804}) zwei Runden geschickt.
+Beide sind abgearbeitet und in \code{cli111} zusammen verifiziert.
 
 \begin{center}
-\begin{tabular}{lrr}
+\begin{tabular}{lrrr}
 \toprule
-& \textbf{cli108} & \textbf{cli109} \\
+& \textbf{cli108} & \textbf{cli109} & \textbf{cli111} \\
 \midrule
-HIGH   & 1   & 1 \\
-MEDIUM & 758 & 220 \\
-TIME001 / TIME003 & \multicolumn{2}{c}{0 in cli109} \\
+HIGH   & 1   & 1   & 1 \\
+MEDIUM & 758 & 220 & 233 \\
+TIME001 / TIME003 & & 0 & 0 \\
+Dateien mit falschem \code{grid\_label} & & 48 & 0 \\
+Dateien, die netCDF-C nicht \"offnen kann & 5 & 5 & 0 \\
 \bottomrule
 \end{tabular}
 \end{center}
+
+\code{cli109} deckte nur Teil~1 ab, es lief bevor deine zweite Runde bei uns
+bearbeitet war. \code{cli111} deckt beide. Dass MEDIUM von 220 auf 233 steigt,
+liegt an den neuen \code{alevel}-Dateien: sie bringen CF \S2.4
+(Dimensionsreihenfolge) und den \S7.1-Befund zu \code{lev\_bnds} mit, den
+publizierte CMOR-Dateien ebenso ausl\"osen.
 
 Das verbleibende HIGH ist \code{basin} und stammt aus einer Regression in
 \code{cc-plugin-wcrp} (\#66), nicht aus unseren Daten.
@@ -59,10 +62,10 @@ mehrere DReq-Eintr\"age gleichzeitig falsch bedienen kann und \emph{kein} QC-Che
 findet. Diese Suche hat sieben weitere Punkte gefunden, darunter zwei mit falschen
 Werten und einen, bei dem eine Datei gar nicht mehr lesbar war.
 
-Umfang seit dem letzten Commit vor dem Review (\\code{b42279a2}): 16 Commits,
-22 Dateien, +2291 / -362 Zeilen.
+Umfang seit dem letzten Commit vor dem Review (\code{b42279a2}): 19 Commits,
+23 Dateien, +2477 / -377 Zeilen.
 
-\section{Teil 1 Ihres Reviews: Antwort auf die Punkte}
+\section{Teil 1 deines Reviews: Antwort auf die Punkte}
 
 \subsection*{1hr, \code{hfls}: \code{lon\_bnds}/\code{lat\_bnds} fehlen, keine \code{time}-Variable}
 \ok\ Das war kein Metadatenfehler. Der Shard lief in die SLURM-Walltime, und ein
@@ -83,7 +86,7 @@ Das f\"uhrende Unterstrich-Attribut wird jetzt entfernt, das verstie\ss\ ohnehin
 gegen CF \S2.3.
 
 \subsection*{1hr, \code{rsus}: Repacking-Checks}
-\offen, bewusst. Wir folgen Ihrem Vorschlag und lassen das vor der Publikation
+\offen, bewusst. Wir folgen deinem Vorschlag und lassen das vor der Publikation
 durch \code{cmip7-repack} laufen.
 
 \subsection*{3hr, \code{mrsol}: erster Zeitschritt (01:30) fehlt}
@@ -95,7 +98,7 @@ temporal shape unterscheiden. Zwei Folgen:
 
 \begin{itemize}
 \item \code{tavg-d100cm} bekam instantane Samples und konnte damit kein Mittel sein.
-      Das war der von Ihnen gesehene fehlende erste Zeitschritt.
+      Das war der von dir gesehene fehlende erste Zeitschritt.
 \item Beide \code{d10cm}-Eintr\"age lasen still das 100-cm-Feld, publizierten also
       1\,m Bodenfeuchte unter einem 10-cm-Label.
 \end{itemize}
@@ -110,7 +113,7 @@ Streams erg\"anzt (100\,cm gemittelt, 10\,cm instantan, 10\,cm t\"aglich gemitte
 sodass k\"unftige L\"aufe inklusive LR sie reaktivieren k\"onnen.
 
 \subsection*{Allgemein: fehlende scalar coordinates}
-\ok\ Sie hatten recht, die fehlten durchg\"angig. Wir lesen jetzt
+\ok\ Du hattest recht, die fehlten durchg\"angig. Wir lesen jetzt
 \code{CMIP7\_coordinate.json} und schreiben beide Sorten:
 
 \begin{itemize}
@@ -139,10 +142,9 @@ sehr wohl, was die Sache verwirrend macht.
 inzwischen gemergten Upstream-PRs plus unserer Korrektur des Dateinamen-Tokens auf
 \code{time[0]}/\code{time[-1]} nach CMIP7 Appendix 1.
 
-\section{Teil 2 Ihres Reviews: Antwort auf die Punkte}
+\section{Teil 2 deines Reviews: Antwort auf die Punkte}
 
-Alle vier Punkte sind umgesetzt und einzeln an echten Daten gepr\"uft. Sie sind
-noch nicht in \code{cli109} enthalten, das lief vorher.
+Alle vier Punkte sind umgesetzt und in \code{cli111} verifiziert.
 
 \subsection*{\code{string} statt \code{character} bei Koordinatenvariablen}
 \ok\ Und der Hinweis war wichtiger, als er aussah. Wir schreiben jetzt
@@ -151,7 +153,7 @@ MPI-ESM1-2-LR-Dateien. \code{cSoilPools} war auf allen drei Punkten falsch und i
 jetzt \code{char sector(type, strlen)}, \code{long\_name = "Soil Pools"}, ohne
 \code{units}. Bei \code{landCoverFrac} hei\ss t die Dimension jetzt \code{type} statt
 \code{vegtype}; dass der \code{out\_name} zur Dimension wird, hatten wir zuerst
-anders entschieden, Ihre Beschreibung war eindeutig.
+anders entschieden, deine Beschreibung war eindeutig.
 
 Der Grund, warum das mehr als eine Konvention ist: \code{cli109} enth\"alt f\"unf
 Dateien, die netCDF-C \emph{gar nicht} \"offnen kann.
@@ -162,7 +164,7 @@ Dateien, die netCDF-C \emph{gar nicht} \"offnen kann.
 \code{RuntimeError: NetCDF: HDF error}
 \end{quote}
 
-Ihre skalare \code{type}-Koordinate ging als \code{NC\_STRING} raus, und h5py meldet
+Deren skalare \code{type}-Koordinate ging als \code{NC\_STRING} raus, und h5py meldet
 eine korrupte creation property list auf dem vlen-Dataset. Der Compliance-Checker
 meldet dieselben Regeln mit \code{high=0 medium=0 low=0}. Wir hatten das zun\"achst
 isoliert nachgestellt und dabei \emph{keinen} Fehler gesehen; er tritt erst im
@@ -170,7 +172,7 @@ vollst\"andigen Schreibpfad auf. Als Hinweis f\"ur die QC: eine Datei, welche di
 Bibliothek nicht \"offnen kann, sollte kein sauberes Ergebnis bekommen.
 
 \subsection*{\code{axis = X/Y} auf unstrukturierten Gittern}
-\ok\ Entfernt, und Sie haben die Begr\"undung schon geliefert: \code{nod2} ist eine
+\ok\ Entfernt, und du hast die Begr\"undung schon geliefert: \code{nod2} ist eine
 Indexdimension. Wir setzen \code{axis} jetzt nur noch auf echten
 Koordinatenvariablen, deren einzige Dimension ihr eigener Name ist.
 \code{CMIP7\_grids.json} f\"uhrt bei \code{latitude}/\code{longitude} ebenfalls kein
@@ -205,7 +207,7 @@ publizierte MPI-ESM-Datei verglichen haben, nicht weil QC etwas gesagt h\"atte:
 aus denen die Vertikalachse rekonstruiert wird. Beides ist behoben, \code{ap} und
 \code{b} sind bitgenau gegen die Tabelle.
 
-\subsection*{Nebenbefund aus Ihrem Hinweis auf \code{CMIP7\_grids.json}: \code{grid\_label}}
+\subsection*{Nebenbefund aus deinem Hinweis auf \code{CMIP7\_grids.json}: \code{grid\_label}}
 
 Beim Nachsehen ist uns aufgefallen, dass 161 Regeln ein \code{grid\_label} trugen,
 das ein anderes Gitter beschreibt, darunter 142 Dateien mit \code{g113}. Das ist ein
@@ -214,7 +216,21 @@ regul\"ares 0{,}25-Grad-Gitter mit 1036800 Zellen und geh\"ort nicht uns.
 Ursache: \code{grid\_label} stand einmal pro Tier im \code{inherit}-Block, und ein
 Tier, dessen Regeln nativen und regemappten Strom mischen, stempelte beiden dasselbe
 Label auf. Da \code{grid\_label} in Pfad \emph{und} Dateinamen steht, l\"asst sich das
-nachtr\"aglich nicht reparieren, deshalb vor \code{cli110}.
+nachtr\"aglich nicht reparieren.
+
+Der erste Anlauf, \code{cli110}, hat es nicht behoben, und der Grund ist f\"ur
+andere Gruppen vielleicht n\"utzlich. Wir setzen \code{grid\_label} pro Tier in
+einem \code{inherit}-Block und \"uberschreiben es auf einzelnen Regeln. Die
+\"Uberschreibungen wurden still wieder auf den Tier-Wert zur\"uckgesetzt, weil die
+Vererbung nach dem Zusammenbauen der Regeln noch einmal \"uber alle lief und ihr
+\code{set}-Aufruf trotz \code{force=False} zuweist. Sichtbar war das nur als 26
+Warnungen \code{"Attribute grid\_label already exists"} im Log. Da zwei Regeln, die
+sich nur im Gitter unterscheiden, damit denselben DRS-Pfad bekommen, hat dabei
+\code{areacella} seinen Zwilling \"uberschrieben: \code{cli110} hatte 539 statt 540
+Dateien.
+
+In \code{cli111} stimmt bei allen 540 Dateien das \code{grid\_label} mit der
+tats\"achlichen Zellzahl \"uberein, gepr\"uft Datei f\"ur Datei.
 
 Alle vier Gitter, die wir tats\"achlich schreiben, waren bereits registriert:
 
@@ -239,10 +255,10 @@ das ist jetzt korrigiert, 173 Dateien.
 Offen ist nur, welches \code{grid\_label} eine Datei tragen soll, die gar kein
 horizontales Gitter hat (globale Mittel, Becken-Schnitte, Profile; bei uns 36
 Dateien). CMIP6 hatte \code{gm}, im numerischen Schema finden wir keine Entsprechung,
-und \code{g999} hat eine leere Beschreibung. Falls Sie wissen, was hier vorgesehen
+und \code{g999} hat eine leere Beschreibung. Falls du wei\ss t, was hier vorgesehen
 ist, w\"are das die letzte offene Frage aus diesem Block.
 
-\section{Eigene Nachsuche (unabh\"angig von Ihrem Review)}
+\section{Eigene Nachsuche (unabh\"angig von deinem Review)}
 
 Ein Stream, der mehrere DReq-Eintr\"age bedient, kann diese gleichzeitig falsch
 bedienen, und QC sieht davon nichts. Wir haben deshalb systematisch die Quelle jeder
@@ -332,7 +348,7 @@ vollst\"andig. Der Hinweis k\"onnte f\"ur die QC allgemein interessant sein: ein
 Datei, die die Bibliothek nicht \"offnen kann, sollte kein sauberes Ergebnis
 bekommen.
 
-\section{Verbleibende Befunde in cli109}
+\section{Verbleibende Befunde in cli111}
 
 \begin{longtable}{rll}
 \toprule
@@ -340,15 +356,36 @@ bekommen.
 \midrule
 \endhead
 1   & \code{basin} HIGH   & \upstream, \code{cc-plugin-wcrp} \#66 \\
-162 & \code{ATTR004}      & Registry-Erwartung f\"ur \code{long\_name} / \code{cell\_methods} \\
-36  & \code{ATTR001}      & \code{cell\_measures} auf \code{areacella} und auf hemisph\"aren- \\
-    &                     & integrierten Skalaren, die keins haben \\
-17  & CF \S2.4            & Dimensionsreihenfolge \\
-5   & CF \S6.1            & Labels, \code{basin}, inzwischen behoben (s.\,u.) \\
+112 & \code{ATTR004} \code{long\_name} & Registry-Erwartung, gemischt, s.\,u. \\
+39  & \code{ATTR004} \code{cell\_measures} & Registry will \code{volume: volcello} dazu \\
+36  & \code{ATTR001} \code{cell\_measures} & fehlt auf den fx-Fl\"achenvariablen selbst \\
+    &                     & und auf globalen Skalaren, die keins haben \\
+26  & CF \S2.4            & Dimensionsreihenfolge, mit den \code{alevel}-Dateien \\
+    &                     & von 17 gestiegen \\
+9   & CF \S7.1            & \code{lev\_bnds:formula\_terms}, teilen publizierte \\
+    &                     & CMOR-Dateien mit uns \\
+1   & CF \S6.1            & \code{basin}, Rest des \upstream-Befunds \\
 \bottomrule
 \end{longtable}
 
-Die f\"unf \S6.1-Befunde haben wir nach dem Lauf noch aufgekl\"art. Der Checker
+Eine Messungenauigkeit in eigener Sache: QC-Reports werden nach Regelnamen
+benannt, und sieben Regelnamen kommen in mehreren Tiers vor (\code{evspsbl} in
+dreien, dazu \code{areacella}, \code{prsn}, \code{sbl\_mon}, \code{snd\_day},
+\code{snw}, \code{ts}). Acht der 540 Regeln \"uberschreiben damit den Report einer
+anderen. Die Daten sind davon nicht betroffen, sie liegen wegen unterschiedlicher
+\code{realm}/\code{compound\_name} in verschiedenen Pfaden; die Zahlen oben sind
+aber eine leichte Untersch\"atzung.
+
+Die gr\"o\ss te Gruppe, \code{ATTR004} \code{long\_name}, ist gemischt. Ein Teil
+geh\"ort uns: \code{hfdsl} tr\"agt \code{"Ground heat flux at 3hr"} statt
+\code{"Downward Heat Flux at Land Surface"}. Ein Teil ist Wortlaut
+(\code{"sea water"} gegen \code{"seawater"}). Und ein Teil sieht nach einem
+Registry-Fehler aus: f\"ur \code{land.cVeg.tavg-u-hxy-shb.mon.glb}, also die
+Strauch-Kachel, erwartet die Registry \code{"Carbon Mass in Vegetation on Grass
+Tiles"}. Wir gehen die Liste durch und melden, was upstream geh\"ort, statt die
+Registry-Werte blind zu \"ubernehmen.
+
+Die f\"unf \S6.1-Befunde aus \code{cli109} haben wir nach dem Lauf aufgekl\"art. Der Checker
 meldete auf \code{hfbasin} und \code{sltbasin}:
 
 \begin{quote}
@@ -363,21 +400,20 @@ dann als einen einzigen Wert statt als drei. Jedes Label f\"ur sich ist im CV
 g\"ultig. Wir schreiben die Achse jetzt als \code{char sector(basin, strlen)},
 mit \code{standard\_name = region} und \code{long\_name = "Ocean Basin"} aus dem
 CMIP7-CV, gepr\"uft gegen publizierte MPI-ESM1-2-LR-Dateien (\code{Omon.hfbasin}).
-Die Verifikation \"uber die drei betroffenen Regeln kommt mit der n\"achsten Runde.
+In \code{cli111} sind von den f\"unf \S6.1-Befunden noch einer \"ubrig, der zum
+\upstream-HIGH auf der \code{basin}-fx-Datei geh\"ort.
 
-Bei \code{ATTR004} ist mindestens ein Teil upstream: f\"ur
+Ein weiteres Beispiel derselben Sorte: f\"ur
 \code{seaIce.sivol.tavg-u-hm-u.day.sh} erwartet die Registry
 \code{"Sea-Ice Volume North"}, w\"ahrend die DReq-Tabelle
-\code{"Sea-Ice Volume South"} vorgibt. Denselben Befund gab es schon in cli108 bei
-\code{sivol\_south} und \code{sivol\_south\_day}. Wir gehen die Liste noch durch und
-melden, was upstream geh\"ort.
+\code{"Sea-Ice Volume South"} vorgibt. Denselben Befund gab es schon in cli108.
 
 \code{rsus} Repacking l\"auft wie besprochen vor der Publikation \"uber
 \code{cmip7-repack}.
 
-\section{Offene Frage an Sie}
+\section{Offene Frage an dich}
 
-Nur \code{mrsol} wurde urspr\"unglich von Hand gepr\"uft, weil Ihr Review darauf
+Nur \code{mrsol} wurde urspr\"unglich von Hand gepr\"uft, weil dein Review darauf
 zeigte. Unsere Nachsuche hat eine Stichprobe abgedeckt, nicht alles. Andere
 Variablen, die sich einen Stream \"uber mehrere DReq-Eintr\"age teilen, k\"onnten
 dieselbe Fehlerklasse haben, und sie ist f\"ur QC unsichtbar. Wir planen vor der
