@@ -138,12 +138,31 @@ rules:
     compound_name: land.orog.ti-u-hxy-u.fx.glb
     model_variable: orog
 
-  - name: lai
-    inputs:
-      - path: *dp
-        pattern: atmos_mon_land_lai_.*\.nc
-    compound_name: land.lai.tavg-u-hxy-lnd.mon.glb
-    model_variable: lai
+  # DEACTIVATED — lai comes from LPJ-GUESS, see extra_land/lai_mon.
+  #
+  # Two rules produced land.lai.tavg-u-hxy-lnd.mon.glb, this one from the OIFS
+  # stream and extra_land/lai_mon from LPJ-GUESS. Same compound name, same
+  # grid_label, so they wrote the same DRS path and one silently overwrote the
+  # other; which one won was down to shard ordering, not a decision.
+  #
+  # LPJ-GUESS is the right source. In this configuration LPJ-GUESS computes LAI
+  # and passes it to HTESSEL through the coupler, so the OIFS field is the same
+  # quantity after the atmosphere's ceiling has been applied: it tops out at
+  # exactly 10.0 (71 points sit on the cap) while LPJ-GUESS reaches 13.49 with
+  # 1856 points above 10. Correlation between them is 0.98. Publishing the OIFS
+  # copy would mean publishing a clipped version of a land-model diagnostic
+  # under realm land.
+  #
+  # EC-Earth's CMIP6 output agrees: EC-Earth3-Veg, EC-Earth3-Veg-LR and
+  # EC-Earth3-CC all publish lai and all include LPJ-GUESS, while EC-Earth3
+  # (HTESSEL alone) publishes no lai at all.
+  #
+  # - name: lai
+  #   inputs:
+  #     - path: *dp
+  #       pattern: atmos_mon_land_lai_.*\.nc
+  #   compound_name: land.lai.tavg-u-hxy-lnd.mon.glb
+  #   model_variable: lai
 
   - name: mrso
     inputs:
