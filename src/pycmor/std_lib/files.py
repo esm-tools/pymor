@@ -393,7 +393,11 @@ def _drop_xios_aux_time_coords(ds):
     Strip both unconditionally before save. If a future tier needs to keep
     a model-native time coord, replace this with a per-rule opt-out.
     """
-    for aux in ("time_centered", "time_centered_bounds"):
+    # ``time_instant`` is the same idea as ``time_centered`` but written by
+    # XIOS on instantaneous streams. It arrived here via the 6-hourly surface
+    # pressure read in for the hybrid coordinate's formula terms, and its
+    # dangling bounds reference is a VAR004 HIGH.
+    for aux in ("time_centered", "time_centered_bounds", "time_instant", "time_instant_bounds"):
         if aux in ds.variables:
             ds = ds.drop_vars(aux)
         elif aux in ds.coords:
@@ -460,6 +464,14 @@ def _ensure_vertical_coord_attrs(ds):
     if not expected or "lev" not in ds.variables:
         return ds
     attrs = ds["lev"].attrs
+    # coordinate_metadata.yaml's "lev" entry is the ocean depth_coord. The
+    # atmospheric hybrid coordinate also has out_name "lev" but is a different
+    # axis entirely, and it arrives here fully described by
+    # add_hybrid_sigma_coordinate. Overwriting it relabelled 137 model levels
+    # as ocean depth in metres, which is what this guard prevents.
+    if attrs.get("formula_terms") or (attrs.get("standard_name") not in (None, "", "depth")):
+        attrs.pop("name", None)
+        return ds
     # ``name`` is a model-side leftover, not a CF attribute.
     attrs.pop("name", None)
     for key, value in expected.items():
@@ -467,19 +479,85 @@ def _ensure_vertical_coord_attrs(ds):
     return ds
 
 
+def _match_cells(ds, src, tol=1e-3):
+    """Index of each live cell within the source grid, matched on (lon, lat).
+
+    Used when a rule writes a subset of the grid its input file describes, so
+    the bounds can be carried across. Returns None if the match is not clean,
+    in which case the caller leaves the bounds alone rather than inventing
+    them: a wrong cell polygon is worse than a missing one.
+    """
+    import numpy as np
+
+    try:
+        from scipy.spatial import cKDTree
+    except Exception:
+        logger.debug("  -> cell matching needs scipy; skipping bounds recovery")
+        return None
+
+    def _pair(obj):
+        names = [(a, b) for a, b in (("lon", "lat"), ("longitude", "latitude")) if a in obj and b in obj]
+        if not names:
+            return None
+        a, b = names[0]
+        x = np.asarray(obj[a].values).ravel()
+        y = np.asarray(obj[b].values).ravel()
+        return x, y
+
+    live, source = _pair(ds), _pair(src)
+    if live is None or source is None:
+        return None
+    lx, ly = live
+    sx, sy = source
+    if sx.size < lx.size:
+        return None
+
+    # Longitude conventions differ between streams (0..360 against -180..180),
+    # so compare on the unit circle instead of on the raw values.
+    def _xyz(x, y):
+        lonr, latr = np.radians(x), np.radians(y)
+        return np.column_stack([np.cos(latr) * np.cos(lonr), np.cos(latr) * np.sin(lonr), np.sin(latr)])
+
+    dist, take = cKDTree(_xyz(sx, sy)).query(_xyz(lx, ly), k=1)
+    worst = float(np.max(dist)) if dist.size else 0.0
+    if worst > tol:
+        logger.debug(f"  -> cell matching rejected, worst separation {worst:.2e} > {tol}")
+        return None
+    logger.info(f"  -> matched {lx.size} cells into a {sx.size}-cell source grid for bounds")
+    return take
+
+
 def _recover_bounds_from_inputs(ds, rule, coord_name, declared_bounds_name):
     """Pull a bounds variable from the first ``rule.inputs`` file when the
     live dataset has lost it (XIOS bounds carry an extra nvertex dim and
-    are dropped by simple ``ds[var]`` variable selection)."""
+    are dropped by simple ``ds[var]`` variable selection).
+
+    ``rule.bounds_reference_file`` (a path, optionally a glob) is consulted
+    when the rule's own inputs cannot supply bounds. LPJ-GUESS rules read
+    plain-text ``.out`` files, so there is nothing to recover from, yet their
+    107132 points are exactly the land cells of the OIFS grid: matched against
+    an OIFS file the worst separation is 9e-7 of a chord and the mapping is
+    1:1. Pointing them at such a file gives them the same cell polygons the
+    atmosphere files already carry (DKRZ review, Teil 2).
+    """
+    import glob as _glob
+
     import numpy as np
 
     if rule is None:
         return None
     candidates = [n for n in (declared_bounds_name, f"bounds_{coord_name}", f"{coord_name}_bnds") if n]
+    extra = []
+    ref = getattr(rule, "bounds_reference_file", None)
+    if ref:
+        extra = sorted(_glob.glob(str(ref)))[:1]
     try:
         inputs = getattr(rule, "inputs", None) or []
-        for input_collection in inputs:
-            files = getattr(input_collection, "files", None) or []
+        for input_collection in list(inputs) + [None]:
+            if input_collection is None:
+                files = extra
+            else:
+                files = getattr(input_collection, "files", None) or []
             for file_path in files:
                 try:
                     src = xr.open_dataset(str(file_path), decode_times=False)
@@ -490,9 +568,22 @@ def _recover_bounds_from_inputs(ds, rule, coord_name, declared_bounds_name):
                         if cand not in src.variables:
                             continue
                         bvar = src[cand]
-                        # Expect shape (n_cells, nvertex) aligned with coord length.
-                        if bvar.ndim != 2 or bvar.shape[0] != ds[coord_name].size:
+                        if bvar.ndim != 2:
                             continue
+                        # Expect shape (n_cells, nvertex) aligned with coord length.
+                        # When it is shorter, the live dataset is a subset of the
+                        # source grid: the 30S-90S region rules select cells south
+                        # of 30S, so 94572 of the OIFS grid's 421120 survive. The
+                        # bounds are still the same cells' bounds, they just have
+                        # to be picked out by coordinate. Without this the size
+                        # check bailed and cli109 shipped those files with no
+                        # horizontal bounds at all (DKRZ review, Teil 2).
+                        take = None
+                        if bvar.shape[0] != ds[coord_name].size:
+                            take = _match_cells(ds, src)
+                            if take is None:
+                                continue
+                            bvar = bvar.isel({bvar.dims[0]: take})
                         cell_dim = ds[coord_name].dims[0]
                         vdim = bvar.dims[1]
                         # CF §7.1: bounds variables must not carry their own
@@ -938,12 +1029,27 @@ def _add_cf_quantization_metadata(ds, rule):
         ds[container].encoding["dtype"] = "int8"
         ds[container].encoding["_FillValue"] = None
 
+    # Vertical-coordinate formula terms are written exactly (see
+    # _protect_formula_terms), so they must not advertise quantization they did
+    # not receive. Same term list, read off whatever formula_terms the file
+    # declares.
+    formula_terms = set()
+    for _n in ds.variables:
+        _ft = ds[_n].attrs.get("formula_terms")
+        if isinstance(_ft, str):
+            _p = _ft.replace(":", " ").split()
+            formula_terms.update(_p[1::2])
+    formula_terms |= {"ap", "b", "a", "p0", "ptop", "ap_bnds", "b_bnds", "a_bnds"}
+    formula_terms.discard("ps")
+
     for var in ds.data_vars:
         da = ds[var]
         if str(var) == container or da.dtype.kind != "f":
             continue
         name = str(var)
         if name.endswith(("_bnds", "_bounds")) or name.startswith("bounds_"):
+            continue
+        if name in formula_terms:
             continue
         limit = 7 if da.dtype.itemsize <= 4 else 15
         if is_nsb:
@@ -1292,6 +1398,40 @@ def _get_write_scheduler(rule):
         except Exception:
             val = None
     return val or "synchronous"
+
+
+def _protect_formula_terms(ds, encoding):
+    """Keep vertical-coordinate formula terms exact and fill-free.
+
+    ``ap``, ``b`` and their bounds define the hybrid sigma-pressure coordinate.
+    The encoding builder treated them as ordinary float data variables and gave
+    them ``_FillValue = 1e20`` plus BitGroom quantization at 5 significant
+    digits, which is lossy on the very coefficients the vertical axis is
+    reconstructed from. Published CMIP6 files carry neither on these variables.
+
+    Term names are read from whatever ``formula_terms`` the dataset declares, so
+    this follows the coordinate rather than a hard-coded list, with the usual
+    suspects as a fallback.
+    """
+    terms = set()
+    for name in ds.variables:
+        ft = ds[name].attrs.get("formula_terms")
+        if not isinstance(ft, str):
+            continue
+        # "ap: ap b: b ps: ps" -> the values, not the keys
+        parts = ft.replace(":", " ").split()
+        terms.update(parts[1::2])
+    terms |= {"ap", "b", "a", "p0", "ptop", "ap_bnds", "b_bnds", "a_bnds"}
+    # ps is a genuine geophysical field and keeps its normal treatment.
+    terms.discard("ps")
+    for name in terms:
+        if name not in ds.variables:
+            continue
+        enc = encoding.setdefault(str(name), {})
+        enc["_FillValue"] = None
+        for k in ("quantize_mode", "significant_digits"):
+            enc.pop(k, None)
+    return encoding
 
 
 def _apply_label_axis_encoding(ds, encoding):
@@ -1849,6 +1989,7 @@ def _save_dataset_with_native_timespan(
     else:
         chunk_encoding = _calculate_netcdf_chunks(datasets[0], rule)
     _apply_label_axis_encoding(datasets[0], chunk_encoding)
+    _protect_formula_terms(datasets[0], chunk_encoding)
 
     # Vector B (cli69): also patch the explicit encoding dict that gets passed
     # to xr.save_mfdataset — it overrides ds[time_label].encoding for the
@@ -2481,6 +2622,7 @@ def _save_dataset_impl(da: xr.DataArray, rule):
             else:
                 chunk_encoding = _calculate_netcdf_chunks(datasets[0], rule)
             _apply_label_axis_encoding(datasets[0], chunk_encoding)
+            _protect_formula_terms(datasets[0], chunk_encoding)
             # Merge time encoding with chunk encoding
             final_encoding = {time_label: dict(time_encoding)}
             if chunk_encoding:

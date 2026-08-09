@@ -6139,3 +6139,195 @@ def nan_to_zero(data, rule):
     out = data.fillna(0)
     out.attrs = attrs
     return out
+
+
+# ============================================================
+# OIFS hybrid sigma-pressure vertical coordinate (alevel)
+# ============================================================
+
+# ECMWF vertical coefficient table for the L137 grid. DVALH holds the A
+# coefficients in Pa and DVBH the dimensionless B coefficients, both on the 138
+# half levels (interfaces) that bound the 137 full levels.
+_OIFS_VTABLE_DEFAULT = "/work/ab0246/a270092/input/oifs-48r1/vtables/vtable_L137"
+
+# Reference pressure for the dimensionless level index, CMOR convention.
+_P0 = 100000.0
+
+
+def _read_oifs_vtable(path):
+    """Return the (A, B) half-level coefficient arrays from an OIFS vtable.
+
+    The file is a Fortran namelist::
+
+        &NAMVV1
+         DVALH(0:)=0.,
+           2.000365,
+           ...
+         DVBH(0:)=    0.0000000000,
+           ...
+        /
+    """
+    import pathlib
+
+    text = pathlib.Path(path).read_text()
+
+    def _grab(key):
+        m = _re.search(rf"{key}\(0:\)=(.*?)(?=\bDV[A-Z]+\(0:\)=|/\s*\Z)", text, _re.S)
+        if m is None:
+            raise ValueError(f"{key} not found in OIFS vtable {path}")
+        vals = [tok for tok in _re.split(r"[,\s]+", m.group(1)) if tok]
+        return np.array([float(v) for v in vals], dtype=np.float64)
+
+    a_half = _grab("DVALH")
+    b_half = _grab("DVBH")
+    if a_half.size != b_half.size:
+        raise ValueError(f"OIFS vtable {path}: DVALH has {a_half.size} values, DVBH has {b_half.size}")
+    return a_half, b_half
+
+
+def _average_onto_time_axis(src, ds):
+    """Average a higher-frequency field onto the target dataset's time axis.
+
+    The ``ps`` formula term has to sit on the same time axis as the variable it
+    describes, but the only surface-pressure streams on the OIFS native mesh are
+    sub-daily (1h, 3h, 6h). Bin the source over each output interval using
+    ``time_bnds`` when it is there, which handles monthly and daily targets the
+    same way and does not care whether the source is 1-hourly or 6-hourly.
+
+    Falls back to the source untouched if it already matches, and to a nearest
+    reindex if there are no bounds to bin over.
+    """
+    tgt = ds["time"]
+    if src.sizes.get("time") == tgt.size and bool((src["time"].values == tgt.values).all()):
+        return src
+
+    bnds_name = ds["time"].attrs.get("bounds") or "time_bnds"
+    if bnds_name in ds.variables:
+        b = ds[bnds_name].values
+        lo, hi = b[:, 0], b[:, 1]
+        st = src["time"].values
+        out = []
+        for i in range(len(lo)):
+            sel = src.sel(time=slice(lo[i], hi[i]))
+            # Half-open interval, so a sample landing exactly on the upper edge
+            # belongs to the next window, not this one.
+            if sel.sizes.get("time", 0) > 1 and sel["time"].values[-1] == hi[i]:
+                sel = sel.isel(time=slice(None, -1))
+            if sel.sizes.get("time", 0) == 0:
+                sel = src.sel(time=[st[np.argmin(np.abs(st - lo[i]))]])
+            out.append(sel.mean(dim="time"))
+        res = xr.concat(out, dim="time")
+        res = res.assign_coords(time=tgt)
+        logger.info(f"ps: averaged {src.sizes.get('time')} samples onto {tgt.size} output steps")
+        return res
+
+    logger.warning("ps: no time_bnds on the target, falling back to a nearest reindex")
+    return src.reindex(time=tgt, method="nearest")
+
+
+def add_hybrid_sigma_coordinate(data, rule):
+    """Replace the OIFS model-level index with a CF hybrid sigma-pressure axis.
+
+    XIOS writes model-level output on a bare index axis::
+
+        float model_levels(model_levels) ;
+            model_levels:units = "-" ;
+            model_levels:positive = "up" ;
+
+    which pycmor mapped straight onto the data request's generic ``alevel``
+    placeholder, so cli109 shipped ``alevel(alevel)`` with no standard_name, no
+    bounds and no formula terms. The DKRZ review (Schupfner, Teil 2) asked for a
+    concrete choice from ``CMIP7_coordinate.json`` plus the zfactors it needs.
+
+    IFS uses a hybrid sigma-pressure coordinate, ``p = ap + b*ps``, which is the
+    ``alternate_hybrid_sigma`` entry: out_name ``lev``, standard_name
+    ``atmosphere_hybrid_sigma_pressure_coordinate``, units 1, positive down,
+    ``must_have_bounds: yes``, z_factors ``ap: ap b: b ps: ps`` and
+    z_bounds_factors ``ap: ap_bnds b: b_bnds ps: ps``.
+
+    The A/B coefficients are not in the model output; they come from the ECMWF
+    vertical table for the L137 grid, which is static for the vertical
+    discretisation and ships with the model input. Full-level terms are the
+    means of the bounding half levels, and the level index itself is the
+    dimensionless ``ap/p0 + b``.
+
+    Rule attributes:
+      - ``oifs_vtable``: path to the vtable (default: the L137 table)
+      - ``ps_path`` / ``ps_pattern`` / ``ps_variable``: surface pressure source
+    """
+    if isinstance(data, xr.DataArray):
+        ds = data.to_dataset()
+        was_dataarray, da_name = True, data.name
+    else:
+        ds, was_dataarray, da_name = data, False, None
+
+    level_dim = next((d for d in ("alevel", "alevhalf", "model_levels", "lev") if d in ds.dims), None)
+    if level_dim is None:
+        raise ValueError(f"add_hybrid_sigma_coordinate: no model-level dimension in dims={list(ds.dims)}")
+
+    a_half, b_half = _read_oifs_vtable(rule.get("oifs_vtable", _OIFS_VTABLE_DEFAULT))
+    nlev = ds.sizes[level_dim]
+    if a_half.size != nlev + 1:
+        raise ValueError(
+            f"add_hybrid_sigma_coordinate: vtable has {a_half.size} half levels, "
+            f"which does not bound {nlev} full levels on {level_dim!r}"
+        )
+
+    ap = 0.5 * (a_half[:-1] + a_half[1:])
+    b = 0.5 * (b_half[:-1] + b_half[1:])
+    ap_bnds = np.stack([a_half[:-1], a_half[1:]], axis=-1)
+    b_bnds = np.stack([b_half[:-1], b_half[1:]], axis=-1)
+    lev = ap / _P0 + b
+    lev_bnds = ap_bnds / _P0 + b_bnds
+
+    if level_dim != "lev":
+        ds = ds.rename({level_dim: "lev"})
+
+    ds = ds.assign_coords(lev=("lev", lev))
+    ds["lev"].attrs = {
+        "standard_name": "atmosphere_hybrid_sigma_pressure_coordinate",
+        # CF Appendix D: a parametric coordinate declares what the formula
+        # computes. Published CMIP6 files predate the requirement and omit it,
+        # the CV does not mention it, and the cf-checker asks for it (4.3.3).
+        "computed_standard_name": "air_pressure",
+        "long_name": "hybrid sigma pressure coordinate",
+        "units": "1",
+        "positive": "down",
+        "axis": "Z",
+        "formula": "p = ap + b*ps",
+        "formula_terms": "ap: ap b: b ps: ps",
+        "bounds": "lev_bnds",
+    }
+    ds["lev_bnds"] = xr.DataArray(lev_bnds, dims=("lev", "bnds"))
+    # CMOR repeats formula/standard_name/units on the bounds; checked against
+    # published MPI-ESM1-2-LR Amon.cli.
+    ds["lev_bnds"].attrs = {
+        "standard_name": "atmosphere_hybrid_sigma_pressure_coordinate",
+        "units": "1",
+        "formula": "p = ap + b*ps",
+        "formula_terms": "ap: ap_bnds b: b_bnds ps: ps",
+    }
+    ds["ap"] = xr.DataArray(
+        ap, dims=("lev",), attrs={"long_name": "vertical coordinate formula term: ap(k)", "units": "Pa"}
+    )
+    ds["b"] = xr.DataArray(b, dims=("lev",), attrs={"long_name": "vertical coordinate formula term: b(k)"})
+    ds["ap_bnds"] = xr.DataArray(
+        ap_bnds, dims=("lev", "bnds"), attrs={"long_name": "vertical coordinate formula term: ap(k+1/2)", "units": "Pa"}
+    )
+    ds["b_bnds"] = xr.DataArray(
+        b_bnds, dims=("lev", "bnds"), attrs={"long_name": "vertical coordinate formula term: b(k+1/2)"}
+    )
+
+    ps = _load_secondary_mf(rule, "ps_path", "ps_pattern", "ps_variable")
+    ps = _average_onto_time_axis(ps, ds)
+    ps = ps.rename("ps")
+    ps.attrs = {"standard_name": "air_pressure", "long_name": "Surface Air Pressure", "units": "Pa"}
+    ds["ps"] = ps
+
+    logger.info(
+        f"hybrid sigma coordinate: {nlev} levels from "
+        f"{rule.get('oifs_vtable', _OIFS_VTABLE_DEFAULT)}, ap {ap[0]:.1f}..{ap[-1]:.1f} Pa, "
+        f"b {b[0]:.4f}..{b[-1]:.4f}"
+    )
+
+    return ds[da_name] if was_dataarray and da_name in ds else ds

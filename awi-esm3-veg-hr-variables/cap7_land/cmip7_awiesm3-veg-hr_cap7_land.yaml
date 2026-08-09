@@ -145,6 +145,14 @@ inherit:
   netcdf_write_scheduler: synchronous
   data_path: &dp /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/oifs
   lpjg_data_path: &ldp /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/lpj_guess
+  # LPJ-GUESS reads plain-text .out files, so its rules have no netCDF
+  # input to recover cell bounds from and cli109 shipped 165 land files
+  # with none. Its 107132 points are exactly the land cells of the OIFS
+  # TCo319 grid (matched against this file the worst separation is 9e-7
+  # of a chord, and the mapping is 1:1), so the bounds come from there.
+  # Written under the old run root on purpose: --data-path repointing
+  # rewrites it along with every other path.
+  bounds_reference_file: /work/bb1469/a270092/runtime/awiesm3-develop/Final_CMIP7_IO_Test_01/outdata/oifs/atmos_mon_land_orog_*.nc
   source_id: AWI-ESM3-4-2-veg-HR
   institution_id: AWI
   institution: "Alfred Wegener Institute for Polar and Marine Research"

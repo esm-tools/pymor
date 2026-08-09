@@ -31,6 +31,30 @@ jobqueue:
     walltime: '00:30:00'
 
 pipelines:
+  # Model-level (alevel) variables. DefaultPipeline plus the hybrid
+  # sigma-pressure coordinate, which turns the bare OIFS model-level index
+  # into the CMIP7 alternate_hybrid_sigma coordinate (lev, ap, b, ap_bnds,
+  # b_bnds, ps and formula_terms). Runs after map_dimensions so the level
+  # axis is already the DReq's alevel, and after set_time_bounds so ps can
+  # be averaged onto the variable's own time axis.
+  - name: alevel_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - pycmor.std_lib.add_vertical_bounds
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.set_time_bounds
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - script://$PYCMOR_HOME/examples/custom_steps.py:add_hybrid_sigma_coordinate
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
   # hurs: Magnus formula from 2t + 2d
   - name: hurs_pipeline
     steps:
@@ -708,6 +732,11 @@ rules:
   # ============================================================
 
   - name: pfull_mon
+    ps_path: *dp
+    ps_pattern: atmos_6h_pt_sp_.*\.nc
+    ps_variable: sp
+    pipelines:
+      - alevel_pipeline
     inputs:
       - path: *dp
         pattern: atmos_day_ml_pfull_.*\.nc
@@ -716,6 +745,11 @@ rules:
     lazy_write: true
 
   - name: ta_mon_ml
+    ps_path: *dp
+    ps_pattern: atmos_6h_pt_sp_.*\.nc
+    ps_variable: sp
+    pipelines:
+      - alevel_pipeline
     inputs:
       - path: *dp
         pattern: atmos_mon_ml_ta_.*\.nc
@@ -724,6 +758,11 @@ rules:
     lazy_write: true
 
   - name: hus_mon_ml
+    ps_path: *dp
+    ps_pattern: atmos_6h_pt_sp_.*\.nc
+    ps_variable: sp
+    pipelines:
+      - alevel_pipeline
     inputs:
       - path: *dp
         pattern: atmos_mon_ml_hus_.*\.nc
@@ -734,6 +773,11 @@ rules:
   # hur is emitted directly by XIOS (field_def maps 'r' on model levels to 'hur'),
   # so no compute-from-ta+hus+pfull pipeline is needed.
   - name: hur_mon_ml
+    ps_path: *dp
+    ps_pattern: atmos_6h_pt_sp_.*\.nc
+    ps_variable: sp
+    pipelines:
+      - alevel_pipeline
     inputs:
       - path: *dp
         pattern: atmos_mon_ml_hur_.*\.nc
