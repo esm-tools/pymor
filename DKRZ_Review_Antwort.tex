@@ -81,8 +81,26 @@ Das f\"uhrende Unterstrich-Attribut wird jetzt entfernt, das verstie\ss\ ohnehin
 gegen CF \S2.3.
 
 \subsection*{1hr, \code{rsus}: Repacking-Checks}
-\offen, bewusst. Wir folgen deinem Vorschlag und lassen das vor der Publikation
-durch \code{cmip7-repack} laufen.
+\ok\ Hier war unsere Antwort beim letzten Mal missverst\"andlich: das ist kein
+Schritt, den wir vor der Publikation nachholen. \code{cmip7repack} l\"auft bei uns
+als fester Teil des Schreib-Workflows auf jeder Datei, in \code{cli111} 542-mal.
+
+Die beiden konkreten Punkte sind damit weg:
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+& \textbf{gemeldet} & \textbf{\code{cli111}} \\
+\midrule
+\code{time} & 18 Chunks & 1 \\
+\code{time\_bnds} & 8760 Chunks & 1 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Gegengepr\"uft mit \code{cmip7repack -x} auf genau der Datei, die du zitiert
+hattest: \code{"not rechunking"} f\"ur \code{time}, \code{time\_bnds} und
+\code{rsus}, es bleibt also nichts zu tun.
 
 \subsection*{3hr, \code{mrsol}: erster Zeitschritt (01:30) fehlt}
 \ok, aber die Ursache lag tiefer, und der Hinweis war deshalb sehr n\"utzlich.
@@ -448,9 +466,6 @@ Ein weiteres Beispiel derselben Sorte: f\"ur
 \code{seaIce.sivol.tavg-u-hm-u.day.sh} erwartet die Registry
 \code{"Sea-Ice Volume North"}, w\"ahrend die DReq-Tabelle
 \code{"Sea-Ice Volume South"} vorgibt. Denselben Befund gab es schon in cli108.
-
-\code{rsus} Repacking l\"auft wie besprochen vor der Publikation \"uber
-\code{cmip7-repack}.
 
 \section{Offene Frage an dich}
 
