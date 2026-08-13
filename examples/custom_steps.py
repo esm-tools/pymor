@@ -213,27 +213,92 @@ def _layer_thickness_from_bnds(bnds):
     return thickness
 
 
+def _mesh_vertical_geometry(data):
+    """Return ``(depth, thickness)`` for the real levels of a FESOM mesh.
+
+    The DARS2 ``mesh.nc`` declares ``nlev=57`` / ``nlev_bnds=58``, but the
+    trailing entries are junk: ``depth`` ends 5825, 6125, 3160 and
+    ``depth_bnds`` ends 6000, 6250, 70. FESOM's own output agrees that the
+    real column is 56 layers (``hnode`` has ``nz=56``), so trim to the
+    leading strictly increasing run of interfaces instead of trusting the
+    declared length. Shipping the 57th level is how the fx files ended up
+    one level longer than the monthly ones they are supposed to describe.
+    """
+    if "depth_bnds" not in data:
+        raise ValueError("Mesh file must contain 'depth_bnds' for layer geometry")
+    bnds = np.asarray(data["depth_bnds"].values, dtype=float).ravel()
+    good = int(np.argmin(np.diff(bnds) > 0)) if not np.all(np.diff(bnds) > 0) else bnds.size - 1
+    if good < bnds.size - 1:
+        logger.warning(
+            f"Mesh depth_bnds has {bnds.size} interfaces but only the first {good + 1} "
+            f"increase monotonically; trimming to {good} layers (trailing entries are corrupt)"
+        )
+    bnds = bnds[: good + 1]
+    thickness = _layer_thickness_from_bnds(bnds)
+    depth = np.asarray(data["depth"].values, dtype=float).ravel()[: thickness.size] if "depth" in data else None
+    return depth, thickness
+
+
+def _profile_over_cells(profile, data, attrs, name):
+    """Broadcast a per-level profile onto the mesh, masked below the sea floor.
+
+    The ``ti-ol-hxy-sea`` branding these fx variables carry says horizontal
+    field on the ocean grid, so a bare ``(lev,)`` profile is not a valid
+    answer even when the model's levels are geopotential and the value is
+    the same in every column. cli112 shipped ``thkcello(lev)`` and
+    ``masscello(lev)`` that way and the DKRZ coordinate check flagged both.
+
+    Columns are cut off at the sea floor using the mesh's ``depth_lev``.
+    Sampling ``hnode`` against ``depth_lev`` shows the number of wet levels
+    is ``depth_lev + 1`` (a node with ``depth_lev=3`` has 4 finite levels),
+    so level ``k`` is wet where ``k <= depth_lev``.
+    """
+    nlev = profile.size
+    if "depth_lev" not in data:
+        raise ValueError("Mesh file must contain 'depth_lev' to mask below the sea floor")
+    depth_lev = np.asarray(data["depth_lev"].values, dtype=np.int64).ravel()
+    wet = np.arange(nlev)[:, None] <= depth_lev[None, :]
+    values = np.where(wet, profile.astype(np.float32)[:, None], np.float32(np.nan))
+    return xr.DataArray(values, dims=["lev", "ncells"], attrs=attrs, name=name)
+
+
+def _attach_level_coord(da, depth):
+    """Attach the ``lev`` coordinate values so the axis is not a bare index."""
+    if depth is None or depth.size != da.sizes.get("lev", -1):
+        return da
+    return da.assign_coords(
+        lev=xr.DataArray(
+            depth,
+            dims=["lev"],
+            attrs={
+                "standard_name": "depth",
+                "long_name": "ocean depth coordinate",
+                "units": "m",
+                "axis": "Z",
+                "positive": "down",
+            },
+        )
+    )
+
+
 def compute_thkcello_fx(data, rule):
     """
     Compute static ocean layer thickness from mesh depth bounds.
 
-    For z-coordinate models with fixed levels, thickness = diff(depth_bnds).
-    Returns a 1D array of layer thicknesses indexed by level.
+    For z-coordinate models with fixed levels, thickness = diff(depth_bnds),
+    broadcast across the mesh and cut off at the sea floor.
 
-    Input: xr.Dataset (mesh file with 'depth_bnds')
-    Output: xr.DataArray (1D, per level)
+    Input: xr.Dataset (mesh file with 'depth_bnds' and 'depth_lev')
+    Output: xr.DataArray (lev, ncells)
     """
-    if "depth_bnds" in data:
-        thickness = _layer_thickness_from_bnds(data["depth_bnds"].values)
-        result = xr.DataArray(
-            thickness,
-            dims=["lev"],
-            attrs={"units": "m", "standard_name": "cell_thickness"},
-        )
-    else:
-        raise ValueError("Mesh file must contain 'depth_bnds' for thkcello computation")
-    result.name = rule.model_variable
-    return result
+    depth, thickness = _mesh_vertical_geometry(data)
+    result = _profile_over_cells(
+        thickness,
+        data,
+        {"units": "m", "standard_name": "cell_thickness"},
+        rule.model_variable,
+    )
+    return _attach_level_coord(result, depth)
 
 
 def compute_masscello_fx(data, rule):
@@ -243,25 +308,18 @@ def compute_masscello_fx(data, rule):
     For Boussinesq models: masscello = rho_0 * thkcello
     where rho_0 is the reference density (default 1025 kg/m3).
 
-    Input: xr.Dataset (mesh file with 'depth_bnds')
-    Output: xr.DataArray (1D, per level, in kg/m2)
+    Input: xr.Dataset (mesh file with 'depth_bnds' and 'depth_lev')
+    Output: xr.DataArray (lev, ncells) in kg/m2
     """
     rho_0 = float(rule.get("reference_density", 1025.0))
-    if "depth_bnds" in data:
-        thickness = _layer_thickness_from_bnds(data["depth_bnds"].values)
-        mass = rho_0 * thickness
-        result = xr.DataArray(
-            mass,
-            dims=["lev"],
-            attrs={
-                "units": "kg m-2",
-                "standard_name": "sea_water_mass_per_unit_area",
-            },
-        )
-    else:
-        raise ValueError("Mesh file must contain 'depth_bnds' for masscello computation")
-    result.name = rule.model_variable
-    return result
+    depth, thickness = _mesh_vertical_geometry(data)
+    result = _profile_over_cells(
+        rho_0 * thickness,
+        data,
+        {"units": "kg m-2", "standard_name": "sea_water_mass_per_unit_area"},
+        rule.model_variable,
+    )
+    return _attach_level_coord(result, depth)
 
 
 # ============================================================
@@ -2257,17 +2315,23 @@ def compute_volcello_fx(data, rule):
     else:
         raise ValueError("Mesh must contain 'cell_area' or 'cluster_area'")
 
-    if "depth_bnds" not in data:
-        raise ValueError("Mesh must contain 'depth_bnds' for layer thickness")
-
-    bnds = data["depth_bnds"].values
-    thickness = np.abs(np.diff(bnds, axis=-1)).squeeze()
-    dz = xr.DataArray(thickness, dims=["nz1"])
-
-    result = cell_area * dz
+    # The vertical axis used to be emitted as "nz1", which is a FESOM
+    # internal name, not a CMIP one: cli112 shipped volcello_fx as
+    # volcello(ncells, nz1) with no level coordinate at all, while the
+    # monthly and decadal volcello files carry (time, nod2, lev). Build
+    # the same geometry as thkcello/masscello so all three fx variables
+    # agree with their time-varying siblings, then multiply by cell area.
+    depth, thickness = _mesh_vertical_geometry(data)
+    result = _profile_over_cells(
+        thickness,
+        data,
+        {"units": "m3", "standard_name": "ocean_volume", "long_name": "Ocean Grid-Cell Volume"},
+        rule.model_variable,
+    )
+    result = result * np.asarray(cell_area.values, dtype=np.float32)[None, :]
     result.attrs = {"units": "m3", "standard_name": "ocean_volume", "long_name": "Ocean Grid-Cell Volume"}
     result.name = rule.model_variable
-    return result
+    return _attach_level_coord(result, depth)
 
 
 def compute_volcello_time(data, rule):
@@ -3104,8 +3168,8 @@ _LPJG_LANDUSE_COLUMNS = (
 )
 
 # ``vegtype``: landCoverFrac_monthly.out carries one column per PFT (44 in this
-# configuration). The grouping below is taken from the run's own instruction
-# files rather than from the PFT acronyms:
+# configuration). The grouping is taken from the run's own instruction files
+# rather than from the PFT acronyms:
 #   global.ins       tree/shrub/grass, broadleaved/needleleaved,
 #                    evergreen/summergreen, phenology "raingreen"
 #   arctic.ins       tallshrub/lowshrub/prostratedwarfshrub,
@@ -3114,15 +3178,34 @@ _LPJG_LANDUSE_COLUMNS = (
 #   crop_n.ins       the CC* crop functional types
 #   landcover.ins    the pasture and urban grass tiles
 # "raingreen" (TrBR) is a deciduous phenology, hence broadleaf_deciduous.
+#
+# Every column is assigned, so the sum over vegtype is the land fraction of the
+# cell, which is what the data request asks for in its comment on
+# landCoverFrac: "Sum of all should equal the fraction of the grid-cell that is
+# land". An earlier version kept only the seven values listed under
+# ``requested`` in CMIP7_coordinate.json and dropped bare soil, the
+# moss/lichen types and the pasture and urban tiles; that summed to about 39%
+# of the land instead.
+#
+# The names are CF area types, not the ``requested`` list. CMIP7 sets
+# ``standard_name = area_type`` on this axis, and the CF standard name table
+# says of that name: "These strings are standardised. Values must be taken from
+# the area_type table." Two consequences worth knowing:
+#   - CF spells it needleleaf_evergreen_trees; the CMIP7 ``requested`` list has
+#     the singular, which is not a CF term.
+#   - There is no CF term for cushion forbs, lichens or mosses; the words do
+#     not occur in the table at all. CLM, pCLM and pmoss therefore go under the
+#     registered catch-all ``vegetation``. Inventing a name is not an option
+#     under the rule above.
 _LPJG_VEGTYPE_PFTS = (
     ("broadleaf_deciduous_trees", ("TeBS", "IBS", "TrBR")),
     ("broadleaf_evergreen_trees", ("TeBE", "TrBE", "TrIBE")),
     ("needleleaf_deciduous_trees", ("BNS",)),
-    ("needleleaf_evergreen_tree", ("BNE", "BINE", "TeNE")),
-    (
-        "natural_grasses",
-        ("C3G", "C4G", "GRT", "C3G_pas", "C4G_pas", "C3G_urb", "C4G_urb", "WetGRS", "C3G_wet", "C4G_wet"),
-    ),
+    ("needleleaf_evergreen_trees", ("BNE", "BINE", "TeNE")),
+    ("shrubs", ("HSE", "HSS", "LSE", "LSS", "EPDS", "SPDS", "pLSE", "pLSS")),
+    ("natural_grasses", ("C3G", "C4G", "GRT", "WetGRS", "C3G_wet", "C4G_wet")),
+    ("pastures", ("C3G_pas", "C4G_pas")),
+    ("urban", ("C3G_urb", "C4G_urb")),
     (
         "crops",
         (
@@ -3140,21 +3223,21 @@ _LPJG_VEGTYPE_PFTS = (
             "CC4G_ic",
         ),
     ),
-    ("shrubs", ("HSE", "HSS", "LSE", "LSS", "EPDS", "SPDS", "pLSE", "pLSS")),
+    ("bare_ground", ("Bare_soil",)),
+    ("vegetation", ("CLM", "pCLM", "pmoss")),
 )
 
-# Columns with no counterpart on the CMIP7 vegtype axis. CLM and pCLM are the
-# cushion-forb/lichen/moss tundra type, pmoss is peat moss, and Bare_soil is
-# not vegetation at all. Excluding them is why the sum over vegtype is less
-# than the land fraction of the cell; the note goes into the variable comment.
-_LPJG_VEGTYPE_UNMAPPED = ("CLM", "pCLM", "pmoss", "Bare_soil")
+# Nothing is dropped any more. Kept so the unclassified-column guard below has
+# something to check against; a new PFT in the .ins files still raises.
+_LPJG_VEGTYPE_UNMAPPED = ()
 
 _LPJG_VEGTYPE_COMMENT = (
-    "Aggregated from the 44 LPJ-GUESS plant functional types onto the CMIP7 "
-    "vegtype axis. The cushion-forb/lichen/moss tundra types (CLM, pCLM), peat "
-    "moss (pmoss) and bare soil have no counterpart among the seven requested "
-    "vegtype values and are omitted, so the sum over vegtype is smaller than "
-    "the land fraction of the grid cell."
+    "Aggregated from the 44 LPJ-GUESS plant functional types. Category names "
+    "are CF area types, as required by standard_name = area_type. Every plant "
+    "functional type is assigned, so the sum over this axis is the land "
+    "fraction of the grid cell. LPJ-GUESS distinguishes cushion forbs, lichens "
+    "and mosses (CLM, pCLM, pmoss), for which the CF area type table has no "
+    "term; they are reported under the generic 'vegetation'."
 )
 
 
