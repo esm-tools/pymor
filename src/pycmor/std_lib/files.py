@@ -580,11 +580,134 @@ def _normalise_vertices_naming(ds):
     return ds
 
 
+_UNSTRUCTURED_DIMS = ("ncells", "nod2", "elem", "cell", "cells")
+
+
+def _great_circle_centroids(lat_deg, lon_deg):
+    """Centroid of each row of vertices, averaged as unit vectors.
+
+    Averaging degrees directly breaks on the dateline (the mean of -179
+    and 179 is 0) and near the poles. Going through Cartesian unit
+    vectors is exact and is the same trick ``_match_cells`` already uses.
+
+    ``lat_deg`` / ``lon_deg`` are ``(n, k)``; the result is two ``(n,)``
+    arrays in degrees, longitude in [-180, 180).
+    """
+    la = np.radians(np.asarray(lat_deg, dtype=np.float64))
+    lo = np.radians(np.asarray(lon_deg, dtype=np.float64))
+    cos_la = np.cos(la)
+    x = (cos_la * np.cos(lo)).mean(axis=1)
+    y = (cos_la * np.sin(lo)).mean(axis=1)
+    z = np.sin(la).mean(axis=1)
+    return np.degrees(np.arctan2(z, np.hypot(x, y))), np.degrees(np.arctan2(y, x))
+
+
+def _ensure_horizontal_aux_coords(ds, rule=None):
+    """Attach ``lat``/``lon`` from the mesh when the stream carries none.
+
+    Most FESOM streams arrive from XIOS with lat/lon already on them, so
+    the recipes never needed a ``setgrid`` step. A handful do not: cli112
+    shipped 16 files (rlds, rlus, rsds, rsus, sbl, sifllattop,
+    siflsenstop, volcello, deptho on the node grid; hfx, hfy on the
+    element grid) with a bare cell index and no geographic coordinates at
+    all, which the DKRZ coordinate check flagged. Nothing downstream can
+    place those values on the globe.
+
+    ``rule.grid_file`` already points at the mesh for every FESOM rule
+    (it is set in ``inherit``), so recover from there rather than asking
+    every recipe to add a step. Node-grid variables take the mesh
+    ``lat``/``lon`` directly. Element-grid variables have no stored
+    coordinates, so build them from the ``triag_nodes`` connectivity:
+    the three corner nodes give the cell vertices and their great-circle
+    mean gives the centroid.
+
+    Bounds are attached raw; the dateline normalisation later in
+    :func:`_ensure_lat_lon_bounds_impl` straightens out triangles that
+    straddle the seam.
+    """
+    if not isinstance(ds, xr.Dataset) or rule is None:
+        return ds
+    if any(n in ds.variables or n in ds.coords for n in ("lat", "latitude")):
+        return ds
+    grid_file = getattr(rule, "grid_file", None)
+    if not grid_file or not os.path.exists(str(grid_file)):
+        return ds
+
+    hdim = None
+    for var_name in ds.data_vars:
+        if _is_bounds_var_name(var_name):
+            continue
+        for d in ds[var_name].dims:
+            if str(d) in _UNSTRUCTURED_DIMS:
+                hdim = str(d)
+                break
+        if hdim:
+            break
+    if hdim is None:
+        return ds
+
+    n_cells = ds.sizes[hdim]
+    try:
+        with xr.open_dataset(grid_file, decode_times=False) as mesh:
+            if "lat" not in mesh or "lon" not in mesh:
+                return ds
+            n_nodes = mesh.sizes.get("ncells")
+            n_triags = mesh.sizes.get("ntriags")
+
+            if n_cells == n_nodes:
+                lat = np.asarray(mesh["lat"].values, dtype=np.float64)
+                lon = np.asarray(mesh["lon"].values, dtype=np.float64)
+                lat_b = np.asarray(mesh["lat_bnds"].values, dtype=np.float64) if "lat_bnds" in mesh else None
+                lon_b = np.asarray(mesh["lon_bnds"].values, dtype=np.float64) if "lon_bnds" in mesh else None
+                source = "mesh nodes"
+            elif n_cells == n_triags and "triag_nodes" in mesh:
+                # FESOM stores the connectivity 1-based (Fortran).
+                idx = np.asarray(mesh["triag_nodes"].values, dtype=np.int64) - 1
+                lat_b = np.asarray(mesh["lat"].values, dtype=np.float64)[idx]
+                lon_b = np.asarray(mesh["lon"].values, dtype=np.float64)[idx]
+                lat, lon = _great_circle_centroids(lat_b, lon_b)
+                source = "element centroids from triag_nodes"
+            else:
+                logger.warning(
+                    f"  → aux coords: {hdim!r} has {n_cells} cells, mesh has "
+                    f"{n_nodes} nodes / {n_triags} elements; cannot match"
+                )
+                return ds
+    except Exception as exc:
+        logger.warning(f"  → aux coord recovery from {grid_file} failed: {exc}")
+        return ds
+
+    ds = ds.assign_coords(
+        {
+            "lat": xr.DataArray(
+                lat,
+                dims=(hdim,),
+                attrs={"standard_name": "latitude", "long_name": "latitude", "units": "degrees_north"},
+            ),
+            "lon": xr.DataArray(
+                lon,
+                dims=(hdim,),
+                attrs={"standard_name": "longitude", "long_name": "longitude", "units": "degrees_east"},
+            ),
+        }
+    )
+    if lat_b is not None and lon_b is not None and lat_b.ndim == 2:
+        vdim = _VERTICES_DIM if _VERTICES_DIM not in ds.dims else f"{_VERTICES_DIM}_{lat_b.shape[1]}"
+        # CF §7.1: bounds carry no attributes of their own.
+        ds["lat_bnds"] = xr.DataArray(lat_b, dims=(hdim, vdim), attrs={})
+        ds["lon_bnds"] = xr.DataArray(lon_b, dims=(hdim, vdim), attrs={})
+        ds["lat"].attrs["bounds"] = "lat_bnds"
+        ds["lon"].attrs["bounds"] = "lon_bnds"
+    logger.info(f"  → aux coords: attached lat/lon on {hdim!r} ({n_cells} cells) from {source}")
+    return ds
+
+
 def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
     """Wrap _ensure_lat_lon_bounds with post-passes that announce external
     cell_measures (CF 1.11 §7.2) and refresh the ``coordinates`` attr."""
     ds = _drop_xios_aux_time_coords(ds)
     ds = _denormalise_vertices_naming(ds)
+    ds = _ensure_horizontal_aux_coords(ds, rule)
     ds = _ensure_lat_lon_bounds_impl(ds, rule)
     ds = _ensure_vertical_bounds(ds)
     ds = _ensure_vertical_coord_attrs(ds)
