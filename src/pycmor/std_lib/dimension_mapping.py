@@ -776,6 +776,11 @@ _GENERIC_LEVEL_OUT_NAME = {
     "olevhalf": "lev",
 }
 
+# Pressure axes requested at a specific level count (plev3, plev19, plev39,
+# ...). All of them have out_name "plev"; the digits are a data-request tier
+# marker, not part of the output dimension name.
+_PLEV_N = re.compile(r"plev\d+")
+
 
 def map_dimensions(ds: Union[xr.Dataset, xr.DataArray], rule) -> Union[xr.Dataset, xr.DataArray]:
     """
@@ -873,6 +878,16 @@ def map_dimensions(ds: Union[xr.Dataset, xr.DataArray], rule) -> Union[xr.Datase
         # never fired, since it looks for lev/depth/plev and found neither,
         # so the ocean levels shipped without the bounds depth_coord requires.
         mapping = {src: _GENERIC_LEVEL_OUT_NAME.get(dst, dst) for src, dst in mapping.items()}
+
+        # Same story one level down for the pressure axes. ``plev3``,
+        # ``plev19``, ``plev39`` and friends are *data request* dimension
+        # names that encode how many levels were requested; every one of
+        # them carries out_name "plev" in CMIP7_coordinate.json. The count
+        # belongs in the dimension's length, not its name, so writing
+        # ``ta(time, plev19, lat, lon)`` leaves consumers with a dimension
+        # name that changes per request tier. DKRZ flagged this on cli112
+        # (17 files across hur/hus/ta/ua/va at plev19 and plev3).
+        mapping = {src: ("plev" if _PLEV_N.fullmatch(dst) else dst) for src, dst in mapping.items()}
 
         # Apply mapping
         ds = mapper.apply_mapping(ds, mapping)
