@@ -666,6 +666,17 @@ def _ensure_horizontal_aux_coords(ds, rule=None):
                 lat_b = np.asarray(mesh["lat"].values, dtype=np.float64)[idx]
                 lon_b = np.asarray(mesh["lon"].values, dtype=np.float64)[idx]
                 lat, lon = _great_circle_centroids(lat_b, lon_b)
+                # CF §7.1 requires a coordinate to lie inside its own bounds.
+                # The spherical centroid of a triangle that contains a pole
+                # sits closer to the pole than any of its vertices, because
+                # latitude is not linear there: cli113's cell 1976811 had
+                # vertices at 89.970 / 89.981 / 89.970 and a centroid at
+                # 89.9929, which is correct on the sphere but outside the
+                # cell's latitude range, and the checker rejected it on all
+                # four element-grid files. Clamp latitude back into the
+                # vertex range; the displacement is ~1 km on the one polar
+                # cell and zero everywhere else.
+                lat = np.clip(lat, lat_b.min(axis=1), lat_b.max(axis=1))
                 source = "element centroids from triag_nodes"
             else:
                 logger.warning(
@@ -750,33 +761,60 @@ def _ensure_vertical_bounds(ds):
     return ds
 
 
+# Vertical axes whose on-disk attributes should come from the CV rather
+# than from whatever the model wrote. Every one of these has an entry in
+# coordinate_metadata.yaml; names without one are skipped.
+_CV_VERTICAL_COORDS = ("lev", "plev", "height", "sdepth", "rho", "gamma")
+
+
 def _ensure_vertical_coord_attrs(ds):
-    """Let the CV win over the model's own attributes on the vertical axis.
+    """Let the CV win over the model's own attributes on the vertical axes.
 
     ``set_coordinate_attributes`` only fills in attributes that are missing, so
-    whatever FESOM wrote survives: cli109 shipped ``lev:units = "meter"`` where
-    depth_coord says ``m``, the model's ``long_name`` instead of "ocean depth
-    coordinate", and a stray non-CF ``name = "nz"``. The DKRZ review asked us
-    to take these from CMIP7_coordinate.json.
+    whatever the model wrote survives: cli109 shipped ``lev:units = "meter"``
+    where depth_coord says ``m``, the model's ``long_name`` instead of "ocean
+    depth coordinate", and a stray non-CF ``name = "nz"``. The DKRZ review
+    asked us to take these from CMIP7_coordinate.json.
+
+    This used to cover only ``lev``, which hid the same bug on every other
+    vertical axis. cli113 shipped:
+
+        plev    17 files  standard_name and axis missing, units "pascal",
+                          positive "up", plus the stray "name"
+        height  35 files  axis missing
+        sdepth   3 files  units "meter"
+
+    The pressure case was worth 68 wcrp HIGH findings on its own, and it was
+    invisible before cli113 only because the axis was still named ``plev19`` /
+    ``plev3`` and the check looks for a variable called ``plev``.
+
+    ``long_name`` is deliberately left alone where the CV has no single value
+    for it: the data request spells plev's per-tier ("Pressure Levels (19)"
+    vs "(3)"), so coordinate_metadata.yaml carries none and the model's own
+    string stays.
     """
     from .coordinate_attributes import COORDINATE_METADATA
 
-    expected = COORDINATE_METADATA.get("lev")
-    if not expected or "lev" not in ds.variables:
-        return ds
-    attrs = ds["lev"].attrs
-    # coordinate_metadata.yaml's "lev" entry is the ocean depth_coord. The
-    # atmospheric hybrid coordinate also has out_name "lev" but is a different
-    # axis entirely, and it arrives here fully described by
-    # add_hybrid_sigma_coordinate. Overwriting it relabelled 137 model levels
-    # as ocean depth in metres, which is what this guard prevents.
-    if attrs.get("formula_terms") or (attrs.get("standard_name") not in (None, "", "depth")):
+    for name in _CV_VERTICAL_COORDS:
+        expected = COORDINATE_METADATA.get(name)
+        if not expected or name not in ds.variables:
+            continue
+        attrs = ds[name].attrs
+        # Parametric vertical coordinates describe themselves through
+        # formula_terms and must not be overwritten. The atmospheric hybrid
+        # coordinate also has out_name "lev" but is a different axis from the
+        # ocean depth_coord entirely; overwriting it relabelled 137 model
+        # levels as ocean depth in metres, which is what this guard prevents.
+        if attrs.get("formula_terms"):
+            attrs.pop("name", None)
+            continue
+        if name == "lev" and attrs.get("standard_name") not in (None, "", "depth"):
+            attrs.pop("name", None)
+            continue
+        # ``name`` is a model-side leftover, not a CF attribute.
         attrs.pop("name", None)
-        return ds
-    # ``name`` is a model-side leftover, not a CF attribute.
-    attrs.pop("name", None)
-    for key, value in expected.items():
-        attrs[key] = value
+        for key, value in expected.items():
+            attrs[key] = value
     return ds
 
 
