@@ -21,6 +21,7 @@ import numpy as np
 import xarray as xr
 
 from ..data_request.variable import DataRequestVariable
+from .coordinate_attributes import AXIS_ENTRIES
 
 logger = logging.getLogger(__name__)
 
@@ -270,35 +271,7 @@ class DimensionMapper:
         Optional[str]
             CMIP dimension name or None if no match
         """
-        # Map dimension types to CMIP dimension patterns
-        type_to_cmip = {
-            "latitude": ["latitude", "lat", "gridlatitude"],
-            "longitude": ["longitude", "lon", "gridlongitude"],
-            "time": ["time", "time1", "time2", "time3"],
-            "pressure": [
-                "plev",
-                "plev3",
-                "plev4",
-                "plev7",
-                "plev8",
-                "plev19",
-                "plev23",
-                "plev27",
-                "plev39",
-            ],
-            "depth": ["olevel", "olevhalf", "oline", "depth"],
-            "height": [
-                "height",
-                "height2m",
-                "height10m",
-                "height100m",
-                "alt16",
-                "alt40",
-            ],
-            "model_level": ["alevel", "alevhalf"],
-        }
-
-        possible_names = type_to_cmip.get(dim_type, [])
+        possible_names = _type_to_cmip().get(dim_type, [])
 
         # Find matching CMIP dimension
         for cmip_dim in cmip_dimensions:
@@ -759,27 +732,114 @@ class DimensionMapper:
         return mapping
 
 
-# Generic vertical-level placeholders in the data request and the concrete
-# out_name every matching CMIP7_coordinate.json entry uses. Resolved after the
+# Data request dimension names that are *not* output names. Resolved after the
 # DReq dimension match so the file carries the real coordinate name.
 #
-# Ocean only for now. ``alevel``/``alevhalf`` also resolve to out_name "lev",
-# but the concrete atmospheric options are parametric coordinates that need
-# formula_terms and their zfactor variables, and the OIFS model-level output
-# carries no hybrid A/B coefficients to build them from. Renaming those to
-# "lev" before that exists would hand them the ocean depth_coord metadata that
-# coordinate_metadata.yaml attaches to "lev" (standard_name depth, units m),
-# i.e. atmospheric model levels labelled as ocean depth in metres. They keep
-# the placeholder name until the atmosphere side is done.
+# ``olevel``/``olevhalf`` have no entry in CMIP7_coordinate.json at all (the
+# concrete options are listed individually, e.g. ``depth_coord``), so they are
+# mapped by hand. ``alevel``/``alevhalf`` are deliberately absent: the
+# atmospheric options are parametric coordinates and the hybrid coordinate step
+# names that axis itself. Renaming them here would hand them the ocean
+# depth_coord metadata that coordinate_metadata.yaml attaches to "lev"
+# (standard_name depth, units m), i.e. 137 model levels labelled as ocean depth
+# in metres.
 _GENERIC_LEVEL_OUT_NAME = {
     "olevel": "lev",
     "olevhalf": "lev",
 }
 
-# Pressure axes requested at a specific level count (plev3, plev19, plev39,
-# ...). All of them have out_name "plev"; the digits are a data-request tier
-# marker, not part of the output dimension name.
-_PLEV_N = re.compile(r"plev\d+")
+
+# The hand-maintained half of the dimension-type map. Kept as the base so the
+# candidate order (and with it the existing disambiguation behaviour) does not
+# change; names derived from the coordinate table are appended, never inserted.
+_STATIC_TYPE_TO_CMIP = {
+    "latitude": ["latitude", "lat", "gridlatitude"],
+    "longitude": ["longitude", "lon", "gridlongitude"],
+    "time": ["time", "time1", "time2", "time3"],
+    "pressure": ["plev", "plev3", "plev4", "plev7", "plev8", "plev19", "plev23", "plev27", "plev39"],
+    "depth": ["olevel", "olevhalf", "oline", "depth"],
+    "height": ["height", "height2m", "height10m", "height100m", "alt16", "alt40"],
+    "model_level": ["alevel", "alevhalf"],
+}
+
+# Z-axis standard_names, grouped into the dimension types this module uses.
+_Z_STANDARD_NAMES = {
+    "air_pressure": "pressure",
+    "depth": "depth",
+    "height": "height",
+    "altitude": "height",
+    "model_level_number": "model_level",
+}
+
+_TYPE_TO_CMIP_CACHE: Optional[Dict[str, List[str]]] = None
+
+
+def _type_to_cmip() -> Dict[str, List[str]]:
+    """Dimension type -> the data request names that denote it.
+
+    The static table above only listed the axes we had happened to meet, which
+    silently broke matching for the rest: a source ``sdepth`` never matched the
+    request's ``sdepth`` because "depth" only knew olevel/olevhalf/oline/depth,
+    and ``plev7h`` never matched because "pressure" only listed ``plev\\d+``.
+    An unmatched dimension is not renamed at all, so it reached the file under
+    its model name and no amount of out_name resolution downstream could help.
+    That is why cli114 shipped ``sdepth`` and ``pressure_levels_7h``.
+
+    CMIP7_coordinate.json already classifies every axis: ``axis`` gives X/Y/T/Z
+    and, within Z, ``standard_name`` separates pressure (22 entries), depth
+    (11), height/altitude (5) and the parametric coordinates. Derive from that
+    and append to the static lists, so new request tiers work without another
+    edit here.
+    """
+    global _TYPE_TO_CMIP_CACHE
+    if _TYPE_TO_CMIP_CACHE is not None:
+        return _TYPE_TO_CMIP_CACHE
+
+    derived = {key: list(names) for key, names in _STATIC_TYPE_TO_CMIP.items()}
+    axis_to_type = {"Y": "latitude", "X": "longitude", "T": "time"}
+    for name, entry in sorted(AXIS_ENTRIES.items()):
+        axis = entry.get("axis")
+        dim_type = axis_to_type.get(axis)
+        if dim_type is None and axis == "Z":
+            standard_name = str(entry.get("standard_name") or "")
+            dim_type = _Z_STANDARD_NAMES.get(standard_name)
+            if dim_type is None and standard_name.startswith(("atmosphere_", "ocean_sigma")):
+                dim_type = "model_level"
+        if dim_type and name not in derived[dim_type]:
+            derived[dim_type].append(name)
+    _TYPE_TO_CMIP_CACHE = derived
+    return derived
+
+
+def _out_name_for(dim: str) -> str:
+    """Resolve a data request dimension name to its CMOR ``out_name``.
+
+    The data request names a dimension by the *request tier* it belongs to;
+    what belongs on disk is the ``out_name`` from CMIP7_coordinate.json. 110 of
+    its entries differ from their key, and writing the key through produced a
+    long tail of findings that all had the same cause::
+
+        latitude   -> lat        41 files, plus most of the AICC006
+        longitude  -> lon        dimension-ordering findings
+        plev19     -> plev       the count is a tier marker, not a name
+        plev7h     -> plev
+        sdepth     -> depth
+        oplayer4   -> pdepth
+
+    This used to be two hardcoded special cases (a dict for ``olevel`` and a
+    regex for ``plev\\d+``), which fixed the two we had noticed and left the
+    rest. Resolving from the table covers all of them, including the ones we
+    have not hit yet.
+
+    Falls back to the name itself when the table has no entry, so unknown or
+    model-specific dimensions pass through untouched.
+    """
+    entry = AXIS_ENTRIES.get(dim)
+    if entry:
+        out_name = entry.get("out_name")
+        if out_name:
+            return str(out_name)
+    return _GENERIC_LEVEL_OUT_NAME.get(dim, dim)
 
 
 def map_dimensions(ds: Union[xr.Dataset, xr.DataArray], rule) -> Union[xr.Dataset, xr.DataArray]:
@@ -867,27 +927,13 @@ def map_dimensions(ds: Union[xr.Dataset, xr.DataArray], rule) -> Union[xr.Datase
                 logger.warning(error_msg)
             # ignore mode: do nothing
 
-        # ``olevel``/``alevel`` and their half-level siblings are generic
-        # level *placeholders* in the data request, not output names. The DReq
-        # lists them so a model can pick whichever concrete vertical
-        # coordinate it actually uses; every concrete option in
-        # CMIP7_coordinate.json carries out_name "lev". Writing the
-        # placeholder through to the file left us with olevel(olevel) and
-        # alevel(alevel), which the DKRZ review flagged (Schupfner, Teil 2):
-        # "olevel ist nur ein Platzhalter". It also meant add_vertical_bounds
-        # never fired, since it looks for lev/depth/plev and found neither,
-        # so the ocean levels shipped without the bounds depth_coord requires.
-        mapping = {src: _GENERIC_LEVEL_OUT_NAME.get(dst, dst) for src, dst in mapping.items()}
-
-        # Same story one level down for the pressure axes. ``plev3``,
-        # ``plev19``, ``plev39`` and friends are *data request* dimension
-        # names that encode how many levels were requested; every one of
-        # them carries out_name "plev" in CMIP7_coordinate.json. The count
-        # belongs in the dimension's length, not its name, so writing
-        # ``ta(time, plev19, lat, lon)`` leaves consumers with a dimension
-        # name that changes per request tier. DKRZ flagged this on cli112
-        # (17 files across hur/hus/ta/ua/va at plev19 and plev3).
-        mapping = {src: ("plev" if _PLEV_N.fullmatch(dst) else dst) for src, dst in mapping.items()}
+        # The data request names a dimension by the request tier it belongs to;
+        # what belongs on disk is the CMOR out_name. "olevel ist nur ein
+        # Platzhalter" (Schupfner, Teil 2) was the first instance we hit, and
+        # the same is true of latitude/longitude, every plevN, sdepth and
+        # oplayer4. Resolve all of them from CMIP7_coordinate.json rather than
+        # patching them one at a time; see _out_name_for.
+        mapping = {src: _out_name_for(dst) for src, dst in mapping.items()}
 
         # Apply mapping
         ds = mapper.apply_mapping(ds, mapping)
