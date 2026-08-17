@@ -2979,28 +2979,67 @@ def compute_areacella(data, rule):
 
 def compute_slthick(data, rule):
     """
-    Generate HTESSEL soil layer thicknesses as a constant field.
+    Generate HTESSEL soil layer thicknesses on the model grid.
 
-    IFS HTESSEL has 4 soil layers with fixed thicknesses:
-      Layer 1: 0.07 m (0-7 cm)
-      Layer 2: 0.21 m (7-28 cm)
-      Layer 3: 0.72 m (28-100 cm)
-      Layer 4: 1.89 m (100-289 cm)
+    IFS HTESSEL has 4 soil layers with fixed interfaces at 0, 7, 28, 100 and
+    289 cm, so the thicknesses are 0.07, 0.21, 0.72 and 1.89 m.
 
-    Primary input (data) is ignored (any grid file will do).
+    ``slthick`` is branded ``ti-sl-hxy-lnd``: a horizontal field on the land
+    grid, not a profile. cli114 shipped ``slthick(sdepth)``, a bare 1-D array
+    whose coordinate was the layer index 1..4 rather than a depth, with no
+    latitude or longitude anywhere in the file. Both were flagged.
+
+    The layers are uniform in the horizontal, but that does not make the grid
+    optional: the same is true of ``thkcello`` and the request asks for it
+    there too. Broadcast across the input's horizontal dimension and take the
+    depth coordinate from the layer midpoints, with the true interfaces as
+    bounds rather than letting them be interpolated from midpoints, which for
+    layers this uneven would be wrong.
+
+    Primary input (data) supplies the grid; its values are not used.
     """
-    thicknesses = np.array([0.07, 0.21, 0.72, 1.89])
-    result = xr.DataArray(
-        thicknesses,
-        dims=["sdepth"],
-        coords={"sdepth": np.arange(1, 5)},
+    interfaces = np.array([0.0, 0.07, 0.28, 1.00, 2.89])
+    thicknesses = np.diff(interfaces)
+    depth = 0.5 * (interfaces[:-1] + interfaces[1:])
+    depth_bnds = np.stack([interfaces[:-1], interfaces[1:]], axis=-1)
+
+    source = data if isinstance(data, xr.DataArray) else data[rule.model_variable]
+    horizontal = [d for d in source.dims if d not in ("time",) and not str(d).startswith("time")]
+    if not horizontal:
+        raise ValueError(
+            f"compute_slthick: no horizontal dimension in {source.dims}, cannot place the layers on a grid"
+        )
+    hdim = str(horizontal[-1])
+    ncells = source.sizes[hdim]
+
+    values = np.repeat(thicknesses[:, None].astype(np.float32), ncells, axis=1)
+    result = xr.Dataset(
+        {
+            rule.model_variable: (("depth", hdim), values),
+            "depth_bnds": (("depth", "bnds"), depth_bnds),
+        },
+        coords={"depth": depth},
     )
-    result.attrs = {
+    result[rule.model_variable].attrs = {
         "units": "m",
         "standard_name": "cell_thickness",
         "long_name": "Thickness of Soil Layers",
     }
-    result.name = rule.model_variable
+    result["depth"].attrs = {
+        "standard_name": "depth",
+        "long_name": "depth",
+        "units": "m",
+        "axis": "Z",
+        "positive": "down",
+        "bounds": "depth_bnds",
+    }
+    for coord_name in ("lat", "lon", "latitude", "longitude"):
+        if coord_name in source.coords:
+            result = result.assign_coords({coord_name: source[coord_name]})
+    logger.info(
+        f"slthick: {thicknesses.size} soil layers "
+        f"({', '.join(f'{t:.2f}' for t in thicknesses)} m) over {ncells} cells on {hdim!r}"
+    )
     return result
 
 
