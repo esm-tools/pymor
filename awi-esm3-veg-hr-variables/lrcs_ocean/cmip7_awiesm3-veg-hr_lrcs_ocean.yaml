@@ -487,6 +487,7 @@ rules:
       - path: *dp
         pattern: volo\.fesom\.\d{4}\.nc
     compound_name: ocean.volo.tavg-u-hm-sea.mon.glb
+    grid_label: g190  # globales Mittel, kein horizontales Gitter
     model_variable: volo
 
   # tos_ga — global average sea surface temperature (thetaoga from ldiag_cmor)
@@ -495,6 +496,7 @@ rules:
       - path: *dp
         pattern: thetaoga\.fesom\.\d{4}\.nc
     compound_name: ocean.tos.tavg-u-hm-sea.mon.glb
+    grid_label: g190  # globales Mittel, kein horizontales Gitter
     model_variable: thetaoga
 
   # sos_ga — global average sea surface salinity (soga from ldiag_cmor)
@@ -503,6 +505,7 @@ rules:
       - path: *dp
         pattern: soga\.fesom\.\d{4}\.nc
     compound_name: ocean.sos.tavg-u-hm-sea.mon.glb
+    grid_label: g190  # globales Mittel, kein horizontales Gitter
     model_variable: soga
 
   # thetao_ga — global average potential temperature (per level, from ldiag_cmor)
@@ -514,6 +517,7 @@ rules:
       - path: *dp
         pattern: thetaoga\.fesom\.\d{4}\.nc
     compound_name: ocean.thetao.tavg-u-hm-sea.mon.glb
+    grid_label: g190  # globales Mittel, kein horizontales Gitter
     model_variable: thetaoga
 
   # so_ga — global mean salinity (scalar from ldiag_cmor)
@@ -522,6 +526,7 @@ rules:
       - path: *dp
         pattern: soga\.fesom\.\d{4}\.nc
     compound_name: ocean.so.tavg-u-hm-sea.mon.glb
+    grid_label: g190  # globales Mittel, kein horizontales Gitter
     model_variable: soga
 
   # obvfsq — Brunt-Vaisala frequency squared (N2 from namelist.io)
@@ -763,6 +768,7 @@ rules:
       - path: *dp
         pattern: volo\.fesom\.\d{4}\.nc
     compound_name: ocean.masso.tavg-u-hm-sea.mon.glb
+    grid_label: g190  # globales Mittel, kein horizontales Gitter
     model_variable: volo
     scale_factor: 1025.0
     scaled_units: "kg"
@@ -957,6 +963,7 @@ rules:
       - path: *dp
         pattern: volo\.fesom\.\d{4}\.nc
     compound_name: ocean.volo.tavg-u-hm-sea.dec.glb
+    grid_label: g190  # globales Mittel, kein horizontales Gitter
     model_variable: volo
 
   - name: masscello_dec
@@ -986,6 +993,7 @@ rules:
       - path: *dp
         pattern: volo\.fesom\.\d{4}\.nc
     compound_name: ocean.masso.tavg-u-hm-sea.dec.glb
+    grid_label: g190  # globales Mittel, kein horizontales Gitter
     model_variable: volo
     scale_factor: 1025.0
     scaled_units: "kg"
