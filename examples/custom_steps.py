@@ -53,6 +53,7 @@ Function index (keep this list in sync when adding/removing steps; helps avoid d
 import glob as _glob
 import logging
 import os as _os
+import pathlib
 import re as _re
 from typing import Optional
 
@@ -2224,6 +2225,103 @@ def integrate_over_pressure_layers(data: xr.DataArray, rule) -> xr.Dataset:
     }
     result.attrs.update(rule.get("integration_attrs") or {})
     result.name = rule.model_variable
+    return result
+
+
+_CLIMATOLOGY_STATE_DEFAULT = "/work/bb1469/a270092/cmorized/climatologies"
+
+
+def accumulate_monthly_climatology(data, rule):
+    """Monthly climatology that grows with every run instead of being rebuilt.
+
+    ``tclm`` means what the CV says it means: "each set of time bounds
+    represents a month and the twelve values show the month-by-month variation
+    (derived by averaging over a number of years)", with cell_methods
+    ``time: mean within years time: mean over years``. cli114 wrote the twelve
+    monthly means of a single year under that label, which is a monthly mean
+    with a climatology sticker on it.
+
+    Rebuilding from all years on each run is not an option here. The source is
+    ``atmos_day_ml_pfull_*.nc`` at 27 GB per year with 194 years on disk, so a
+    full rebuild is some 5 TB of reads and grows with the run.
+
+    Instead a running accumulator is kept outside the per-run output tree: the
+    sum over years and the count of years contributing, per month. Each run adds
+    only its own year, which the pipeline has loaded anyway, and the climatology
+    is the quotient. The years already folded in are recorded with it, so a year
+    cmorized twice (after a failed shard, say) is not counted twice.
+
+    Rule attributes:
+      - ``climatology_state_dir``: where the accumulator lives, must be outside
+        the per-run scratch directory. Default above.
+    """
+    state_dir = pathlib.Path(rule.get("climatology_state_dir", _CLIMATOLOGY_STATE_DEFAULT))
+    state_dir.mkdir(parents=True, exist_ok=True)
+    key = str(rule.get("compound_name") or rule.model_variable).replace("/", "_")
+    state_path = state_dir / f"{key}.accumulator.nc"
+
+    da = data if isinstance(data, xr.DataArray) else data[rule.model_variable]
+    if "time" not in da.dims:
+        raise ValueError(f"accumulate_monthly_climatology: no time dimension in {list(da.dims)}")
+
+    years = np.unique(da["time"].dt.year.values)
+    if years.size != 1:
+        raise ValueError(
+            f"accumulate_monthly_climatology: expected a single year per run, got {years.tolist()}. "
+            "The accumulator counts whole years; feeding it several at once would need a different guard."
+        )
+    year = int(years[0])
+
+    # This year's twelve monthly means. That is the "mean within years" half.
+    monthly = da.groupby("time.month").mean("time", keep_attrs=True)
+    if monthly.sizes.get("month") != 12:
+        raise ValueError(
+            f"accumulate_monthly_climatology: year {year} has only "
+            f"{monthly.sizes.get('month')} months, refusing to fold a partial year in"
+        )
+
+    if state_path.exists():
+        with xr.open_dataset(state_path) as previous:
+            state = previous.load()
+        seen = [int(y) for y in np.atleast_1d(state["years"].values)]
+        if year in seen:
+            logger.warning(f"climatology: year {year} is already in {state_path.name}, not counting it twice")
+        else:
+            state["total"] = state["total"] + monthly
+            state = state.assign(years=("year", np.array(sorted(seen + [year]), dtype="int32")))
+            logger.info(f"climatology: added {year}, now {len(seen) + 1} years")
+    else:
+        state = xr.Dataset({"total": monthly})
+        state = state.assign(years=("year", np.array([year], dtype="int32")))
+        logger.info(f"climatology: started accumulator at {state_path} with {year}")
+
+    tmp = state_path.with_suffix(".tmp.nc")
+    state.to_netcdf(tmp)
+    tmp.replace(state_path)  # atomic, so a killed shard cannot leave a half-written accumulator
+
+    counted = [int(y) for y in np.atleast_1d(state["years"].values)]
+    result = state["total"] / len(counted)
+    result.attrs = dict(da.attrs)
+    result.name = rule.model_variable
+
+    # CF §7.4: the coordinate carries ``climatology``, not ``bounds``, and each
+    # cell spans from the start of that month in the first year to the end of it
+    # in the last. Those bounds cannot be attached here, because xarray refuses
+    # a coordinate whose ``bnds`` dimension the array does not have, and unlike
+    # the pdepth case they are not a fixed property of the axis: they move with
+    # every year folded in. Only the two years travel, on the time coordinate,
+    # and files.py:_ensure_climatology_bounds builds the twelve pairs on write.
+    first, last = min(counted), max(counted)
+    months = [int(m) for m in result["month"].values]
+    result = result.rename({"month": "time"})
+    result = result.assign_coords(time=("time", np.array([np.datetime64(f"{first:04d}-{m:02d}-01") for m in months])))
+    result["time"].attrs = {
+        "standard_name": "time",
+        "long_name": "Monthly Climatology",
+        "axis": "T",
+        "climatology_years": f"{first} {last}",
+    }
+    logger.info(f"climatology: {len(counted)} years, {first}-{last}, months {months[0]}..{months[-1]}")
     return result
 
 

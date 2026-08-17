@@ -37,6 +37,29 @@ pipelines:
   # b_bnds, ps and formula_terms). Runs after map_dimensions so the level
   # axis is already the DReq's alevel, and after set_time_bounds so ps can
   # be averaged onto the variable's own time axis.
+  # Wie alevel_pipeline, aber mit laufender Klimatologie statt timeavg.
+  # Fuer pfull_mon, die einzige tclm-Regel: der Schritt bildet die zwoelf
+  # Monatsmittel des Jahres und addiert sie auf einen Zwischenstand ausserhalb
+  # des Laufverzeichnisses, die Klimatologie ist Summe durch Anzahl Jahre.
+  # timeavg faellt weg, das Mitteln macht der Schritt selbst.
+  - name: alevel_climatology_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - pycmor.std_lib.add_vertical_bounds
+      - script://$PYCMOR_HOME/examples/custom_steps.py:accumulate_monthly_climatology
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - script://$PYCMOR_HOME/examples/custom_steps.py:add_hybrid_sigma_coordinate
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
+
   - name: alevel_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
@@ -732,11 +755,12 @@ rules:
   # ============================================================
 
   - name: pfull_mon
+    climatology_state_dir: /work/bb1469/a270092/cmorized/climatologies
     ps_path: *dp
     ps_pattern: atmos_6h_pt_sp_.*\.nc
     ps_variable: sp
     pipelines:
-      - alevel_pipeline
+      - alevel_climatology_pipeline
     inputs:
       - path: *dp
         pattern: atmos_day_ml_pfull_.*\.nc

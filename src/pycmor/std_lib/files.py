@@ -850,6 +850,7 @@ def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
     ds = _ensure_lat_lon_bounds_impl(ds, rule)
     ds = _ensure_vertical_bounds(ds)
     ds = _ensure_exact_vertical_bounds(ds)
+    ds = _ensure_climatology_bounds(ds)
     ds = _ensure_vertical_coord_attrs(ds)
     ds = _ensure_coordinate_long_names(ds, rule)
     ds = _strip_variable_positive(ds)
@@ -881,6 +882,57 @@ def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
 _EXACT_VERTICAL_BOUNDS = {
     "pdepth": ((0.0, 30.17), (30.17, 70.39), (70.39, 201.10), (201.10, 1798.90)),
 }
+
+
+def _ensure_climatology_bounds(ds):
+    """Turn a climatology's time axis into the CF §7.4 form.
+
+    A ``tclm`` variable is a mean within years followed by a mean over years, so
+    its time cells are not intervals but twelve recurring months, each spanning
+    from the start of that month in the first year to its end in the last. CF
+    marks that with ``time:climatology`` naming a ``climatology_bnds`` variable,
+    and explicitly *without* an ordinary ``bounds``.
+
+    The producing step leaves the two years on the time coordinate as
+    ``climatology_years``, because the bounds move with every year folded into
+    the running accumulator and so cannot be a fixed table. Everything else is
+    derived here.
+
+    cli114 wrote ``time_bnds`` on this variable, which the DKRZ coordinate check
+    flagged: a climatology whose bounds say "January 1851" claims to be one
+    month of one year.
+    """
+    if not isinstance(ds, xr.Dataset):
+        return ds
+    time_label = get_time_label(ds)
+    if not time_label or time_label not in ds.variables:
+        return ds
+    years = ds[time_label].attrs.pop("climatology_years", None)
+    if not years:
+        return ds
+    try:
+        first, last = (int(y) for y in str(years).split())
+    except ValueError:
+        logger.warning(f"climatology: cannot read climatology_years={years!r}, leaving the time axis alone")
+        return ds
+
+    months = pd.DatetimeIndex(np.asarray(ds[time_label].values)).month
+    starts = [np.datetime64(f"{first:04d}-{m:02d}-01") for m in months]
+    ends = [
+        np.datetime64(f"{last + 1:04d}-01-01") if m == 12 else np.datetime64(f"{last:04d}-{m + 1:02d}-01")
+        for m in months
+    ]
+    ds["climatology_bnds"] = xr.DataArray(np.stack([starts, ends], axis=-1), dims=(time_label, "bnds"), attrs={})
+    ds[time_label].attrs["climatology"] = "climatology_bnds"
+    # An ordinary bounds variable would contradict it, so drop both the
+    # attribute and whatever set_time_bounds left behind.
+    ds[time_label].attrs.pop("bounds", None)
+    ds[time_label].encoding.pop("bounds", None)
+    for stale in (f"{time_label}_bnds", f"{time_label}_bounds"):
+        if stale in ds.variables:
+            ds = ds.drop_vars(stale)
+    logger.info(f"  → climatology bounds: {first}-{last} over {len(months)} months")
+    return ds
 
 
 def _ensure_exact_vertical_bounds(ds):
