@@ -713,6 +713,53 @@ def _ensure_horizontal_aux_coords(ds, rule=None):
     return ds
 
 
+def _ensure_coordinate_long_names(ds, rule=None):
+    """Take each coordinate's ``long_name`` from the CMIP7 coordinate table.
+
+    The value is per data request entry, not per output name: ``plev19`` is
+    "Pressure Levels (19)" and ``plev3`` is "Pressure Levels (3)", but both are
+    written as ``plev``. So the lookup goes through the variable's requested
+    dimensions rather than through what the axis ended up being called. Same for
+    time, where ``time``/``time1``/``time2``/``time4`` are "Time Intervals",
+    "Time Points", "Monthly Climatology" and "Monthly Mean Daily Satistics".
+
+    Runs after :func:`_ensure_vertical_coord_attrs` so the table wins over
+    coordinate_metadata.yaml where the two disagree, e.g. ``rho``, which the
+    yaml calls "potential density coordinate" and the table "potential density
+    referenced to 2000 dbar".
+
+    A handful of entries carry a whole paragraph as their ``long_name``
+    upstream; ``deltasigt`` runs to some 900 characters of method description
+    with references. A long_name is what plotting tools and evaluation
+    frameworks put on an axis, so only the leading sentence is kept and the
+    full text moves to ``comment``, which is where prose belongs.
+    """
+    if not isinstance(ds, xr.Dataset) or rule is None:
+        return ds
+    from .coordinate_attributes import AXIS_ENTRIES
+
+    drv = getattr(rule, "data_request_variable", None)
+    for dim in tuple(getattr(drv, "dimensions", ()) or ()):
+        entry = AXIS_ENTRIES.get(dim)
+        if not entry:
+            continue
+        out_name = str(entry.get("out_name") or dim)
+        long_name = str(entry.get("long_name") or "").strip()
+        if not long_name or out_name not in ds.variables:
+            continue
+        attrs = ds[out_name].attrs
+        head = long_name.replace("\\n", "\n").split("\n", 1)[0].strip()
+        if len(head) > 120 or head != long_name:
+            # Prose. Keep the first sentence of the first line as the label.
+            label = head.split(". ", 1)[0].strip().rstrip(".")
+            if label and not attrs.get("comment"):
+                attrs["comment"] = long_name
+            attrs["long_name"] = label or head
+        else:
+            attrs["long_name"] = long_name
+    return ds
+
+
 def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
     """Wrap _ensure_lat_lon_bounds with post-passes that announce external
     cell_measures (CF 1.11 §7.2) and refresh the ``coordinates`` attr."""
@@ -722,6 +769,7 @@ def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
     ds = _ensure_lat_lon_bounds_impl(ds, rule)
     ds = _ensure_vertical_bounds(ds)
     ds = _ensure_vertical_coord_attrs(ds)
+    ds = _ensure_coordinate_long_names(ds, rule)
     ds = _ensure_coordinate_dtypes(ds)
     ds = _ensure_external_variables(ds)
     ds = _ensure_cf_dim_order(ds)
