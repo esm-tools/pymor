@@ -1013,70 +1013,89 @@ rules:
   # HARD: Temperature tendency (opottemptend from ldiag_cmor)
   # ============================================================
 
-  # opottemptend — tendency of potential temperature as heat content
-  # Available from ldiag_cmor=.true. (already enabled)
-  - name: opottemptend
-    inputs:
-      - path: *dp
-        pattern: opottemptend\.fesom\.\d{4}\.nc
-    compound_name: ocean.opottemptend.tavg-ol-hxy-sea.yr.glb
-    model_variable: opottemptend
-    lazy_write: true
-    # NOTE: monthly data, CMIP wants yearly — needs yearly timeavg
-
   # ============================================================
-  # NEW FESOM2 DIAGNOSTICS (require source code changes)
-  # These variables were added to gen_modules_cmor_diag.F90
+  # DEACTIVATED 2026-08-17 — das Modell schreibt diese sechs nicht
+  # dreidimensional, der Data Request verlangt es aber.
+  #
+  # Alle sechs FESOM-Stroeme sind (time, nod2), nachgemessen fuer 1850
+  # und 1851. Verlangt ist (time, lev, ncells) ueber die 56 Ozeanlevel.
+  # Der Kommentar bei osalttend unten sagt es selbst: "column-integrated".
+  # Das ist kein Metadatenproblem, in pycmor ist da nichts zu holen, die
+  # Vertikale fehlt in der Ausgabe.
+  #
+  # rsdoabsorb direkt darunter ist geprueft und bleibt aktiv, der Strom
+  # ist (time, nod2, nz), also in Ordnung.
+  #
+  # Gleiche Klasse wie mrsol und die sistress-Varianten: erst die Stroeme
+  # in esm_tools ergaenzen, dann in einem Lauf mit passenden Daten wieder
+  # aktivieren. Fuer LR sind die 3D-Stroeme in file_def_fesom.xml.j2
+  # ergaenzt, siehe HANDOFF_fesom_3d_tendencies.md.
   # ============================================================
 
-  # osalttend — total salinity tendency (column-integrated)
-  - name: osalttend
-    inputs:
-      - path: *dp
-        pattern: osalttend\.fesom\.\d{4}\.nc
-    compound_name: ocean.osalttend.tavg-ol-hxy-sea.yr.glb
-    model_variable: osalttend
-    model_unit: "kg m-2 s-1"
-    lazy_write: true
-
-  # opottemprmadvect — temperature tendency from residual mean advection
-  - name: opottemprmadvect
-    inputs:
-      - path: *dp
-        pattern: opottemprmadvect\.fesom\.\d{4}\.nc
-    compound_name: ocean.opottemprmadvect.tavg-ol-hxy-sea.yr.glb
-    model_variable: opottemprmadvect
-    lazy_write: true
-
-  # opottempdiff — temperature tendency from dianeutral mixing
-  - name: opottempdiff
-    inputs:
-      - path: *dp
-        pattern: opottempdiff\.fesom\.\d{4}\.nc
-    compound_name: ocean.opottempdiff.tavg-ol-hxy-sea.yr.glb
-    model_variable: opottempdiff
-    lazy_write: true
-
-  # osaltrmadvect — salinity tendency from residual mean advection
-  - name: osaltrmadvect
-    inputs:
-      - path: *dp
-        pattern: osaltrmadvect\.fesom\.\d{4}\.nc
-    compound_name: ocean.osaltrmadvect.tavg-ol-hxy-sea.yr.glb
-    model_variable: osaltrmadvect
-    model_unit: "kg m-2 s-1"
-    lazy_write: true
-
-  # osaltdiff — salinity tendency from dianeutral mixing
-  - name: osaltdiff
-    inputs:
-      - path: *dp
-        pattern: osaltdiff\.fesom\.\d{4}\.nc
-    compound_name: ocean.osaltdiff.tavg-ol-hxy-sea.yr.glb
-    model_variable: osaltdiff
-    model_unit: "kg m-2 s-1"
-    lazy_write: true
-
+  # # opottemptend — tendency of potential temperature as heat content
+  # # Available from ldiag_cmor=.true. (already enabled)
+  # - name: opottemptend
+  # inputs:
+  # - path: *dp
+  # pattern: opottemptend\.fesom\.\d{4}\.nc
+  # compound_name: ocean.opottemptend.tavg-ol-hxy-sea.yr.glb
+  # model_variable: opottemptend
+  # lazy_write: true
+  # # NOTE: monthly data, CMIP wants yearly — needs yearly timeavg
+  #
+  # # ============================================================
+  # # NEW FESOM2 DIAGNOSTICS (require source code changes)
+  # # These variables were added to gen_modules_cmor_diag.F90
+  # # ============================================================
+  #
+  # # osalttend — total salinity tendency (column-integrated)
+  # - name: osalttend
+  # inputs:
+  # - path: *dp
+  # pattern: osalttend\.fesom\.\d{4}\.nc
+  # compound_name: ocean.osalttend.tavg-ol-hxy-sea.yr.glb
+  # model_variable: osalttend
+  # model_unit: "kg m-2 s-1"
+  # lazy_write: true
+  #
+  # # opottemprmadvect — temperature tendency from residual mean advection
+  # - name: opottemprmadvect
+  # inputs:
+  # - path: *dp
+  # pattern: opottemprmadvect\.fesom\.\d{4}\.nc
+  # compound_name: ocean.opottemprmadvect.tavg-ol-hxy-sea.yr.glb
+  # model_variable: opottemprmadvect
+  # lazy_write: true
+  #
+  # # opottempdiff — temperature tendency from dianeutral mixing
+  # - name: opottempdiff
+  # inputs:
+  # - path: *dp
+  # pattern: opottempdiff\.fesom\.\d{4}\.nc
+  # compound_name: ocean.opottempdiff.tavg-ol-hxy-sea.yr.glb
+  # model_variable: opottempdiff
+  # lazy_write: true
+  #
+  # # osaltrmadvect — salinity tendency from residual mean advection
+  # - name: osaltrmadvect
+  # inputs:
+  # - path: *dp
+  # pattern: osaltrmadvect\.fesom\.\d{4}\.nc
+  # compound_name: ocean.osaltrmadvect.tavg-ol-hxy-sea.yr.glb
+  # model_variable: osaltrmadvect
+  # model_unit: "kg m-2 s-1"
+  # lazy_write: true
+  #
+  # # osaltdiff — salinity tendency from dianeutral mixing
+  # - name: osaltdiff
+  # inputs:
+  # - path: *dp
+  # pattern: osaltdiff\.fesom\.\d{4}\.nc
+  # compound_name: ocean.osaltdiff.tavg-ol-hxy-sea.yr.glb
+  # model_variable: osaltdiff
+  # model_unit: "kg m-2 s-1"
+  # lazy_write: true
+  #
   # rsdoabsorb — net rate of absorption of shortwave energy in ocean layer (3D)
   - name: rsdoabsorb
     inputs:
