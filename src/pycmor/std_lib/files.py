@@ -849,6 +849,7 @@ def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
     ds = _ensure_horizontal_aux_coords(ds, rule)
     ds = _ensure_lat_lon_bounds_impl(ds, rule)
     ds = _ensure_vertical_bounds(ds)
+    ds = _ensure_exact_vertical_bounds(ds)
     ds = _ensure_vertical_coord_attrs(ds)
     ds = _ensure_coordinate_long_names(ds, rule)
     ds = _strip_variable_positive(ds)
@@ -860,6 +861,43 @@ def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
     ds = _ensure_horizontal_coord_attrs(ds)
     ds = _strip_unportable_encoding(ds)
     ds = _normalise_vertices_naming(ds)
+    return ds
+
+
+# Vertical axes whose bounds the CMIP7 coordinate table requires but does not
+# supply. Seven entries are in that state; this is the one we produce.
+#
+# ``oplayer4`` (out_name ``pdepth``) is must_have_bounds "yes" with an empty
+# bounds_requested. Its four values 15, 50, 136 and 1000 bar are the midpoints
+# of the layers named in the CMIP7 ocean data request paper (Griffies et al.,
+# GMD 19, 6043, 2026): 0-300, 300-700, 700-2000 m and below. Converted with
+# p = rho*g*h those midpoints come out at 15.08, 50.28 and 135.75, which is
+# what identifies the layers as disjoint rather than cumulative. The last layer
+# is open downwards, so its lower edge is set to reproduce the requested 1000.
+#
+# Deriving these from the midpoints instead would be wrong: the layers are of
+# very different thickness, so interpolated edges land nowhere near the real
+# ones.
+_EXACT_VERTICAL_BOUNDS = {
+    "pdepth": ((0.0, 30.17), (30.17, 70.39), (70.39, 201.10), (201.10, 1798.90)),
+}
+
+
+def _ensure_exact_vertical_bounds(ds):
+    """Attach known-exact bounds for axes the coordinate table leaves without."""
+    if not isinstance(ds, xr.Dataset):
+        return ds
+    for name, bounds in _EXACT_VERTICAL_BOUNDS.items():
+        if name not in ds.variables or ds[name].ndim != 1:
+            continue
+        if ds.sizes.get(name) != len(bounds):
+            continue
+        bounds_name = f"{name}_bnds"
+        if bounds_name in ds.variables:
+            continue
+        ds[bounds_name] = xr.DataArray(np.asarray(bounds, dtype="float64"), dims=(name, "bnds"), attrs={})
+        ds[name].attrs["bounds"] = bounds_name
+        logger.info(f"  → exact bounds for {name!r} ({len(bounds)} layers)")
     return ds
 
 

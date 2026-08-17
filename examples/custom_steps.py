@@ -2120,6 +2120,113 @@ def compute_zostoga(data, rule):
 # ============================================================
 
 
+# The four layers behind the CMIP7 ``oplayer4`` axis, as depth ranges in metres.
+#
+# The axis itself is labelled in bar and the data request supplies only the four
+# coordinate values, 15, 50, 136 and 1000, with must_have_bounds "yes" and no
+# bounds. The CMIP7 ocean data request paper (Griffies et al., GMD 19, 6043,
+# 2026) names the layers: "the standard set of layers used in the observational
+# literature is based on hydrostatic pressure ranges (0-300, 0-700, 0-2000 m and
+# total depth, where meter ranges imply their hydrostatic pressure equivalents)".
+#
+# Which of the two possible readings that is can be settled by arithmetic rather
+# than by asking. Converting the depths with p = rho*g*h (rho 1025, g 9.81) and
+# taking layer midpoints:
+#
+#   disjoint    0-300 m -> 15.08   300-700 -> 50.28   700-2000 -> 135.75   matches 15, 50, 136
+#   cumulative  0-300 m -> 15.08   0-700   -> 35.19   0-2000   -> 100.55   matches only the first
+#
+# So the four values are midpoints of *disjoint* layers, and the fourth, 1000,
+# belongs to an open-ended layer below 2000 m.
+_OPLAYER4_EDGES_M = (0.0, 300.0, 700.0, 2000.0, np.inf)
+_OPLAYER4_PDEPTH_BAR = (15.0, 50.0, 136.0, 1000.0)
+_SEAWATER_RHO = 1025.0
+_GRAVITY = 9.81
+
+
+def _depth_to_bar(metres):
+    return _SEAWATER_RHO * _GRAVITY * np.asarray(metres, dtype=float) / 1e5
+
+
+def integrate_over_pressure_layers(data: xr.DataArray, rule) -> xr.Dataset:
+    """Integrate a 3-D ocean field over the four ``oplayer4`` layers.
+
+    ``scint``, ``phcint`` and ``absscint`` are not one integral per column but
+    four, one per layer. cli114 shipped them as ``(time, nod2)``, a single
+    whole-column value, because the pipeline used the general
+    :func:`vertical_integrate`. The request wants ``(time, pdepth, ncells)``.
+
+    Integration is done over depth, not over pressure. The layer definition is a
+    depth range in the source paper and only *expressed* as pressure on the axis,
+    so converting the model's depth levels to pressure first would add an
+    assumed density for no gain.
+
+    Model layers that straddle a layer boundary are split by their overlap, so
+    the sum over the four layers equals the whole-column integral exactly.
+
+    The physical constants stay where they were: this returns the plain
+    thickness-weighted integral (psu m, degC m) and ``scale_by_constant``
+    applies rho*1e-3 or rho*cp afterwards, as before.
+    """
+    vertical_dim = next((d for d in ("nz", "nz1", "depth", "lev") if d in data.dims), None)
+    if vertical_dim is None:
+        raise ValueError(f"integrate_over_pressure_layers: no vertical dimension in {list(data.dims)}")
+
+    grid_file = rule.get("grid_file")
+    if not grid_file:
+        raise ValueError("integrate_over_pressure_layers: rule needs grid_file for the layer interfaces")
+    with xr.open_dataset(grid_file, decode_times=False) as mesh:
+        _, thickness = _mesh_vertical_geometry(mesh)
+    interfaces = np.concatenate([[0.0], np.cumsum(thickness)])
+    nlev = data.sizes[vertical_dim]
+    if thickness.size != nlev:
+        raise ValueError(
+            f"integrate_over_pressure_layers: mesh has {thickness.size} layers "
+            f"but the field has {nlev} on {vertical_dim!r}"
+        )
+
+    finite = xr.where(np.isfinite(data), data, 0.0)
+    wet = np.isfinite(data)
+
+    slabs, wet_thickness = [], []
+    for lower, upper in zip(_OPLAYER4_EDGES_M[:-1], _OPLAYER4_EDGES_M[1:]):
+        # metres of each model layer that fall inside this depth range
+        top = np.maximum(interfaces[:-1], lower)
+        bottom = np.minimum(interfaces[1:], upper)
+        overlap = np.clip(bottom - top, 0.0, None)
+        weight = xr.DataArray(overlap, dims=(vertical_dim,))
+        slabs.append((finite * weight).sum(dim=vertical_dim))
+        wet_thickness.append((wet * weight).sum(dim=vertical_dim))
+        logger.info(
+            f"  oplayer4 {lower:.0f}-{upper if np.isfinite(upper) else float('inf'):.0f} m: "
+            f"{int((overlap > 0).sum())} Modellschichten beteiligt"
+        )
+
+    stacked = xr.concat(slabs, dim="pdepth")
+    dry = xr.concat(wet_thickness, dim="pdepth") == 0
+    stacked = stacked.where(~dry)
+
+    # A DataArray is returned, not a Dataset: the next step in the pipeline is
+    # scale_by_constant, which does ``data * factor`` and ``result.name =
+    # data.name``, and a Dataset has neither. The layer bounds therefore cannot
+    # ride along here (xarray refuses a coordinate whose ``bnds`` dimension the
+    # array does not have). They are a property of the axis rather than of this
+    # computation, so they live with the other coordinate metadata in
+    # files.py:_EXACT_VERTICAL_BOUNDS and are attached at write time.
+    result = stacked.assign_coords(pdepth=np.array(_OPLAYER4_PDEPTH_BAR, dtype="float64"))
+    result["pdepth"].attrs = {
+        "standard_name": "sea_water_pressure_due_to_sea_water",
+        "long_name": "Hydrostatic Pressure Layers",
+        "units": "bar",
+        "axis": "Z",
+        "positive": "down",
+        "bounds": "pdepth_bnds",
+    }
+    result.attrs.update(rule.get("integration_attrs") or {})
+    result.name = rule.model_variable
+    return result
+
+
 def vertical_integrate(
     data: xr.DataArray,
     rule,
