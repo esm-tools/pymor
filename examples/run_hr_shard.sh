@@ -89,6 +89,21 @@ esgvoc use cmip7@latest 2>/dev/null || echo "esgvoc cmip7 refresh failed (contin
 cd /work/ab0246/a270092/software/pycmor
 export PYCMOR_HOME=/work/ab0246/a270092/software/pycmor
 
+# cc-plugin-aicc (DKRZ, Schupfner/Mazumder) validates coordinates against the
+# CMIP7 CMOR tables and is the third suite in qc_tests. It reads the tables
+# from this path.
+#
+# This export is not optional. Without it the plugin raises FileNotFoundError
+# out of ComplianceChecker.run_checker, which kills the whole cchecker call:
+# no JSON is written at all, so cf and wcrp_cmip7 findings are lost too and
+# the file ends up with no QC result rather than an aicc-specific error.
+# Verified: without the variable exit=1 and no report; with it, exit=1 (the
+# normal "findings exist under -c strict") and all three suites present.
+#
+# Pinned at ee94f52 (2026-08-13). The clone is shallow; re-pull deliberately
+# rather than by accident, because a table change moves our QC numbers.
+export CMIP7_TABLES_PATH=/work/ab0246/a270092/software/cmip7-cmor-tables/tables
+
 N_WORKERS=${N_WORKERS:-4}
 TPW=${TPW:-4}
 # 48 GB per worker (was 32 GB in cli22): hourly OIFS rules like tas

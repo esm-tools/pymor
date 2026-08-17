@@ -11,7 +11,18 @@ Rule attributes consumed (all optional):
 
 - ``qc_enabled`` (bool, default False) — master switch
 - ``qc_tests`` (list[str], default ``["cf"]``) — checker suites; ``cf``,
-  ``acdd``, ``wcrp_cmip7`` if the plugin is installed.
+  ``acdd``, ``wcrp_cmip7`` if the plugin is installed, ``aicc`` if
+  ``cc-plugin-aicc`` is installed.
+
+  ``aicc`` (DKRZ) validates coordinates against the CMIP7 CMOR tables and
+  needs ``CMIP7_TABLES_PATH`` pointing at ``cmip7-cmor-tables/tables``.
+  Note that it does not degrade gracefully: with the variable unset or
+  wrong it raises ``FileNotFoundError`` out of
+  ``ComplianceChecker.run_checker``, so the whole call fails and *no*
+  report is written, losing the ``cf`` and ``wcrp_cmip7`` results for
+  that file as well. Since a missing sidecar is not counted anywhere,
+  the run looks clean rather than broken. ``submit_hr_year_shards.sh``
+  pre-flights the path for this reason.
 - ``qc_criteria`` (str, default ``"normal"``) — lenient | normal | strict
 - ``qc_fail_on_mandatory`` (bool, default False) — raise on any Mandatory
   finding instead of just logging.

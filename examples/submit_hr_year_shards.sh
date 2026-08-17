@@ -103,6 +103,24 @@ fi
 # Full sequential pre-warm to be added when smoke tests show contention.
 echo "=== pre-flight (no-op for v1; relying on existing caches) ==="
 
+# The one pre-flight that is not a no-op. qc_tests includes the aicc suite,
+# which reads the CMIP7 CMOR tables from CMIP7_TABLES_PATH (exported in
+# run_hr_shard.sh). If that path is wrong the plugin raises FileNotFoundError
+# from inside ComplianceChecker.run_checker and the entire cchecker call dies,
+# taking the cf and wcrp_cmip7 results with it. The failure is silent per file:
+# pycmor logs that no JSON appeared and carries on, so the run completes and
+# every file simply has no QC result. Counting findings would show zero.
+# Catch it here, once, instead of discovering it after a few hundred files.
+CMIP7_TABLES_PATH="${CMIP7_TABLES_PATH:-/work/ab0246/a270092/software/cmip7-cmor-tables/tables}"
+if [ ! -d "$CMIP7_TABLES_PATH" ] || [ ! -f "$CMIP7_TABLES_PATH/CMIP7_coordinate.json" ]; then
+  echo "ABORT: CMIP7 CMOR tables not found at $CMIP7_TABLES_PATH"
+  echo "       aicc needs them; without them every shard writes no QC report at all."
+  echo "       git clone git@github.com:WCRP-CMIP/cmip7-cmor-tables.git, or set CMIP7_TABLES_PATH."
+  exit 2
+fi
+echo "  CMIP7 tables: $CMIP7_TABLES_PATH ($(ls "$CMIP7_TABLES_PATH" | wc -l) files)"
+export CMIP7_TABLES_PATH
+
 # Step 3+4: shard each tier and sbatch as array.
 SHARD_SIZE="${SHARD_SIZE:-20}"
 SHUFFLE_SEED="${SHUFFLE_SEED:-42}"
