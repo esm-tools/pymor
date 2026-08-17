@@ -722,6 +722,7 @@ def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
     ds = _ensure_lat_lon_bounds_impl(ds, rule)
     ds = _ensure_vertical_bounds(ds)
     ds = _ensure_vertical_coord_attrs(ds)
+    ds = _ensure_coordinate_dtypes(ds)
     ds = _ensure_external_variables(ds)
     ds = _ensure_cf_dim_order(ds)
     ds = _ensure_coordinates_attr(ds)
@@ -765,6 +766,80 @@ def _ensure_vertical_bounds(ds):
 # than from whatever the model wrote. Every one of these has an entry in
 # coordinate_metadata.yaml; names without one are skipped.
 _CV_VERTICAL_COORDS = ("lev", "plev", "height", "sdepth", "rho", "gamma")
+
+
+_CMOR_TYPE_TO_DTYPE = {"double": "float64", "real": "float32", "integer": "int32"}
+_COORD_DTYPE_CACHE = None
+
+
+def _coordinate_dtypes():
+    """``out_name`` -> the numpy dtype the CMIP7 coordinate table asks for.
+
+    Entries carry a ``type`` field (``double``, ``real``, ``integer``,
+    ``character``). Several data request names share one ``out_name``, so the
+    value is only used where they agree; the single disagreement in the table
+    is ``seasurface``, which is ``character`` in one entry and ``double`` in
+    another, and is left alone.
+    """
+    global _COORD_DTYPE_CACHE
+    if _COORD_DTYPE_CACHE is not None:
+        return _COORD_DTYPE_CACHE
+    from .coordinate_attributes import AXIS_ENTRIES
+
+    by_out_name = {}
+    for entry in AXIS_ENTRIES.values():
+        out_name = entry.get("out_name")
+        cmor_type = str(entry.get("type") or "").strip()
+        if not out_name or not cmor_type:
+            continue
+        by_out_name.setdefault(str(out_name), set()).add(cmor_type)
+
+    resolved = {}
+    for out_name, cmor_types in by_out_name.items():
+        if len(cmor_types) != 1:
+            continue
+        dtype = _CMOR_TYPE_TO_DTYPE.get(next(iter(cmor_types)))
+        if dtype:
+            resolved[out_name] = dtype
+    _COORD_DTYPE_CACHE = resolved
+    return resolved
+
+
+def _ensure_coordinate_dtypes(ds):
+    """Store coordinates in the type the CMIP7 tables require.
+
+    cli114 wrote ``plev`` as float32 where the table says double (17 files),
+    and ``sdepth`` as int64 because the soil depths happened to be whole
+    centimetres. Precision is not the point on a pressure axis with values like
+    92500; the point is that consumers read the axis type from the table.
+
+    ``time`` is skipped: its dtype belongs to the datetime encoding, which
+    carries units and calendar and is set elsewhere. Character axes are skipped
+    for the same reason, they are built as fixed-width bytes by the label-axis
+    step.
+    """
+    if not isinstance(ds, xr.Dataset):
+        return ds
+    for name, dtype in _coordinate_dtypes().items():
+        if name not in ds.variables or str(name).startswith("time"):
+            continue
+        var = ds[name]
+        if var.dtype.kind in ("S", "U", "O") or str(var.dtype) == dtype:
+            continue
+        logger.info(f"  → coordinate dtype: {name} {var.dtype} -> {dtype}")
+        recast = var.astype(dtype)
+        recast.attrs = dict(var.attrs)
+        recast.encoding = {k: v for k, v in var.encoding.items() if k != "dtype"}
+        ds = ds.assign_coords({name: recast}) if name in ds.coords else ds.assign({name: recast})
+        # CF §7.1: a bounds variable has the same type as its coordinate.
+        bounds_name = recast.attrs.get("bounds")
+        if bounds_name and bounds_name in ds.variables and str(ds[bounds_name].dtype) != dtype:
+            bounds = ds[bounds_name]
+            rebound = bounds.astype(dtype)
+            rebound.attrs = dict(bounds.attrs)
+            rebound.encoding = {k: v for k, v in bounds.encoding.items() if k != "dtype"}
+            ds[bounds_name] = rebound
+    return ds
 
 
 def _ensure_vertical_coord_attrs(ds):
