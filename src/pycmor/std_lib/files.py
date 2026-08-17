@@ -1750,24 +1750,44 @@ def _protect_formula_terms(ds, encoding):
     this follows the coordinate rather than a hard-coded list, with the usual
     suspects as a fallback.
     """
-    terms = set()
+    referenced = set()
     for name in ds.variables:
-        ft = ds[name].attrs.get("formula_terms")
-        if not isinstance(ft, str):
-            continue
-        # "ap: ap b: b ps: ps" -> the values, not the keys
-        parts = ft.replace(":", " ").split()
-        terms.update(parts[1::2])
-    terms |= {"ap", "b", "a", "p0", "ptop", "ap_bnds", "b_bnds", "a_bnds"}
-    # ps is a genuine geophysical field and keeps its normal treatment.
-    terms.discard("ps")
-    for name in terms:
+        attrs = ds[name].attrs
+        # "ap: ap b: b ps: ps" and "area: areacello volume: volcello" name the
+        # variable in the second position of each pair; "lat lon height" is a
+        # plain list.
+        for attr in ("formula_terms", "cell_measures"):
+            value = attrs.get(attr)
+            if isinstance(value, str):
+                referenced.update(value.replace(":", " ").split()[1::2])
+        value = attrs.get("coordinates")
+        if isinstance(value, str):
+            referenced.update(value.split())
+
+    # Coordinate variables in their own right, plus the coefficient names that
+    # may appear before the coordinate has been assembled.
+    referenced |= {str(n) for n in ds.variables if n in ds.dims}
+    referenced |= {"ap", "b", "a", "p0", "ptop", "ap_bnds", "b_bnds", "a_bnds"}
+
+    for name in sorted(referenced):
         if name not in ds.variables:
             continue
         enc = encoding.setdefault(str(name), {})
-        enc["_FillValue"] = None
+        # CF 1.12: quantization must not be applied to any of these, no
+        # exceptions. This is what caught ``ps``.
         for k in ("quantize_mode", "significant_digits"):
             enc.pop(k, None)
+        # The fill-value half is narrower. Dropping _FillValue is right for the
+        # coefficient variables, which published CMIP6 files ship without one,
+        # and wrong for a variable that is also a geophysical field in its own
+        # right, because wcrp ATTR001 wants _FillValue and missing_value there.
+        # ``ps`` is exactly that case. Distinguish by shape rather than by
+        # name: a coefficient varies along the vertical axis only, whereas a
+        # field carries a time or horizontal dimension.
+        dims = {str(d) for d in getattr(ds[name], "dims", ())}
+        if dims & _HORIZONTAL_DIMS or any(d.startswith("time") for d in dims):
+            continue
+        enc["_FillValue"] = None
     return encoding
 
 
