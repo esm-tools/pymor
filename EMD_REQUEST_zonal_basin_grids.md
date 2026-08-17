@@ -39,8 +39,8 @@ Ein `horizontal_grid_cell` für ein zonales Mittelungsgitter:
 | `x_resolution` | 360 | jedes Band umspannt alle Längen |
 | `y_resolution` | 1 | 1° in der Breite |
 | `units` | `degree` | |
-| `southernmost_latitude` | −90 | südliche Kante der ersten Zelle |
-| `westernmost_longitude` | 0 | |
+| `southernmost_latitude` | −89.5 | **Mitte** der südlichsten Zelle, nicht deren Kante |
+| `westernmost_longitude` | 0 | siehe Anmerkung |
 | `region` | `global` | |
 | `temporal_refinement` | `static` | |
 | `description` | Zonal mean grid: 180 latitude bands of 1 degree, each spanning all longitudes. Used for basin-integrated and zonally averaged ocean transports. | |
@@ -48,6 +48,27 @@ Ein `horizontal_grid_cell` für ein zonales Mittelungsgitter:
 Die Beckenachse (`basin`, drei Werte: Atlantik/Arktis, Indopazifik, global) ist **keine**
 Gitterdimension, sondern eine Zeichenkoordinate aus dem CMIP7-CV. Die gehört nicht in die
 Registrierung.
+
+**Korrektur, 2026-08-17.** Hier stand zuerst `southernmost_latitude: -90` mit der
+Begründung, das sei die südliche Kante der ersten Zelle. Das ist die falsche Konvention.
+Das Register führt dort die **Mitte** der südlichsten Zellreihe. Maßgeblich ist `g106`,
+exakt unser Fall:
+
+```
+g106   grid_type: regular-latitude-longitude
+       y_resolution: 1
+       southernmost_latitude: -89.5
+       westernmost_longitude: 0.5
+```
+
+Bei `g113` (0.25°) steht entsprechend −89.875, bei `g131` (0.5°) −89.75, bei `g129`
+−89.859375. Alles Zellmitten. Für unsere 1°-Bänder ist also **−89.5** richtig.
+
+Offen bleibt `westernmost_longitude`. `g106` führt dort 0.5, also wieder die Mitte der
+ersten 1°-Längenzelle. Unser Band umspannt aber alle Längen (`x_resolution: 360`), und
+die Mitte davon wäre 180. Ob das Register bei einer einzelnen umlaufenden Zelle 0 oder
+180 erwartet, geht aus den vorhandenen Einträgen nicht hervor; `g190` als einziger
+Ein-Zellen-Eintrag führt 0. Im Zweifel beim Einreichen nachfragen.
 
 ## Zur Einordnung, falls die Frage kommt
 
