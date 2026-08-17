@@ -486,16 +486,34 @@ def _ensure_cf_dim_order(ds):
         if _is_bounds_var_name(var_name):
             continue
         dims = list(da.dims)
-        vertical = [d for d in dims if _is_vertical_dim(ds, d)]
-        horizontal = [d for d in dims if d in _HORIZONTAL_DIMS]
-        if len(vertical) != 1 or not horizontal:
+        reordered = list(dims)
+        vertical = [d for d in reordered if _is_vertical_dim(ds, d)]
+        horizontal = [d for d in reordered if d in _HORIZONTAL_DIMS]
+        spatial = vertical + horizontal
+        if not spatial:
             continue
-        zdim = vertical[0]
-        first_h = min(dims.index(h) for h in horizontal)
-        if dims.index(zdim) < first_h:
-            continue  # already T, Z, ..., horizontal
-        reordered = [d for d in dims if d != zdim]
-        reordered.insert(first_h, zdim)
+
+        # T first. cli114 shipped msftbarot(nod2, time), which is the same
+        # rule one slot earlier: the horizontal dimension had overtaken time,
+        # not just the vertical.
+        time_dims = [d for d in reordered if str(d).startswith("time")]
+        if len(time_dims) == 1:
+            tdim = time_dims[0]
+            first_spatial = min(reordered.index(s) for s in spatial)
+            if reordered.index(tdim) > first_spatial:
+                reordered.remove(tdim)
+                reordered.insert(first_spatial, tdim)
+
+        # then Z, ahead of the horizontal dimensions
+        if len(vertical) == 1 and horizontal:
+            zdim = vertical[0]
+            first_h = min(reordered.index(h) for h in horizontal)
+            if reordered.index(zdim) > first_h:
+                reordered.remove(zdim)
+                reordered.insert(first_h, zdim)
+
+        if reordered == dims:
+            continue
         logger.info(f"  → CF §2.4 dim order on {var_name!r}: {tuple(dims)} -> {tuple(reordered)}")
         ds[var_name] = da.transpose(*reordered)
     return ds
@@ -713,6 +731,41 @@ def _ensure_horizontal_aux_coords(ds, rule=None):
     return ds
 
 
+def _drop_unrequested_aux_coords(ds, rule=None):
+    """Remove model-side auxiliary coordinates the data request never asked for.
+
+    FESOM ships ``nz(nod2)``, the depth of the sea floor at each node, next to
+    its bottom-value fields. It rides along as a coordinate, so cli114 wrote
+    ``tob:coordinates = "lat lon nz"`` and the same for ``sob``. The
+    information is real but redundant: ``deptho`` is the CMIP7 variable for it
+    and we already publish it, and an unrequested entry in ``coordinates``
+    makes consumers look for an axis the request does not define.
+
+    Only genuine auxiliary coordinates are considered. Anything the request
+    asks for, the horizontal coordinates, and the vertices are kept.
+    """
+    if not isinstance(ds, xr.Dataset) or rule is None:
+        return ds
+    from .coordinate_attributes import AXIS_ENTRIES
+
+    drv = getattr(rule, "data_request_variable", None)
+    keep = {"lat", "lon", "latitude", "longitude", "time"}
+    for dim in tuple(getattr(drv, "dimensions", ()) or ()):
+        keep.add(str(dim))
+        entry = AXIS_ENTRIES.get(dim)
+        if entry and entry.get("out_name"):
+            keep.add(str(entry["out_name"]))
+
+    for name in [str(c) for c in ds.coords]:
+        if name in keep or name in ds.dims or _is_bounds_var_name(name):
+            continue
+        if not _is_auxiliary_coord(ds, name):
+            continue
+        logger.info(f"  → dropped auxiliary coordinate {name!r}: not requested by {getattr(drv, 'variable_id', '?')!r}")
+        ds = ds.drop_vars(name)
+    return ds
+
+
 def _strip_variable_positive(ds):
     """Drop ``positive`` from data variables; it belongs on coordinates only.
 
@@ -799,6 +852,7 @@ def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
     ds = _ensure_vertical_coord_attrs(ds)
     ds = _ensure_coordinate_long_names(ds, rule)
     ds = _strip_variable_positive(ds)
+    ds = _drop_unrequested_aux_coords(ds, rule)
     ds = _ensure_coordinate_dtypes(ds)
     ds = _ensure_external_variables(ds)
     ds = _ensure_cf_dim_order(ds)
