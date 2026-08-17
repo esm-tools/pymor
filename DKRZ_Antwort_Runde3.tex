@@ -294,21 +294,14 @@ Bei uns sind das 30~Dateien, alle mit \code{-hm-} in der Branding, also globale
 Mittel. Sie trugen bisher \code{g130}, \code{g129} oder \code{g122} und behaupteten
 damit ein Gitter, auf dem sie nicht liegen.
 
-Wir setzen sie jetzt auf \code{g190}, "A single grid cell for the entire globe". Das
-ist der einzige Eintrag im Register, der inhaltlich passt: eine Zelle fuer die ganze
-Kugel ist genau das, was ein globales Mittel raeumlich darstellt.
+Wir setzen sie jetzt auf \code{g190}, "A single grid cell for the entire globe". Eine
+Zelle fuer die ganze Kugel ist genau das, was ein globales Mittel raeumlich
+darstellt, und der Eintrag ist seit Ende Juni gemergt.
 
-Zwei Beobachtungen dazu, die uns beim Umstellen aufgefallen sind und die vielleicht
-fuer die Festlegung nuetzlich sind. Erstens ist \code{g190} ein Zelleneintrag mit
-konkreter Geometrie (\code{n\_cells: 1}, \code{southernmost\_latitude: -90},
-\code{x\_resolution: 360}, \code{y\_resolution: 180}), waehrend unsere Dateien weder
-\code{lat} noch \code{lon} noch Bounds enthalten; das Label beschreibt hier also die
-raeumliche Aussage der Werte und nicht den Aufbau der Datei. Zweitens verweist im
-ganzen Register bisher niemand darauf, und von 139~Eintraegen ist es der einzige mit
-genau einer Zelle.
-
-Falls der reservierte Bereich der ersten 100 Label fuer diesen Fall gedacht ist und
-\code{g190} damit der falsche Weg waere, sag bitte Bescheid, dann stellen wir um.
+Bleibt eine Frage: du hattest geschrieben, die ersten 100 Label seien fuer solche
+Faelle reserviert und es sei noch nicht final entschieden. Falls dort etwas anderes
+vorgesehen ist, stellen wir um; es sind 29~Regeln in vier Tiers und ein
+\code{sed}-Lauf.
 
 \subsection*{Sieben Achsen verlangen Bounds und liefern keine}
 
