@@ -291,20 +291,24 @@ naechste Modellversion, und die betroffenen Variablen kommen mit dem LR-Lauf.
 \subsection*{\code{grid\_label} fuer Dateien ohne horizontales Gitter}
 
 Bei uns sind das 30~Dateien, alle mit \code{-hm-} in der Branding, also globale
-Mittel. Sie tragen aktuell noch \code{g130}, \code{g129} oder \code{g122} und
-behaupten damit ein Gitter, auf dem sie nicht liegen.
+Mittel. Sie trugen bisher \code{g130}, \code{g129} oder \code{g122} und behaupteten
+damit ein Gitter, auf dem sie nicht liegen.
 
-Wir haben im Register \code{g190} gefunden, "A single grid cell for the entire globe",
-und uns bewusst dagegen entschieden. Es ist ein echter Zelleneintrag mit Geometrie
-(\code{n\_cells: 1}, \code{southernmost\_latitude: -90}, \code{x\_resolution: 360},
-\code{y\_resolution: 180}), wir wuerden also eine Ausdehnung behaupten, die unsere
-Dateien gar nicht mitliefern; sie enthalten weder \code{lat} noch \code{lon} noch
-Bounds. Ausserdem verweist im ganzen Register niemand darauf, und von 139~Eintraegen
-ist es der einzige mit einer Zelle. Es sieht also nicht nach einer etablierten
-Konvention aus, der wir uns anschliessen koennten.
+Wir setzen sie jetzt auf \code{g190}, "A single grid cell for the entire globe". Das
+ist der einzige Eintrag im Register, der inhaltlich passt: eine Zelle fuer die ganze
+Kugel ist genau das, was ein globales Mittel raeumlich darstellt.
 
-Wenn der reservierte Bereich der ersten 100 Label dafuer vorgesehen ist, warten wir
-darauf.
+Zwei Beobachtungen dazu, die uns beim Umstellen aufgefallen sind und die vielleicht
+fuer die Festlegung nuetzlich sind. Erstens ist \code{g190} ein Zelleneintrag mit
+konkreter Geometrie (\code{n\_cells: 1}, \code{southernmost\_latitude: -90},
+\code{x\_resolution: 360}, \code{y\_resolution: 180}), waehrend unsere Dateien weder
+\code{lat} noch \code{lon} noch Bounds enthalten; das Label beschreibt hier also die
+raeumliche Aussage der Werte und nicht den Aufbau der Datei. Zweitens verweist im
+ganzen Register bisher niemand darauf, und von 139~Eintraegen ist es der einzige mit
+genau einer Zelle.
+
+Falls der reservierte Bereich der ersten 100 Label fuer diesen Fall gedacht ist und
+\code{g190} damit der falsche Weg waere, sag bitte Bescheid, dann stellen wir um.
 
 \subsection*{Sieben Achsen verlangen Bounds und liefern keine}
 
