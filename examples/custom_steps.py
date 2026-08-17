@@ -4938,6 +4938,19 @@ def _lat_edges(dlat=1.0):
     return np.arange(-90.0, 90.0 + dlat / 2, dlat)
 
 
+def _global_lat_centers(dlat=1.0):
+    """Global zonal-mean latitude axis shared by msftmz, hfbasin and sltbasin.
+
+    Cell centres sit at (k + 0.5) * dlat so the edges land on multiples of dlat
+    and the bands tile -90..90 exactly: 180 bands at dlat=1.0, 360 at dlat=0.5.
+
+    This must match tripyview's binning. calc_zmoc and calc_mhflx_box_fast use
+    floor(lat/dlat)*dlat + dlat/2, so their labels fall on this same lattice and
+    a reindex onto this axis aligns rather than silently producing all-NaN.
+    """
+    return np.arange(-90.0 + dlat / 2, 90.0, dlat)
+
+
 def _basin_lat_crossing_sum(values, min_lat, max_lat, loc_basin, lat_centers, basin_ids=_BASIN_IDS):
     """Sum values over (basin, lat_bin) for elements whose [min_lat, max_lat]
     contains lat_centers[j]. Vectorized via interval-scatter + cumsum.
@@ -5065,9 +5078,12 @@ def compute_msftmz(data, rule):
         "global_ocean": "gmoc",
     }
 
-    # Global 1° lat grid matching tripyview's integer-lat convention
+    # Global 1° lat grid. Cell centres on half degrees so the 180 bands tile
+    # -90..90 exactly; the old np.arange(-90, 91, 1) gave 181 whole-degree
+    # points, which is a degree more latitude than the sphere has and left the
+    # polar bands half width. Registered in EMD as the zonal mean grid cell.
     dlat = 1.0
-    lat_centers = np.arange(-90.0, 90.0 + dlat, dlat)  # -90, -89, ..., 89, 90
+    lat_centers = _global_lat_centers(dlat)  # -89.5, -88.5, ..., 89.5
 
     per_basin = {}
     for name, key in basin_to_key.items():
@@ -5318,7 +5334,6 @@ def compute_hfbasin_tripyview(data, rule):
 
     # Pre-build per-basin output arrays
     per_basin_results = {n: [] for n, _ in basins}
-    glob_lat = None
     for t in range(ntime):
         # Eager-load only the current timestep — 2 GB peak instead of 24 GB.
         if has_time:
@@ -5344,15 +5359,15 @@ def compute_hfbasin_tripyview(data, rule):
                 do_load=True,
             )
             out = out_list[0]
-            if glob_lat is None and name == "global_ocean":
-                glob_lat = out["lat"].values
             per_basin_results[name].append(out)
         # Release this iteration's loaded data before the next loop.
         del v_t, ut_t, packed
 
-    if glob_lat is None:
-        # safety: if global wasn't iterated yet, pull from first basin
-        glob_lat = per_basin_results[basins[0][0]][0]["lat"].values
+    # Pad onto the full global axis rather than shipping tripyview's data-driven
+    # range. tripyview trims to where the mesh has ocean (166 bands, -77.5..87.5
+    # on DARS2), which is a different grid from the one msftmz writes and would
+    # need its own EMD registration. Same lattice, so the reindex below aligns.
+    glob_lat = _global_lat_centers(1.0)
 
     # Stack: (time, basin, lat) in W
     if has_time:
@@ -5509,7 +5524,6 @@ def compute_sltbasin_tripyview(data, rule):
         ntime = 1
 
     per_basin_results = {n: [] for n, _ in basins}
-    glob_lat = None
     for t in range(ntime):
         if has_time:
             v_t = v_da.isel(time=t).load()
@@ -5534,13 +5548,14 @@ def compute_sltbasin_tripyview(data, rule):
                 do_load=True,
             )
             out = out_list[0]
-            if glob_lat is None and name == "global_ocean":
-                glob_lat = out["lat"].values
             per_basin_results[name].append(out)
         del v_t, ut_t, packed
 
-    if glob_lat is None:
-        glob_lat = per_basin_results[basins[0][0]][0]["lat"].values
+    # Pad onto the full global axis rather than shipping tripyview's data-driven
+    # range. tripyview trims to where the mesh has ocean (166 bands, -77.5..87.5
+    # on DARS2), which is a different grid from the one msftmz writes and would
+    # need its own EMD registration. Same lattice, so the reindex below aligns.
+    glob_lat = _global_lat_centers(1.0)
 
     # Post-process: tripyview returned PW-as-if-heat. Convert to kg/s salt.
     # See docstring for the derivation: factor = -1e+12 / cp = -2.5974e+8.

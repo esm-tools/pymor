@@ -138,7 +138,11 @@ fesom = [
     # FESOM test datasets (external package)
     "pycmor-test-data-fesom @ git+https://github.com/fesom/pycmor_test_data.git@v0.2.0",
     # tripyview — used for MHT / MOC diagnostics via calc_mhflx_box_fast, calc_xmoc
-    "tripyview @ git+https://github.com/FESOM/tripyview.git",
+    # Pinned to the branch that bins zonal latitudes on cell centres. Main puts
+    # calc_zmoc bin centres on multiples of dlat, which yields 181 bands for 180
+    # degrees of latitude and does not match the grid registered in EMD. Move
+    # back to main once that lands upstream.
+    "tripyview @ git+https://github.com/FESOM/tripyview.git@fix/zmoc-half-degree-bins",
 ]
 
 cmip7 = [
