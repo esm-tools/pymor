@@ -713,6 +713,34 @@ def _ensure_horizontal_aux_coords(ds, rule=None):
     return ds
 
 
+def _strip_variable_positive(ds):
+    """Drop ``positive`` from data variables; it belongs on coordinates only.
+
+    CF §4.3 defines ``positive`` for vertical coordinate variables. The CMOR
+    *variable* tables also carry a ``positive`` field, but there it is an
+    instruction to the producer rather than metadata: if the model's own sign
+    convention is the opposite of the table's, the data is multiplied by -1
+    before writing. The field itself is not meant to reach the file, and the
+    cf-checker takes exception to it when it does.
+
+    182 entries across the CMIP7 variable tables carry the field, so anything
+    that copies data request attributes verbatim will pick it up. cli114 had
+    one, ``siflcondtop``.
+
+    Note what this does *not* do: it does not verify that the data actually
+    follows the requested direction. That is a per-variable judgement about the
+    model's convention and has to be made where the field is computed.
+    """
+    if not isinstance(ds, xr.Dataset):
+        return ds
+    for var_name in ds.data_vars:
+        if _is_bounds_var_name(var_name) or var_name in ds.coords:
+            continue
+        if ds[var_name].attrs.pop("positive", None) is not None:
+            logger.info(f"  → dropped 'positive' from data variable {var_name!r} (coordinates only)")
+    return ds
+
+
 def _ensure_coordinate_long_names(ds, rule=None):
     """Take each coordinate's ``long_name`` from the CMIP7 coordinate table.
 
@@ -770,6 +798,7 @@ def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
     ds = _ensure_vertical_bounds(ds)
     ds = _ensure_vertical_coord_attrs(ds)
     ds = _ensure_coordinate_long_names(ds, rule)
+    ds = _strip_variable_positive(ds)
     ds = _ensure_coordinate_dtypes(ds)
     ds = _ensure_external_variables(ds)
     ds = _ensure_cf_dim_order(ds)

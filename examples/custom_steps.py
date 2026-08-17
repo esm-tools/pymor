@@ -425,7 +425,10 @@ def compute_siflcondtop(data, rule):
         "units": "W m-2",
         "standard_name": "surface_downward_heat_flux_in_sea_ice",
         "long_name": "Net Conductive Heat Flux in Sea Ice at the Surface",
-        "positive": "down",
+        # No "positive" attribute: in a CMOR *variable* table that field is an
+        # instruction about which way to store the data, not metadata to copy
+        # into the file. The data above already follows it. Only coordinates
+        # carry "positive" on disk; _strip_variable_positive enforces that.
         "processing_note": (
             f"k_ice={k_ice} W/m/K, T_base=freezing_point(SSS), T_surface=ist;"
             " sign convention: positive downward (atm -> ice)"
