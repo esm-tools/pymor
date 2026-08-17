@@ -5369,6 +5369,16 @@ def compute_hfbasin_tripyview(data, rule):
     # need its own EMD registration. Same lattice, so the reindex below aligns.
     glob_lat = _global_lat_centers(1.0)
 
+    # Two kinds of gap, and they do not mean the same thing:
+    #   * inside the model's ocean but outside a basin -> transport really is
+    #     zero there (the Atlantic does not reach 70S), so fill 0.0 as before;
+    #   * outside the model's ocean altogether -> nothing was computed, so fill
+    #     missing. Writing 0.0 there would claim a transport the model never
+    #     produced, and a reader could not tell it from a real zero.
+    # The global basin's own axis is exactly where this mesh has ocean.
+    _ocean_lat = per_basin_results["global_ocean"][0]["lat"].values
+    _outside_ocean = ~np.isin(glob_lat, _ocean_lat)
+
     # Stack: (time, basin, lat) in W
     if has_time:
         stacked = np.full((ntime, 3, glob_lat.size), np.nan, dtype=np.float64)
@@ -5379,6 +5389,7 @@ def compute_hfbasin_tripyview(data, rule):
     for bi, name in enumerate(basin_names):
         for t, out in enumerate(per_basin_results[name]):
             mh = out["mhflx"].reindex(lat=glob_lat, fill_value=0.0) * 1.0e15
+            mh = mh.where(~_outside_ocean)
             if has_time:
                 stacked[t, bi, :] = mh.values
             else:
@@ -5557,6 +5568,16 @@ def compute_sltbasin_tripyview(data, rule):
     # need its own EMD registration. Same lattice, so the reindex below aligns.
     glob_lat = _global_lat_centers(1.0)
 
+    # Two kinds of gap, and they do not mean the same thing:
+    #   * inside the model's ocean but outside a basin -> transport really is
+    #     zero there (the Atlantic does not reach 70S), so fill 0.0 as before;
+    #   * outside the model's ocean altogether -> nothing was computed, so fill
+    #     missing. Writing 0.0 there would claim a transport the model never
+    #     produced, and a reader could not tell it from a real zero.
+    # The global basin's own axis is exactly where this mesh has ocean.
+    _ocean_lat = per_basin_results["global_ocean"][0]["lat"].values
+    _outside_ocean = ~np.isin(glob_lat, _ocean_lat)
+
     # Post-process: tripyview returned PW-as-if-heat. Convert to kg/s salt.
     # See docstring for the derivation: factor = -1e+12 / cp = -2.5974e+8.
     _CP = 3850.0
@@ -5571,6 +5592,7 @@ def compute_sltbasin_tripyview(data, rule):
     for bi, name in enumerate(basin_names):
         for t, out in enumerate(per_basin_results[name]):
             mh = out["mhflx"].reindex(lat=glob_lat, fill_value=0.0) * factor
+            mh = mh.where(~_outside_ocean)
             if has_time:
                 stacked[t, bi, :] = mh.values
             else:
