@@ -6391,14 +6391,14 @@ def add_hybrid_sigma_coordinate(data, rule):
         "formula_terms": "ap: ap_bnds b: b_bnds ps: ps",
     }
     ds["ap"] = xr.DataArray(
-        ap, dims=("lev",), attrs={"long_name": "vertical coordinate formula term: ap(k)", "units": "Pa"}
+        ap, dims=("lev",), attrs={"long_name": "vertical coordinate formula term: ap", "units": "Pa"}
     )
-    ds["b"] = xr.DataArray(b, dims=("lev",), attrs={"long_name": "vertical coordinate formula term: b(k)"})
+    ds["b"] = xr.DataArray(b, dims=("lev",), attrs={"long_name": "vertical coordinate formula term: b"})
     ds["ap_bnds"] = xr.DataArray(
-        ap_bnds, dims=("lev", "bnds"), attrs={"long_name": "vertical coordinate formula term: ap(k+1/2)", "units": "Pa"}
+        ap_bnds, dims=("lev", "bnds"), attrs={"long_name": "vertical coordinate formula term: ap_bnds", "units": "Pa"}
     )
     ds["b_bnds"] = xr.DataArray(
-        b_bnds, dims=("lev", "bnds"), attrs={"long_name": "vertical coordinate formula term: b(k+1/2)"}
+        b_bnds, dims=("lev", "bnds"), attrs={"long_name": "vertical coordinate formula term: b_bnds"}
     )
 
     ps = _load_secondary_mf(rule, "ps_path", "ps_pattern", "ps_variable")
@@ -6407,10 +6407,30 @@ def add_hybrid_sigma_coordinate(data, rule):
     ps.attrs = {"standard_name": "air_pressure", "long_name": "Surface Air Pressure", "units": "Pa"}
     ds["ps"] = ps
 
+    # CMIP7_coordinate.json gives alternate_hybrid_sigma stored_direction
+    # "decreasing". The ECMWF vtable runs top-first, so everything built above
+    # comes out ascending (lev 1e-05 .. 0.9988, b 0 .. 0.9988) and cli114 was
+    # flagged twice for it: the stored coordinate is not strictly decreasing,
+    # and neither is the pressure profile the formula derives from it.
+    #
+    # Reverse the whole axis rather than just the coordinate. ``isel`` moves
+    # every variable that has the level dimension, the field included, so the
+    # data stays attached to the level it belongs to. Getting this wrong would
+    # invert the atmosphere silently, which is why it is one operation and not
+    # a per-variable flip.
+    ds = ds.isel(lev=slice(None, None, -1))
+    # The bounds pairs have to turn with it, otherwise each cell would still be
+    # written [lower, upper] while the axis now runs downward.
+    for bounds_name in ("lev_bnds", "ap_bnds", "b_bnds"):
+        if bounds_name in ds.variables:
+            flipped = ds[bounds_name].values[..., ::-1]
+            ds[bounds_name] = xr.DataArray(flipped, dims=ds[bounds_name].dims, attrs=dict(ds[bounds_name].attrs))
+
+    lev_out = np.asarray(ds["lev"].values)
     logger.info(
         f"hybrid sigma coordinate: {nlev} levels from "
-        f"{rule.get('oifs_vtable', _OIFS_VTABLE_DEFAULT)}, ap {ap[0]:.1f}..{ap[-1]:.1f} Pa, "
-        f"b {b[0]:.4f}..{b[-1]:.4f}"
+        f"{rule.get('oifs_vtable', _OIFS_VTABLE_DEFAULT)}, stored surface-first, "
+        f"lev {lev_out[0]:.6g}..{lev_out[-1]:.6g} (decreasing)"
     )
 
     return ds[da_name] if was_dataarray and da_name in ds else ds
