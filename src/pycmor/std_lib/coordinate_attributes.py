@@ -593,6 +593,17 @@ def _set_coordinates_attribute(ds: xr.Dataset, rule: Rule) -> None:
     logger.info("[Coordinate Attributes] Setting 'coordinates' attribute on data variables")
 
     for var_name in ds.data_vars:
+        # Bounds variables get no ``coordinates`` attribute. CF §7.1 says they
+        # inherit from their parent coordinate, and pycmor sets
+        # ``encoding["coordinates"] = None`` on them later in the save path; a
+        # value in attrs as well makes xarray refuse to write the file with
+        # "'coordinates' found in both attrs and encoding". cli115 lost
+        # mrsolLut to exactly that, once scalar layer coordinates started
+        # bringing a ``depth_bnds`` along: its only dimension is ``bnds`` and
+        # the scalar ``depth`` rides on it as a coordinate, so the branch below
+        # saw an auxiliary coordinate and set the attribute.
+        if str(var_name).endswith(("_bnds", "_bounds")) or str(var_name).startswith(("bounds_", "vertices_")):
+            continue
         # Only list AUXILIARY coordinates (non-dim coords). CF explicitly
         # says the ``coordinates`` attribute is for auxiliary coordinate
         # variables; dim coords are implicit and listing them is legal
