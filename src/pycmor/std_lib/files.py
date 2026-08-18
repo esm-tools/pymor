@@ -761,6 +761,13 @@ def _drop_unrequested_aux_coords(ds, rule=None):
             continue
         if not _is_auxiliary_coord(ds, name):
             continue
+        # A labelled axis is written CMOR-style as ``char sector(<out_name>,
+        # strlen)``, so the variable is called ``sector`` and never matches a
+        # data request dimension or out_name. cli115 lost it from cSoilPools
+        # and the basin transports this way, and with it the only statement of
+        # which pool or which basin each slice is.
+        if ds[name].dtype.kind in ("S", "U") or name == "sector":
+            continue
         logger.info(f"  → dropped auxiliary coordinate {name!r}: not requested by {getattr(drv, 'variable_id', '?')!r}")
         ds = ds.drop_vars(name)
     return ds
@@ -791,6 +798,47 @@ def _strip_variable_positive(ds):
             continue
         if ds[var_name].attrs.pop("positive", None) is not None:
             logger.info(f"  → dropped 'positive' from data variable {var_name!r} (coordinates only)")
+    return ds
+
+
+# CF §7.1: a bounds variable inherits its parent's meaning and must not carry
+# these itself. ``formula_terms`` and ``formula`` are the exception, CF 1.7
+# requires them on the bounds of a parametric vertical coordinate and CMOR
+# writes them.
+_BOUNDS_FORBIDDEN_ATTRS = (
+    "long_name",
+    "units",
+    "standard_name",
+    "axis",
+    "positive",
+    "calendar",
+    "leap_month",
+    "leap_year",
+    "month_lengths",
+)
+
+
+def _strip_bounds_attributes(ds):
+    """Remove attributes a bounds variable must not have.
+
+    ``time_bnds`` has always inherited ``long_name`` from its parent, and for as
+    long as both said "time" nothing complained. Taking the parent's long_name
+    from the CMOR table turned that into a contradiction: the coordinate says
+    "Time Intervals", the bounds still said "time", and cf §7.1 reported the
+    pair as disagreeing on 1099 occasions in cli115. cc-plugin-aicc is stricter
+    still and wants no attributes there at all.
+
+    Stripping is the fix rather than copying the new value down, because CF
+    says the bounds take their meaning from the parent and should stay bare.
+    """
+    if not isinstance(ds, xr.Dataset):
+        return ds
+    for name in ds.variables:
+        if not _is_bounds_var_name(name):
+            continue
+        removed = [a for a in _BOUNDS_FORBIDDEN_ATTRS if ds[name].attrs.pop(a, None) is not None]
+        if removed:
+            logger.info(f"  → stripped {removed} from bounds variable {str(name)!r}")
     return ds
 
 
@@ -853,6 +901,7 @@ def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
     ds = _ensure_climatology_bounds(ds)
     ds = _ensure_vertical_coord_attrs(ds)
     ds = _ensure_coordinate_long_names(ds, rule)
+    ds = _strip_bounds_attributes(ds)
     ds = _strip_variable_positive(ds)
     ds = _drop_unrequested_aux_coords(ds, rule)
     ds = _ensure_coordinate_dtypes(ds)
