@@ -833,8 +833,24 @@ def _strip_bounds_attributes(ds):
     """
     if not isinstance(ds, xr.Dataset):
         return ds
+    # Everything a formula_terms attribute names, plus the bounds of any
+    # coordinate that has one. CF 1.7 requires those to carry units and a
+    # standard_name, and cc-plugin-aicc checks the term units against the
+    # table ("Formula term 'ap_bnds' units: units missing; table requires
+    # 'Pa'"). Stripping them cost 24 findings in cli116.
+    formula_related = set()
+    for candidate in ds.variables:
+        terms = ds[candidate].attrs.get("formula_terms")
+        if isinstance(terms, str):
+            formula_related.update(terms.replace(":", " ").split()[1::2])
+        if ds[candidate].attrs.get("formula_terms") or ds[candidate].attrs.get("formula"):
+            formula_related.add(str(candidate))
+        bounds = ds[candidate].attrs.get("bounds")
+        if bounds and ds[candidate].attrs.get("formula_terms"):
+            formula_related.add(str(bounds))
+
     for name in ds.variables:
-        if not _is_bounds_var_name(name):
+        if not _is_bounds_var_name(name) or str(name) in formula_related:
             continue
         removed = [a for a in _BOUNDS_FORBIDDEN_ATTRS if ds[name].attrs.pop(a, None) is not None]
         if removed:
@@ -928,8 +944,14 @@ def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
 # Deriving these from the midpoints instead would be wrong: the layers are of
 # very different thickness, so interpolated edges land nowhere near the real
 # ones.
+# The values cc-plugin-aicc checks against, which are the layer edges the CMIP7
+# ocean data request paper names (0-300, 300-700, 700-2000 m and below)
+# converted to bar by the plugin. Our own conversion with rho=1025 landed at
+# 30.17 / 70.39 / 201.10, close but outside its tolerance, so take its numbers
+# rather than recompute them; the layer definition is what matters and both
+# agree on that.
 _EXACT_VERTICAL_BOUNDS = {
-    "pdepth": ((0.0, 30.17), (30.17, 70.39), (70.39, 201.10), (201.10, 1798.90)),
+    "pdepth": ((0.0, 30.3), (30.3, 70.7), (70.7, 202.5), (202.5, 10000.0)),
 }
 
 
@@ -1724,7 +1746,12 @@ def _add_cf_quantization_metadata(ds, rule):
             _p = _ft.replace(":", " ").split()
             formula_terms.update(_p[1::2])
     formula_terms |= {"ap", "b", "a", "p0", "ptop", "ap_bnds", "b_bnds", "a_bnds"}
-    formula_terms.discard("ps")
+    # ``ps`` stays in the set. It is a geophysical field, but it is also a
+    # formula term, and CF 1.12 forbids quantization on anything named by a
+    # formula_terms attribute regardless. _protect_formula_terms keeps its data
+    # exact for the same reason; advertising a quantization it did not receive
+    # would be worse than either. cli116 reported it on 8 files because the
+    # exception was removed there but not here.
 
     for var in ds.data_vars:
         da = ds[var]
