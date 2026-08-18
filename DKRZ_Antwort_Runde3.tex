@@ -35,22 +35,34 @@ Liste mit den acht Punkten, und dein Plugin. Zusammen mit dem, was das Plugin se
 noch gefunden hat, waren das rund zwanzig Befunde. Umfang seither: 15 Commits,
 26 Dateien, +1197 / -209 Zeilen.
 
-Der Zwischenstand an harten Zahlen, gemessen an \code{cli114}:
+Gemessen am fertigen Lauf, 534 Dateien:
 
 \begin{center}
 \begin{tabular}{lrr}
 \toprule
-& \textbf{cli113} & \textbf{cli114} \\
+& \textbf{cf + wcrp\_cmip7} & \textbf{aicc} \\
 \midrule
-HIGH   & 69  & 1 \\
-MEDIUM & 288 & 284 \\
+HIGH   &   4 & 31 \\
+MEDIUM & 304 &  0 \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-Das verbleibende HIGH ist weiterhin \code{basin} und wartet auf
-\code{ESGF/cc-plugin-wcrp\#67}. \code{cli115} laeuft gerade und enthaelt alles aus
-diesem Dokument; die Gegenprobe schicken wir nach.
+Zum Vergleich: vor dieser Runde lagen wir bei 284 MEDIUM auf denselben zwei
+Suiten, aber ohne dass aicc ueberhaupt mitlief. Die 35 verbleibenden HIGH
+verteilen sich so:
+
+\begin{center}
+\begin{tabular}{rl}
+\toprule
+19 & Dateien ohne eigenes Gitter, warten auf die Registrierung des Zonalgitters \\
+ 6 & \code{depth} traegt bei zwei Dateien noch \code{units = "meter"}, bei uns \\
+ 5 & \code{plev7h}, unsere Modellausgabe schreibt die falschen Druckflaechen \\
+ 3 & Dimensionsreihenfolge bei \code{msftm} und die \code{tclm}-Zeitachse \\
+ 2 & \code{vegtype} und \code{basin}, beide upstream \\
+\bottomrule
+\end{tabular}
+\end{center}
 
 \section{Dein Plugin}
 
@@ -329,6 +341,15 @@ CF-Begriffen ist das der einzige Ausreisser.
 Wir schreiben den CF-Plural, weil derselbe Tabelleneintrag den Standardnamen setzt,
 der das verlangt. Dein Plugin meldet das folgerichtig als fehlenden Wert.
 
+\subsection*{Zwei Punkte auf unserer Seite}
+
+Sechs Ozeanvariablen (\code{osalttend} und Geschwister) liefern wir vorerst
+nicht: FESOM rechnet sie konstruktiv zweidimensional, verlangt ist
+\code{(time, lev, ncells)}. Und bei \code{plev7h} schreibt unser Modell sieben
+Druckflaechen, aber nicht die angeforderten sieben; \code{60000} und \code{5000}
+Pa fehlen, dafuer kommen \code{100000} und \code{10000} mit. Beides ist
+Modellausgabe, nicht Cmorisierung, und geht in die naechste Modellversion.
+
 \subsection*{Kleinigkeit}
 
 \code{time4} hat im \code{long\_name} einen Tippfehler: "Monthly Mean Daily
@@ -336,8 +357,8 @@ Satistics".
 
 \section{Was als naechstes kommt}
 
-\code{cli115} laeuft mit allem aus diesem Dokument. Die Gegenprobe schicken wir nach,
-sobald er durch ist.
+Der Lauf mit allem aus diesem Dokument ist durch, die Zahlen oben stammen
+daraus.
 
 Offen bleiben von unserer Seite die vier zonalen Schnitte
 (\code{msftm}, \code{hfbasin}, \code{sltbasin}), fuer die es kein passendes Gitter im
