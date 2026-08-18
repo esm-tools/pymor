@@ -153,6 +153,26 @@ mkdir -p "$PREFECT_NODELOCAL/storage"
 export PREFECT_HOME="$PREFECT_NODELOCAL"
 export PREFECT_LOCAL_STORAGE_PATH="$PREFECT_NODELOCAL/storage"
 trap "rm -rf $PREFECT_NODELOCAL" EXIT
+# TMPDIR lives on Lustre because dask spills can be large, but the directory
+# is not always usable the instant mkdir returns: the metadata has to reach the
+# node first. Bash then fails the very next here-document with "cannot create
+# temp file for here-document", which killed cap7_land shard 4 twice and
+# core_atm shard 2 once, on three different nodes. Probe it, retry briefly, and
+# fall back to node-local /tmp rather than losing the whole shard over a
+# temp file.
+for _try in 1 2 3 4 5; do
+  if touch "$PYCMOR_SCRATCH/.probe" 2>/dev/null; then rm -f "$PYCMOR_SCRATCH/.probe"; break; fi
+  echo "=== TMPDIR $PYCMOR_SCRATCH not writable yet (attempt $_try), waiting ==="
+  sleep 3
+  mkdir -p "$PYCMOR_SCRATCH/prefect/storage" 2>/dev/null || true
+done
+if ! touch "$PYCMOR_SCRATCH/.probe" 2>/dev/null; then
+  PYCMOR_SCRATCH=/tmp/pycmor_tmp_${SLURM_JOB_ID:-$$}_${task_idx}
+  mkdir -p "$PYCMOR_SCRATCH/prefect/storage"
+  echo "=== WARNING: falling back to node-local TMPDIR $PYCMOR_SCRATCH ==="
+else
+  rm -f "$PYCMOR_SCRATCH/.probe"
+fi
 export TMPDIR="$PYCMOR_SCRATCH"
 export HDF5_USE_FILE_LOCKING=FALSE
 export OMP_NUM_THREADS=1
