@@ -27,6 +27,10 @@ Rule attributes consumed (all optional):
 - ``qc_fail_on_mandatory`` (bool, default False) — raise on any Mandatory
   finding instead of just logging.
 - ``qc_binary`` (str, default ``"cchecker.py"``) — override path.
+- ``qc_attempts`` (int, default 3) — how often to re-run the
+  checker when it produced no report at all. Concurrent shards
+  racing on the CF standard-name table cache can make it die at
+  import time; that is transient and a retry clears it.
 - ``qc_repack`` (bool, default False) — run ``cmip7repack -o`` in-place
   on each file before checking. Clears the wcrp_cmip7 FILE004a
   "missing consolidated internal metadata" finding.
@@ -44,6 +48,7 @@ import json
 import os
 import shutil
 import subprocess
+import time
 from pathlib import Path
 from typing import Iterable
 
@@ -159,15 +164,36 @@ def _summarize(report: dict, ignore: set[str] | None = None) -> dict:
 
 
 def _run_cchecker(
-    binary: str, tests: Iterable[str], criteria: str, out_json: Path, files: list[Path]
+    binary: str,
+    tests: Iterable[str],
+    criteria: str,
+    out_json: Path,
+    files: list[Path],
+    attempts: int = 3,
 ) -> tuple[int, str]:
     cmd = [binary, "-f", "json_new", "-o", str(out_json), "-c", criteria]
     for t in tests:
         cmd += ["-t", t]
     cmd += [str(p) for p in files]
     logger.info(f"qc: running {' '.join(cmd)}")
-    proc = subprocess.run(cmd, capture_output=True, text=True)
-    return proc.returncode, (proc.stderr or proc.stdout or "")
+    attempts = max(1, int(attempts))
+    rc, err = 1, ""
+    for attempt in range(1, attempts + 1):
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        rc, err = proc.returncode, (proc.stderr or proc.stdout or "")
+        # A report on disk means the checker ran; rc!=0 then just means it
+        # found something. Only a missing report is worth retrying.
+        if out_json.exists():
+            return rc, err
+        if attempt < attempts:
+            # Stagger, so shards that collided do not collide again.
+            delay = 5 * attempt + (os.getpid() % 7)
+            logger.warning(
+                f"qc: cchecker.py rc={rc} and no report on attempt "
+                f"{attempt}/{attempts}; retrying in {delay}s. stderr:\n{err}"
+            )
+            time.sleep(delay)
+    return rc, err
 
 
 def _clean_cmip7repack_orphans(files: list[Path]) -> None:
@@ -308,9 +334,13 @@ def run_compliance_checker(data, rule):
     # Reflect the actual rule_id in the log header for grep-ability.
     table_id = rule_id
 
-    rc, err = _run_cchecker(binary, tests, criteria, out_json, files)
+    attempts = int(getattr(rule, "qc_attempts", 3) or 3)
+    rc, err = _run_cchecker(binary, tests, criteria, out_json, files, attempts)
     if not out_json.exists():
-        logger.error(f"qc: cchecker.py rc={rc}; no JSON produced. stderr:\n{err}")
+        logger.error(
+            f"qc: cchecker.py rc={rc} after {attempts} attempt(s); no JSON "
+            f"produced, so this rule has NO qc report. stderr:\n{err}"
+        )
         if getattr(rule, "qc_fail_on_mandatory", False):
             raise QCFailure(f"qc: cchecker.py produced no report for {cmor_var}")
         return data
