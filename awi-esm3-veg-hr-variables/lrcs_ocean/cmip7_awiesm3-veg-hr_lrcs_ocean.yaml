@@ -1149,6 +1149,11 @@ rules:
       - path: *dp
         pattern: std_dens_DIV\.fesom\.\d{4}\.nc
     compound_name: ocean.msftm.tavg-rho-hyb-sea.mon.glb
+    # Zonal mean, not on the FESOM mesh: integrated over longitude and over
+    # basins, 180 latitude bands of 1 degree centred on the half degree.
+    # g239 was registered for exactly this on 2026-08-18 (EMD #1293), so
+    # stop inheriting the tier's g130, which claimed the 3146761 nodes.
+    grid_label: g239
     model_variable: msftm
     pipelines:
       - msftm_density_pipeline
@@ -1260,6 +1265,11 @@ rules:
       - path: *dp
         pattern: w\.fesom\.\d{4}\.nc
     compound_name: ocean.msftm.tavg-ol-hyb-sea.mon.glb
+    # Zonal mean, not on the FESOM mesh: integrated over longitude and over
+    # basins, 180 latitude bands of 1 degree centred on the half degree.
+    # g239 was registered for exactly this on 2026-08-18 (EMD #1293), so
+    # stop inheriting the tier's g130, which claimed the 3146761 nodes.
+    grid_label: g239
     model_variable: msftmz
     pipelines:
       - msftmz_pipeline
@@ -1269,6 +1279,11 @@ rules:
       - path: *dp
         pattern: vtemp\.fesom\.\d{4}\.nc
     compound_name: ocean.hfbasin.tavg-u-hyb-sea.mon.glb
+    # Zonal mean, not on the FESOM mesh: integrated over longitude and over
+    # basins, 180 latitude bands of 1 degree centred on the half degree.
+    # g239 was registered for exactly this on 2026-08-18 (EMD #1293), so
+    # stop inheriting the tier's g130, which claimed the 3146761 nodes.
+    grid_label: g239
     model_variable: hfbasin
     # compute_hfbasin_tripyview loads utemp as a secondary input alongside
     # the primary vtemp; both are needed for the edge-crossing integral.
@@ -1283,6 +1298,11 @@ rules:
       - path: *dp
         pattern: vsalt\.fesom\.\d{4}\.nc
     compound_name: ocean.sltbasin.tavg-u-hyb-sea.mon.glb
+    # Zonal mean, not on the FESOM mesh: integrated over longitude and over
+    # basins, 180 latitude bands of 1 degree centred on the half degree.
+    # g239 was registered for exactly this on 2026-08-18 (EMD #1293), so
+    # stop inheriting the tier's g130, which claimed the 3146761 nodes.
+    grid_label: g239
     model_variable: sltbasin
     # compute_sltbasin_tripyview loads usalt as a secondary input alongside
     # the primary vsalt; both are needed for the edge-crossing integral.

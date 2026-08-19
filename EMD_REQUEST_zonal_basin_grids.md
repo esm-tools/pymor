@@ -86,9 +86,27 @@ nicht unserer, wird von niemandem referenziert, und beschreibt eine echte Zellge
 Ursprung und Ausdehnung, die unsere Dateien gar nicht mitliefern. Deshalb bewusst nicht
 benutzt.
 
-## Danach in pycmor
+## Erledigt, 2026-08-19
+
+Registriert als **`g239`**, gemergt am 18.08. über PR #1294 zu Issue #1293. Der Eintrag
+übernimmt den Antrag unverändert:
+
+```
+g239   grid_type: regular-latitude-longitude
+       n_cells: 180        x_resolution: 360      y_resolution: 1
+       southernmost_latitude: -89.5               westernmost_longitude: 0
+       region: global      temporal_refinement: static
+```
+
+Damit ist auch die offene Frage von oben beantwortet: bei einer einzelnen umlaufenden
+Zelle steht `westernmost_longitude: 0`, nicht 180.
+
+Die Uneinheitlichkeit aus dem ersten Abschnitt ist vorher schon behoben worden. In
+cli116 liegen alle vier Dateien auf derselben Achse, 180 Bänder von −89.5 bis 89.5 mit
+Schritt 1. Die 181-Punkt-Variante von `msftm` auf Dichte und die auf 166 Punkte
+gekürzten `hfbasin`/`sltbasin` gibt es nicht mehr.
 
 `grid_label` für die vier Regeln in
-`awi-esm3-veg-hr-variables/lrcs_ocean/cmip7_awiesm3-veg-hr_lrcs_ocean.yaml` auf das neue
-Label setzen. Sie erben es aktuell aus dem `inherit`-Block des Tiers, deshalb steht dort
-`g130`.
+`awi-esm3-veg-hr-variables/lrcs_ocean/cmip7_awiesm3-veg-hr_lrcs_ocean.yaml` steht jetzt
+auf `g239`. Vorher erbten sie `g130` aus dem `inherit`-Block des Tiers und behaupteten
+damit die 3146761 FESOM-Knoten. Wirksam wird das mit dem nächsten Lauf.
