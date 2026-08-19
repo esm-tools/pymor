@@ -3209,22 +3209,34 @@ def compute_slthick(data, rule):
     depth_bnds = np.stack([interfaces[:-1], interfaces[1:]], axis=-1)
 
     source = data if isinstance(data, xr.DataArray) else data[rule.model_variable]
-    horizontal = [d for d in source.dims if d not in ("time",) and not str(d).startswith("time")]
+    horizontal = [str(d) for d in source.dims if d not in ("time",) and not str(d).startswith("time")]
     if not horizontal:
         raise ValueError(
             f"compute_slthick: no horizontal dimension in {source.dims}, cannot place the layers on a grid"
         )
-    hdim = str(horizontal[-1])
-    ncells = source.sizes[hdim]
 
-    values = np.repeat(thicknesses[:, None].astype(np.float32), ncells, axis=1)
+    # Broadcast over EVERY horizontal dimension, not just the last one. On the
+    # unstructured mesh there is only one (``cell``), so taking the last was
+    # enough there and the bug stayed hidden. cli116 read a regular
+    # (lat, lon) field instead, and shipped slthick(depth, lon) with the
+    # latitude silently dropped.
+    values = np.broadcast_to(
+        thicknesses.astype(np.float32).reshape((-1,) + (1,) * len(horizontal)),
+        (thicknesses.size,) + tuple(source.sizes[d] for d in horizontal),
+    ).copy()
     result = xr.Dataset(
         {
-            rule.model_variable: (("depth", hdim), values),
+            rule.model_variable: (("depth", *horizontal), values),
             "depth_bnds": (("depth", "bnds"), depth_bnds),
         },
         coords={"depth": depth},
     )
+    # Carry the grid's own coordinates across, otherwise the layers land on a
+    # bare cell index again.
+    hset = set(horizontal)
+    for name, coord in source.coords.items():
+        if coord.dims and set(map(str, coord.dims)) <= hset:
+            result = result.assign_coords({str(name): coord})
     result[rule.model_variable].attrs = {
         "units": "m",
         "standard_name": "cell_thickness",
@@ -3238,12 +3250,9 @@ def compute_slthick(data, rule):
         "positive": "down",
         "bounds": "depth_bnds",
     }
-    for coord_name in ("lat", "lon", "latitude", "longitude"):
-        if coord_name in source.coords:
-            result = result.assign_coords({coord_name: source[coord_name]})
+    shape = " x ".join(f"{d}={source.sizes[d]}" for d in horizontal)
     logger.info(
-        f"slthick: {thicknesses.size} soil layers "
-        f"({', '.join(f'{t:.2f}' for t in thicknesses)} m) over {ncells} cells on {hdim!r}"
+        f"slthick: {thicknesses.size} soil layers " f"({', '.join(f'{t:.2f}' for t in thicknesses)} m) over {shape}"
     )
     return result
 
@@ -4938,6 +4947,19 @@ def _lat_edges(dlat=1.0):
     return np.arange(-90.0, 90.0 + dlat / 2, dlat)
 
 
+def _global_lat_centers(dlat=1.0):
+    """Global zonal-mean latitude axis shared by msftmz, hfbasin and sltbasin.
+
+    Cell centres sit at (k + 0.5) * dlat so the edges land on multiples of dlat
+    and the bands tile -90..90 exactly: 180 bands at dlat=1.0, 360 at dlat=0.5.
+
+    This must match tripyview's binning. calc_zmoc and calc_mhflx_box_fast use
+    floor(lat/dlat)*dlat + dlat/2, so their labels fall on this same lattice and
+    a reindex onto this axis aligns rather than silently producing all-NaN.
+    """
+    return np.arange(-90.0 + dlat / 2, 90.0, dlat)
+
+
 def _basin_lat_crossing_sum(values, min_lat, max_lat, loc_basin, lat_centers, basin_ids=_BASIN_IDS):
     """Sum values over (basin, lat_bin) for elements whose [min_lat, max_lat]
     contains lat_centers[j]. Vectorized via interval-scatter + cumsum.
@@ -5065,9 +5087,12 @@ def compute_msftmz(data, rule):
         "global_ocean": "gmoc",
     }
 
-    # Global 1° lat grid matching tripyview's integer-lat convention
+    # Global 1° lat grid. Cell centres on half degrees so the 180 bands tile
+    # -90..90 exactly; the old np.arange(-90, 91, 1) gave 181 whole-degree
+    # points, which is a degree more latitude than the sphere has and left the
+    # polar bands half width. Registered in EMD as the zonal mean grid cell.
     dlat = 1.0
-    lat_centers = np.arange(-90.0, 90.0 + dlat, dlat)  # -90, -89, ..., 89, 90
+    lat_centers = _global_lat_centers(dlat)  # -89.5, -88.5, ..., 89.5
 
     per_basin = {}
     for name, key in basin_to_key.items():
@@ -5318,7 +5343,6 @@ def compute_hfbasin_tripyview(data, rule):
 
     # Pre-build per-basin output arrays
     per_basin_results = {n: [] for n, _ in basins}
-    glob_lat = None
     for t in range(ntime):
         # Eager-load only the current timestep — 2 GB peak instead of 24 GB.
         if has_time:
@@ -5344,15 +5368,25 @@ def compute_hfbasin_tripyview(data, rule):
                 do_load=True,
             )
             out = out_list[0]
-            if glob_lat is None and name == "global_ocean":
-                glob_lat = out["lat"].values
             per_basin_results[name].append(out)
         # Release this iteration's loaded data before the next loop.
         del v_t, ut_t, packed
 
-    if glob_lat is None:
-        # safety: if global wasn't iterated yet, pull from first basin
-        glob_lat = per_basin_results[basins[0][0]][0]["lat"].values
+    # Pad onto the full global axis rather than shipping tripyview's data-driven
+    # range. tripyview trims to where the mesh has ocean (166 bands, -77.5..87.5
+    # on DARS2), which is a different grid from the one msftmz writes and would
+    # need its own EMD registration. Same lattice, so the reindex below aligns.
+    glob_lat = _global_lat_centers(1.0)
+
+    # Two kinds of gap, and they do not mean the same thing:
+    #   * inside the model's ocean but outside a basin -> transport really is
+    #     zero there (the Atlantic does not reach 70S), so fill 0.0 as before;
+    #   * outside the model's ocean altogether -> nothing was computed, so fill
+    #     missing. Writing 0.0 there would claim a transport the model never
+    #     produced, and a reader could not tell it from a real zero.
+    # The global basin's own axis is exactly where this mesh has ocean.
+    _ocean_lat = per_basin_results["global_ocean"][0]["lat"].values
+    _outside_ocean = ~np.isin(glob_lat, _ocean_lat)
 
     # Stack: (time, basin, lat) in W
     if has_time:
@@ -5364,6 +5398,7 @@ def compute_hfbasin_tripyview(data, rule):
     for bi, name in enumerate(basin_names):
         for t, out in enumerate(per_basin_results[name]):
             mh = out["mhflx"].reindex(lat=glob_lat, fill_value=0.0) * 1.0e15
+            mh = mh.where(~_outside_ocean)
             if has_time:
                 stacked[t, bi, :] = mh.values
             else:
@@ -5509,7 +5544,6 @@ def compute_sltbasin_tripyview(data, rule):
         ntime = 1
 
     per_basin_results = {n: [] for n, _ in basins}
-    glob_lat = None
     for t in range(ntime):
         if has_time:
             v_t = v_da.isel(time=t).load()
@@ -5534,13 +5568,24 @@ def compute_sltbasin_tripyview(data, rule):
                 do_load=True,
             )
             out = out_list[0]
-            if glob_lat is None and name == "global_ocean":
-                glob_lat = out["lat"].values
             per_basin_results[name].append(out)
         del v_t, ut_t, packed
 
-    if glob_lat is None:
-        glob_lat = per_basin_results[basins[0][0]][0]["lat"].values
+    # Pad onto the full global axis rather than shipping tripyview's data-driven
+    # range. tripyview trims to where the mesh has ocean (166 bands, -77.5..87.5
+    # on DARS2), which is a different grid from the one msftmz writes and would
+    # need its own EMD registration. Same lattice, so the reindex below aligns.
+    glob_lat = _global_lat_centers(1.0)
+
+    # Two kinds of gap, and they do not mean the same thing:
+    #   * inside the model's ocean but outside a basin -> transport really is
+    #     zero there (the Atlantic does not reach 70S), so fill 0.0 as before;
+    #   * outside the model's ocean altogether -> nothing was computed, so fill
+    #     missing. Writing 0.0 there would claim a transport the model never
+    #     produced, and a reader could not tell it from a real zero.
+    # The global basin's own axis is exactly where this mesh has ocean.
+    _ocean_lat = per_basin_results["global_ocean"][0]["lat"].values
+    _outside_ocean = ~np.isin(glob_lat, _ocean_lat)
 
     # Post-process: tripyview returned PW-as-if-heat. Convert to kg/s salt.
     # See docstring for the derivation: factor = -1e+12 / cp = -2.5974e+8.
@@ -5556,6 +5601,7 @@ def compute_sltbasin_tripyview(data, rule):
     for bi, name in enumerate(basin_names):
         for t, out in enumerate(per_basin_results[name]):
             mh = out["mhflx"].reindex(lat=glob_lat, fill_value=0.0) * factor
+            mh = mh.where(~_outside_ocean)
             if has_time:
                 stacked[t, bi, :] = mh.values
             else:

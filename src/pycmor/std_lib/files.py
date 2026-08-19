@@ -1161,12 +1161,25 @@ def _ensure_vertical_coord_attrs(ds):
     string stays.
     """
     from .coordinate_attributes import COORDINATE_METADATA
+    from .dimension_mapping import _out_name_for
 
     for name in _CV_VERTICAL_COORDS:
         expected = COORDINATE_METADATA.get(name)
-        if not expected or name not in ds.variables:
+        if not expected:
             continue
-        attrs = ds[name].attrs
+        # The CV keys the axis by its data request name, the file carries the
+        # ``out_name``. They agree for lev/plev/height, but ``sdepth`` is
+        # written as ``depth``, so keying on the CV name alone skipped it and
+        # cli116 still shipped depth:units = "meter" on tsl, mrsol and mrsll.
+        # Same class of miss as the plev19/plev3 case above, so resolve
+        # through the table instead of naming the exception.
+        on_disk = next(
+            (n for n in (name, _out_name_for(name)) if n in ds.variables),
+            None,
+        )
+        if on_disk is None:
+            continue
+        attrs = ds[on_disk].attrs
         # Parametric vertical coordinates describe themselves through
         # formula_terms and must not be overwritten. The atmospheric hybrid
         # coordinate also has out_name "lev" but is a different axis from the
@@ -1175,14 +1188,39 @@ def _ensure_vertical_coord_attrs(ds):
         if attrs.get("formula_terms"):
             attrs.pop("name", None)
             continue
-        if name == "lev" and attrs.get("standard_name") not in (None, "", "depth"):
+        if on_disk == "lev" and attrs.get("standard_name") not in (None, "", "depth"):
             attrs.pop("name", None)
             continue
         # ``name`` is a model-side leftover, not a CF attribute.
         attrs.pop("name", None)
         for key, value in expected.items():
+            # Units are the one attribute where the CV must not simply win.
+            # ``sdepth`` resolves to the on-disk name ``depth``, and so do the
+            # tiered soil axes: mrsol's d10cm variant legitimately carries
+            # ``cm`` (wcrp allows m and cm both). Overwriting that with the
+            # CV's ``m`` would relabel centimetres as metres and silently
+            # move the layer by a factor of 100. Only fix the spelling, never
+            # the unit itself.
+            if key == "units" and attrs.get("units") and not _same_physical_unit(attrs["units"], value):
+                continue
             attrs[key] = value
     return ds
+
+
+def _same_physical_unit(have, want):
+    """True when two unit strings denote the same unit, e.g. "meter" and "m".
+
+    Deliberately strict: ``cm`` and ``m`` are convertible but not the same, so
+    this returns False and the caller leaves the model's units in place.
+    """
+    if have == want:
+        return True
+    try:
+        from .units import ureg
+
+        return ureg.Quantity(1.0, have).to(want).magnitude == 1.0
+    except Exception:
+        return False
 
 
 def _match_cells(ds, src, tol=1e-3):

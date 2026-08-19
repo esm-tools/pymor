@@ -217,10 +217,15 @@ rules:
       - areacella_pipeline
 
   - name: slthick
+    # Only supplies the horizontal grid, the values are unused. Must be a
+    # NATIVE land field, not an atm_remapped_* one: slthick carries the layer
+    # thicknesses belonging to mrsol and tsl, and those are g122 on the
+    # reduced Gaussian mesh. cli116 read the remapped lsm (640 x 1296) while
+    # declaring g122, so the file claimed a grid it was not on.
     inputs:
       - path: *dp
-        pattern: atm_remapped_1m_lsm_.*\.nc
+        pattern: atmos_mon_land_static_slt_.*\.nc
     compound_name: land.slthick.ti-sl-hxy-lnd.fx.glb
-    model_variable: lsm
+    model_variable: slt
     pipelines:
       - slthick_pipeline
