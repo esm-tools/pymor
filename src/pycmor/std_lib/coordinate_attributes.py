@@ -110,25 +110,6 @@ def _load_axis_entries() -> Dict[str, Dict[str, str]]:
 
 AXIS_ENTRIES = _load_axis_entries()
 
-# The four leaf-type tree axes still carry ``value = "trees"`` in the
-# vendored CMIP7_coordinate.json (table_date 2026-07-09), the same value
-# CMIP6 shipped. That makes treeFracBdlDcd, treeFracBdlEvg, treeFracNdlDcd
-# and treeFracNdlEvg indistinguishable on disk: all four say
-# ``type = "trees"`` while the whole point of the four variables is the
-# leaf-type split. The CF area-type table has had the specific terms for
-# years, and the DKRZ coordinate check on cli112 flagged the collapse.
-#
-# Override here rather than editing the vendored table: that file is a
-# checksummed upstream artifact we re-generate, so a local edit would be
-# silently reverted on the next refresh. Drop these entries once upstream
-# ships the specific values.
-_SCALAR_VALUE_OVERRIDE = {
-    "typetreebd": "broadleaf_deciduous_trees",
-    "typetreebe": "broadleaf_evergreen_trees",
-    "typetreend": "needleleaf_deciduous_trees",
-    "typetreene": "needleleaf_evergreen_trees",
-}
-
 
 def add_scalar_coordinates(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
     """Attach the scalar coordinates the data request asks for.
@@ -171,13 +152,6 @@ def add_scalar_coordinates(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
         if not raw_value:
             # Not a scalar coordinate (e.g. sdepth); leave to the vertical path.
             continue
-        if dim in _SCALAR_VALUE_OVERRIDE:
-            corrected = _SCALAR_VALUE_OVERRIDE[dim]
-            if corrected != raw_value:
-                logger.info(
-                    f"  scalar coordinate {dim!r}: using CF area type {corrected!r} " f"(table says {raw_value!r})"
-                )
-            raw_value = corrected
         out_name = entry.get("out_name") or dim
         if out_name in ds.variables or out_name in ds.coords:
             continue
