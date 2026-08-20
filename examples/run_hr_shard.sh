@@ -72,8 +72,14 @@ if [ -z "${shard_yaml:-}" ]; then
 fi
 shard_basename=$(basename "$shard_yaml" .yaml)
 
-source ~/loadconda.sh
-conda activate pycmor_py312
+# Conda entry point. Defaults to the shared miniforge install on /work rather
+# than a personal ~/loadconda.sh wrapper, which only sources this same file and
+# depends on one user's home directory staying readable. Override either value
+# to use your own environment.
+PYCMOR_CONDA_INIT="${PYCMOR_CONDA_INIT:-/work/ab0246/a270092/software/miniforge3/etc/profile.d/conda.sh}"
+PYCMOR_CONDA_ENV="${PYCMOR_CONDA_ENV:-pycmor_py312}"
+source "$PYCMOR_CONDA_INIT"
+conda activate "$PYCMOR_CONDA_ENV"
 
 # Refresh esgvoc CV cache on this compute node before pycmor / esgvoc
 # imports. SLURM nodes can hold an older snapshot than the one used to
@@ -86,8 +92,14 @@ conda activate pycmor_py312
 esgvoc use universe@latest 2>/dev/null || echo "esgvoc universe refresh failed (continuing with current cache)"
 esgvoc use cmip7@latest 2>/dev/null || echo "esgvoc cmip7 refresh failed (continuing with current cache)"
 
-cd /work/ab0246/a270092/software/pycmor
-export PYCMOR_HOME=/work/ab0246/a270092/software/pycmor
+# Repo root. Deriving this from the script's own path does NOT work under
+# sbatch: SLURM copies the batch script to /var/spool/slurmd/job*/slurm_script
+# before running it, so BASH_SOURCE points at the spool copy. The submitter
+# exports PYCMOR_HOME (it knows its own location); SLURM_SUBMIT_DIR is the
+# fallback when this script is sbatched directly from the repo root.
+PYCMOR_HOME="${PYCMOR_HOME:-${SLURM_SUBMIT_DIR:-$PWD}}"
+cd "$PYCMOR_HOME"
+export PYCMOR_HOME
 
 # cc-plugin-aicc (DKRZ, Schupfner/Mazumder) validates coordinates against the
 # CMIP7 CMOR tables and is the third suite in qc_tests. It reads the tables
@@ -146,7 +158,10 @@ export DASK_DISTRIBUTED__WORKER__MEMORY__TERMINATE=0.90
 export DASK_DISTRIBUTED__WORKER__CLOSE_TIMEOUT=60s
 export DASK_DISTRIBUTED__NANNY__PROCESS_CLOSE_TIMEOUT=60s
 
-PYCMOR_SCRATCH=/scratch/a/a270092/pycmor_tmp/${SLURM_JOB_ID:-$$}_${task_idx}
+# Scratch root, following the Levante convention /scratch/<initial>/<user>.
+# Same pattern submit_hr_year_shards.sh already uses for its workdir default.
+PYCMOR_SCRATCH_ROOT="${PYCMOR_SCRATCH_ROOT:-/scratch/${USER:0:1}/$USER}"
+PYCMOR_SCRATCH="$PYCMOR_SCRATCH_ROOT/pycmor_tmp/${SLURM_JOB_ID:-$$}_${task_idx}"
 mkdir -p "$PYCMOR_SCRATCH/prefect/storage"
 PREFECT_NODELOCAL=/tmp/pycmor_prefect_${SLURM_JOB_ID:-$$}_${task_idx}
 mkdir -p "$PREFECT_NODELOCAL/storage"
@@ -215,7 +230,7 @@ if [ "${SHARD_JEMALLOC:-off}" = "on" ]; then
   echo "=== LD_PRELOAD=$LD_PRELOAD (jemalloc) ==="
 fi
 
-OUTROOT=${OUTROOT:-/scratch/a/a270092/pycmor_hr_shard_out}
+OUTROOT=${OUTROOT:-$PYCMOR_SCRATCH_ROOT/pycmor_hr_shard_out}
 OUTDIR="$OUTROOT/$OUTSUB"
 mkdir -p "$OUTDIR"
 command -v lfs >/dev/null && lfs setstripe -c 8 "$OUTDIR" 2>/dev/null || true
@@ -271,7 +286,13 @@ echo "=== node $(hostname), $(nproc) cores allocated, $(free -g | awk '/^Mem:/{p
 # via WEDGE_TIMEOUT_SEC=<seconds>; set 0 to disable.
 WEDGE_TIMEOUT_SEC="${WEDGE_TIMEOUT_SEC:-5400}"
 if [ "$WEDGE_TIMEOUT_SEC" -gt 0 ] && [ -n "${SLURM_JOB_ID:-}" ]; then
-  WEDGE_LOG_FILE="/work/ab0246/a270092/software/pycmor/pycmor_hr_shard_${SLURM_JOB_NAME:-shard}_${SLURM_ARRAY_JOB_ID:-$SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID:-1}.log"
+  # Derive the log path from where sbatch was invoked rather than hardcoding
+  # a checkout. `#SBATCH --output` above is a relative filename, so SLURM
+  # writes the log into the submission directory; SLURM_SUBMIT_DIR is that
+  # same directory. Hardcoding it meant the watchdog only worked for whoever
+  # owned the path in the script -- for everyone else it polled a file that
+  # never appeared and silently never fired, with no error to notice.
+  WEDGE_LOG_FILE="${SLURM_SUBMIT_DIR:-$PWD}/pycmor_hr_shard_${SLURM_JOB_NAME:-shard}_${SLURM_ARRAY_JOB_ID:-$SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID:-1}.log"
   WEDGE_TARGET_JOB="${SLURM_ARRAY_JOB_ID:+${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}}"
   WEDGE_TARGET_JOB="${WEDGE_TARGET_JOB:-$SLURM_JOB_ID}"
   echo "=== watchdog: scancel ${WEDGE_TARGET_JOB} if ${WEDGE_LOG_FILE} mtime stalls for ${WEDGE_TIMEOUT_SEC}s ==="

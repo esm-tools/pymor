@@ -36,6 +36,17 @@ WORKDIR="${3:-/scratch/${USER:0:1}/$USER/pycmor_hr/$(basename "$RUN")_y${YEAR}_s
 HERE="$(cd "$(dirname "$0")" && pwd)"
 mkdir -p "$WORKDIR"
 
+# Repo root, passed down to run_hr_shard.sh via --export=ALL. The shard script
+# cannot work this out for itself: SLURM copies batch scripts to a spool dir
+# before running them, so BASH_SOURCE there points at the copy, not the
+# checkout. We know it here because this script runs from where it lives.
+export PYCMOR_HOME="${PYCMOR_HOME:-$(cd "$HERE/.." && pwd)}"
+
+# SLURM account. #SBATCH directives in run_hr_shard.sh are parsed before any
+# shell runs and so cannot expand variables; the --account flag below overrides
+# the directive, which stays as the fallback for a direct sbatch.
+ACCOUNT="${ACCOUNT:-ab0246}"
+
 # Resolve the run argument to a full path (matches repoint_hr_year.py's
 # resolve_run_dir logic). Relative names resolve under RUNTIME_ROOT.
 RUNTIME_ROOT=/work/bb1469/a270092/runtime/awiesm3-develop
@@ -400,6 +411,7 @@ for yaml in "$YAMLS_DIR"/*.yaml; do
     array_spec="1-${num_shards}"
   fi
   jid=$(sbatch --parsable \
+        --account="$ACCOUNT" \
         --array="$array_spec" \
         -J "$jobname" \
         --time="$tier_walltime" \
