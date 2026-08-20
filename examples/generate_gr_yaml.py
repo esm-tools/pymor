@@ -20,9 +20,11 @@ Pattern rewrites (string level, applied recursively to every str value):
   `\\.fesom\\.\\d{4}\\.nc`  →  `\\.fesom\\.gr\\.\\d{4}\\.nc`
 
 Inherit overrides:
-  grid_label          → gr
+  grid_label          → g131       (CMIP7 CV: regular-lat-lon 0.5°, n_cells=259200,
+                                    southernmost_latitude=-89.75, westernmost_longitude=0.25;
+                                    verified against sst.fesom.gr lat[0]=-89.75 lon[0]=0.25)
   grid                → "regular 0.5° lat/lon (XIOS interpolation from FESOM DARS, 720x360)"
-  nominal_resolution  → "50km"   (CMIP7 CV-bin for ~44 km area-weighted √mean cell area)
+  nominal_resolution  → "50 km"   (CMIP7 CV-bin for ~44 km area-weighted √mean cell area)
   name                → original + " (gr)"   (for log clarity)
 
 Usage:
@@ -285,11 +287,15 @@ def main():
     kept = after_files
 
     inh = d.setdefault("inherit", {})
-    inh["grid_label"] = "gr"
+    # CMIP7 CV grid_label: g131 is the registered horizontal_grid_cell for
+    # regular-latitude-longitude, n_cells=259200 (720x360), 0.5° x 0.5°
+    # offsets lat[0]=-89.75, lon[0]=0.25 — matches the FESOM regrid exactly.
+    # Verified 2026-06-16 against EMD_RESPONSE_cmip7_grid_label_cv.md.
+    inh["grid_label"] = "g131"
     inh["grid"] = (
         "regular 0.5° lat/lon (XIOS interpolation from FESOM DARS, 720x360 cells)"
     )
-    inh["nominal_resolution"] = "50km"
+    inh["nominal_resolution"] = "50 km"
 
     gen = d.setdefault("general", {})
     base_name = gen.get("name", "")
