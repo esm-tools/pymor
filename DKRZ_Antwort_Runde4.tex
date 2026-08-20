@@ -17,9 +17,9 @@
 \newcommand{\upstream}{\textcolor{blue!60!black}{\textbf{upstream}}}
 
 \title{AWI-ESM3-4-2-veg-HR, CMIP7 piControl\\[2mm]
-\large Nachtrag zu \code{cli116}}
+\large Was seit der dritten Antwort passiert ist, gemessen an \code{cli117}}
 \author{Jan Streffing, AWI}
-\date{19. August 2026}
+\date{20. August 2026}
 
 \begin{document}
 % babel-ngerman macht " aktiv, was in Code-Beispielen zuschlaegt. Die Shorthands
@@ -29,31 +29,168 @@
 
 \section{Kurzfassung}
 
-Ein Nachtrag zur dritten Antwort. Beim Nachzaehlen ist mir aufgefallen, dass zu
-\code{cli116} nur 529 Reports auf 534 Dateien lagen. Fuenf Dateien hatten gar keinen
-Sidecar. Die Ursache ist gefunden, die fuenf sind nachgezogen, und der Fall kann
-jetzt nicht mehr unbemerkt durchrutschen.
-
-An den Zahlen aus der dritten Antwort aendert das fast nichts. Die fuenf Dateien
-bringen zusammen 0 HIGH und 1 MEDIUM.
+Seit der dritten Antwort ist ein weiterer voller Lauf durch, \code{cli117}. Er
+traegt neun Commits mehr als \code{cli116}, darunter zwei echte Fehler von uns und
+das Gitter, auf das wir gewartet haben.
 
 \begin{center}
 \begin{tabular}{lrrr}
 \toprule
-& \textbf{dritte Antwort} & \textbf{jetzt} & \textbf{Differenz} \\
+& \textbf{\code{cli116}} & \textbf{\code{cli117}} & \textbf{Differenz} \\
 \midrule
-Reports & 529 von 534 & 534 von 534 & $+5$ \\
-HIGH    & 35          & 35          & $\pm 0$ \\
-MEDIUM  & 304         & 305         & $+1$ \\
+Dateien & 534 & 534 & $\pm 0$ \\
+Reports & 534 & 534 & $\pm 0$ \\
+HIGH    &  35 &  24 & $-11$ \\
+MEDIUM  & 305 & 306 & $+1$ \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-Die Aufschluesselung der 35 HIGH aus der dritten Antwort gilt unveraendert weiter.
+Die $-11$ verdecken, was tatsaechlich passiert ist. \textbf{27 HIGH sind
+verschwunden}, und \textbf{16 neue sind dazugekommen, alle aus einer einzigen
+Ursache}, die nicht bei uns liegt und sich von selbst erledigt. Beides steht unten.
 
-\section{Woran es lag}
+\section{Zwei Fehler, die wirklich unsere waren}
 
-Nicht an den Dateien. Die fuenf sind vollstaendig und lassen sich einwandfrei
+Beide kamen ans Licht, weil ich deine Befunde nach Zustaendigkeit sortiert habe und
+zwei davon in der falschen Schublade lagen.
+
+\textbf{\code{slthick} lag auf dem falschen Gitter.} Die Regel las
+\code{atm\_remapped\_1m\_lsm}, also die auf $640 \times 1296$ regriddete
+Land-See-Maske, deklarierte aber \code{g122}, das reduzierte Gauss-Gitter mit
+421120 Zellen. Von allen unseren Regeln mit einer \code{atm\_remapped\_*}-Eingabe war
+sie die einzige mit \code{g122}, alle anderen tragen \code{g129}. Richtig ist
+trotzdem \code{g122}: \code{slthick} liefert die Schichtdicken zu \code{mrsol} und
+\code{tsl}, und wer die zusammen rechnet, braucht sie auf demselben Gitter. Die
+Regel liest jetzt ein natives Feld.
+
+Darunter lag ein zweiter Fehler, der den ersten verdeckt hat. Unser Schritt
+broadcastete die vier Schichtdicken nur ueber die \emph{letzte} horizontale
+Dimension. Auf einem unstrukturierten Gitter gibt es nur eine, dort ist das nie
+aufgefallen. Auf dem regulaeren wurde daraus \code{lon}, und die Breitenachse
+verschwand kommentarlos. \code{cli116} hat \code{slthick(depth, lon)} ausgeliefert.
+
+\textbf{\code{depth} trug weiter \code{units = "meter"}} bei \code{tsl},
+\code{mrsol} und \code{mrsll}. Der Grund ist derselbe Namensbruch wie damals bei
+\code{plev}: unser Pass sucht die Achsen unter ihrem Namen aus der Datenanfrage, die
+Datei fuehrt sie unter dem \code{out\_name}. Fuer \code{lev}, \code{plev} und
+\code{height} sind die gleich, fuer \code{sdepth} nicht, das steht als \code{depth}
+auf der Platte.
+
+Eine Falle dabei, die der naheliegende Fix gestellt haette: \code{mrsol} gibt es
+zweimal, die Schichtvariante mit \code{meter} und die \code{d10cm}-Variante mit
+\code{cm}. Euer Checker erlaubt beide. Die CV-Einheit einfach durchzuschreiben
+haette Zentimeter zu Metern erklaert und die Schicht um Faktor 100 verschoben. Wir
+gleichen jetzt nur noch die Schreibweise an, nie die Einheit selbst.
+
+\section{Nebenbei: unsere Koordinatentabelle war zwoelf Tage alt}
+
+Beim Aufraeumen ist mir aufgefallen, dass wir gegen \code{CMIP7\_coordinate.json}
+vom 2026-07-09 cmorisiert haben, waehrend \code{aicc} und \code{wcrp\_cmip7} gegen
+den Stand vom 2026-07-21 validieren. Sieben Achsen weichen ab. Zwei davon sind
+sichtbar geworden:
+
+\begin{itemize}
+\item \code{typetreebd/be/nd/ne} trugen alle vier \code{value = "trees"}. Das ist
+  genau dein Befund aus der Runde zu \code{cli112}. Ich hatte das im Code
+  ueberschrieben, weil ich annahm, die Tabelle sei eben so. Upstream hatte die
+  spezifischen CF-Flaechentypen laengst nachgezogen, mein Workaround war eine
+  Kruecke fuer eine veraltete Datei.
+\item \code{deltasigt} hatte einen ganzen Absatz Prosa als \code{long\_name},
+  inklusive literalem \verb|\n\n|. In jeder \code{mlotst}-Datei stand deshalb ein
+  \code{long\_name} mit doppeltem Leerzeichen und ein \code{comment} mit dem Rest.
+\end{itemize}
+
+Die Tabelle ist jetzt auf dem Stand, gegen den auch geprueft wird, und ein Test
+schlaegt an, wenn ein kuenftiger Refresh wieder eine aeltere einzieht.
+
+\section{Das Zonalgitter, und ein Zeitfenster von drei Stunden}
+
+Die vier Dateien ohne eigenes Gitter (\code{msftm} auf Tiefe und auf Dichte,
+\code{hfbasin}, \code{sltbasin}) haben ihr Label bekommen. Registriert als
+\code{g239}, gemergt am 18.08. Die Achsen passten schon vorher: 180 Baender von
+$-89{,}5$ bis $89{,}5$ mit Schritt 1. Es fehlte nur das Label, vorher stand dort
+\code{g130} und behauptete damit die 3146761 FESOM-Knoten.
+
+Das hat 15 der 27 verschwundenen HIGH gebracht. Und alle 16 neuen, denn
+\code{g239} kennt kein Checker:
+
+\begin{center}
+\begin{tabular}{rl}
+\toprule
+4 & \code{[ATTR004]} \code{grid\_label} Vokabularpruefung \\
+4 & \code{[FILE001]} DRS-Verzeichnis \\
+4 & \code{[FILE001]} DRS-Dateiname \\
+4 & \code{[AICC002]} \code{grid\_label='g239' is not registered} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Ich bin der Kette nachgegangen, weil mich interessiert hat, ob wir etwas falsch
+gemacht haben:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Stufe} & \textbf{\code{g239}} & \textbf{Zeitpunkt} \\
+\midrule
+EMD \code{src-data}                & da      & 18.08., PR \#1294 \\
+EMD \code{production}              & da      & \textbf{18.08. 08:22} \\
+\code{CMIP7-CVs} \code{grid\_label} & fehlt   & letzter Sync \textbf{18.08. 05:34} \\
+esgvoc \code{cmip7@1.2.18}          & fehlt   & veroeffentlicht 19.08. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Der Sync von EMD in die CV laeuft als automatischer PR
+(\code{.github/scripts/sync\_emd\_entries.py}). Der letzte gemergte war \#576 am
+18.08. um 05:34. \code{g239} kam um 08:22 auf \code{production}, also zwei Stunden
+und achtundvierzig Minuten zu spaet fuer genau diesen Lauf. \code{g238} hatte es
+rechtzeitig geschafft und ist drin.
+
+Der naechste Sync liegt schon als Entwurf vor, \code{CMIP7-CVs} \#592, und
+\code{grid\_label/g239.json} ist darin enthalten. Es haengt also an einem Merge und
+einer CV-Version danach. Nichts davon ist kaputt, und wir drehen \code{g239} nicht
+zurueck: lieber 16 Befunde aus einem Terminproblem als vier Dateien, die ein Gitter
+behaupten, auf dem sie nicht liegen.
+
+Falls du an der Stelle mehr Einblick hast als ich: aus Sicht eines Datenproduzenten
+ist das unangenehm, weil zwischen "Gitter ist registriert" und "Gitter validiert"
+ein Fenster von Tagen liegt, in dem ein Produktionslauf HIGH-Befunde einsammelt,
+die niemand beheben kann.
+
+\section{Was uebrig bleibt}
+
+Acht HIGH, keiner davon neu:
+
+\begin{center}
+\begin{tabular}{rl}
+\toprule
+5 & \code{plev7h}, unsere Modellausgabe schreibt die falschen Druckflaechen \\
+1 & \code{pfull}, die Klimatologie war in diesem Lauf schon aktuell \\
+1 & \code{vegtype}, der Tabellenwiderspruch \\
+1 & \code{basin}, \code{cc-plugin-wcrp\#67} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Zu \code{vegtype} noch ein Nachtrag, weil ich es diesmal nachgesehen habe: der
+geforderte Term ist \code{needleleaf\_evergreen\_tree}, im Singular, waehrend seine
+drei Geschwister im Plural stehen und wir \code{needleleaf\_evergreen\_trees}
+schreiben. Der Singular steht \emph{in beiden} Koordinatentabellen, auch in der
+offiziellen vom 2026-07-21. Es ist also kein Versaeumnis von uns und auch keine
+Altlast unserer Kopie.
+
+Der eine MEDIUM mehr ist ein CF-2.4-Befund auf \code{slthick}, und den handelt man
+sich genau dadurch ein, dass die Datei jetzt eine echte horizontale Dimension hat.
+Gleiche Klasse wie die anderen 75.
+
+\section{Die fuenf fehlenden Sidecars aus \code{cli116}}
+
+Beim Nachzaehlen von \code{cli116} lagen nur 529 Reports auf 534 Dateien. Fuenf
+Dateien hatten gar keinen Sidecar. Die Ursache lag nicht an den Dateien.
+
+Die fuenf sind vollstaendig und lassen sich einwandfrei
 pruefen, ich habe genau denselben Aufruf spaeter von Hand wiederholt und vier davon
 kamen ohne einen einzigen Befund zurueck.
 
@@ -74,7 +211,7 @@ und fuenf mal nicht, und dass der Wiederholungsversuch von Hand jedes Mal
 durchlief. Reproduzierbar ist es fuer mich nicht, deshalb bleibt es ein Verdacht.
 Falls du das kennst, wuerde mich interessieren woran es bei euch lag.
 
-\section{Was wir geaendert haben}
+\section{Warum das lautlos war, und was jetzt dagegen laeuft}
 
 Das ist derselbe lautlose Ausfall, den ich in der dritten Antwort im Zusammenhang mit
 \code{CMIP7\_TABLES\_PATH} beschrieben habe, nur mit einer anderen Ursache: der
@@ -91,8 +228,10 @@ dass diese Regel ohne Report dasteht.
 
 \section{Was das fuer den Bestand heisst}
 
-Fuer \code{cli116} sind es jetzt 534 Reports auf 534 Dateien, also vollstaendig.
-Die frueheren Laeufe haben wir nicht nachgezaehlt. Falls dir in Zahlen aus
+Fuer \code{cli116} sind es jetzt 534 Reports auf 534 Dateien, und \code{cli117}
+hat von sich aus 534 auf 534 geliefert. Der Wiederholungsversuch hat dort nicht
+einmal ausgeloest, es gab schlicht keinen Importfehler. Die Zahl ist also echt und
+nicht gerettet. Die frueheren Laeufe haben wir nicht nachgezaehlt. Falls dir in Zahlen aus
 \code{cli108} bis \code{cli115} etwas nicht aufgeht, koennte das derselbe Effekt
 sein, und ich schaue gezielt nach.
 
