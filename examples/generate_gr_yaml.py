@@ -77,6 +77,38 @@ FESOM_MESH_STEP_SUBSTRINGS = (
     "average_w_interfaces_to_midpoints",
 )
 
+# Steps that are correct on the FESOM native mesh and WRONG on gr, but that
+# do not fail -- they run to completion and write plausible, incorrect data.
+# The mesh lists above are populated from crashes; nothing surfaces this
+# class, so it has to be listed deliberately.
+#
+# nan_to_zero: FESOM/XIOS writes _FillValue where a field is physically
+# zero (a_ice and every other sea-ice field contains no exact zeros at
+# all), so the cmorized value over ice-free ocean must be 0, not missing.
+# On nod2 that is safe because the mesh is ocean-only -- there is no land
+# node to turn into "0 % sea ice". On gr there is: land cells are stored
+# as fill too, so an unconditional fillna reports 0 % ice over every
+# continent. The gr counterpart takes the ocean footprint from an
+# always-wet reference (sst) produced by the same regridding, so the
+# coastlines agree cell-for-cell.
+NATIVE_ONLY_STEP_REPLACEMENTS = {
+    "nan_to_zero": "nan_to_zero_over_ocean",
+}
+
+# Reference used by nan_to_zero_over_ocean to tell land from ice-free
+# water. Must be wet wherever the ocean is and come from the same XIOS
+# regridding as the data. Measured on the final gr format (year 1851):
+# sst, ssh and sss are each fill in exactly 82431 of 259200 cells, and
+# that set is bit-identical at every timestep.
+OCEAN_REF_VARIABLE = "sst"
+
+# Leading variable token of a FESOM filename pattern, e.g. the `a_ice` in
+# `a_ice\.fesom\.gr\.1851\.nc`. Used to derive the reference pattern from
+# the rule's own primary pattern, which keeps run and year correct
+# automatically -- generate_gr_yaml runs after repoint_hr_year.py, so the
+# year is already substituted.
+VAR_TOKEN_REGEX = re.compile(r"^[A-Za-z0-9_]+(?=\\\.fesom\\\.)")
+
 # Some pipelines share step functions with working pipelines (compute_sisnhc
 # is used by both the simple sisnhc_pipeline and the mesh-dependent
 # sisnhc_from_msnow_pipeline). Substring-match these pipeline NAMES to
@@ -149,6 +181,53 @@ def gr_input_files_exist(rule):
     return any(regex.fullmatch(fn) for fn in _listdir(data_path))
 
 
+def swap_native_only_steps(pipelines):
+    """Swap native-mesh-only steps for their gr counterparts, in place.
+
+    Returns (n_swapped, names of the pipelines touched). The pipeline
+    names are what tells the rule pass which rules need the reference
+    triplet injected.
+    """
+    n = 0
+    touched = set()
+    for pl in pipelines:
+        steps = pl.get("steps")
+        if not steps:
+            continue
+        new_steps = []
+        for s in steps:
+            if isinstance(s, str):
+                for native, gr in NATIVE_ONLY_STEP_REPLACEMENTS.items():
+                    if native in s and gr not in s:
+                        s = s.replace(native, gr)
+                        n += 1
+                        touched.add(pl.get("name"))
+                        break
+            new_steps.append(s)
+        pl["steps"] = new_steps
+    return n, touched
+
+
+def inject_ocean_ref(rule):
+    """Give a rule the ocean_ref triplet nan_to_zero_over_ocean needs.
+
+    Derived from the rule's own primary input so the run directory and
+    the year are inherited rather than configured. Returns True if the
+    triplet could be built.
+    """
+    inputs = rule.get("inputs") or []
+    if not inputs:
+        return False
+    path = inputs[0].get("path")
+    pattern = inputs[0].get("pattern", "")
+    if not path or not VAR_TOKEN_REGEX.match(pattern):
+        return False
+    rule["ocean_ref_path"] = path
+    rule["ocean_ref_pattern"] = VAR_TOKEN_REGEX.sub(OCEAN_REF_VARIABLE, pattern)
+    rule["ocean_ref_variable"] = OCEAN_REF_VARIABLE
+    return True
+
+
 def rewrite_patterns(obj):
     if isinstance(obj, str):
         # Insert `gr\.` between `\.fesom\.` and the year token (which may
@@ -184,6 +263,22 @@ def main():
     after_mesh = rewrite_patterns(after_mesh)
     after_files = [r for r in after_mesh if gr_input_files_exist(r)]
 
+    # Steps that silently produce wrong data on gr (see the list's comment),
+    # swapped for their gr counterparts. The rules using those pipelines then
+    # need the reference triplet the replacement step reads.
+    n_steps_swapped, swapped_pls = swap_native_only_steps(pipelines)
+    n_refs = 0
+    for r in after_files:
+        if set(r.get("pipelines") or []) & swapped_pls:
+            if inject_ocean_ref(r):
+                n_refs += 1
+            else:
+                print(
+                    f"  WARNING: {r.get('name')!r} uses a swapped pipeline but its primary input "
+                    "does not yield an ocean reference; it would mask nothing.",
+                    file=sys.stderr,
+                )
+
     d["rules"] = after_files
     n_mesh_dropped = len(after_fesom) - len(after_mesh)
     n_missing_dropped = len(after_mesh) - len(after_files)
@@ -214,7 +309,9 @@ def main():
         f"  {Path(src).name} -> {Path(dst).name}: "
         f"{len(kept)}/{len(rules)} rules kept "
         f"({n_mesh_dropped} fesom-mesh-only, "
-        f"{n_missing_dropped} no-gr-input dropped)",
+        f"{n_missing_dropped} no-gr-input dropped, "
+        f"{n_steps_swapped} native-only steps swapped, "
+        f"{n_refs} ocean refs injected)",
         file=sys.stderr,
     )
 

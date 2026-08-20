@@ -32,10 +32,28 @@ jobqueue:
 
 pipelines:
   # siconc: fraction (0-1) → percentage (0-100)
+  #
+  # nan_to_zero first, because XIOS writes _FillValue (9.96921e+36, NaN
+  # after xarray's mask_and_scale) at every node with no ice — a_ice
+  # contains no exact zeros at all. Checked on a_ice.fesom.1586.nc: of
+  # 3146761 nodes 2316845 are fill and 0 are 0.0, and the fill mask moves
+  # with the season (243385 nodes filled in January carry ice in July), so
+  # it means "no ice now", not land. siconc is branded hxy-u — unmasked,
+  # `area: time: mean`, "percentage of a given grid cell that is covered
+  # by sea ice on the ocean grid" — so ice-free ocean is 0 %, not missing.
+  # Without this step the output is _FillValue wherever there is no ice.
+  # Safe here only because the FESOM native mesh is ocean-only: nod2 has
+  # no land nodes to turn into 0 % ice. Do NOT copy this into the gr
+  # variant or into siconca — both have real land cells. siconca (OpenIFS
+  # grid) stores them as fill today; the gr regrid is due to be fixed to
+  # do the same. Once it is, check whether gr marks ice-free ocean as 0
+  # or as fill: if fill, land and open water are indistinguishable here
+  # and gr needs a land-sea mask rather than this step.
   - name: siconc_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
       - pycmor.std_lib.generic.get_variable
+      - script://$PYCMOR_HOME/examples/custom_steps.py:nan_to_zero
       - script://$PYCMOR_HOME/examples/custom_steps.py:fraction_to_percent
       - pycmor.std_lib.timeaverage.timeavg
       - pycmor.std_lib.set_time_bounds

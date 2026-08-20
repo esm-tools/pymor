@@ -6517,6 +6517,100 @@ def nan_to_zero(data, rule):
     return out
 
 
+def nan_to_zero_over_ocean(data, rule):
+    """Set NaN to 0 where a reference field says ocean; keep NaN over land.
+
+    The gr counterpart of `nan_to_zero`. On the FESOM native mesh that
+    step is unconditional, because nod2 is ocean-only and every fill
+    means "physically zero here" (no sea ice, no river input). On the
+    regridded 720x360 grid land exists and is stored as fill too, so the
+    two are indistinguishable within a single file and an unconditional
+    fillna would report 0 % sea ice over every continent.
+
+    The ocean footprint is therefore taken from a reference variable that
+    is wet everywhere the ocean is — sst, ssh or sss. Using a reference
+    from the SAME XIOS regridding is the point: its coastline matches the
+    data cell-for-cell, which a mask from any other interpolation or from
+    an external dataset would not.
+
+    Verified on the final gr output format
+    (AWI-ESM3-VEG-HR-CMIP7-historical_1949_gr_bugfix, year 1851): of
+    259200 cells, sst is fill in exactly 82431 (31.8 %) and that set is
+    bit-identical at every timestep, while a_ice is fill in 220913 in
+    January and 217582 in July. The land sets nest exactly — no cell has
+    a_ice valid where sst says land, and no land cell is left unfilled by
+    a_ice — so `a_ice fill AND ocean` isolates ice-free water (138482
+    cells in January) with no coastal ambiguity.
+
+    Because the reference is time-invariant, one timestep is read and no
+    time alignment is needed; this step deliberately avoids the reindex
+    and chunk-matching machinery that `mask_where_no_seaice` requires.
+
+    2-D fields only. A surface ocean mask is wrong for a 3-D field, whose
+    valid footprint shrinks with depth as bathymetry cuts levels off, so
+    any extra dimension raises rather than silently broadcasting.
+
+    Rule attributes:
+      - ocean_ref_path: directory holding the reference files
+      - ocean_ref_pattern: regex matching the reference filenames
+        (e.g. ``sst\\.fesom\\.gr\\.1851\\.nc``)
+      - ocean_ref_variable: variable name (e.g. 'sst')
+    """
+    import xarray as xr  # noqa: WPS433
+
+    name = rule.get("name", "?") if hasattr(rule, "get") else "?"
+
+    ref = _load_secondary_mf(rule, "ocean_ref_path", "ocean_ref_pattern", "ocean_ref_variable")
+    # The cached loader hands back a shared object; never mutate it.
+    ref = ref.copy(deep=False)
+
+    time_dims = ("time", "time_counter")
+    for tdim in time_dims:
+        if tdim in ref.dims:
+            ref = ref.isel({tdim: 0}, drop=True)
+            break
+
+    # Grid agreement. A reference on a different grid must fail loudly:
+    # broadcasting it against the data would produce a plausible field
+    # masked along the wrong coastline.
+    extra = [d for d in data.dims if d not in set(ref.dims) | set(time_dims)]
+    if extra:
+        raise ValueError(
+            f"nan_to_zero_over_ocean [{name}]: data has dimension(s) {extra} beyond the reference's "
+            f"{tuple(ref.dims)}. A surface ocean mask is valid for 2-D fields only — a 3-D field's "
+            "valid footprint shrinks with depth."
+        )
+    for d in ref.dims:
+        if d not in data.dims:
+            raise ValueError(
+                f"nan_to_zero_over_ocean [{name}]: reference dimension {d!r} is absent from the data "
+                f"({tuple(data.dims)}); reference and data are not on the same grid."
+            )
+        if data.sizes[d] != ref.sizes[d]:
+            raise ValueError(
+                f"nan_to_zero_over_ocean [{name}]: dimension {d!r} is {data.sizes[d]} in the data but "
+                f"{ref.sizes[d]} in the reference; reference and data are not on the same grid."
+            )
+
+    ocean = ref.notnull()
+    frac = float(ocean.mean())
+    # logger.warning, not info: custom_steps uses stdlib logging, whose
+    # default level filters INFO out of the shard logs.
+    logger.warning(f"nan_to_zero_over_ocean [{name}]: ocean fraction {100 * frac:.1f}% of {ocean.size} cells")
+    if not 0.30 <= frac <= 0.95:
+        logger.warning(
+            f"nan_to_zero_over_ocean [{name}]: ocean fraction {100 * frac:.1f}% is outside the expected "
+            "range for a global ocean grid (~68 %). Check ocean_ref_variable — a reference that is "
+            "itself masked (a sea-ice field, say) would give a mask that is far too small."
+        )
+
+    out = xr.where(ocean & data.isnull(), 0, data)
+    out.attrs = data.attrs.copy()
+    if hasattr(data, "name"):
+        out.name = data.name
+    return out
+
+
 # ============================================================
 # OIFS hybrid sigma-pressure vertical coordinate (alevel)
 # ============================================================
