@@ -53,25 +53,39 @@ RUNTIME_ROOT = "/work/bb1469/a270092/runtime/awiesm3-develop"
 # `piControl` is empty on purpose: it is what the source yamls already say,
 # so the default remains a byte-for-byte no-op.
 #
-# historical branch values are from the run's own runscript
-# (awiesm3-v3.4.2-...-2y_branchoff_historical_...yaml): initial_date
-# 1850-01-01, initialised from the piControl restart fesom.1949, i.e.
-# piControl 1950-01-01. piControl's own calendar starts 1850, so that branch
-# point is 36524 days in; the child branches at its own origin, hence 0.0.
+# historical, 1pctCO2 and abrupt-4xCO2 all branch off piControl at the same
+# point, so they share one parent block. The `_1949` in each run directory is
+# that branch year: they are initialised from the piControl restart
+# fesom.1949, i.e. piControl 1950-01-01. piControl's own calendar starts 1850,
+# putting the branch 36524 days in. All three children start their own
+# calendars at 1850-01-01 (historical's runscript says so; confirmed for the
+# other two), so each branches at its own origin -- branch_time_in_child 0.0.
+#
+# The experiment_id spellings are the CMIP7 CV validation-keys
+# (CMIP7-CVs/experiment/*.json), which is why abrupt-4xCO2 is hyphenated
+# although the run directory is not.
+_BRANCHED_OFF_PICONTROL_1949 = {
+    "parent_experiment_id": "piControl",
+    "parent_activity_id": "CMIP",
+    "parent_source_id": "AWI-ESM3-4-2-veg-HR",
+    "parent_variant_label": "r1i1p1f1",
+    "parent_time_units": '"days since 1850-01-01"',
+    "branch_time_in_parent": "36524.0",
+    "branch_time_in_child": "0.0",
+}
 EXPERIMENTS = {
     "piControl": {},
-    "historical": {
-        "experiment_id": "historical",
-        "parent_experiment_id": "piControl",
-        "parent_activity_id": "CMIP",
-        "parent_source_id": "AWI-ESM3-4-2-veg-HR",
-        "parent_variant_label": "r1i1p1f1",
-        "parent_time_units": '"days since 1850-01-01"',
-        "branch_time_in_parent": "36524.0",
-        "branch_time_in_child": "0.0",
-    },
+    "historical": {"experiment_id": "historical", **_BRANCHED_OFF_PICONTROL_1949},
+    "1pctCO2": {"experiment_id": "1pctCO2", **_BRANCHED_OFF_PICONTROL_1949},
+    "abrupt-4xCO2": {"experiment_id": "abrupt-4xCO2", **_BRANCHED_OFF_PICONTROL_1949},
 }
 DEFAULT_EXPERIMENT = "piControl"
+
+# Run-directory spellings that differ from the CV experiment_id, for the
+# mismatch guard only. Without this, `AWI-ESM3-VEG-HR-CMIP7-abrupt4xCO2_1949`
+# would not be recognised as abrupt-4xCO2 and the guard would wave through a
+# run cmorized as piControl.
+RUN_NAME_ALIASES = {"abrupt4xco2": "abrupt-4xCO2"}
 
 
 def resolve_run_dir(arg: str) -> str:
@@ -87,7 +101,11 @@ def check_run_matches_experiment(run_dir: str, experiment: str) -> None:
     anything else (Test_16n, Final_CMIP7_IO_Test_01) pass through.
     """
     base = pathlib.Path(run_dir).name.lower()
-    named = [e for e in EXPERIMENTS if e.lower() in base]
+    tokens = {e.lower(): e for e in EXPERIMENTS}
+    tokens.update(RUN_NAME_ALIASES)
+    # Longest token first: `abrupt4xco2` must win over any shorter token that
+    # happens to be a substring of the same directory name.
+    named = [exp for tok, exp in sorted(tokens.items(), key=lambda kv: -len(kv[0])) if tok in base]
     if named and experiment not in named:
         raise SystemExit(
             f"ERROR: run directory {pathlib.Path(run_dir).name!r} looks like "
