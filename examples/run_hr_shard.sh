@@ -101,6 +101,21 @@ PYCMOR_HOME="${PYCMOR_HOME:-${SLURM_SUBMIT_DIR:-$PWD}}"
 cd "$PYCMOR_HOME"
 export PYCMOR_HOME
 
+# cc-plugin-aicc (DKRZ, Schupfner/Mazumder) validates coordinates against the
+# CMIP7 CMOR tables and is the third suite in qc_tests. It reads the tables
+# from this path.
+#
+# This export is not optional. Without it the plugin raises FileNotFoundError
+# out of ComplianceChecker.run_checker, which kills the whole cchecker call:
+# no JSON is written at all, so cf and wcrp_cmip7 findings are lost too and
+# the file ends up with no QC result rather than an aicc-specific error.
+# Verified: without the variable exit=1 and no report; with it, exit=1 (the
+# normal "findings exist under -c strict") and all three suites present.
+#
+# Pinned at ee94f52 (2026-08-13). The clone is shallow; re-pull deliberately
+# rather than by accident, because a table change moves our QC numbers.
+export CMIP7_TABLES_PATH=/work/ab0246/a270092/software/cmip7-cmor-tables/tables
+
 N_WORKERS=${N_WORKERS:-4}
 TPW=${TPW:-4}
 # 48 GB per worker (was 32 GB in cli22): hourly OIFS rules like tas
@@ -153,6 +168,26 @@ mkdir -p "$PREFECT_NODELOCAL/storage"
 export PREFECT_HOME="$PREFECT_NODELOCAL"
 export PREFECT_LOCAL_STORAGE_PATH="$PREFECT_NODELOCAL/storage"
 trap "rm -rf $PREFECT_NODELOCAL" EXIT
+# TMPDIR lives on Lustre because dask spills can be large, but the directory
+# is not always usable the instant mkdir returns: the metadata has to reach the
+# node first. Bash then fails the very next here-document with "cannot create
+# temp file for here-document", which killed cap7_land shard 4 twice and
+# core_atm shard 2 once, on three different nodes. Probe it, retry briefly, and
+# fall back to node-local /tmp rather than losing the whole shard over a
+# temp file.
+for _try in 1 2 3 4 5; do
+  if touch "$PYCMOR_SCRATCH/.probe" 2>/dev/null; then rm -f "$PYCMOR_SCRATCH/.probe"; break; fi
+  echo "=== TMPDIR $PYCMOR_SCRATCH not writable yet (attempt $_try), waiting ==="
+  sleep 3
+  mkdir -p "$PYCMOR_SCRATCH/prefect/storage" 2>/dev/null || true
+done
+if ! touch "$PYCMOR_SCRATCH/.probe" 2>/dev/null; then
+  PYCMOR_SCRATCH=/tmp/pycmor_tmp_${SLURM_JOB_ID:-$$}_${task_idx}
+  mkdir -p "$PYCMOR_SCRATCH/prefect/storage"
+  echo "=== WARNING: falling back to node-local TMPDIR $PYCMOR_SCRATCH ==="
+else
+  rm -f "$PYCMOR_SCRATCH/.probe"
+fi
 export TMPDIR="$PYCMOR_SCRATCH"
 export HDF5_USE_FILE_LOCKING=FALSE
 export OMP_NUM_THREADS=1

@@ -203,6 +203,24 @@ def add_scalar_coordinates(ds: xr.Dataset, rule: Rule) -> xr.Dataset:
             ds[out_name].encoding["_FillValue"] = None
             logger.info(f"  added scalar coordinate {out_name!r} = {value} {attrs.get('units', '')} (from {dim!r})")
 
+            # A scalar layer coordinate stands for a range, and the table says
+            # so: sdepth10cm is must_have_bounds "yes" with bounds_values
+            # "0.0 10.0", i.e. the 0-10 cm soil layer whose midpoint is the 5.0
+            # written above. We were writing the midpoint alone, so the layer
+            # the value represents was not in the file at all.
+            bounds_values = str(entry.get("bounds_values", "") or "").split()
+            if len(bounds_values) == 2:
+                try:
+                    edges = [float(b) for b in bounds_values]
+                except ValueError:
+                    logger.warning(f"  scalar coordinate {dim!r} has unparsable bounds_values {bounds_values!r}")
+                else:
+                    bounds_name = f"{out_name}_bnds"
+                    ds[bounds_name] = xr.DataArray(np.array(edges, dtype="float64"), dims=("bnds",), attrs={})
+                    ds[bounds_name].encoding["_FillValue"] = None
+                    ds[out_name].attrs["bounds"] = bounds_name
+                    logger.info(f"  added scalar bounds {bounds_name!r} = {edges} (from {dim!r})")
+
     return ds
 
 
@@ -549,6 +567,17 @@ def _set_coordinates_attribute(ds: xr.Dataset, rule: Rule) -> None:
     logger.info("[Coordinate Attributes] Setting 'coordinates' attribute on data variables")
 
     for var_name in ds.data_vars:
+        # Bounds variables get no ``coordinates`` attribute. CF §7.1 says they
+        # inherit from their parent coordinate, and pycmor sets
+        # ``encoding["coordinates"] = None`` on them later in the save path; a
+        # value in attrs as well makes xarray refuse to write the file with
+        # "'coordinates' found in both attrs and encoding". cli115 lost
+        # mrsolLut to exactly that, once scalar layer coordinates started
+        # bringing a ``depth_bnds`` along: its only dimension is ``bnds`` and
+        # the scalar ``depth`` rides on it as a coordinate, so the branch below
+        # saw an auxiliary coordinate and set the attribute.
+        if str(var_name).endswith(("_bnds", "_bounds")) or str(var_name).startswith(("bounds_", "vertices_")):
+            continue
         # Only list AUXILIARY coordinates (non-dim coords). CF explicitly
         # says the ``coordinates`` attribute is for auxiliary coordinate
         # variables; dim coords are implicit and listing them is legal

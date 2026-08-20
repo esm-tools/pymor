@@ -1,0 +1,99 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[ngerman]{babel}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,urlcolor=blue!60!black,linkcolor=black]{hyperref}
+\usepackage{parskip}
+\usepackage{enumitem}
+\setlist{nosep,leftmargin=*}
+
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\ok}{\textcolor{green!45!black}{\textbf{erledigt}}}
+\newcommand{\offen}{\textcolor{orange!75!black}{\textbf{offen}}}
+\newcommand{\upstream}{\textcolor{blue!60!black}{\textbf{upstream}}}
+
+\title{AWI-ESM3-4-2-veg-HR, CMIP7 piControl\\[2mm]
+\large Nachtrag zu \code{cli116}}
+\author{Jan Streffing, AWI}
+\date{19. August 2026}
+
+\begin{document}
+% babel-ngerman macht " aktiv, was in Code-Beispielen zuschlaegt. Die Shorthands
+% werden erst bei \begin{document} scharfgeschaltet, also muss das hierhin.
+\shorthandoff{"}
+\maketitle
+
+\section{Kurzfassung}
+
+Ein Nachtrag zur dritten Antwort. Beim Nachzaehlen ist mir aufgefallen, dass zu
+\code{cli116} nur 529 Reports auf 534 Dateien lagen. Fuenf Dateien hatten gar keinen
+Sidecar. Die Ursache ist gefunden, die fuenf sind nachgezogen, und der Fall kann
+jetzt nicht mehr unbemerkt durchrutschen.
+
+An den Zahlen aus der dritten Antwort aendert das fast nichts. Die fuenf Dateien
+bringen zusammen 0 HIGH und 1 MEDIUM.
+
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+& \textbf{dritte Antwort} & \textbf{jetzt} & \textbf{Differenz} \\
+\midrule
+Reports & 529 von 534 & 534 von 534 & $+5$ \\
+HIGH    & 35          & 35          & $\pm 0$ \\
+MEDIUM  & 304         & 305         & $+1$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Die Aufschluesselung der 35 HIGH aus der dritten Antwort gilt unveraendert weiter.
+
+\section{Woran es lag}
+
+Nicht an den Dateien. Die fuenf sind vollstaendig und lassen sich einwandfrei
+pruefen, ich habe genau denselben Aufruf spaeter von Hand wiederholt und vier davon
+kamen ohne einen einzigen Befund zurueck.
+
+Es lag an \code{cchecker.py} selbst. Er stirbt sporadisch schon beim Import, bevor er
+ueberhaupt eine Datei anfasst:
+
+\begin{quote}
+\code{FileNotFoundError: [Errno 2] No such file or directory}\\
+\code{~~File ".../bin/cchecker.py", line 10, in <module>}\\
+\code{~~~~from compliance\_checker.cf.util import download\_cf\_standard\_name\_table}\\
+\code{~~File ".../compliance\_checker/cf/util.py", line 17, in <module>}
+\end{quote}
+
+Unser Verdacht: parallele Shards, die gleichzeitig den Cache der
+CF-Standardnamentabelle anlegen wollen, und einer sieht die Datei halb geschrieben.
+Dazu passt, dass es in demselben Lauf und derselben Umgebung 529 mal geklappt hat
+und fuenf mal nicht, und dass der Wiederholungsversuch von Hand jedes Mal
+durchlief. Reproduzierbar ist es fuer mich nicht, deshalb bleibt es ein Verdacht.
+Falls du das kennst, wuerde mich interessieren woran es bei euch lag.
+
+\section{Was wir geaendert haben}
+
+Das ist derselbe lautlose Ausfall, den ich in der dritten Antwort im Zusammenhang mit
+\code{CMIP7\_TABLES\_PATH} beschrieben habe, nur mit einer anderen Ursache: der
+QC-Schritt hat protokolliert, dass kein JSON entstand, und ist weitergelaufen. Eine
+Datei ohne Sidecar wird danach nirgends mehr gezaehlt. Der Lauf sieht dadurch
+sauberer aus als er ist, und das ist die unangenehme Richtung des Fehlers.
+
+Der QC-Schritt wiederholt den Aufruf jetzt bis zu dreimal, mit gestaffelter Pause,
+damit zwei kollidierte Shards nicht gleich wieder kollidieren. Wiederholt wird nur,
+wenn ueberhaupt kein Report auf der Platte liegt. Ein Report mit Befunden und
+Exitcode $\neq$ 0 ist der Normalfall und wird wie bisher durchgereicht. Bleibt es
+auch nach dem letzten Versuch dabei, sagt die Fehlermeldung jetzt ausdruecklich,
+dass diese Regel ohne Report dasteht.
+
+\section{Was das fuer den Bestand heisst}
+
+Fuer \code{cli116} sind es jetzt 534 Reports auf 534 Dateien, also vollstaendig.
+Die frueheren Laeufe haben wir nicht nachgezaehlt. Falls dir in Zahlen aus
+\code{cli108} bis \code{cli115} etwas nicht aufgeht, koennte das derselbe Effekt
+sein, und ich schaue gezielt nach.
+
+\end{document}

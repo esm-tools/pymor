@@ -218,7 +218,7 @@ inherit:
   # QC: in-pipeline CF + WCRP-CMIP7 compliance check on every saved file.
   qc_enabled: true
   qc_repack: true
-  qc_tests: ["cf", "wcrp_cmip7"]
+  qc_tests: ["cf", "wcrp_cmip7", "aicc"]
   qc_ignore_codes: ["VAR004"]
 
   activity_id: CMIP

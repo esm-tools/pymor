@@ -187,7 +187,11 @@ exclude = ["tests*"]
 [tool.setuptools.package-data]
 pycmor = [
     "data/*.yaml",
-    "data/cmip7/all_var_info.json",
+    # Glob rather than naming all_var_info.json alone: CMIP7_coordinate.json
+    # was already being read at runtime without ever being packaged, so it
+    # only resolved in an editable install. CMIP7_grids.json and
+    # CMIP7_formula_terms.json join it for the coordinate work.
+    "data/cmip7/*.json",
     "tutorial/datasets/*.yaml",
 ]
 

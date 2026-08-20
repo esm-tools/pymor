@@ -53,6 +53,7 @@ Function index (keep this list in sync when adding/removing steps; helps avoid d
 import glob as _glob
 import logging
 import os as _os
+import pathlib
 import re as _re
 from typing import Optional
 
@@ -213,27 +214,92 @@ def _layer_thickness_from_bnds(bnds):
     return thickness
 
 
+def _mesh_vertical_geometry(data):
+    """Return ``(depth, thickness)`` for the real levels of a FESOM mesh.
+
+    The DARS2 ``mesh.nc`` declares ``nlev=57`` / ``nlev_bnds=58``, but the
+    trailing entries are junk: ``depth`` ends 5825, 6125, 3160 and
+    ``depth_bnds`` ends 6000, 6250, 70. FESOM's own output agrees that the
+    real column is 56 layers (``hnode`` has ``nz=56``), so trim to the
+    leading strictly increasing run of interfaces instead of trusting the
+    declared length. Shipping the 57th level is how the fx files ended up
+    one level longer than the monthly ones they are supposed to describe.
+    """
+    if "depth_bnds" not in data:
+        raise ValueError("Mesh file must contain 'depth_bnds' for layer geometry")
+    bnds = np.asarray(data["depth_bnds"].values, dtype=float).ravel()
+    good = int(np.argmin(np.diff(bnds) > 0)) if not np.all(np.diff(bnds) > 0) else bnds.size - 1
+    if good < bnds.size - 1:
+        logger.warning(
+            f"Mesh depth_bnds has {bnds.size} interfaces but only the first {good + 1} "
+            f"increase monotonically; trimming to {good} layers (trailing entries are corrupt)"
+        )
+    bnds = bnds[: good + 1]
+    thickness = _layer_thickness_from_bnds(bnds)
+    depth = np.asarray(data["depth"].values, dtype=float).ravel()[: thickness.size] if "depth" in data else None
+    return depth, thickness
+
+
+def _profile_over_cells(profile, data, attrs, name):
+    """Broadcast a per-level profile onto the mesh, masked below the sea floor.
+
+    The ``ti-ol-hxy-sea`` branding these fx variables carry says horizontal
+    field on the ocean grid, so a bare ``(lev,)`` profile is not a valid
+    answer even when the model's levels are geopotential and the value is
+    the same in every column. cli112 shipped ``thkcello(lev)`` and
+    ``masscello(lev)`` that way and the DKRZ coordinate check flagged both.
+
+    Columns are cut off at the sea floor using the mesh's ``depth_lev``.
+    Sampling ``hnode`` against ``depth_lev`` shows the number of wet levels
+    is ``depth_lev + 1`` (a node with ``depth_lev=3`` has 4 finite levels),
+    so level ``k`` is wet where ``k <= depth_lev``.
+    """
+    nlev = profile.size
+    if "depth_lev" not in data:
+        raise ValueError("Mesh file must contain 'depth_lev' to mask below the sea floor")
+    depth_lev = np.asarray(data["depth_lev"].values, dtype=np.int64).ravel()
+    wet = np.arange(nlev)[:, None] <= depth_lev[None, :]
+    values = np.where(wet, profile.astype(np.float32)[:, None], np.float32(np.nan))
+    return xr.DataArray(values, dims=["lev", "ncells"], attrs=attrs, name=name)
+
+
+def _attach_level_coord(da, depth):
+    """Attach the ``lev`` coordinate values so the axis is not a bare index."""
+    if depth is None or depth.size != da.sizes.get("lev", -1):
+        return da
+    return da.assign_coords(
+        lev=xr.DataArray(
+            depth,
+            dims=["lev"],
+            attrs={
+                "standard_name": "depth",
+                "long_name": "ocean depth coordinate",
+                "units": "m",
+                "axis": "Z",
+                "positive": "down",
+            },
+        )
+    )
+
+
 def compute_thkcello_fx(data, rule):
     """
     Compute static ocean layer thickness from mesh depth bounds.
 
-    For z-coordinate models with fixed levels, thickness = diff(depth_bnds).
-    Returns a 1D array of layer thicknesses indexed by level.
+    For z-coordinate models with fixed levels, thickness = diff(depth_bnds),
+    broadcast across the mesh and cut off at the sea floor.
 
-    Input: xr.Dataset (mesh file with 'depth_bnds')
-    Output: xr.DataArray (1D, per level)
+    Input: xr.Dataset (mesh file with 'depth_bnds' and 'depth_lev')
+    Output: xr.DataArray (lev, ncells)
     """
-    if "depth_bnds" in data:
-        thickness = _layer_thickness_from_bnds(data["depth_bnds"].values)
-        result = xr.DataArray(
-            thickness,
-            dims=["lev"],
-            attrs={"units": "m", "standard_name": "cell_thickness"},
-        )
-    else:
-        raise ValueError("Mesh file must contain 'depth_bnds' for thkcello computation")
-    result.name = rule.model_variable
-    return result
+    depth, thickness = _mesh_vertical_geometry(data)
+    result = _profile_over_cells(
+        thickness,
+        data,
+        {"units": "m", "standard_name": "cell_thickness"},
+        rule.model_variable,
+    )
+    return _attach_level_coord(result, depth)
 
 
 def compute_masscello_fx(data, rule):
@@ -243,25 +309,18 @@ def compute_masscello_fx(data, rule):
     For Boussinesq models: masscello = rho_0 * thkcello
     where rho_0 is the reference density (default 1025 kg/m3).
 
-    Input: xr.Dataset (mesh file with 'depth_bnds')
-    Output: xr.DataArray (1D, per level, in kg/m2)
+    Input: xr.Dataset (mesh file with 'depth_bnds' and 'depth_lev')
+    Output: xr.DataArray (lev, ncells) in kg/m2
     """
     rho_0 = float(rule.get("reference_density", 1025.0))
-    if "depth_bnds" in data:
-        thickness = _layer_thickness_from_bnds(data["depth_bnds"].values)
-        mass = rho_0 * thickness
-        result = xr.DataArray(
-            mass,
-            dims=["lev"],
-            attrs={
-                "units": "kg m-2",
-                "standard_name": "sea_water_mass_per_unit_area",
-            },
-        )
-    else:
-        raise ValueError("Mesh file must contain 'depth_bnds' for masscello computation")
-    result.name = rule.model_variable
-    return result
+    depth, thickness = _mesh_vertical_geometry(data)
+    result = _profile_over_cells(
+        rho_0 * thickness,
+        data,
+        {"units": "kg m-2", "standard_name": "sea_water_mass_per_unit_area"},
+        rule.model_variable,
+    )
+    return _attach_level_coord(result, depth)
 
 
 # ============================================================
@@ -367,7 +426,10 @@ def compute_siflcondtop(data, rule):
         "units": "W m-2",
         "standard_name": "surface_downward_heat_flux_in_sea_ice",
         "long_name": "Net Conductive Heat Flux in Sea Ice at the Surface",
-        "positive": "down",
+        # No "positive" attribute: in a CMOR *variable* table that field is an
+        # instruction about which way to store the data, not metadata to copy
+        # into the file. The data above already follows it. Only coordinates
+        # carry "positive" on disk; _strip_variable_positive enforces that.
         "processing_note": (
             f"k_ice={k_ice} W/m/K, T_base=freezing_point(SSS), T_surface=ist;"
             " sign convention: positive downward (atm -> ice)"
@@ -2059,6 +2121,210 @@ def compute_zostoga(data, rule):
 # ============================================================
 
 
+# The four layers behind the CMIP7 ``oplayer4`` axis, as depth ranges in metres.
+#
+# The axis itself is labelled in bar and the data request supplies only the four
+# coordinate values, 15, 50, 136 and 1000, with must_have_bounds "yes" and no
+# bounds. The CMIP7 ocean data request paper (Griffies et al., GMD 19, 6043,
+# 2026) names the layers: "the standard set of layers used in the observational
+# literature is based on hydrostatic pressure ranges (0-300, 0-700, 0-2000 m and
+# total depth, where meter ranges imply their hydrostatic pressure equivalents)".
+#
+# Which of the two possible readings that is can be settled by arithmetic rather
+# than by asking. Converting the depths with p = rho*g*h (rho 1025, g 9.81) and
+# taking layer midpoints:
+#
+#   disjoint    0-300 m -> 15.08   300-700 -> 50.28   700-2000 -> 135.75   matches 15, 50, 136
+#   cumulative  0-300 m -> 15.08   0-700   -> 35.19   0-2000   -> 100.55   matches only the first
+#
+# So the four values are midpoints of *disjoint* layers, and the fourth, 1000,
+# belongs to an open-ended layer below 2000 m.
+_OPLAYER4_EDGES_M = (0.0, 300.0, 700.0, 2000.0, np.inf)
+_OPLAYER4_PDEPTH_BAR = (15.0, 50.0, 136.0, 1000.0)
+_SEAWATER_RHO = 1025.0
+_GRAVITY = 9.81
+
+
+def _depth_to_bar(metres):
+    return _SEAWATER_RHO * _GRAVITY * np.asarray(metres, dtype=float) / 1e5
+
+
+def integrate_over_pressure_layers(data: xr.DataArray, rule) -> xr.Dataset:
+    """Integrate a 3-D ocean field over the four ``oplayer4`` layers.
+
+    ``scint``, ``phcint`` and ``absscint`` are not one integral per column but
+    four, one per layer. cli114 shipped them as ``(time, nod2)``, a single
+    whole-column value, because the pipeline used the general
+    :func:`vertical_integrate`. The request wants ``(time, pdepth, ncells)``.
+
+    Integration is done over depth, not over pressure. The layer definition is a
+    depth range in the source paper and only *expressed* as pressure on the axis,
+    so converting the model's depth levels to pressure first would add an
+    assumed density for no gain.
+
+    Model layers that straddle a layer boundary are split by their overlap, so
+    the sum over the four layers equals the whole-column integral exactly.
+
+    The physical constants stay where they were: this returns the plain
+    thickness-weighted integral (psu m, degC m) and ``scale_by_constant``
+    applies rho*1e-3 or rho*cp afterwards, as before.
+    """
+    vertical_dim = next((d for d in ("nz", "nz1", "depth", "lev") if d in data.dims), None)
+    if vertical_dim is None:
+        raise ValueError(f"integrate_over_pressure_layers: no vertical dimension in {list(data.dims)}")
+
+    grid_file = rule.get("grid_file")
+    if not grid_file:
+        raise ValueError("integrate_over_pressure_layers: rule needs grid_file for the layer interfaces")
+    with xr.open_dataset(grid_file, decode_times=False) as mesh:
+        _, thickness = _mesh_vertical_geometry(mesh)
+    interfaces = np.concatenate([[0.0], np.cumsum(thickness)])
+    nlev = data.sizes[vertical_dim]
+    if thickness.size != nlev:
+        raise ValueError(
+            f"integrate_over_pressure_layers: mesh has {thickness.size} layers "
+            f"but the field has {nlev} on {vertical_dim!r}"
+        )
+
+    finite = xr.where(np.isfinite(data), data, 0.0)
+    wet = np.isfinite(data)
+
+    slabs, wet_thickness = [], []
+    for lower, upper in zip(_OPLAYER4_EDGES_M[:-1], _OPLAYER4_EDGES_M[1:]):
+        # metres of each model layer that fall inside this depth range
+        top = np.maximum(interfaces[:-1], lower)
+        bottom = np.minimum(interfaces[1:], upper)
+        overlap = np.clip(bottom - top, 0.0, None)
+        weight = xr.DataArray(overlap, dims=(vertical_dim,))
+        slabs.append((finite * weight).sum(dim=vertical_dim))
+        wet_thickness.append((wet * weight).sum(dim=vertical_dim))
+        logger.info(
+            f"  oplayer4 {lower:.0f}-{upper if np.isfinite(upper) else float('inf'):.0f} m: "
+            f"{int((overlap > 0).sum())} Modellschichten beteiligt"
+        )
+
+    stacked = xr.concat(slabs, dim="pdepth")
+    dry = xr.concat(wet_thickness, dim="pdepth") == 0
+    stacked = stacked.where(~dry)
+
+    # A DataArray is returned, not a Dataset: the next step in the pipeline is
+    # scale_by_constant, which does ``data * factor`` and ``result.name =
+    # data.name``, and a Dataset has neither. The layer bounds therefore cannot
+    # ride along here (xarray refuses a coordinate whose ``bnds`` dimension the
+    # array does not have). They are a property of the axis rather than of this
+    # computation, so they live with the other coordinate metadata in
+    # files.py:_EXACT_VERTICAL_BOUNDS and are attached at write time.
+    result = stacked.assign_coords(pdepth=np.array(_OPLAYER4_PDEPTH_BAR, dtype="float64"))
+    result["pdepth"].attrs = {
+        "standard_name": "sea_water_pressure_due_to_sea_water",
+        "long_name": "Hydrostatic Pressure Layers",
+        "units": "bar",
+        "axis": "Z",
+        "positive": "down",
+        "bounds": "pdepth_bnds",
+    }
+    result.attrs.update(rule.get("integration_attrs") or {})
+    result.name = rule.model_variable
+    return result
+
+
+_CLIMATOLOGY_STATE_DEFAULT = "/work/bb1469/a270092/cmorized/climatologies"
+
+
+def accumulate_monthly_climatology(data, rule):
+    """Monthly climatology that grows with every run instead of being rebuilt.
+
+    ``tclm`` means what the CV says it means: "each set of time bounds
+    represents a month and the twelve values show the month-by-month variation
+    (derived by averaging over a number of years)", with cell_methods
+    ``time: mean within years time: mean over years``. cli114 wrote the twelve
+    monthly means of a single year under that label, which is a monthly mean
+    with a climatology sticker on it.
+
+    Rebuilding from all years on each run is not an option here. The source is
+    ``atmos_day_ml_pfull_*.nc`` at 27 GB per year with 194 years on disk, so a
+    full rebuild is some 5 TB of reads and grows with the run.
+
+    Instead a running accumulator is kept outside the per-run output tree: the
+    sum over years and the count of years contributing, per month. Each run adds
+    only its own year, which the pipeline has loaded anyway, and the climatology
+    is the quotient. The years already folded in are recorded with it, so a year
+    cmorized twice (after a failed shard, say) is not counted twice.
+
+    Rule attributes:
+      - ``climatology_state_dir``: where the accumulator lives, must be outside
+        the per-run scratch directory. Default above.
+    """
+    state_dir = pathlib.Path(rule.get("climatology_state_dir", _CLIMATOLOGY_STATE_DEFAULT))
+    state_dir.mkdir(parents=True, exist_ok=True)
+    key = str(rule.get("compound_name") or rule.model_variable).replace("/", "_")
+    state_path = state_dir / f"{key}.accumulator.nc"
+
+    da = data if isinstance(data, xr.DataArray) else data[rule.model_variable]
+    if "time" not in da.dims:
+        raise ValueError(f"accumulate_monthly_climatology: no time dimension in {list(da.dims)}")
+
+    years = np.unique(da["time"].dt.year.values)
+    if years.size != 1:
+        raise ValueError(
+            f"accumulate_monthly_climatology: expected a single year per run, got {years.tolist()}. "
+            "The accumulator counts whole years; feeding it several at once would need a different guard."
+        )
+    year = int(years[0])
+
+    # This year's twelve monthly means. That is the "mean within years" half.
+    monthly = da.groupby("time.month").mean("time", keep_attrs=True)
+    if monthly.sizes.get("month") != 12:
+        raise ValueError(
+            f"accumulate_monthly_climatology: year {year} has only "
+            f"{monthly.sizes.get('month')} months, refusing to fold a partial year in"
+        )
+
+    if state_path.exists():
+        with xr.open_dataset(state_path) as previous:
+            state = previous.load()
+        seen = [int(y) for y in np.atleast_1d(state["years"].values)]
+        if year in seen:
+            logger.warning(f"climatology: year {year} is already in {state_path.name}, not counting it twice")
+        else:
+            state["total"] = state["total"] + monthly
+            state = state.assign(years=("year", np.array(sorted(seen + [year]), dtype="int32")))
+            logger.info(f"climatology: added {year}, now {len(seen) + 1} years")
+    else:
+        state = xr.Dataset({"total": monthly})
+        state = state.assign(years=("year", np.array([year], dtype="int32")))
+        logger.info(f"climatology: started accumulator at {state_path} with {year}")
+
+    tmp = state_path.with_suffix(".tmp.nc")
+    state.to_netcdf(tmp)
+    tmp.replace(state_path)  # atomic, so a killed shard cannot leave a half-written accumulator
+
+    counted = [int(y) for y in np.atleast_1d(state["years"].values)]
+    result = state["total"] / len(counted)
+    result.attrs = dict(da.attrs)
+    result.name = rule.model_variable
+
+    # CF §7.4: the coordinate carries ``climatology``, not ``bounds``, and each
+    # cell spans from the start of that month in the first year to the end of it
+    # in the last. Those bounds cannot be attached here, because xarray refuses
+    # a coordinate whose ``bnds`` dimension the array does not have, and unlike
+    # the pdepth case they are not a fixed property of the axis: they move with
+    # every year folded in. Only the two years travel, on the time coordinate,
+    # and files.py:_ensure_climatology_bounds builds the twelve pairs on write.
+    first, last = min(counted), max(counted)
+    months = [int(m) for m in result["month"].values]
+    result = result.rename({"month": "time"})
+    result = result.assign_coords(time=("time", np.array([np.datetime64(f"{first:04d}-{m:02d}-01") for m in months])))
+    result["time"].attrs = {
+        "standard_name": "time",
+        "long_name": "Monthly Climatology",
+        "axis": "T",
+        "climatology_years": f"{first} {last}",
+    }
+    logger.info(f"climatology: {len(counted)} years, {first}-{last}, months {months[0]}..{months[-1]}")
+    return result
+
+
 def vertical_integrate(
     data: xr.DataArray,
     rule,
@@ -2257,17 +2523,23 @@ def compute_volcello_fx(data, rule):
     else:
         raise ValueError("Mesh must contain 'cell_area' or 'cluster_area'")
 
-    if "depth_bnds" not in data:
-        raise ValueError("Mesh must contain 'depth_bnds' for layer thickness")
-
-    bnds = data["depth_bnds"].values
-    thickness = np.abs(np.diff(bnds, axis=-1)).squeeze()
-    dz = xr.DataArray(thickness, dims=["nz1"])
-
-    result = cell_area * dz
+    # The vertical axis used to be emitted as "nz1", which is a FESOM
+    # internal name, not a CMIP one: cli112 shipped volcello_fx as
+    # volcello(ncells, nz1) with no level coordinate at all, while the
+    # monthly and decadal volcello files carry (time, nod2, lev). Build
+    # the same geometry as thkcello/masscello so all three fx variables
+    # agree with their time-varying siblings, then multiply by cell area.
+    depth, thickness = _mesh_vertical_geometry(data)
+    result = _profile_over_cells(
+        thickness,
+        data,
+        {"units": "m3", "standard_name": "ocean_volume", "long_name": "Ocean Grid-Cell Volume"},
+        rule.model_variable,
+    )
+    result = result * np.asarray(cell_area.values, dtype=np.float32)[None, :]
     result.attrs = {"units": "m3", "standard_name": "ocean_volume", "long_name": "Ocean Grid-Cell Volume"}
     result.name = rule.model_variable
-    return result
+    return _attach_level_coord(result, depth)
 
 
 def compute_volcello_time(data, rule):
@@ -2912,28 +3184,76 @@ def compute_areacella(data, rule):
 
 def compute_slthick(data, rule):
     """
-    Generate HTESSEL soil layer thicknesses as a constant field.
+    Generate HTESSEL soil layer thicknesses on the model grid.
 
-    IFS HTESSEL has 4 soil layers with fixed thicknesses:
-      Layer 1: 0.07 m (0-7 cm)
-      Layer 2: 0.21 m (7-28 cm)
-      Layer 3: 0.72 m (28-100 cm)
-      Layer 4: 1.89 m (100-289 cm)
+    IFS HTESSEL has 4 soil layers with fixed interfaces at 0, 7, 28, 100 and
+    289 cm, so the thicknesses are 0.07, 0.21, 0.72 and 1.89 m.
 
-    Primary input (data) is ignored (any grid file will do).
+    ``slthick`` is branded ``ti-sl-hxy-lnd``: a horizontal field on the land
+    grid, not a profile. cli114 shipped ``slthick(sdepth)``, a bare 1-D array
+    whose coordinate was the layer index 1..4 rather than a depth, with no
+    latitude or longitude anywhere in the file. Both were flagged.
+
+    The layers are uniform in the horizontal, but that does not make the grid
+    optional: the same is true of ``thkcello`` and the request asks for it
+    there too. Broadcast across the input's horizontal dimension and take the
+    depth coordinate from the layer midpoints, with the true interfaces as
+    bounds rather than letting them be interpolated from midpoints, which for
+    layers this uneven would be wrong.
+
+    Primary input (data) supplies the grid; its values are not used.
     """
-    thicknesses = np.array([0.07, 0.21, 0.72, 1.89])
-    result = xr.DataArray(
-        thicknesses,
-        dims=["sdepth"],
-        coords={"sdepth": np.arange(1, 5)},
+    interfaces = np.array([0.0, 0.07, 0.28, 1.00, 2.89])
+    thicknesses = np.diff(interfaces)
+    depth = 0.5 * (interfaces[:-1] + interfaces[1:])
+    depth_bnds = np.stack([interfaces[:-1], interfaces[1:]], axis=-1)
+
+    source = data if isinstance(data, xr.DataArray) else data[rule.model_variable]
+    horizontal = [str(d) for d in source.dims if d not in ("time",) and not str(d).startswith("time")]
+    if not horizontal:
+        raise ValueError(
+            f"compute_slthick: no horizontal dimension in {source.dims}, cannot place the layers on a grid"
+        )
+
+    # Broadcast over EVERY horizontal dimension, not just the last one. On the
+    # unstructured mesh there is only one (``cell``), so taking the last was
+    # enough there and the bug stayed hidden. cli116 read a regular
+    # (lat, lon) field instead, and shipped slthick(depth, lon) with the
+    # latitude silently dropped.
+    values = np.broadcast_to(
+        thicknesses.astype(np.float32).reshape((-1,) + (1,) * len(horizontal)),
+        (thicknesses.size,) + tuple(source.sizes[d] for d in horizontal),
+    ).copy()
+    result = xr.Dataset(
+        {
+            rule.model_variable: (("depth", *horizontal), values),
+            "depth_bnds": (("depth", "bnds"), depth_bnds),
+        },
+        coords={"depth": depth},
     )
-    result.attrs = {
+    # Carry the grid's own coordinates across, otherwise the layers land on a
+    # bare cell index again.
+    hset = set(horizontal)
+    for name, coord in source.coords.items():
+        if coord.dims and set(map(str, coord.dims)) <= hset:
+            result = result.assign_coords({str(name): coord})
+    result[rule.model_variable].attrs = {
         "units": "m",
         "standard_name": "cell_thickness",
         "long_name": "Thickness of Soil Layers",
     }
-    result.name = rule.model_variable
+    result["depth"].attrs = {
+        "standard_name": "depth",
+        "long_name": "depth",
+        "units": "m",
+        "axis": "Z",
+        "positive": "down",
+        "bounds": "depth_bnds",
+    }
+    shape = " x ".join(f"{d}={source.sizes[d]}" for d in horizontal)
+    logger.info(
+        f"slthick: {thicknesses.size} soil layers " f"({', '.join(f'{t:.2f}' for t in thicknesses)} m) over {shape}"
+    )
     return result
 
 
@@ -3104,8 +3424,8 @@ _LPJG_LANDUSE_COLUMNS = (
 )
 
 # ``vegtype``: landCoverFrac_monthly.out carries one column per PFT (44 in this
-# configuration). The grouping below is taken from the run's own instruction
-# files rather than from the PFT acronyms:
+# configuration). The grouping is taken from the run's own instruction files
+# rather than from the PFT acronyms:
 #   global.ins       tree/shrub/grass, broadleaved/needleleaved,
 #                    evergreen/summergreen, phenology "raingreen"
 #   arctic.ins       tallshrub/lowshrub/prostratedwarfshrub,
@@ -3114,15 +3434,34 @@ _LPJG_LANDUSE_COLUMNS = (
 #   crop_n.ins       the CC* crop functional types
 #   landcover.ins    the pasture and urban grass tiles
 # "raingreen" (TrBR) is a deciduous phenology, hence broadleaf_deciduous.
+#
+# Every column is assigned, so the sum over vegtype is the land fraction of the
+# cell, which is what the data request asks for in its comment on
+# landCoverFrac: "Sum of all should equal the fraction of the grid-cell that is
+# land". An earlier version kept only the seven values listed under
+# ``requested`` in CMIP7_coordinate.json and dropped bare soil, the
+# moss/lichen types and the pasture and urban tiles; that summed to about 39%
+# of the land instead.
+#
+# The names are CF area types, not the ``requested`` list. CMIP7 sets
+# ``standard_name = area_type`` on this axis, and the CF standard name table
+# says of that name: "These strings are standardised. Values must be taken from
+# the area_type table." Two consequences worth knowing:
+#   - CF spells it needleleaf_evergreen_trees; the CMIP7 ``requested`` list has
+#     the singular, which is not a CF term.
+#   - There is no CF term for cushion forbs, lichens or mosses; the words do
+#     not occur in the table at all. CLM, pCLM and pmoss therefore go under the
+#     registered catch-all ``vegetation``. Inventing a name is not an option
+#     under the rule above.
 _LPJG_VEGTYPE_PFTS = (
     ("broadleaf_deciduous_trees", ("TeBS", "IBS", "TrBR")),
     ("broadleaf_evergreen_trees", ("TeBE", "TrBE", "TrIBE")),
     ("needleleaf_deciduous_trees", ("BNS",)),
-    ("needleleaf_evergreen_tree", ("BNE", "BINE", "TeNE")),
-    (
-        "natural_grasses",
-        ("C3G", "C4G", "GRT", "C3G_pas", "C4G_pas", "C3G_urb", "C4G_urb", "WetGRS", "C3G_wet", "C4G_wet"),
-    ),
+    ("needleleaf_evergreen_trees", ("BNE", "BINE", "TeNE")),
+    ("shrubs", ("HSE", "HSS", "LSE", "LSS", "EPDS", "SPDS", "pLSE", "pLSS")),
+    ("natural_grasses", ("C3G", "C4G", "GRT", "WetGRS", "C3G_wet", "C4G_wet")),
+    ("pastures", ("C3G_pas", "C4G_pas")),
+    ("urban", ("C3G_urb", "C4G_urb")),
     (
         "crops",
         (
@@ -3140,21 +3479,21 @@ _LPJG_VEGTYPE_PFTS = (
             "CC4G_ic",
         ),
     ),
-    ("shrubs", ("HSE", "HSS", "LSE", "LSS", "EPDS", "SPDS", "pLSE", "pLSS")),
+    ("bare_ground", ("Bare_soil",)),
+    ("vegetation", ("CLM", "pCLM", "pmoss")),
 )
 
-# Columns with no counterpart on the CMIP7 vegtype axis. CLM and pCLM are the
-# cushion-forb/lichen/moss tundra type, pmoss is peat moss, and Bare_soil is
-# not vegetation at all. Excluding them is why the sum over vegtype is less
-# than the land fraction of the cell; the note goes into the variable comment.
-_LPJG_VEGTYPE_UNMAPPED = ("CLM", "pCLM", "pmoss", "Bare_soil")
+# Nothing is dropped any more. Kept so the unclassified-column guard below has
+# something to check against; a new PFT in the .ins files still raises.
+_LPJG_VEGTYPE_UNMAPPED = ()
 
 _LPJG_VEGTYPE_COMMENT = (
-    "Aggregated from the 44 LPJ-GUESS plant functional types onto the CMIP7 "
-    "vegtype axis. The cushion-forb/lichen/moss tundra types (CLM, pCLM), peat "
-    "moss (pmoss) and bare soil have no counterpart among the seven requested "
-    "vegtype values and are omitted, so the sum over vegtype is smaller than "
-    "the land fraction of the grid cell."
+    "Aggregated from the 44 LPJ-GUESS plant functional types. Category names "
+    "are CF area types, as required by standard_name = area_type. Every plant "
+    "functional type is assigned, so the sum over this axis is the land "
+    "fraction of the grid cell. LPJ-GUESS distinguishes cushion forbs, lichens "
+    "and mosses (CLM, pCLM, pmoss), for which the CF area type table has no "
+    "term; they are reported under the generic 'vegetation'."
 )
 
 
@@ -4608,6 +4947,19 @@ def _lat_edges(dlat=1.0):
     return np.arange(-90.0, 90.0 + dlat / 2, dlat)
 
 
+def _global_lat_centers(dlat=1.0):
+    """Global zonal-mean latitude axis shared by msftmz, hfbasin and sltbasin.
+
+    Cell centres sit at (k + 0.5) * dlat so the edges land on multiples of dlat
+    and the bands tile -90..90 exactly: 180 bands at dlat=1.0, 360 at dlat=0.5.
+
+    This must match tripyview's binning. calc_zmoc and calc_mhflx_box_fast use
+    floor(lat/dlat)*dlat + dlat/2, so their labels fall on this same lattice and
+    a reindex onto this axis aligns rather than silently producing all-NaN.
+    """
+    return np.arange(-90.0 + dlat / 2, 90.0, dlat)
+
+
 def _basin_lat_crossing_sum(values, min_lat, max_lat, loc_basin, lat_centers, basin_ids=_BASIN_IDS):
     """Sum values over (basin, lat_bin) for elements whose [min_lat, max_lat]
     contains lat_centers[j]. Vectorized via interval-scatter + cumsum.
@@ -4735,9 +5087,12 @@ def compute_msftmz(data, rule):
         "global_ocean": "gmoc",
     }
 
-    # Global 1° lat grid matching tripyview's integer-lat convention
+    # Global 1° lat grid. Cell centres on half degrees so the 180 bands tile
+    # -90..90 exactly; the old np.arange(-90, 91, 1) gave 181 whole-degree
+    # points, which is a degree more latitude than the sphere has and left the
+    # polar bands half width. Registered in EMD as the zonal mean grid cell.
     dlat = 1.0
-    lat_centers = np.arange(-90.0, 90.0 + dlat, dlat)  # -90, -89, ..., 89, 90
+    lat_centers = _global_lat_centers(dlat)  # -89.5, -88.5, ..., 89.5
 
     per_basin = {}
     for name, key in basin_to_key.items():
@@ -4988,7 +5343,6 @@ def compute_hfbasin_tripyview(data, rule):
 
     # Pre-build per-basin output arrays
     per_basin_results = {n: [] for n, _ in basins}
-    glob_lat = None
     for t in range(ntime):
         # Eager-load only the current timestep — 2 GB peak instead of 24 GB.
         if has_time:
@@ -5014,15 +5368,25 @@ def compute_hfbasin_tripyview(data, rule):
                 do_load=True,
             )
             out = out_list[0]
-            if glob_lat is None and name == "global_ocean":
-                glob_lat = out["lat"].values
             per_basin_results[name].append(out)
         # Release this iteration's loaded data before the next loop.
         del v_t, ut_t, packed
 
-    if glob_lat is None:
-        # safety: if global wasn't iterated yet, pull from first basin
-        glob_lat = per_basin_results[basins[0][0]][0]["lat"].values
+    # Pad onto the full global axis rather than shipping tripyview's data-driven
+    # range. tripyview trims to where the mesh has ocean (166 bands, -77.5..87.5
+    # on DARS2), which is a different grid from the one msftmz writes and would
+    # need its own EMD registration. Same lattice, so the reindex below aligns.
+    glob_lat = _global_lat_centers(1.0)
+
+    # Two kinds of gap, and they do not mean the same thing:
+    #   * inside the model's ocean but outside a basin -> transport really is
+    #     zero there (the Atlantic does not reach 70S), so fill 0.0 as before;
+    #   * outside the model's ocean altogether -> nothing was computed, so fill
+    #     missing. Writing 0.0 there would claim a transport the model never
+    #     produced, and a reader could not tell it from a real zero.
+    # The global basin's own axis is exactly where this mesh has ocean.
+    _ocean_lat = per_basin_results["global_ocean"][0]["lat"].values
+    _outside_ocean = ~np.isin(glob_lat, _ocean_lat)
 
     # Stack: (time, basin, lat) in W
     if has_time:
@@ -5034,6 +5398,7 @@ def compute_hfbasin_tripyview(data, rule):
     for bi, name in enumerate(basin_names):
         for t, out in enumerate(per_basin_results[name]):
             mh = out["mhflx"].reindex(lat=glob_lat, fill_value=0.0) * 1.0e15
+            mh = mh.where(~_outside_ocean)
             if has_time:
                 stacked[t, bi, :] = mh.values
             else:
@@ -5179,7 +5544,6 @@ def compute_sltbasin_tripyview(data, rule):
         ntime = 1
 
     per_basin_results = {n: [] for n, _ in basins}
-    glob_lat = None
     for t in range(ntime):
         if has_time:
             v_t = v_da.isel(time=t).load()
@@ -5204,13 +5568,24 @@ def compute_sltbasin_tripyview(data, rule):
                 do_load=True,
             )
             out = out_list[0]
-            if glob_lat is None and name == "global_ocean":
-                glob_lat = out["lat"].values
             per_basin_results[name].append(out)
         del v_t, ut_t, packed
 
-    if glob_lat is None:
-        glob_lat = per_basin_results[basins[0][0]][0]["lat"].values
+    # Pad onto the full global axis rather than shipping tripyview's data-driven
+    # range. tripyview trims to where the mesh has ocean (166 bands, -77.5..87.5
+    # on DARS2), which is a different grid from the one msftmz writes and would
+    # need its own EMD registration. Same lattice, so the reindex below aligns.
+    glob_lat = _global_lat_centers(1.0)
+
+    # Two kinds of gap, and they do not mean the same thing:
+    #   * inside the model's ocean but outside a basin -> transport really is
+    #     zero there (the Atlantic does not reach 70S), so fill 0.0 as before;
+    #   * outside the model's ocean altogether -> nothing was computed, so fill
+    #     missing. Writing 0.0 there would claim a transport the model never
+    #     produced, and a reader could not tell it from a real zero.
+    # The global basin's own axis is exactly where this mesh has ocean.
+    _ocean_lat = per_basin_results["global_ocean"][0]["lat"].values
+    _outside_ocean = ~np.isin(glob_lat, _ocean_lat)
 
     # Post-process: tripyview returned PW-as-if-heat. Convert to kg/s salt.
     # See docstring for the derivation: factor = -1e+12 / cp = -2.5974e+8.
@@ -5226,6 +5601,7 @@ def compute_sltbasin_tripyview(data, rule):
     for bi, name in enumerate(basin_names):
         for t, out in enumerate(per_basin_results[name]):
             mh = out["mhflx"].reindex(lat=glob_lat, fill_value=0.0) * factor
+            mh = mh.where(~_outside_ocean)
             if has_time:
                 stacked[t, bi, :] = mh.values
             else:
@@ -6308,14 +6684,14 @@ def add_hybrid_sigma_coordinate(data, rule):
         "formula_terms": "ap: ap_bnds b: b_bnds ps: ps",
     }
     ds["ap"] = xr.DataArray(
-        ap, dims=("lev",), attrs={"long_name": "vertical coordinate formula term: ap(k)", "units": "Pa"}
+        ap, dims=("lev",), attrs={"long_name": "vertical coordinate formula term: ap", "units": "Pa"}
     )
-    ds["b"] = xr.DataArray(b, dims=("lev",), attrs={"long_name": "vertical coordinate formula term: b(k)"})
+    ds["b"] = xr.DataArray(b, dims=("lev",), attrs={"long_name": "vertical coordinate formula term: b"})
     ds["ap_bnds"] = xr.DataArray(
-        ap_bnds, dims=("lev", "bnds"), attrs={"long_name": "vertical coordinate formula term: ap(k+1/2)", "units": "Pa"}
+        ap_bnds, dims=("lev", "bnds"), attrs={"long_name": "vertical coordinate formula term: ap_bnds", "units": "Pa"}
     )
     ds["b_bnds"] = xr.DataArray(
-        b_bnds, dims=("lev", "bnds"), attrs={"long_name": "vertical coordinate formula term: b(k+1/2)"}
+        b_bnds, dims=("lev", "bnds"), attrs={"long_name": "vertical coordinate formula term: b_bnds"}
     )
 
     ps = _load_secondary_mf(rule, "ps_path", "ps_pattern", "ps_variable")
@@ -6324,10 +6700,30 @@ def add_hybrid_sigma_coordinate(data, rule):
     ps.attrs = {"standard_name": "air_pressure", "long_name": "Surface Air Pressure", "units": "Pa"}
     ds["ps"] = ps
 
+    # CMIP7_coordinate.json gives alternate_hybrid_sigma stored_direction
+    # "decreasing". The ECMWF vtable runs top-first, so everything built above
+    # comes out ascending (lev 1e-05 .. 0.9988, b 0 .. 0.9988) and cli114 was
+    # flagged twice for it: the stored coordinate is not strictly decreasing,
+    # and neither is the pressure profile the formula derives from it.
+    #
+    # Reverse the whole axis rather than just the coordinate. ``isel`` moves
+    # every variable that has the level dimension, the field included, so the
+    # data stays attached to the level it belongs to. Getting this wrong would
+    # invert the atmosphere silently, which is why it is one operation and not
+    # a per-variable flip.
+    ds = ds.isel(lev=slice(None, None, -1))
+    # The bounds pairs have to turn with it, otherwise each cell would still be
+    # written [lower, upper] while the axis now runs downward.
+    for bounds_name in ("lev_bnds", "ap_bnds", "b_bnds"):
+        if bounds_name in ds.variables:
+            flipped = ds[bounds_name].values[..., ::-1]
+            ds[bounds_name] = xr.DataArray(flipped, dims=ds[bounds_name].dims, attrs=dict(ds[bounds_name].attrs))
+
+    lev_out = np.asarray(ds["lev"].values)
     logger.info(
         f"hybrid sigma coordinate: {nlev} levels from "
-        f"{rule.get('oifs_vtable', _OIFS_VTABLE_DEFAULT)}, ap {ap[0]:.1f}..{ap[-1]:.1f} Pa, "
-        f"b {b[0]:.4f}..{b[-1]:.4f}"
+        f"{rule.get('oifs_vtable', _OIFS_VTABLE_DEFAULT)}, stored surface-first, "
+        f"lev {lev_out[0]:.6g}..{lev_out[-1]:.6g} (decreasing)"
     )
 
     return ds[da_name] if was_dataarray and da_name in ds else ds

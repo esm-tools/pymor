@@ -178,6 +178,29 @@ pipelines:
   # overriding the units string to the CMIP target (scaled_units). Used by
   # phcint (J m-2 via rho_0*c_p), scint (kg m-2 via rho_0*1e-3),
   # opottempmint (degC kg m-2 via rho_0), and somint (g m-2 via rho_0).
+  # Wie ocean_vertical_integration_pipeline, aber schichtweise statt ueber die
+  # ganze Saeule. Fuer die drei oplayer4-Variablen scint, phcint und absscint,
+  # die vier Integrale pro Zelle wollen und nicht eines. Siehe
+  # integrate_over_pressure_layers in custom_steps.py.
+  - name: ocean_oplayer4_pipeline
+    steps:
+      - pycmor.core.gather_inputs.load_mfdataset
+      - pycmor.std_lib.generic.get_variable
+      - script://$PYCMOR_HOME/examples/custom_steps.py:integrate_over_pressure_layers
+      - script://$PYCMOR_HOME/examples/custom_steps.py:scale_by_constant
+      - pycmor.std_lib.timeaverage.timeavg
+      - pycmor.std_lib.set_time_bounds
+      - pycmor.std_lib.units.handle_unit_conversion
+      - pycmor.std_lib.attributes.set_global
+      - pycmor.std_lib.attributes.set_variable
+      - pycmor.std_lib.attributes.set_coordinates
+      - pycmor.std_lib.dimensions.map_dimensions
+      - pycmor.core.caching.manual_checkpoint
+      - pycmor.std_lib.generic.trigger_compute
+      - pycmor.std_lib.generic.show_data
+      - pycmor.std_lib.files.save_dataset
+      - pycmor.std_lib.qc.run_compliance_checker
+
   - name: ocean_vertical_integration_pipeline
     steps:
       - pycmor.core.gather_inputs.load_mfdataset
@@ -462,7 +485,7 @@ inherit:
   # QC: in-pipeline CF + WCRP-CMIP7 compliance check on every saved file.
   qc_enabled: true
   qc_repack: true
-  qc_tests: ["cf", "wcrp_cmip7"]
+  qc_tests: ["cf", "wcrp_cmip7", "aicc"]
   qc_ignore_codes: ["VAR004"]
 
   activity_id: CMIP
@@ -487,6 +510,7 @@ rules:
       - path: *dp
         pattern: volo\.fesom\.\d{4}\.nc
     compound_name: ocean.volo.tavg-u-hm-sea.mon.glb
+    grid_label: g190  # globales Mittel, kein horizontales Gitter
     model_variable: volo
 
   # tos_ga — global average sea surface temperature (thetaoga from ldiag_cmor)
@@ -495,6 +519,7 @@ rules:
       - path: *dp
         pattern: thetaoga\.fesom\.\d{4}\.nc
     compound_name: ocean.tos.tavg-u-hm-sea.mon.glb
+    grid_label: g190  # globales Mittel, kein horizontales Gitter
     model_variable: thetaoga
 
   # sos_ga — global average sea surface salinity (soga from ldiag_cmor)
@@ -503,6 +528,7 @@ rules:
       - path: *dp
         pattern: soga\.fesom\.\d{4}\.nc
     compound_name: ocean.sos.tavg-u-hm-sea.mon.glb
+    grid_label: g190  # globales Mittel, kein horizontales Gitter
     model_variable: soga
 
   # thetao_ga — global average potential temperature (per level, from ldiag_cmor)
@@ -514,6 +540,7 @@ rules:
       - path: *dp
         pattern: thetaoga\.fesom\.\d{4}\.nc
     compound_name: ocean.thetao.tavg-u-hm-sea.mon.glb
+    grid_label: g190  # globales Mittel, kein horizontales Gitter
     model_variable: thetaoga
 
   # so_ga — global mean salinity (scalar from ldiag_cmor)
@@ -522,6 +549,7 @@ rules:
       - path: *dp
         pattern: soga\.fesom\.\d{4}\.nc
     compound_name: ocean.so.tavg-u-hm-sea.mon.glb
+    grid_label: g190  # globales Mittel, kein horizontales Gitter
     model_variable: soga
 
   # obvfsq — Brunt-Vaisala frequency squared (N2 from namelist.io)
@@ -763,6 +791,7 @@ rules:
       - path: *dp
         pattern: volo\.fesom\.\d{4}\.nc
     compound_name: ocean.masso.tavg-u-hm-sea.mon.glb
+    grid_label: g190  # globales Mittel, kein horizontales Gitter
     model_variable: volo
     scale_factor: 1025.0
     scaled_units: "kg"
@@ -789,7 +818,7 @@ rules:
       standard_name: "integral_wrt_depth_of_product_of_sea_water_density_and_potential_temperature"
       units: "K m"             # vertical_integrate output; scale_by_constant overrides to scaled_units
     pipelines:
-      - ocean_vertical_integration_pipeline
+      - ocean_oplayer4_pipeline
 
   # scint = depth-integrated salt mass content (kg m-2).
   # vertical_integrate emits ∫(salt[psu] * dz) numerically ≈ 34.5 * column_depth.
@@ -809,7 +838,7 @@ rules:
       standard_name: "integral_wrt_depth_of_sea_water_practical_salinity_expressed_as_salt_mass_content"
       units: "1e-3 m"            # raw integrate of (psu * dz); scale brings to kg m-2
     pipelines:
-      - ocean_vertical_integration_pipeline
+      - ocean_oplayer4_pipeline
 
   # opottempmint = depth integral of rho_0 * potential temperature (degC kg m-2).
   # vertical_integrate emits ∫(T[degC] * dz); multiply by rho_0 to get degC*kg*m-2.
@@ -957,6 +986,7 @@ rules:
       - path: *dp
         pattern: volo\.fesom\.\d{4}\.nc
     compound_name: ocean.volo.tavg-u-hm-sea.dec.glb
+    grid_label: g190  # globales Mittel, kein horizontales Gitter
     model_variable: volo
 
   - name: masscello_dec
@@ -986,6 +1016,7 @@ rules:
       - path: *dp
         pattern: volo\.fesom\.\d{4}\.nc
     compound_name: ocean.masso.tavg-u-hm-sea.dec.glb
+    grid_label: g190  # globales Mittel, kein horizontales Gitter
     model_variable: volo
     scale_factor: 1025.0
     scaled_units: "kg"
@@ -1013,70 +1044,89 @@ rules:
   # HARD: Temperature tendency (opottemptend from ldiag_cmor)
   # ============================================================
 
-  # opottemptend — tendency of potential temperature as heat content
-  # Available from ldiag_cmor=.true. (already enabled)
-  - name: opottemptend
-    inputs:
-      - path: *dp
-        pattern: opottemptend\.fesom\.\d{4}\.nc
-    compound_name: ocean.opottemptend.tavg-ol-hxy-sea.yr.glb
-    model_variable: opottemptend
-    lazy_write: true
-    # NOTE: monthly data, CMIP wants yearly — needs yearly timeavg
-
   # ============================================================
-  # NEW FESOM2 DIAGNOSTICS (require source code changes)
-  # These variables were added to gen_modules_cmor_diag.F90
+  # DEACTIVATED 2026-08-17 — das Modell schreibt diese sechs nicht
+  # dreidimensional, der Data Request verlangt es aber.
+  #
+  # Alle sechs FESOM-Stroeme sind (time, nod2), nachgemessen fuer 1850
+  # und 1851. Verlangt ist (time, lev, ncells) ueber die 56 Ozeanlevel.
+  # Der Kommentar bei osalttend unten sagt es selbst: "column-integrated".
+  # Das ist kein Metadatenproblem, in pycmor ist da nichts zu holen, die
+  # Vertikale fehlt in der Ausgabe.
+  #
+  # rsdoabsorb direkt darunter ist geprueft und bleibt aktiv, der Strom
+  # ist (time, nod2, nz), also in Ordnung.
+  #
+  # Gleiche Klasse wie mrsol und die sistress-Varianten: erst die Stroeme
+  # in esm_tools ergaenzen, dann in einem Lauf mit passenden Daten wieder
+  # aktivieren. Fuer LR sind die 3D-Stroeme in file_def_fesom.xml.j2
+  # ergaenzt, siehe HANDOFF_fesom_3d_tendencies.md.
   # ============================================================
 
-  # osalttend — total salinity tendency (column-integrated)
-  - name: osalttend
-    inputs:
-      - path: *dp
-        pattern: osalttend\.fesom\.\d{4}\.nc
-    compound_name: ocean.osalttend.tavg-ol-hxy-sea.yr.glb
-    model_variable: osalttend
-    model_unit: "kg m-2 s-1"
-    lazy_write: true
-
-  # opottemprmadvect — temperature tendency from residual mean advection
-  - name: opottemprmadvect
-    inputs:
-      - path: *dp
-        pattern: opottemprmadvect\.fesom\.\d{4}\.nc
-    compound_name: ocean.opottemprmadvect.tavg-ol-hxy-sea.yr.glb
-    model_variable: opottemprmadvect
-    lazy_write: true
-
-  # opottempdiff — temperature tendency from dianeutral mixing
-  - name: opottempdiff
-    inputs:
-      - path: *dp
-        pattern: opottempdiff\.fesom\.\d{4}\.nc
-    compound_name: ocean.opottempdiff.tavg-ol-hxy-sea.yr.glb
-    model_variable: opottempdiff
-    lazy_write: true
-
-  # osaltrmadvect — salinity tendency from residual mean advection
-  - name: osaltrmadvect
-    inputs:
-      - path: *dp
-        pattern: osaltrmadvect\.fesom\.\d{4}\.nc
-    compound_name: ocean.osaltrmadvect.tavg-ol-hxy-sea.yr.glb
-    model_variable: osaltrmadvect
-    model_unit: "kg m-2 s-1"
-    lazy_write: true
-
-  # osaltdiff — salinity tendency from dianeutral mixing
-  - name: osaltdiff
-    inputs:
-      - path: *dp
-        pattern: osaltdiff\.fesom\.\d{4}\.nc
-    compound_name: ocean.osaltdiff.tavg-ol-hxy-sea.yr.glb
-    model_variable: osaltdiff
-    model_unit: "kg m-2 s-1"
-    lazy_write: true
-
+  # # opottemptend — tendency of potential temperature as heat content
+  # # Available from ldiag_cmor=.true. (already enabled)
+  # - name: opottemptend
+  # inputs:
+  # - path: *dp
+  # pattern: opottemptend\.fesom\.\d{4}\.nc
+  # compound_name: ocean.opottemptend.tavg-ol-hxy-sea.yr.glb
+  # model_variable: opottemptend
+  # lazy_write: true
+  # # NOTE: monthly data, CMIP wants yearly — needs yearly timeavg
+  #
+  # # ============================================================
+  # # NEW FESOM2 DIAGNOSTICS (require source code changes)
+  # # These variables were added to gen_modules_cmor_diag.F90
+  # # ============================================================
+  #
+  # # osalttend — total salinity tendency (column-integrated)
+  # - name: osalttend
+  # inputs:
+  # - path: *dp
+  # pattern: osalttend\.fesom\.\d{4}\.nc
+  # compound_name: ocean.osalttend.tavg-ol-hxy-sea.yr.glb
+  # model_variable: osalttend
+  # model_unit: "kg m-2 s-1"
+  # lazy_write: true
+  #
+  # # opottemprmadvect — temperature tendency from residual mean advection
+  # - name: opottemprmadvect
+  # inputs:
+  # - path: *dp
+  # pattern: opottemprmadvect\.fesom\.\d{4}\.nc
+  # compound_name: ocean.opottemprmadvect.tavg-ol-hxy-sea.yr.glb
+  # model_variable: opottemprmadvect
+  # lazy_write: true
+  #
+  # # opottempdiff — temperature tendency from dianeutral mixing
+  # - name: opottempdiff
+  # inputs:
+  # - path: *dp
+  # pattern: opottempdiff\.fesom\.\d{4}\.nc
+  # compound_name: ocean.opottempdiff.tavg-ol-hxy-sea.yr.glb
+  # model_variable: opottempdiff
+  # lazy_write: true
+  #
+  # # osaltrmadvect — salinity tendency from residual mean advection
+  # - name: osaltrmadvect
+  # inputs:
+  # - path: *dp
+  # pattern: osaltrmadvect\.fesom\.\d{4}\.nc
+  # compound_name: ocean.osaltrmadvect.tavg-ol-hxy-sea.yr.glb
+  # model_variable: osaltrmadvect
+  # model_unit: "kg m-2 s-1"
+  # lazy_write: true
+  #
+  # # osaltdiff — salinity tendency from dianeutral mixing
+  # - name: osaltdiff
+  # inputs:
+  # - path: *dp
+  # pattern: osaltdiff\.fesom\.\d{4}\.nc
+  # compound_name: ocean.osaltdiff.tavg-ol-hxy-sea.yr.glb
+  # model_variable: osaltdiff
+  # model_unit: "kg m-2 s-1"
+  # lazy_write: true
+  #
   # rsdoabsorb — net rate of absorption of shortwave energy in ocean layer (3D)
   - name: rsdoabsorb
     inputs:
@@ -1099,6 +1149,11 @@ rules:
       - path: *dp
         pattern: std_dens_DIV\.fesom\.\d{4}\.nc
     compound_name: ocean.msftm.tavg-rho-hyb-sea.mon.glb
+    # Zonal mean, not on the FESOM mesh: integrated over longitude and over
+    # basins, 180 latitude bands of 1 degree centred on the half degree.
+    # g239 was registered for exactly this on 2026-08-18 (EMD #1293), so
+    # stop inheriting the tier's g130, which claimed the 3146761 nodes.
+    grid_label: g239
     model_variable: msftm
     pipelines:
       - msftm_density_pipeline
@@ -1210,6 +1265,11 @@ rules:
       - path: *dp
         pattern: w\.fesom\.\d{4}\.nc
     compound_name: ocean.msftm.tavg-ol-hyb-sea.mon.glb
+    # Zonal mean, not on the FESOM mesh: integrated over longitude and over
+    # basins, 180 latitude bands of 1 degree centred on the half degree.
+    # g239 was registered for exactly this on 2026-08-18 (EMD #1293), so
+    # stop inheriting the tier's g130, which claimed the 3146761 nodes.
+    grid_label: g239
     model_variable: msftmz
     pipelines:
       - msftmz_pipeline
@@ -1219,6 +1279,11 @@ rules:
       - path: *dp
         pattern: vtemp\.fesom\.\d{4}\.nc
     compound_name: ocean.hfbasin.tavg-u-hyb-sea.mon.glb
+    # Zonal mean, not on the FESOM mesh: integrated over longitude and over
+    # basins, 180 latitude bands of 1 degree centred on the half degree.
+    # g239 was registered for exactly this on 2026-08-18 (EMD #1293), so
+    # stop inheriting the tier's g130, which claimed the 3146761 nodes.
+    grid_label: g239
     model_variable: hfbasin
     # compute_hfbasin_tripyview loads utemp as a secondary input alongside
     # the primary vtemp; both are needed for the edge-crossing integral.
@@ -1233,6 +1298,11 @@ rules:
       - path: *dp
         pattern: vsalt\.fesom\.\d{4}\.nc
     compound_name: ocean.sltbasin.tavg-u-hyb-sea.mon.glb
+    # Zonal mean, not on the FESOM mesh: integrated over longitude and over
+    # basins, 180 latitude bands of 1 degree centred on the half degree.
+    # g239 was registered for exactly this on 2026-08-18 (EMD #1293), so
+    # stop inheriting the tier's g130, which claimed the 3146761 nodes.
+    grid_label: g239
     model_variable: sltbasin
     # compute_sltbasin_tripyview loads usalt as a secondary input alongside
     # the primary vsalt; both are needed for the edge-crossing integral.

@@ -19,7 +19,7 @@
 \title{AWI-ESM3-4-2-veg-HR, CMIP7 piControl\\[2mm]
 \large Antwort auf das DKRZ-Review von cli108\\ und Ergebnisse der anschlie\ss enden eigenen Nachsuche}
 \author{Jan Streffing, AWI}
-\date{9. August 2026}
+\date{10. August 2026}
 
 \begin{document}
 % babel-ngerman macht " aktiv, was in Code-Beispielen zuschlaegt:
@@ -32,15 +32,15 @@
 
 Du hast uns zu \code{cli108} (Version \code{v20260804}) zwei Runden geschickt.
 Beide sind abgearbeitet und zusammen verifiziert. Der aktuelle Stand ist
-\code{cli111}, 540 Dateien:
+\code{cli112}, 540 Dateien:
 
 \begin{center}
 \begin{tabular}{lrr}
 \toprule
-& \textbf{cli108} & \textbf{cli111} \\
+& \textbf{cli108} & \textbf{cli112} \\
 \midrule
 HIGH   & 1   & 1 \\
-MEDIUM & 758 & 233 \\
+MEDIUM & 758 & 237 \\
 TIME001 / TIME003 &  & 0 \\
 Dateien mit falschem \code{grid\_label} &  & 0 \\
 Dateien, die netCDF-C nicht \"offnen kann &  & 0 \\
@@ -65,7 +65,7 @@ Umfang seit dem letzten Commit vor dem Review (\code{b42279a2}): 19 Commits,
 \subsection*{1hr, \code{hfls}: \code{lon\_bnds}/\code{lat\_bnds} fehlen, keine \code{time}-Variable}
 \ok\ Das war kein Metadatenfehler. Der Shard lief in die SLURM-Walltime, und ein
 abgebrochener Schreibvorgang hinterl\"asst eine Header-only-Datei statt eines Fehlers.
-Der Tier \code{extra\_atm} hat jetzt 6\,h. \code{cli111}: 8760 Zeitschritte,
+Der Tier \code{extra\_atm} hat jetzt 6\,h. \code{cli112}: 8760 Zeitschritte,
 \code{lat\_bnds} und \code{lon\_bnds} vorhanden.
 
 Der Fehlermodus ist unangenehm, weil er lautlos ist. Wir haben deshalb auch
@@ -85,14 +85,14 @@ gegen CF \S2.3.
 \code{cmip7repack -o} in-place darauf auf, und erst danach l\"auft der
 Compliance-Check auf der repackten Datei. Das ist keine Sonderbehandlung f\"ur
 einzelne Variablen, sondern steht \"uber \code{qc\_repack} in jedem Tier; in
-\code{cli111} sind das 542 Aufrufe, einer pro Datei.
+\code{cli112} sind das 542 Aufrufe, einer pro Datei.
 
 Alle drei gemeldeten Punkte sind damit weg:
 
 \begin{center}
 \begin{tabular}{lll}
 \toprule
-\textbf{Befund} & \textbf{gemeldet} & \textbf{\code{cli111}} \\
+\textbf{Befund} & \textbf{gemeldet} & \textbf{\code{cli112}} \\
 \midrule
 \code{time} & 18 Chunks & 1 \\
 \code{time\_bnds} & 8760 Chunks & 1 \\
@@ -105,7 +105,7 @@ Gegengepr\"uft auf genau der Datei, die du zitiert hattest:
 \code{cmip7repack -x} meldet \code{"not rechunking"} f\"ur \code{time},
 \code{time\_bnds} und \code{rsus}, es bleibt also nichts zu tun. Der
 \code{FILE004a}-Befund zur consolidated internal metadata taucht in keinem
-einzigen der \code{cli111}-QC-Reports mehr auf.
+einzigen der \code{cli112}-QC-Reports mehr auf.
 
 \subsection*{3hr, \code{mrsol}: erster Zeitschritt (01:30) fehlt}
 \ok, aber die Ursache lag tiefer, und der Hinweis war deshalb sehr n\"utzlich.
@@ -141,7 +141,7 @@ sodass k\"unftige L\"aufe inklusive LR sie reaktivieren k\"onnen.
 \end{itemize}
 
 Beide werden in \code{coordinates} der Datenvariable referenziert.
-\code{cli111}, \code{sfcWind}: \code{coordinates = "time lat lon height"}.
+\code{cli112}, \code{sfcWind}: \code{coordinates = "time lat lon height"}.
 
 \subsection*{Allgemein: globales Attribut \code{experiment}}
 \ok\ Enth\"alt jetzt die CV-Beschreibung, \"uber \code{esgvoc} aufgel\"ost, statt
@@ -156,13 +156,13 @@ trotzdem. Nur \code{reset\_coords} auf den Bounds-Koordinaten hilft. Auf
 sehr wohl, was die Sache verwirrend macht.
 
 \subsection*{Allgemein: TIME001 squareness bei tavg}
-\ok\ In \code{cli111} null Treffer, ebenso TIME003. Der Rest kam aus den
+\ok\ In \code{cli112} null Treffer, ebenso TIME003. Der Rest kam aus den
 inzwischen gemergten Upstream-PRs plus unserer Korrektur des Dateinamen-Tokens auf
 \code{time[0]}/\code{time[-1]} nach CMIP7 Appendix 1.
 
 \section{Teil 2 deines Reviews: Antwort auf die Punkte}
 
-Alle vier Punkte sind umgesetzt und in \code{cli111} verifiziert.
+Alle vier Punkte sind umgesetzt und in \code{cli112} verifiziert.
 
 \subsection*{\code{string} statt \code{character} bei Koordinatenvariablen}
 \ok\ Und der Hinweis war wichtiger, als er aussah. Wir schreiben jetzt
@@ -247,7 +247,7 @@ sich nur im Gitter unterscheiden, damit denselben DRS-Pfad bekommen, hat
 \code{areacella} seinen Zwilling \"uberschrieben, also eine Datei weniger als
 erwartet.
 
-In \code{cli111} stimmt bei allen 540 Dateien das \code{grid\_label} mit der
+In \code{cli112} stimmt bei allen 540 Dateien das \code{grid\_label} mit der
 tats\"achlichen Zellzahl \"uberein, gepr\"uft Datei f\"ur Datei.
 
 Alle vier Gitter, die wir tats\"achlich schreiben, waren bereits registriert:
@@ -366,7 +366,7 @@ vollst\"andig. Der Hinweis k\"onnte f\"ur die QC allgemein interessant sein: ein
 Datei, die die Bibliothek nicht \"offnen kann, sollte kein sauberes Ergebnis
 bekommen.
 
-\section{Verbleibende Befunde in cli111}
+\section{Verbleibende Befunde in cli112}
 
 \begin{longtable}{rll}
 \toprule
@@ -374,25 +374,19 @@ bekommen.
 \midrule
 \endhead
 1   & \code{basin} HIGH   & \upstream, \code{cc-plugin-wcrp} \#66 \\
-112 & \code{ATTR004} \code{long\_name} & Registry-Erwartung, gemischt, s.\,u. \\
-39  & \code{ATTR004} \code{cell\_measures} & Registry will \code{volume: volcello} dazu \\
-36  & \code{ATTR001} \code{cell\_measures} & fehlt auf den fx-Fl\"achenvariablen selbst \\
-    &                     & und auf globalen Skalaren, die keins haben \\
-26  & CF \S2.4            & Dimensionsreihenfolge, mit den \code{alevel}-Dateien \\
-    &                     & von 17 gestiegen \\
+115 & \code{ATTR004} \code{long\_name} & Registry weicht vom Data Request ab, s.\,u. \\
+37  & \code{ATTR001} \code{cell\_measures} & Data Request gibt hier \code{''} vor \\
+31  & CF \S7.2            & \code{cell\_measures} mit zwei Paaren, \\
+    &                     & \code{compliance-checker\#1323} \\
+26  & CF \S2.4            & Dimensionsreihenfolge \\
+10  & \code{ATTR004} \code{cell\_methods} & Registry weicht vom Data Request ab \\
 9   & CF \S7.1            & \code{lev\_bnds:formula\_terms}, teilen publizierte \\
     &                     & CMOR-Dateien mit uns \\
+8   & \code{ATTR004} \code{cell\_measures} & Registry erwartet ihren eigenen \\
+    &                     & Platzhalter \code{--MODEL} \\
 1   & CF \S6.1            & \code{basin}, Rest des \upstream-Befunds \\
 \bottomrule
 \end{longtable}
-
-Eine Messungenauigkeit in eigener Sache: QC-Reports werden nach Regelnamen
-benannt, und sieben Regelnamen kommen in mehreren Tiers vor (\code{evspsbl} in
-dreien, dazu \code{areacella}, \code{prsn}, \code{sbl\_mon}, \code{snd\_day},
-\code{snw}, \code{ts}). Acht der 540 Regeln \"uberschreiben damit den Report einer
-anderen. Die Daten sind davon nicht betroffen, sie liegen wegen unterschiedlicher
-\code{realm}/\code{compound\_name} in verschiedenen Pfaden; die Zahlen oben sind
-aber eine leichte Untersch\"atzung.
 
 Wir haben die \code{ATTR004}-Gruppen einzeln gegen den Data Request gehalten:
 
@@ -401,9 +395,9 @@ Wir haben die \code{ATTR004}-Gruppen einzeln gegen den Data Request gehalten:
 \toprule
 \textbf{Gruppe} & \textbf{Befunde} & \textbf{bei uns} & \textbf{Registry $\neq$ DReq} \\
 \midrule
-\code{long\_name}    & 112 & 1  & 107 (+4 ohne DReq-Eintrag) \\
-\code{cell\_measures} & 39 & 39 & 0 \\
-\code{cell\_methods}  & 10 & 0  & 10 \\
+\code{long\_name}    & 115 & 1 & 110 (+4 ohne DReq-Eintrag) \\
+\code{cell\_measures} &   8 & 0 & 8 \\
+\code{cell\_methods}  &  10 & 0 & 10 \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -437,17 +431,23 @@ CORDEX-Eintr\"agen zeigen auf nicht existierende branded variables), dort nur f\
 CORDEX beschrieben. Falls hilfreich, stellen wir die Liste der betroffenen
 branded variables zusammen.
 
-Die 39 \code{cell\_measures} sind dagegen unsere: der Data Request verlangt bei
-3D-Ozeanvariablen \code{"area: areacello volume: volcello"}, wir hatten auf
-\code{"area: areacello"} gek\"urzt. Der Grund war, dass der cf-checker in \S7.2 nur
-ein einzelnes Paar akzeptiert, w\"ahrend CF 1.11 \S7.2 selbst mehrere erlaubt.
+Bei \code{cell\_measures} lag der Fehler dagegen bei uns: der Data Request
+verlangt bei 3D-Ozeanvariablen \code{"area: areacello volume: volcello"}, wir
+hatten auf \code{"area: areacello"} gek\"urzt, weil der cf-checker in \S7.2 nur ein
+einzelnes Paar akzeptiert, w\"ahrend CF 1.11 \S7.2 selbst mehrere erlaubt.
 
-Wir schreiben jetzt den DReq-Wert unver\"andert, weil das die Variante ist, die
-am Ende \emph{beide} Checks besteht: \code{ATTR004} verlangt sie schon heute, und
-\code{ioos/compliance-checker\#1323} macht \S7.2 mehrfachpaar-f\"ahig. Bis der PR
-gemergt ist, tauscht das die 39 \code{ATTR004}-Befunde gegen 39 \S7.2-Befunde.
-K\"urzen w\"urde \code{ATTR004} dagegen dauerhaft verfehlen, denn der Data Request
-verlangt beide Paare.
+Wir schreiben jetzt den DReq-Wert unver\"andert, weil das die Variante ist, die am
+Ende \emph{beide} Checks besteht: \code{ATTR004} verlangt sie schon heute, und
+\code{ioos/compliance-checker\#1323} macht \S7.2 mehrfachpaar-f\"ahig. Solange
+der PR offen ist, erscheinen daf\"ur 31 \S7.2-Befunde; sie verschwinden mit dem
+Merge. K\"urzen w\"urde \code{ATTR004} dagegen dauerhaft verfehlen, denn der Data
+Request verlangt beide Paare.
+
+Die verbliebenen 8 \code{cell\_measures}-Befunde sind ein anderer Fall: dort
+erwartet die Registry ihren eigenen, nicht ausgef\"ullten Platzhalter
+\code{--MODEL} (\code{siu}, \code{siv}, \code{sidmasstranx/y},
+\code{sistrxdtop/ydtop}), w\"ahrend wir den realm-\"ublichen Wert
+\code{"area: areacello"} einsetzen.
 
 Die \S6.1-Befunde auf den Becken-Achsen haben wir aufgekl\"art. Der Checker
 meldete auf \code{hfbasin} und \code{sltbasin}:
@@ -464,7 +464,7 @@ dann als einen einzigen Wert statt als drei. Jedes Label f\"ur sich ist im CV
 g\"ultig. Wir schreiben die Achse jetzt als \code{char sector(basin, strlen)},
 mit \code{standard\_name = region} und \code{long\_name = "Ocean Basin"} aus dem
 CMIP7-CV, gepr\"uft gegen publizierte MPI-ESM1-2-LR-Dateien (\code{Omon.hfbasin}).
-In \code{cli111} ist davon noch einer \"ubrig, der zum
+In \code{cli112} ist davon noch einer \"ubrig, der zum
 \upstream-HIGH auf der \code{basin}-fx-Datei geh\"ort.
 
 Ein weiteres Beispiel derselben Sorte: f\"ur

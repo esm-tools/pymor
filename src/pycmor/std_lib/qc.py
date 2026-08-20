@@ -11,11 +11,26 @@ Rule attributes consumed (all optional):
 
 - ``qc_enabled`` (bool, default False) — master switch
 - ``qc_tests`` (list[str], default ``["cf"]``) — checker suites; ``cf``,
-  ``acdd``, ``wcrp_cmip7`` if the plugin is installed.
+  ``acdd``, ``wcrp_cmip7`` if the plugin is installed, ``aicc`` if
+  ``cc-plugin-aicc`` is installed.
+
+  ``aicc`` (DKRZ) validates coordinates against the CMIP7 CMOR tables and
+  needs ``CMIP7_TABLES_PATH`` pointing at ``cmip7-cmor-tables/tables``.
+  Note that it does not degrade gracefully: with the variable unset or
+  wrong it raises ``FileNotFoundError`` out of
+  ``ComplianceChecker.run_checker``, so the whole call fails and *no*
+  report is written, losing the ``cf`` and ``wcrp_cmip7`` results for
+  that file as well. Since a missing sidecar is not counted anywhere,
+  the run looks clean rather than broken. ``submit_hr_year_shards.sh``
+  pre-flights the path for this reason.
 - ``qc_criteria`` (str, default ``"normal"``) — lenient | normal | strict
 - ``qc_fail_on_mandatory`` (bool, default False) — raise on any Mandatory
   finding instead of just logging.
 - ``qc_binary`` (str, default ``"cchecker.py"``) — override path.
+- ``qc_attempts`` (int, default 3) — how often to re-run the
+  checker when it produced no report at all. Concurrent shards
+  racing on the CF standard-name table cache can make it die at
+  import time; that is transient and a retry clears it.
 - ``qc_repack`` (bool, default False) — run ``cmip7repack -o`` in-place
   on each file before checking. Clears the wcrp_cmip7 FILE004a
   "missing consolidated internal metadata" finding.
@@ -33,6 +48,7 @@ import json
 import os
 import shutil
 import subprocess
+import time
 from pathlib import Path
 from typing import Iterable
 
@@ -95,7 +111,7 @@ def _finding_codes(name: str | None) -> set[str]:
         return set()
     codes: set[str] = set()
     if name.startswith("[") and "]" in name:
-        codes.add(name[1:name.index("]")])
+        codes.add(name[1 : name.index("]")])
     if "§" in name:
         for tok in name.split():
             if tok.startswith("§"):
@@ -147,15 +163,37 @@ def _summarize(report: dict, ignore: set[str] | None = None) -> dict:
     return {"totals": totals, "by_file": by_file}
 
 
-def _run_cchecker(binary: str, tests: Iterable[str], criteria: str,
-                  out_json: Path, files: list[Path]) -> tuple[int, str]:
+def _run_cchecker(
+    binary: str,
+    tests: Iterable[str],
+    criteria: str,
+    out_json: Path,
+    files: list[Path],
+    attempts: int = 3,
+) -> tuple[int, str]:
     cmd = [binary, "-f", "json_new", "-o", str(out_json), "-c", criteria]
     for t in tests:
         cmd += ["-t", t]
     cmd += [str(p) for p in files]
     logger.info(f"qc: running {' '.join(cmd)}")
-    proc = subprocess.run(cmd, capture_output=True, text=True)
-    return proc.returncode, (proc.stderr or proc.stdout or "")
+    attempts = max(1, int(attempts))
+    rc, err = 1, ""
+    for attempt in range(1, attempts + 1):
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        rc, err = proc.returncode, (proc.stderr or proc.stdout or "")
+        # A report on disk means the checker ran; rc!=0 then just means it
+        # found something. Only a missing report is worth retrying.
+        if out_json.exists():
+            return rc, err
+        if attempt < attempts:
+            # Stagger, so shards that collided do not collide again.
+            delay = 5 * attempt + (os.getpid() % 7)
+            logger.warning(
+                f"qc: cchecker.py rc={rc} and no report on attempt "
+                f"{attempt}/{attempts}; retrying in {delay}s. stderr:\n{err}"
+            )
+            time.sleep(delay)
+    return rc, err
 
 
 def _clean_cmip7repack_orphans(files: list[Path]) -> None:
@@ -173,14 +211,9 @@ def _clean_cmip7repack_orphans(files: list[Path]) -> None:
             try:
                 size = orphan.stat().st_size
                 orphan.unlink()
-                logger.info(
-                    f"qc: removed stale cmip7repack orphan {orphan.name} "
-                    f"({size / 1024 / 1024:.0f} MB)"
-                )
+                logger.info(f"qc: removed stale cmip7repack orphan {orphan.name} " f"({size / 1024 / 1024:.0f} MB)")
             except Exception as exc:
-                logger.warning(
-                    f"qc: could not remove cmip7repack orphan {orphan.name}: {exc}"
-                )
+                logger.warning(f"qc: could not remove cmip7repack orphan {orphan.name}: {exc}")
 
 
 def _run_cmip7repack(binary: str, files: list[Path]) -> None:
@@ -232,10 +265,7 @@ def _strip_leading_underscore_attrs(files: list[Path]) -> None:
                             var.delncattr(attr)
                             stripped.append(f"{vname}:{attr}")
                 if stripped:
-                    logger.info(
-                        f"qc: stripped leading-_ attrs from {fp.name}: "
-                        f"{', '.join(stripped)}"
-                    )
+                    logger.info(f"qc: stripped leading-_ attrs from {fp.name}: " f"{', '.join(stripped)}")
         except Exception as exc:
             logger.warning(f"qc: leading-_ attr strip failed for {fp.name}: {exc}")
 
@@ -281,19 +311,36 @@ def run_compliance_checker(data, rule):
     criteria = getattr(rule, "qc_criteria", None) or "normal"
     ignore = set(getattr(rule, "qc_ignore_codes", None) or [])
     cmor_var = getattr(rule, "cmor_variable", "var")
-    # Sidecar filename uniquely identifies the rule. Prefer rule.name
-    # because two rules can share a cmor_variable but differ in
-    # frequency (e.g. siconc vs siconc_day) — using cmor_var alone
-    # would collide. table_id is unreliable across CMIP6 / CMIP7 so we
-    # don't include it.
-    rule_id = getattr(rule, "name", None) or cmor_var
+    # Sidecar filename must uniquely identify the rule, or one rule's report
+    # silently overwrites another's and its findings vanish from the run.
+    #
+    # rule.name is not enough. It collides two ways: a name can repeat across
+    # tier yamls (``evspsbl`` exists as seaIce, atmos and ocean; ``areacella``
+    # as native and regridded), and two rules can share name, realm and
+    # grid_label while differing only in branding (``sbl_mon`` on hxy-u
+    # against hxy-lnd). On the AWI-ESM3-veg-HR recipes that lost 8 of 540
+    # reports.
+    #
+    # compound_name plus grid_label is unique, because it is exactly the DRS
+    # identity of the output: no two rules may write the same path. Fall back
+    # to rule.name when there is no compound_name (CMIP6-style rules).
+    compound = getattr(rule, "compound_name", None)
+    grid_label = getattr(rule, "grid_label", None)
+    if compound:
+        rule_id = f"{compound}_{grid_label}" if grid_label else str(compound)
+    else:
+        rule_id = getattr(rule, "name", None) or cmor_var
     out_json = Path(rule.output_directory) / f"qc_{rule_id}.json"
     # Reflect the actual rule_id in the log header for grep-ability.
     table_id = rule_id
 
-    rc, err = _run_cchecker(binary, tests, criteria, out_json, files)
+    attempts = int(getattr(rule, "qc_attempts", 3) or 3)
+    rc, err = _run_cchecker(binary, tests, criteria, out_json, files, attempts)
     if not out_json.exists():
-        logger.error(f"qc: cchecker.py rc={rc}; no JSON produced. stderr:\n{err}")
+        logger.error(
+            f"qc: cchecker.py rc={rc} after {attempts} attempt(s); no JSON "
+            f"produced, so this rule has NO qc report. stderr:\n{err}"
+        )
         if getattr(rule, "qc_fail_on_mandatory", False):
             raise QCFailure(f"qc: cchecker.py produced no report for {cmor_var}")
         return data
@@ -321,8 +368,6 @@ def run_compliance_checker(data, rule):
                 )
 
     if totals["high"] and getattr(rule, "qc_fail_on_mandatory", False):
-        raise QCFailure(
-            f"qc[{cmor_var}]: {totals['high']} Mandatory finding(s) — see {out_json}"
-        )
+        raise QCFailure(f"qc[{cmor_var}]: {totals['high']} Mandatory finding(s) — see {out_json}")
 
     return data

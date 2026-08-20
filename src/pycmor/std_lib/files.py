@@ -44,6 +44,7 @@ import threading
 import time
 from pathlib import Path
 
+import dask
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -63,8 +64,6 @@ from .time_bounds import (
     _force_canonical_time_encoding,
     canonicalize_time_in_encoding_dict,
 )
-
-import dask
 
 
 class SaveTimeout(Exception):
@@ -232,33 +231,67 @@ def _ensure_external_variables(ds):
     return ds
 
 
+def _is_bounds_var_name(name):
+    """True for the names pycmor uses for bounds variables.
+
+    CF bounds normally end in ``_bnds`` / ``_bounds``; XIOS writes them the
+    other way round as ``bounds_<coord>``. Unstructured cell bounds follow
+    the CMOR convention instead and are called ``vertices_latitude`` /
+    ``vertices_longitude``, which none of the suffix tests catch. Bounds
+    variables must be excluded from quantization, must not get a
+    ``_FillValue`` (CF §7.1) and must not carry a ``coordinates`` attr, so
+    every one of those checks has to know about all three spellings.
+    """
+    n = str(name)
+    return n.endswith(("_bnds", "_bounds")) or n.startswith(("bounds_", "vertices_"))
+
+
 def _ensure_coordinates_attr(ds):
     """Rebuild ``coordinates`` attribute on each data var from current names.
 
     ``set_coordinate_attributes`` runs early in the pipeline (before
     ``map_dimensions``); a rename that happens afterwards (e.g. a vertical
-    coord ``pressure_levels`` -> ``plev19``) would leave the stored string
+    coord ``pressure_levels`` -> ``plev``) would leave the stored string
     pointing at a variable that no longer exists. Regenerate at save time
     from the current dim/coord names so the attribute always matches what
     is actually in the file.
+
+    Only *auxiliary* coordinates belong here. CF §5 defines the
+    ``coordinates`` attribute as the way to associate a variable with
+    coordinates that cannot be found by the dimension-name rule, i.e. it
+    "may contain the name of a coordinate variable, but this is not
+    normally needed". A coordinate variable — a 1-D variable whose name
+    equals its own dimension, such as ``time``, ``lat``/``lon`` on a
+    regular grid, or ``lev`` — is already discoverable from the dims, so
+    listing it is redundant and the DKRZ coordinate checker flags it.
+
+    Auxiliary coordinates that must stay: ``lat(ncells)``/``lon(ncells)``
+    on unstructured grids (name != dim), and scalar coords such as
+    ``height``, ``type``, ``sector``, ``depth`` (ndim == 0).
     """
     if not isinstance(ds, xr.Dataset):
         return ds
     for var_name in ds.data_vars:
         da = ds[var_name]
-        if str(var_name).endswith(("_bnds", "_bounds")) or str(var_name).startswith("bounds_"):
+        if _is_bounds_var_name(var_name):
             continue
         names = []
-        for dim in da.dims:
-            if dim in ds.coords and dim not in names:
-                names.append(str(dim))
         for coord_name in da.coords:
             cn = str(coord_name)
+            coord = ds[coord_name] if coord_name in ds.coords else da[coord_name]
+            # Skip coordinate variables (1-D, named after their own dim).
+            if coord.ndim == 1 and coord.dims[0] == cn:
+                continue
             if cn not in names:
                 names.append(cn)
+        da.encoding.pop("coordinates", None)
         if names:
-            da.encoding.pop("coordinates", None)
             da.attrs["coordinates"] = " ".join(names)
+        else:
+            # No auxiliary coords left (regular lat/lon grid with no scalar
+            # coords). Drop rather than keep a stale string naming coordinate
+            # variables, which is what the earlier dims-first build produced.
+            da.attrs.pop("coordinates", None)
     return ds
 
 
@@ -405,17 +438,589 @@ def _drop_xios_aux_time_coords(ds):
     return ds
 
 
+# Dimension names we treat as the horizontal axes when checking CF §2.4
+# ordering. The unstructured ones are FESOM's node (``nod2``) and element
+# (``elem``) index dims plus the XIOS/UGRID spellings.
+_HORIZONTAL_DIMS = frozenset(
+    {"lat", "latitude", "lon", "longitude", "ncells", "nod2", "elem", "cell", "cells", "i", "j"}
+)
+
+# Vertical dim names after map_dimensions has resolved the data request
+# placeholders (olevel/alevel -> lev, plevN -> plev).
+_VERTICAL_DIMS = frozenset(
+    {"lev", "plev", "depth", "sdepth", "alevel", "alevhalf", "olevel", "olevhalf", "rho", "gamma"}
+)
+
+
+def _is_vertical_dim(ds, dim):
+    """True if ``dim`` is a vertical axis, by name or by its coord's attrs."""
+    if dim in _VERTICAL_DIMS:
+        return True
+    if dim in ds.coords:
+        attrs = ds[dim].attrs
+        if str(attrs.get("axis", "")).upper() == "Z":
+            return True
+        if "positive" in attrs:
+            return True
+    return False
+
+
+def _ensure_cf_dim_order(ds):
+    """Put the vertical axis ahead of the horizontal ones (CF §2.4).
+
+    CF asks for the relative order T, Z, Y, X. FESOM writes its 3-D fields
+    with the vertical axis last, so after dimension mapping we ended up
+    with ``difvso(time, nod2, lev)`` and ``hfx(time, elem, lev)``. The DKRZ
+    coordinate check on cli112 found 25 files like this.
+
+    This is deliberately narrow: it moves the vertical dim to sit
+    immediately before the first horizontal dim and leaves every other
+    dimension where it is. CF also prefers non-spatiotemporal dims (basin,
+    landuse, ...) to the left of the rest, but those files already pass and
+    reshuffling them would churn output for no reported finding.
+    """
+    if not isinstance(ds, xr.Dataset):
+        return ds
+    for var_name in list(ds.data_vars):
+        da = ds[var_name]
+        if _is_bounds_var_name(var_name):
+            continue
+        dims = list(da.dims)
+        reordered = list(dims)
+        vertical = [d for d in reordered if _is_vertical_dim(ds, d)]
+        horizontal = [d for d in reordered if d in _HORIZONTAL_DIMS]
+        spatial = vertical + horizontal
+        if not spatial:
+            continue
+
+        # T first. cli114 shipped msftbarot(nod2, time), which is the same
+        # rule one slot earlier: the horizontal dimension had overtaken time,
+        # not just the vertical.
+        time_dims = [d for d in reordered if str(d).startswith("time")]
+        if len(time_dims) == 1:
+            tdim = time_dims[0]
+            first_spatial = min(reordered.index(s) for s in spatial)
+            if reordered.index(tdim) > first_spatial:
+                reordered.remove(tdim)
+                reordered.insert(first_spatial, tdim)
+
+        # then Z, ahead of the horizontal dimensions
+        if len(vertical) == 1 and horizontal:
+            zdim = vertical[0]
+            first_h = min(reordered.index(h) for h in horizontal)
+            if reordered.index(zdim) > first_h:
+                reordered.remove(zdim)
+                reordered.insert(first_h, zdim)
+
+        if reordered == dims:
+            continue
+        logger.info(f"  → CF §2.4 dim order on {var_name!r}: {tuple(dims)} -> {tuple(reordered)}")
+        ds[var_name] = da.transpose(*reordered)
+    return ds
+
+
+# CMOR's names for unstructured cell bounds, and the coord each belongs to.
+_VERTICES_NAMES = {
+    "lat": "vertices_latitude",
+    "latitude": "vertices_latitude",
+    "lon": "vertices_longitude",
+    "longitude": "vertices_longitude",
+}
+_VERTICES_DIM = "vertices"
+
+
+def _is_auxiliary_coord(ds, name):
+    """True for a 1-D coord whose name differs from its dimension."""
+    if name not in ds.coords:
+        return False
+    c = ds[name]
+    return c.ndim == 1 and c.dims[0] != name
+
+
+def _denormalise_vertices_naming(ds):
+    """Undo :func:`_normalise_vertices_naming` so the chain is re-runnable.
+
+    The bounds-building code looks for ``<coord>_bnds`` by name. The save
+    chain runs more than once in some paths (per resample group, and again
+    per output file), so a dataset that already went through the CMOR
+    rename would otherwise look like it had no cell bounds at all and the
+    grid-file recovery would build a second copy.
+    """
+    if not isinstance(ds, xr.Dataset):
+        return ds
+    for coord, vname in _VERTICES_NAMES.items():
+        if coord in ds.coords and vname in ds.variables:
+            ds = ds.rename({vname: f"{coord}_bnds"})
+            ds[coord].attrs["bounds"] = f"{coord}_bnds"
+    return ds
+
+
+def _normalise_vertices_naming(ds):
+    """Rename unstructured cell bounds to the CMOR ``vertices_*`` form.
+
+    On an unstructured grid ``lat``/``lon`` are auxiliary coordinates over
+    a cell-index dimension, and CMOR writes their bounds as::
+
+        double vertices_latitude(ncells, vertices) ;
+        double lat(ncells) ;
+            lat:bounds = "vertices_latitude" ;
+
+    pycmor wrote ``lat_bnds(ncells, nvertex)`` instead. The name is legal
+    CF either way, but the vertex *dimension* was inconsistent across our
+    own output (cli112: 330 files ``nvertex``, 117 ``vertices``) depending
+    on whether the bounds came from the XIOS stream or the mesh file, and
+    the DKRZ coordinate check asked for the CMOR spelling.
+
+    Only auxiliary lat/lon are touched. On a regular grid ``lat`` is a
+    coordinate variable and ``lat_bnds(lat, bnds)`` is already correct.
+    """
+    if not isinstance(ds, xr.Dataset):
+        return ds
+    for coord, vname in _VERTICES_NAMES.items():
+        if not _is_auxiliary_coord(ds, coord):
+            continue
+        bname = ds[coord].attrs.get("bounds") or ds[coord].encoding.get("bounds") or f"{coord}_bnds"
+        if bname not in ds.variables or vname in ds.variables:
+            continue
+        bnds = ds[bname]
+        if bnds.ndim != 2:
+            continue
+        renames = {bname: vname}
+        vdim = bnds.dims[1]
+        # Only rename the vertex dim if nothing else is already using that
+        # name, otherwise xarray would merge two unrelated dimensions.
+        if vdim != _VERTICES_DIM and _VERTICES_DIM not in ds.dims:
+            renames[vdim] = _VERTICES_DIM
+        ds = ds.rename(renames)
+        ds[coord].encoding.pop("bounds", None)
+        ds[coord].attrs["bounds"] = vname
+        logger.info(f"  → vertices: {bname}({bnds.dims[0]}, {vdim}) -> {vname}({bnds.dims[0]}, {_VERTICES_DIM})")
+    return ds
+
+
+_UNSTRUCTURED_DIMS = ("ncells", "nod2", "elem", "cell", "cells")
+
+
+def _great_circle_centroids(lat_deg, lon_deg):
+    """Centroid of each row of vertices, averaged as unit vectors.
+
+    Averaging degrees directly breaks on the dateline (the mean of -179
+    and 179 is 0) and near the poles. Going through Cartesian unit
+    vectors is exact and is the same trick ``_match_cells`` already uses.
+
+    ``lat_deg`` / ``lon_deg`` are ``(n, k)``; the result is two ``(n,)``
+    arrays in degrees, longitude in [-180, 180).
+    """
+    la = np.radians(np.asarray(lat_deg, dtype=np.float64))
+    lo = np.radians(np.asarray(lon_deg, dtype=np.float64))
+    cos_la = np.cos(la)
+    x = (cos_la * np.cos(lo)).mean(axis=1)
+    y = (cos_la * np.sin(lo)).mean(axis=1)
+    z = np.sin(la).mean(axis=1)
+    return np.degrees(np.arctan2(z, np.hypot(x, y))), np.degrees(np.arctan2(y, x))
+
+
+def _ensure_horizontal_aux_coords(ds, rule=None):
+    """Attach ``lat``/``lon`` from the mesh when the stream carries none.
+
+    Most FESOM streams arrive from XIOS with lat/lon already on them, so
+    the recipes never needed a ``setgrid`` step. A handful do not: cli112
+    shipped 16 files (rlds, rlus, rsds, rsus, sbl, sifllattop,
+    siflsenstop, volcello, deptho on the node grid; hfx, hfy on the
+    element grid) with a bare cell index and no geographic coordinates at
+    all, which the DKRZ coordinate check flagged. Nothing downstream can
+    place those values on the globe.
+
+    ``rule.grid_file`` already points at the mesh for every FESOM rule
+    (it is set in ``inherit``), so recover from there rather than asking
+    every recipe to add a step. Node-grid variables take the mesh
+    ``lat``/``lon`` directly. Element-grid variables have no stored
+    coordinates, so build them from the ``triag_nodes`` connectivity:
+    the three corner nodes give the cell vertices and their great-circle
+    mean gives the centroid.
+
+    Bounds are attached raw; the dateline normalisation later in
+    :func:`_ensure_lat_lon_bounds_impl` straightens out triangles that
+    straddle the seam.
+    """
+    if not isinstance(ds, xr.Dataset) or rule is None:
+        return ds
+    if any(n in ds.variables or n in ds.coords for n in ("lat", "latitude")):
+        return ds
+    grid_file = getattr(rule, "grid_file", None)
+    if not grid_file or not os.path.exists(str(grid_file)):
+        return ds
+
+    hdim = None
+    for var_name in ds.data_vars:
+        if _is_bounds_var_name(var_name):
+            continue
+        for d in ds[var_name].dims:
+            if str(d) in _UNSTRUCTURED_DIMS:
+                hdim = str(d)
+                break
+        if hdim:
+            break
+    if hdim is None:
+        return ds
+
+    n_cells = ds.sizes[hdim]
+    try:
+        with xr.open_dataset(grid_file, decode_times=False) as mesh:
+            if "lat" not in mesh or "lon" not in mesh:
+                return ds
+            n_nodes = mesh.sizes.get("ncells")
+            n_triags = mesh.sizes.get("ntriags")
+
+            if n_cells == n_nodes:
+                lat = np.asarray(mesh["lat"].values, dtype=np.float64)
+                lon = np.asarray(mesh["lon"].values, dtype=np.float64)
+                lat_b = np.asarray(mesh["lat_bnds"].values, dtype=np.float64) if "lat_bnds" in mesh else None
+                lon_b = np.asarray(mesh["lon_bnds"].values, dtype=np.float64) if "lon_bnds" in mesh else None
+                source = "mesh nodes"
+            elif n_cells == n_triags and "triag_nodes" in mesh:
+                # FESOM stores the connectivity 1-based (Fortran).
+                idx = np.asarray(mesh["triag_nodes"].values, dtype=np.int64) - 1
+                lat_b = np.asarray(mesh["lat"].values, dtype=np.float64)[idx]
+                lon_b = np.asarray(mesh["lon"].values, dtype=np.float64)[idx]
+                lat, lon = _great_circle_centroids(lat_b, lon_b)
+                # CF §7.1 requires a coordinate to lie inside its own bounds.
+                # The spherical centroid of a triangle that contains a pole
+                # sits closer to the pole than any of its vertices, because
+                # latitude is not linear there: cli113's cell 1976811 had
+                # vertices at 89.970 / 89.981 / 89.970 and a centroid at
+                # 89.9929, which is correct on the sphere but outside the
+                # cell's latitude range, and the checker rejected it on all
+                # four element-grid files. Clamp latitude back into the
+                # vertex range; the displacement is ~1 km on the one polar
+                # cell and zero everywhere else.
+                lat = np.clip(lat, lat_b.min(axis=1), lat_b.max(axis=1))
+                source = "element centroids from triag_nodes"
+            else:
+                logger.warning(
+                    f"  → aux coords: {hdim!r} has {n_cells} cells, mesh has "
+                    f"{n_nodes} nodes / {n_triags} elements; cannot match"
+                )
+                return ds
+    except Exception as exc:
+        logger.warning(f"  → aux coord recovery from {grid_file} failed: {exc}")
+        return ds
+
+    ds = ds.assign_coords(
+        {
+            "lat": xr.DataArray(
+                lat,
+                dims=(hdim,),
+                attrs={"standard_name": "latitude", "long_name": "latitude", "units": "degrees_north"},
+            ),
+            "lon": xr.DataArray(
+                lon,
+                dims=(hdim,),
+                attrs={"standard_name": "longitude", "long_name": "longitude", "units": "degrees_east"},
+            ),
+        }
+    )
+    if lat_b is not None and lon_b is not None and lat_b.ndim == 2:
+        vdim = _VERTICES_DIM if _VERTICES_DIM not in ds.dims else f"{_VERTICES_DIM}_{lat_b.shape[1]}"
+        # CF §7.1: bounds carry no attributes of their own.
+        ds["lat_bnds"] = xr.DataArray(lat_b, dims=(hdim, vdim), attrs={})
+        ds["lon_bnds"] = xr.DataArray(lon_b, dims=(hdim, vdim), attrs={})
+        ds["lat"].attrs["bounds"] = "lat_bnds"
+        ds["lon"].attrs["bounds"] = "lon_bnds"
+    logger.info(f"  → aux coords: attached lat/lon on {hdim!r} ({n_cells} cells) from {source}")
+    return ds
+
+
+def _drop_unrequested_aux_coords(ds, rule=None):
+    """Remove model-side auxiliary coordinates the data request never asked for.
+
+    FESOM ships ``nz(nod2)``, the depth of the sea floor at each node, next to
+    its bottom-value fields. It rides along as a coordinate, so cli114 wrote
+    ``tob:coordinates = "lat lon nz"`` and the same for ``sob``. The
+    information is real but redundant: ``deptho`` is the CMIP7 variable for it
+    and we already publish it, and an unrequested entry in ``coordinates``
+    makes consumers look for an axis the request does not define.
+
+    Only genuine auxiliary coordinates are considered. Anything the request
+    asks for, the horizontal coordinates, and the vertices are kept.
+    """
+    if not isinstance(ds, xr.Dataset) or rule is None:
+        return ds
+    from .coordinate_attributes import AXIS_ENTRIES
+
+    drv = getattr(rule, "data_request_variable", None)
+    keep = {"lat", "lon", "latitude", "longitude", "time"}
+    for dim in tuple(getattr(drv, "dimensions", ()) or ()):
+        keep.add(str(dim))
+        entry = AXIS_ENTRIES.get(dim)
+        if entry and entry.get("out_name"):
+            keep.add(str(entry["out_name"]))
+
+    for name in [str(c) for c in ds.coords]:
+        if name in keep or name in ds.dims or _is_bounds_var_name(name):
+            continue
+        if not _is_auxiliary_coord(ds, name):
+            continue
+        # A labelled axis is written CMOR-style as ``char sector(<out_name>,
+        # strlen)``, so the variable is called ``sector`` and never matches a
+        # data request dimension or out_name. cli115 lost it from cSoilPools
+        # and the basin transports this way, and with it the only statement of
+        # which pool or which basin each slice is.
+        if ds[name].dtype.kind in ("S", "U") or name == "sector":
+            continue
+        logger.info(f"  → dropped auxiliary coordinate {name!r}: not requested by {getattr(drv, 'variable_id', '?')!r}")
+        ds = ds.drop_vars(name)
+    return ds
+
+
+def _strip_variable_positive(ds):
+    """Drop ``positive`` from data variables; it belongs on coordinates only.
+
+    CF §4.3 defines ``positive`` for vertical coordinate variables. The CMOR
+    *variable* tables also carry a ``positive`` field, but there it is an
+    instruction to the producer rather than metadata: if the model's own sign
+    convention is the opposite of the table's, the data is multiplied by -1
+    before writing. The field itself is not meant to reach the file, and the
+    cf-checker takes exception to it when it does.
+
+    182 entries across the CMIP7 variable tables carry the field, so anything
+    that copies data request attributes verbatim will pick it up. cli114 had
+    one, ``siflcondtop``.
+
+    Note what this does *not* do: it does not verify that the data actually
+    follows the requested direction. That is a per-variable judgement about the
+    model's convention and has to be made where the field is computed.
+    """
+    if not isinstance(ds, xr.Dataset):
+        return ds
+    for var_name in ds.data_vars:
+        if _is_bounds_var_name(var_name) or var_name in ds.coords:
+            continue
+        if ds[var_name].attrs.pop("positive", None) is not None:
+            logger.info(f"  → dropped 'positive' from data variable {var_name!r} (coordinates only)")
+    return ds
+
+
+# CF §7.1: a bounds variable inherits its parent's meaning and must not carry
+# these itself. ``formula_terms`` and ``formula`` are the exception, CF 1.7
+# requires them on the bounds of a parametric vertical coordinate and CMOR
+# writes them.
+_BOUNDS_FORBIDDEN_ATTRS = (
+    "long_name",
+    "units",
+    "standard_name",
+    "axis",
+    "positive",
+    "calendar",
+    "leap_month",
+    "leap_year",
+    "month_lengths",
+)
+
+
+def _strip_bounds_attributes(ds):
+    """Remove attributes a bounds variable must not have.
+
+    ``time_bnds`` has always inherited ``long_name`` from its parent, and for as
+    long as both said "time" nothing complained. Taking the parent's long_name
+    from the CMOR table turned that into a contradiction: the coordinate says
+    "Time Intervals", the bounds still said "time", and cf §7.1 reported the
+    pair as disagreeing on 1099 occasions in cli115. cc-plugin-aicc is stricter
+    still and wants no attributes there at all.
+
+    Stripping is the fix rather than copying the new value down, because CF
+    says the bounds take their meaning from the parent and should stay bare.
+    """
+    if not isinstance(ds, xr.Dataset):
+        return ds
+    # Everything a formula_terms attribute names, plus the bounds of any
+    # coordinate that has one. CF 1.7 requires those to carry units and a
+    # standard_name, and cc-plugin-aicc checks the term units against the
+    # table ("Formula term 'ap_bnds' units: units missing; table requires
+    # 'Pa'"). Stripping them cost 24 findings in cli116.
+    formula_related = set()
+    for candidate in ds.variables:
+        terms = ds[candidate].attrs.get("formula_terms")
+        if isinstance(terms, str):
+            formula_related.update(terms.replace(":", " ").split()[1::2])
+        if ds[candidate].attrs.get("formula_terms") or ds[candidate].attrs.get("formula"):
+            formula_related.add(str(candidate))
+        bounds = ds[candidate].attrs.get("bounds")
+        if bounds and ds[candidate].attrs.get("formula_terms"):
+            formula_related.add(str(bounds))
+
+    for name in ds.variables:
+        if not _is_bounds_var_name(name) or str(name) in formula_related:
+            continue
+        removed = [a for a in _BOUNDS_FORBIDDEN_ATTRS if ds[name].attrs.pop(a, None) is not None]
+        if removed:
+            logger.info(f"  → stripped {removed} from bounds variable {str(name)!r}")
+    return ds
+
+
+def _ensure_coordinate_long_names(ds, rule=None):
+    """Take each coordinate's ``long_name`` from the CMIP7 coordinate table.
+
+    The value is per data request entry, not per output name: ``plev19`` is
+    "Pressure Levels (19)" and ``plev3`` is "Pressure Levels (3)", but both are
+    written as ``plev``. So the lookup goes through the variable's requested
+    dimensions rather than through what the axis ended up being called. Same for
+    time, where ``time``/``time1``/``time2``/``time4`` are "Time Intervals",
+    "Time Points", "Monthly Climatology" and "Monthly Mean Daily Satistics".
+
+    Runs after :func:`_ensure_vertical_coord_attrs` so the table wins over
+    coordinate_metadata.yaml where the two disagree, e.g. ``rho``, which the
+    yaml calls "potential density coordinate" and the table "potential density
+    referenced to 2000 dbar".
+
+    A handful of entries carry a whole paragraph as their ``long_name``
+    upstream; ``deltasigt`` runs to some 900 characters of method description
+    with references. A long_name is what plotting tools and evaluation
+    frameworks put on an axis, so only the leading sentence is kept and the
+    full text moves to ``comment``, which is where prose belongs.
+    """
+    if not isinstance(ds, xr.Dataset) or rule is None:
+        return ds
+    from .coordinate_attributes import AXIS_ENTRIES
+
+    drv = getattr(rule, "data_request_variable", None)
+    for dim in tuple(getattr(drv, "dimensions", ()) or ()):
+        entry = AXIS_ENTRIES.get(dim)
+        if not entry:
+            continue
+        out_name = str(entry.get("out_name") or dim)
+        long_name = str(entry.get("long_name") or "").strip()
+        if not long_name or out_name not in ds.variables:
+            continue
+        attrs = ds[out_name].attrs
+        head = long_name.replace("\\n", "\n").split("\n", 1)[0].strip()
+        if len(head) > 120 or head != long_name:
+            # Prose. Keep the first sentence of the first line as the label.
+            label = head.split(". ", 1)[0].strip().rstrip(".")
+            if label and not attrs.get("comment"):
+                attrs["comment"] = long_name
+            attrs["long_name"] = label or head
+        else:
+            attrs["long_name"] = long_name
+    return ds
+
+
 def _ensure_lat_lon_bounds_and_external_vars(ds, rule=None):
     """Wrap _ensure_lat_lon_bounds with post-passes that announce external
     cell_measures (CF 1.11 §7.2) and refresh the ``coordinates`` attr."""
     ds = _drop_xios_aux_time_coords(ds)
+    ds = _denormalise_vertices_naming(ds)
+    ds = _ensure_horizontal_aux_coords(ds, rule)
     ds = _ensure_lat_lon_bounds_impl(ds, rule)
     ds = _ensure_vertical_bounds(ds)
+    ds = _ensure_exact_vertical_bounds(ds)
+    ds = _ensure_climatology_bounds(ds)
     ds = _ensure_vertical_coord_attrs(ds)
+    ds = _ensure_coordinate_long_names(ds, rule)
+    ds = _strip_bounds_attributes(ds)
+    ds = _strip_variable_positive(ds)
+    ds = _drop_unrequested_aux_coords(ds, rule)
+    ds = _ensure_coordinate_dtypes(ds)
     ds = _ensure_external_variables(ds)
+    ds = _ensure_cf_dim_order(ds)
     ds = _ensure_coordinates_attr(ds)
     ds = _ensure_horizontal_coord_attrs(ds)
     ds = _strip_unportable_encoding(ds)
+    ds = _normalise_vertices_naming(ds)
+    return ds
+
+
+# Vertical axes whose bounds the CMIP7 coordinate table requires but does not
+# supply. Seven entries are in that state; this is the one we produce.
+#
+# ``oplayer4`` (out_name ``pdepth``) is must_have_bounds "yes" with an empty
+# bounds_requested. Its four values 15, 50, 136 and 1000 bar are the midpoints
+# of the layers named in the CMIP7 ocean data request paper (Griffies et al.,
+# GMD 19, 6043, 2026): 0-300, 300-700, 700-2000 m and below. Converted with
+# p = rho*g*h those midpoints come out at 15.08, 50.28 and 135.75, which is
+# what identifies the layers as disjoint rather than cumulative. The last layer
+# is open downwards, so its lower edge is set to reproduce the requested 1000.
+#
+# Deriving these from the midpoints instead would be wrong: the layers are of
+# very different thickness, so interpolated edges land nowhere near the real
+# ones.
+# The values cc-plugin-aicc checks against, which are the layer edges the CMIP7
+# ocean data request paper names (0-300, 300-700, 700-2000 m and below)
+# converted to bar by the plugin. Our own conversion with rho=1025 landed at
+# 30.17 / 70.39 / 201.10, close but outside its tolerance, so take its numbers
+# rather than recompute them; the layer definition is what matters and both
+# agree on that.
+_EXACT_VERTICAL_BOUNDS = {
+    "pdepth": ((0.0, 30.3), (30.3, 70.7), (70.7, 202.5), (202.5, 10000.0)),
+}
+
+
+def _ensure_climatology_bounds(ds):
+    """Turn a climatology's time axis into the CF §7.4 form.
+
+    A ``tclm`` variable is a mean within years followed by a mean over years, so
+    its time cells are not intervals but twelve recurring months, each spanning
+    from the start of that month in the first year to its end in the last. CF
+    marks that with ``time:climatology`` naming a ``climatology_bnds`` variable,
+    and explicitly *without* an ordinary ``bounds``.
+
+    The producing step leaves the two years on the time coordinate as
+    ``climatology_years``, because the bounds move with every year folded into
+    the running accumulator and so cannot be a fixed table. Everything else is
+    derived here.
+
+    cli114 wrote ``time_bnds`` on this variable, which the DKRZ coordinate check
+    flagged: a climatology whose bounds say "January 1851" claims to be one
+    month of one year.
+    """
+    if not isinstance(ds, xr.Dataset):
+        return ds
+    time_label = get_time_label(ds)
+    if not time_label or time_label not in ds.variables:
+        return ds
+    years = ds[time_label].attrs.pop("climatology_years", None)
+    if not years:
+        return ds
+    try:
+        first, last = (int(y) for y in str(years).split())
+    except ValueError:
+        logger.warning(f"climatology: cannot read climatology_years={years!r}, leaving the time axis alone")
+        return ds
+
+    months = pd.DatetimeIndex(np.asarray(ds[time_label].values)).month
+    starts = [np.datetime64(f"{first:04d}-{m:02d}-01") for m in months]
+    ends = [
+        np.datetime64(f"{last + 1:04d}-01-01") if m == 12 else np.datetime64(f"{last:04d}-{m + 1:02d}-01")
+        for m in months
+    ]
+    ds["climatology_bnds"] = xr.DataArray(np.stack([starts, ends], axis=-1), dims=(time_label, "bnds"), attrs={})
+    ds[time_label].attrs["climatology"] = "climatology_bnds"
+    # An ordinary bounds variable would contradict it, so drop both the
+    # attribute and whatever set_time_bounds left behind.
+    ds[time_label].attrs.pop("bounds", None)
+    ds[time_label].encoding.pop("bounds", None)
+    for stale in (f"{time_label}_bnds", f"{time_label}_bounds"):
+        if stale in ds.variables:
+            ds = ds.drop_vars(stale)
+    logger.info(f"  → climatology bounds: {first}-{last} over {len(months)} months")
+    return ds
+
+
+def _ensure_exact_vertical_bounds(ds):
+    """Attach known-exact bounds for axes the coordinate table leaves without."""
+    if not isinstance(ds, xr.Dataset):
+        return ds
+    for name, bounds in _EXACT_VERTICAL_BOUNDS.items():
+        if name not in ds.variables or ds[name].ndim != 1:
+            continue
+        if ds.sizes.get(name) != len(bounds):
+            continue
+        bounds_name = f"{name}_bnds"
+        if bounds_name in ds.variables:
+            continue
+        ds[bounds_name] = xr.DataArray(np.asarray(bounds, dtype="float64"), dims=(name, "bnds"), attrs={})
+        ds[name].attrs["bounds"] = bounds_name
+        logger.info(f"  → exact bounds for {name!r} ({len(bounds)} layers)")
     return ds
 
 
@@ -449,34 +1054,173 @@ def _ensure_vertical_bounds(ds):
     return ds
 
 
+# Vertical axes whose on-disk attributes should come from the CV rather
+# than from whatever the model wrote. Every one of these has an entry in
+# coordinate_metadata.yaml; names without one are skipped.
+_CV_VERTICAL_COORDS = ("lev", "plev", "height", "sdepth", "rho", "gamma")
+
+
+_CMOR_TYPE_TO_DTYPE = {"double": "float64", "real": "float32", "integer": "int32"}
+_COORD_DTYPE_CACHE = None
+
+
+def _coordinate_dtypes():
+    """``out_name`` -> the numpy dtype the CMIP7 coordinate table asks for.
+
+    Entries carry a ``type`` field (``double``, ``real``, ``integer``,
+    ``character``). Several data request names share one ``out_name``, so the
+    value is only used where they agree; the single disagreement in the table
+    is ``seasurface``, which is ``character`` in one entry and ``double`` in
+    another, and is left alone.
+    """
+    global _COORD_DTYPE_CACHE
+    if _COORD_DTYPE_CACHE is not None:
+        return _COORD_DTYPE_CACHE
+    from .coordinate_attributes import AXIS_ENTRIES
+
+    by_out_name = {}
+    for entry in AXIS_ENTRIES.values():
+        out_name = entry.get("out_name")
+        cmor_type = str(entry.get("type") or "").strip()
+        if not out_name or not cmor_type:
+            continue
+        by_out_name.setdefault(str(out_name), set()).add(cmor_type)
+
+    resolved = {}
+    for out_name, cmor_types in by_out_name.items():
+        if len(cmor_types) != 1:
+            continue
+        dtype = _CMOR_TYPE_TO_DTYPE.get(next(iter(cmor_types)))
+        if dtype:
+            resolved[out_name] = dtype
+    _COORD_DTYPE_CACHE = resolved
+    return resolved
+
+
+def _ensure_coordinate_dtypes(ds):
+    """Store coordinates in the type the CMIP7 tables require.
+
+    cli114 wrote ``plev`` as float32 where the table says double (17 files),
+    and ``sdepth`` as int64 because the soil depths happened to be whole
+    centimetres. Precision is not the point on a pressure axis with values like
+    92500; the point is that consumers read the axis type from the table.
+
+    ``time`` is skipped: its dtype belongs to the datetime encoding, which
+    carries units and calendar and is set elsewhere. Character axes are skipped
+    for the same reason, they are built as fixed-width bytes by the label-axis
+    step.
+    """
+    if not isinstance(ds, xr.Dataset):
+        return ds
+    for name, dtype in _coordinate_dtypes().items():
+        if name not in ds.variables or str(name).startswith("time"):
+            continue
+        var = ds[name]
+        if var.dtype.kind in ("S", "U", "O") or str(var.dtype) == dtype:
+            continue
+        logger.info(f"  → coordinate dtype: {name} {var.dtype} -> {dtype}")
+        recast = var.astype(dtype)
+        recast.attrs = dict(var.attrs)
+        recast.encoding = {k: v for k, v in var.encoding.items() if k != "dtype"}
+        ds = ds.assign_coords({name: recast}) if name in ds.coords else ds.assign({name: recast})
+        # CF §7.1: a bounds variable has the same type as its coordinate.
+        bounds_name = recast.attrs.get("bounds")
+        if bounds_name and bounds_name in ds.variables and str(ds[bounds_name].dtype) != dtype:
+            bounds = ds[bounds_name]
+            rebound = bounds.astype(dtype)
+            rebound.attrs = dict(bounds.attrs)
+            rebound.encoding = {k: v for k, v in bounds.encoding.items() if k != "dtype"}
+            ds[bounds_name] = rebound
+    return ds
+
+
 def _ensure_vertical_coord_attrs(ds):
-    """Let the CV win over the model's own attributes on the vertical axis.
+    """Let the CV win over the model's own attributes on the vertical axes.
 
     ``set_coordinate_attributes`` only fills in attributes that are missing, so
-    whatever FESOM wrote survives: cli109 shipped ``lev:units = "meter"`` where
-    depth_coord says ``m``, the model's ``long_name`` instead of "ocean depth
-    coordinate", and a stray non-CF ``name = "nz"``. The DKRZ review asked us
-    to take these from CMIP7_coordinate.json.
+    whatever the model wrote survives: cli109 shipped ``lev:units = "meter"``
+    where depth_coord says ``m``, the model's ``long_name`` instead of "ocean
+    depth coordinate", and a stray non-CF ``name = "nz"``. The DKRZ review
+    asked us to take these from CMIP7_coordinate.json.
+
+    This used to cover only ``lev``, which hid the same bug on every other
+    vertical axis. cli113 shipped:
+
+        plev    17 files  standard_name and axis missing, units "pascal",
+                          positive "up", plus the stray "name"
+        height  35 files  axis missing
+        sdepth   3 files  units "meter"
+
+    The pressure case was worth 68 wcrp HIGH findings on its own, and it was
+    invisible before cli113 only because the axis was still named ``plev19`` /
+    ``plev3`` and the check looks for a variable called ``plev``.
+
+    ``long_name`` is deliberately left alone where the CV has no single value
+    for it: the data request spells plev's per-tier ("Pressure Levels (19)"
+    vs "(3)"), so coordinate_metadata.yaml carries none and the model's own
+    string stays.
     """
     from .coordinate_attributes import COORDINATE_METADATA
+    from .dimension_mapping import _out_name_for
 
-    expected = COORDINATE_METADATA.get("lev")
-    if not expected or "lev" not in ds.variables:
-        return ds
-    attrs = ds["lev"].attrs
-    # coordinate_metadata.yaml's "lev" entry is the ocean depth_coord. The
-    # atmospheric hybrid coordinate also has out_name "lev" but is a different
-    # axis entirely, and it arrives here fully described by
-    # add_hybrid_sigma_coordinate. Overwriting it relabelled 137 model levels
-    # as ocean depth in metres, which is what this guard prevents.
-    if attrs.get("formula_terms") or (attrs.get("standard_name") not in (None, "", "depth")):
+    for name in _CV_VERTICAL_COORDS:
+        expected = COORDINATE_METADATA.get(name)
+        if not expected:
+            continue
+        # The CV keys the axis by its data request name, the file carries the
+        # ``out_name``. They agree for lev/plev/height, but ``sdepth`` is
+        # written as ``depth``, so keying on the CV name alone skipped it and
+        # cli116 still shipped depth:units = "meter" on tsl, mrsol and mrsll.
+        # Same class of miss as the plev19/plev3 case above, so resolve
+        # through the table instead of naming the exception.
+        on_disk = next(
+            (n for n in (name, _out_name_for(name)) if n in ds.variables),
+            None,
+        )
+        if on_disk is None:
+            continue
+        attrs = ds[on_disk].attrs
+        # Parametric vertical coordinates describe themselves through
+        # formula_terms and must not be overwritten. The atmospheric hybrid
+        # coordinate also has out_name "lev" but is a different axis from the
+        # ocean depth_coord entirely; overwriting it relabelled 137 model
+        # levels as ocean depth in metres, which is what this guard prevents.
+        if attrs.get("formula_terms"):
+            attrs.pop("name", None)
+            continue
+        if on_disk == "lev" and attrs.get("standard_name") not in (None, "", "depth"):
+            attrs.pop("name", None)
+            continue
+        # ``name`` is a model-side leftover, not a CF attribute.
         attrs.pop("name", None)
-        return ds
-    # ``name`` is a model-side leftover, not a CF attribute.
-    attrs.pop("name", None)
-    for key, value in expected.items():
-        attrs[key] = value
+        for key, value in expected.items():
+            # Units are the one attribute where the CV must not simply win.
+            # ``sdepth`` resolves to the on-disk name ``depth``, and so do the
+            # tiered soil axes: mrsol's d10cm variant legitimately carries
+            # ``cm`` (wcrp allows m and cm both). Overwriting that with the
+            # CV's ``m`` would relabel centimetres as metres and silently
+            # move the layer by a factor of 100. Only fix the spelling, never
+            # the unit itself.
+            if key == "units" and attrs.get("units") and not _same_physical_unit(attrs["units"], value):
+                continue
+            attrs[key] = value
     return ds
+
+
+def _same_physical_unit(have, want):
+    """True when two unit strings denote the same unit, e.g. "meter" and "m".
+
+    Deliberately strict: ``cm`` and ``m`` are convertible but not the same, so
+    this returns False and the caller leaves the model's units in place.
+    """
+    if have == want:
+        return True
+    try:
+        from .units import ureg
+
+        return ureg.Quantity(1.0, have).to(want).magnitude == 1.0
+    except Exception:
+        return False
 
 
 def _match_cells(ds, src, tol=1e-3):
@@ -1040,14 +1784,19 @@ def _add_cf_quantization_metadata(ds, rule):
             _p = _ft.replace(":", " ").split()
             formula_terms.update(_p[1::2])
     formula_terms |= {"ap", "b", "a", "p0", "ptop", "ap_bnds", "b_bnds", "a_bnds"}
-    formula_terms.discard("ps")
+    # ``ps`` stays in the set. It is a geophysical field, but it is also a
+    # formula term, and CF 1.12 forbids quantization on anything named by a
+    # formula_terms attribute regardless. _protect_formula_terms keeps its data
+    # exact for the same reason; advertising a quantization it did not receive
+    # would be worse than either. cli116 reported it on 8 files because the
+    # exception was removed there but not here.
 
     for var in ds.data_vars:
         da = ds[var]
         if str(var) == container or da.dtype.kind != "f":
             continue
         name = str(var)
-        if name.endswith(("_bnds", "_bounds")) or name.startswith("bounds_"):
+        if _is_bounds_var_name(name):
             continue
         if name in formula_terms:
             continue
@@ -1122,9 +1871,7 @@ def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
     # anything set earlier.
     try:
         if hasattr(ds_or_da, "coords"):
-            _bnds = [
-                c for c in ds_or_da.coords if str(c).endswith(("_bnds", "_bounds")) or str(c).startswith("bounds_")
-            ]
+            _bnds = [c for c in ds_or_da.coords if _is_bounds_var_name(c)]
             if _bnds:
                 ds_or_da = ds_or_da.reset_coords(_bnds)
             # cf 7.1: a bounds variable carries no attributes of its own.
@@ -1137,7 +1884,7 @@ def _safe_to_netcdf(ds_or_da, *args, scheduler="synchronous", **kwargs):
             # saw them and they shipped with coordinates = "lat lon" (DKRZ
             # review of cli108, Schupfner 2026-08-08).
             for _b in getattr(ds_or_da, "variables", {}):
-                if str(_b).endswith(("_bnds", "_bounds")) or str(_b).startswith("bounds_"):
+                if _is_bounds_var_name(_b):
                     ds_or_da[_b].encoding["coordinates"] = None
     except Exception as _exc:  # pragma: no cover - defensive
         logger.debug(f"could not demote bounds coords before write: {_exc}")
@@ -1413,24 +2160,44 @@ def _protect_formula_terms(ds, encoding):
     this follows the coordinate rather than a hard-coded list, with the usual
     suspects as a fallback.
     """
-    terms = set()
+    referenced = set()
     for name in ds.variables:
-        ft = ds[name].attrs.get("formula_terms")
-        if not isinstance(ft, str):
-            continue
-        # "ap: ap b: b ps: ps" -> the values, not the keys
-        parts = ft.replace(":", " ").split()
-        terms.update(parts[1::2])
-    terms |= {"ap", "b", "a", "p0", "ptop", "ap_bnds", "b_bnds", "a_bnds"}
-    # ps is a genuine geophysical field and keeps its normal treatment.
-    terms.discard("ps")
-    for name in terms:
+        attrs = ds[name].attrs
+        # "ap: ap b: b ps: ps" and "area: areacello volume: volcello" name the
+        # variable in the second position of each pair; "lat lon height" is a
+        # plain list.
+        for attr in ("formula_terms", "cell_measures"):
+            value = attrs.get(attr)
+            if isinstance(value, str):
+                referenced.update(value.replace(":", " ").split()[1::2])
+        value = attrs.get("coordinates")
+        if isinstance(value, str):
+            referenced.update(value.split())
+
+    # Coordinate variables in their own right, plus the coefficient names that
+    # may appear before the coordinate has been assembled.
+    referenced |= {str(n) for n in ds.variables if n in ds.dims}
+    referenced |= {"ap", "b", "a", "p0", "ptop", "ap_bnds", "b_bnds", "a_bnds"}
+
+    for name in sorted(referenced):
         if name not in ds.variables:
             continue
         enc = encoding.setdefault(str(name), {})
-        enc["_FillValue"] = None
+        # CF 1.12: quantization must not be applied to any of these, no
+        # exceptions. This is what caught ``ps``.
         for k in ("quantize_mode", "significant_digits"):
             enc.pop(k, None)
+        # The fill-value half is narrower. Dropping _FillValue is right for the
+        # coefficient variables, which published CMIP6 files ship without one,
+        # and wrong for a variable that is also a geophysical field in its own
+        # right, because wcrp ATTR001 wants _FillValue and missing_value there.
+        # ``ps`` is exactly that case. Distinguish by shape rather than by
+        # name: a coefficient varies along the vertical axis only, whereas a
+        # field carries a time or horizontal dimension.
+        dims = {str(d) for d in getattr(ds[name], "dims", ())}
+        if dims & _HORIZONTAL_DIMS or any(d.startswith("time") for d in dims):
+            continue
+        enc["_FillValue"] = None
     return encoding
 
 
@@ -1541,7 +2308,7 @@ def _encoding_from_dask_chunks(ds, rule):
         # float data variables; skip integer flag/index vars (bit-exact)
         # and bounds/coord variables (CF requires exact values).
         _var_name = str(var)
-        _is_bounds_var = _var_name.endswith(("_bnds", "_bounds")) or _var_name.startswith("bounds_")
+        _is_bounds_var = _is_bounds_var_name(_var_name)
         if quantize_mode and significant_digits and da.dtype.kind == "f" and not _is_bounds_var:
             var_encoding["quantize_mode"] = quantize_mode
             var_encoding["significant_digits"] = int(significant_digits)
@@ -1550,7 +2317,7 @@ def _encoding_from_dask_chunks(ds, rule):
         # 1.0e20 fill (xarray's default for float32 is NaN otherwise).
         _sentinel = object()
         _pre = da.encoding.get("_FillValue", _sentinel)
-        _is_bounds = str(var).endswith(("_bnds", "_bounds")) or str(var).startswith(("bounds_",))
+        _is_bounds = _is_bounds_var_name(var)
         if _pre is None or _is_bounds:
             var_encoding["_FillValue"] = None
         else:
@@ -2033,17 +2800,13 @@ def _save_mfdataset_worker_or_sync(datasets, paths, enc, extra_kwargs, is_dask, 
     try:
         _demoted = []
         for _ds in datasets:
-            _bnds = [
-                c
-                for c in getattr(_ds, "coords", ())
-                if str(c).endswith(("_bnds", "_bounds")) or str(c).startswith("bounds_")
-            ]
+            _bnds = [c for c in getattr(_ds, "coords", ()) if _is_bounds_var_name(c)]
             _d = _ds.reset_coords(_bnds) if _bnds else _ds
             # cf 7.1: bounds variables carry no attributes of their own.
             # Sweep every bounds variable, including ones that were already
             # data variables (lat_bnds/lon_bnds on unstructured output).
             for _b in getattr(_d, "variables", {}):
-                if str(_b).endswith(("_bnds", "_bounds")) or str(_b).startswith("bounds_"):
+                if _is_bounds_var_name(_b):
                     _d[_b].encoding["coordinates"] = None
             _demoted.append(_d)
         datasets = _demoted
@@ -2151,7 +2914,7 @@ def _calculate_netcdf_chunks(ds: xr.Dataset, rule) -> dict:
         out = {}
         for v in ds.data_vars:
             _pre = ds[v].encoding.get("_FillValue", _sentinel)
-            _is_bounds = str(v).endswith(("_bnds", "_bounds"))
+            _is_bounds = _is_bounds_var_name(v)
             out[v] = {"_FillValue": None if (_pre is None or _is_bounds) else 1.0e20}
         return out
 
