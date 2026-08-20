@@ -53,6 +53,7 @@ Function index (keep this list in sync when adding/removing steps; helps avoid d
 import glob as _glob
 import logging
 import os as _os
+import contextlib
 import pathlib
 import re as _re
 from typing import Optional
@@ -2231,6 +2232,107 @@ def integrate_over_pressure_layers(data: xr.DataArray, rule) -> xr.Dataset:
 _CLIMATOLOGY_STATE_DEFAULT = "/work/bb1469/a270092/cmorized/climatologies"
 
 
+def _climatology_state_path(rule, state_dir):
+    """Where this rule's accumulator lives, keyed by what makes it distinct.
+
+    The accumulator is the only piece of pycmor state that outlives a single
+    run, so it is the only place where two runs can silently contaminate each
+    other. Keying it on the compound name alone put piControl, historical and
+    every variant of both into one file. The year guard then made the damage
+    quiet rather than loud: 1851 from historical would meet 1851 from
+    piControl, be recognised as "already counted" and dropped with a warning.
+
+    So the path carries the DRS identity, which is exactly what distinguishes
+    one climatology from another::
+
+        <state_dir>/<source_id>/<experiment_id>/<variant_label>/
+            <compound_name>_<grid_label>.accumulator.nc
+
+    Missing identity is an error rather than a fallback. A rule that cannot say
+    which experiment it belongs to must not be allowed to pool its years with
+    somebody else's.
+    """
+    parts = []
+    for attr in ("source_id", "experiment_id", "variant_label"):
+        value = rule.get(attr)
+        if not value:
+            raise ValueError(
+                f"accumulate_monthly_climatology: rule has no {attr!r}. The accumulator "
+                "outlives the run and must be kept apart per experiment and variant, so "
+                "there is no safe default here."
+            )
+        parts.append(str(value).replace("/", "_"))
+
+    compound = str(rule.get("compound_name") or rule.model_variable).replace("/", "_")
+    grid_label = rule.get("grid_label")
+    name = f"{compound}_{grid_label}.accumulator.nc" if grid_label else f"{compound}.accumulator.nc"
+    return pathlib.Path(state_dir).joinpath(*parts) / name
+
+
+@contextlib.contextmanager
+def _climatology_lock(state_path):
+    """Serialise the read-modify-write on one accumulator.
+
+    Writing is atomic already, but the update is not: two shards for different
+    years both read the old state, both add their own year, and whichever
+    writes last silently drops the other. Sharding by tier makes that unlikely
+    within one run and quite likely across two runs of neighbouring years.
+
+    Best effort. If the filesystem will not take the lock the update still
+    happens, because refusing to accumulate is worse than a small race.
+    """
+    lock_path = state_path.with_suffix(".lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    handle = None
+    try:
+        import fcntl
+
+        handle = open(lock_path, "w")
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+    except Exception as exc:
+        logger.warning(f"climatology: no lock on {lock_path.name} ({exc}); concurrent years could race")
+        if handle is not None:
+            handle.close()
+            handle = None
+    try:
+        yield
+    finally:
+        if handle is not None:
+            try:
+                import fcntl
+
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            finally:
+                handle.close()
+
+
+def _fold_year_into_accumulator(state_path, monthly, year):
+    """Add one year's twelve monthly means to the accumulator on disk.
+
+    Call under :func:`_climatology_lock`. Returns the new state.
+    """
+    if state_path.exists():
+        with xr.open_dataset(state_path) as previous:
+            state = previous.load()
+        seen = [int(y) for y in np.atleast_1d(state["years"].values)]
+        if year in seen:
+            logger.warning(f"climatology: year {year} is already in {state_path.name}, not counting it twice")
+        else:
+            state["total"] = state["total"] + monthly
+            state = state.assign(years=("year", np.array(sorted(seen + [year]), dtype="int32")))
+            logger.info(f"climatology: added {year}, now {len(seen) + 1} years")
+    else:
+        state = xr.Dataset({"total": monthly})
+        state = state.assign(years=("year", np.array([year], dtype="int32")))
+        logger.info(f"climatology: started accumulator at {state_path} with {year}")
+
+    tmp = state_path.with_suffix(".tmp.nc")
+    state.to_netcdf(tmp)
+    tmp.replace(state_path)  # atomic, so a killed shard cannot leave a half-written accumulator
+
+    return state
+
+
 def accumulate_monthly_climatology(data, rule):
     """Monthly climatology that grows with every run instead of being rebuilt.
 
@@ -2256,9 +2358,8 @@ def accumulate_monthly_climatology(data, rule):
         the per-run scratch directory. Default above.
     """
     state_dir = pathlib.Path(rule.get("climatology_state_dir", _CLIMATOLOGY_STATE_DEFAULT))
-    state_dir.mkdir(parents=True, exist_ok=True)
-    key = str(rule.get("compound_name") or rule.model_variable).replace("/", "_")
-    state_path = state_dir / f"{key}.accumulator.nc"
+    state_path = _climatology_state_path(rule, state_dir)
+    state_path.parent.mkdir(parents=True, exist_ok=True)
 
     da = data if isinstance(data, xr.DataArray) else data[rule.model_variable]
     if "time" not in da.dims:
@@ -2280,24 +2381,8 @@ def accumulate_monthly_climatology(data, rule):
             f"{monthly.sizes.get('month')} months, refusing to fold a partial year in"
         )
 
-    if state_path.exists():
-        with xr.open_dataset(state_path) as previous:
-            state = previous.load()
-        seen = [int(y) for y in np.atleast_1d(state["years"].values)]
-        if year in seen:
-            logger.warning(f"climatology: year {year} is already in {state_path.name}, not counting it twice")
-        else:
-            state["total"] = state["total"] + monthly
-            state = state.assign(years=("year", np.array(sorted(seen + [year]), dtype="int32")))
-            logger.info(f"climatology: added {year}, now {len(seen) + 1} years")
-    else:
-        state = xr.Dataset({"total": monthly})
-        state = state.assign(years=("year", np.array([year], dtype="int32")))
-        logger.info(f"climatology: started accumulator at {state_path} with {year}")
-
-    tmp = state_path.with_suffix(".tmp.nc")
-    state.to_netcdf(tmp)
-    tmp.replace(state_path)  # atomic, so a killed shard cannot leave a half-written accumulator
+    with _climatology_lock(state_path):
+        state = _fold_year_into_accumulator(state_path, monthly, year)
 
     counted = [int(y) for y in np.atleast_1d(state["years"].values)]
     result = state["total"] / len(counted)
