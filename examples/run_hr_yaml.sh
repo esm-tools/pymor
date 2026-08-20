@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=pycmor-hr
 #SBATCH --partition=compute
-#SBATCH --account=ba0989
+#SBATCH --account=ab0246
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
@@ -26,13 +26,13 @@ set -euo pipefail
 YAML="${1:?usage: sbatch run_hr_yaml.sh <yaml-path> [output-subdir]}"
 OUTSUB="${2:-$(basename "$(dirname "$YAML")")}"
 
-source ~/loadconda.sh
+source /home/a/a270092/loadconda.sh
 conda activate pycmor_py312
 
-cd /work/ab0246/a270092/software/pycmor
-export PYCMOR_HOME=/work/ab0246/a270092/software/pycmor
+cd /work/bb1469/a270089/CMOR_OUTPUT/pycmor
+export PYCMOR_HOME=/work/bb1469/a270089/CMOR_OUTPUT/pycmor
 
-PYCMOR_SCRATCH=/scratch/a/a270092/pycmor_tmp/$$
+PYCMOR_SCRATCH=/scratch/a/a270089/pycmor_tmp/$$
 mkdir -p $PYCMOR_SCRATCH/prefect/storage
 export PREFECT_HOME=$PYCMOR_SCRATCH/prefect
 export PREFECT_LOCAL_STORAGE_PATH=$PYCMOR_SCRATCH/prefect/storage
@@ -40,7 +40,7 @@ export TMPDIR=$PYCMOR_SCRATCH
 export OMP_NUM_THREADS=1
 
 # Use /scratch for outputs (fast). Setstripe 8 for parallel I/O if lfs exists.
-OUTROOT=${OUTROOT:-/scratch/a/a270092/pycmor_hr_out}
+OUTROOT=${OUTROOT:-/scratch/a/a270089/pycmor_hr_out}
 ATTEMPT_SUBDIR=${ATTEMPT_SUBDIR:-0}
 if [ "$ATTEMPT_SUBDIR" = "1" ] && [ -n "${SLURM_JOB_ID:-}" ]; then
     OUTDIR=$OUTROOT/$OUTSUB/job_$SLURM_JOB_ID

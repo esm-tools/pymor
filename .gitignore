@@ -61,3 +61,6 @@ htmlcov/
 
 # sanity_check report tarballs (too large for git; share via filesystem)
 tools/sanity_check/reports/*.tar.gz
+
+
+*.log

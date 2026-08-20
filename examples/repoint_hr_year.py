@@ -87,7 +87,26 @@ def add_year_to_pattern(pat: str, year: str) -> str:
 
 def repoint_yaml(src: pathlib.Path, run_dir: str, year: str) -> str:
     text = src.read_text()
-    # Path swap: any HR_test_01 path -> the requested run dir
+    # Path swap: any HR_test_01 path -> the requested run dir.
+    #
+    # Guard: every tier yaml references the template run at least once
+    # (checked 2026-07-29: all 17 do, between 1 and 27 times each). Without
+    # this check, a drift in the hardcoded path would make the substitution
+    # below silently match nothing -- re.sub returns the text unchanged and
+    # raises nothing -- so this script would still report success while the
+    # yamls kept pointing at the TEMPLATE run. The cmorization would then
+    # process the wrong model run and the output would look entirely normal.
+    # Fail loudly instead of producing plausible, wrong results.
+    old_path = f"{RUNTIME_ROOT}/{OLD_RUN_TOKEN}"
+    if old_path not in text:
+        raise SystemExit(
+            f"ERROR: {src.name} does not contain the expected template path:\n"
+            f"           {old_path}\n"
+            f"       The path hardcoded in the source yamls has probably changed.\n"
+            f"       Fix RUNTIME_ROOT / OLD_RUN_TOKEN at the top of this script.\n"
+            f"       Refusing to continue: otherwise the run would quietly use\n"
+            f"       the template run's data instead of {run_dir}."
+        )
     text = re.sub(
         rf"{re.escape(RUNTIME_ROOT)}/{OLD_RUN_TOKEN}",
         run_dir,
